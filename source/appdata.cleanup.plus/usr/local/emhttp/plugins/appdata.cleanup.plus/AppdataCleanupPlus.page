@@ -3,9 +3,6 @@ Title="Appdata Cleanup Plus"
 Icon="appdata.cleanup.plus.png"
 ---
 <?
-require_once("/usr/local/emhttp/plugins/appdata.cleanup.plus/include/caCredits.php");
-
-$plugin = "appdata.cleanup.plus";
 $dockerRunning = is_dir("/var/lib/docker/tmp") ? "true" : "false";
 
 
@@ -23,15 +20,6 @@ function tr($string,$ret=false) {
 var caURL = "/plugins/appdata.cleanup.plus/include/exec.php";
 
 $(function() {
-	if ( typeof caPluginUpdateCheck === "function" ) {
-		caPluginUpdateCheck("appdata.cleanup.plus.plg",{name:"Appdata Cleanup Plus"},function(data) {
-			var result = JSON.parse(data);
-			$("#version").html(result.installedVersion);
-		});
-	}
-	if ( typeof addBannerWarning === "function" ) {
-		addBannerWarning("<?tr("The author takes no responsibility if you blindly accept the folders offered to delete")?>",false,true);
-	}
   if ( "<?=$dockerRunning?>" == "false" ) {
     swal({
       title: "<?tr("Docker Not Running")?>",
@@ -41,28 +29,6 @@ $(function() {
   }
   loadAppdata();
 });
-
-function showCredits() {
-  myAlert("Appdata Cleanup Plus","<?=$caCredits?>","/plugins/<?=$plugin?>/images/appdata.cleanup.plus.png","96x96", true, false, true);
-}
-
-function myAlert(description,textdescription,textimage,imagesize, outsideClick, showCancel, showConfirm, alertType) {
-  if ( !outsideClick ) outsideClick = false;
-  if ( !showCancel )   showCancel = false;
-  if ( !showConfirm )  showConfirm = false;
-  if ( imagesize == "" ) { imagesize = "80x80"; }
-  swal({
-    title: description,
-    text: textdescription,
-    imageUrl: textimage,
-    imageSize: imagesize,
-    allowOutsideClick: outsideClick,
-    showConfirmButton: showConfirm,
-    showCancelButton: showCancel,
-    type: alertType,
-    html: true
-  });
-}
 
 function loadAppdata() {
   $("#settings").html("<img src='/plugins/appdata.cleanup.plus/images/spinner2.gif' width='48px'> Finding orphaned appdata");
@@ -124,7 +90,4 @@ function deleteAppdata() {
 <span id='settings'></span>
 
 <input type='button' id='deleteButton' onclick='deleteAppdata();' value='<?tr("Delete Selected")?>' disabled><input type='button' onclick='done();' value='<?tr("Done")?>'>
-
-<a style='float:right;cursor:pointer' onclick='showCredits();'><?tr("Credits")?></a><br><br></span>
-<center><?tr("For support for this plugin, visit here:")?> <a href="https://github.com/alexphillips-dev/Appdata-Cleanup-Plus" target="_blank"><?tr("HERE")?></a></center>
-<center><?tr("Plugin Version")?> <strong><span id='version'></span></strong></center>
+<br><br>

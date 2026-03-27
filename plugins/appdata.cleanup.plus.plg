@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.04">
-<!ENTITY md5 "29e69778ace5ad12a1d4b6d305e0f506">
+<!ENTITY version "2026.03.27.05">
+<!ENTITY md5 "a2fdbb826601b2f4bb8aeefe1e40fb70">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="6.9.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.05
+- UX: Remove the top warning banner from the settings page
+- UX: Remove the Credits link, support footer, and plugin version footer from the settings page
+
 ###2026.03.27.04
 - UX: Shorten the installed plugin description so it states exactly what the plugin does
 - UX: Show a clear testing-channel note on dev builds while keeping main descriptions clean
