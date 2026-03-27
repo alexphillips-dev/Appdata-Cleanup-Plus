@@ -2,92 +2,125 @@ Menu="Utilities"
 Title="Appdata Cleanup Plus"
 Icon="appdata.cleanup.plus.png"
 ---
-<?
-$dockerRunning = is_dir("/var/lib/docker/tmp") ? "true" : "false";
+<?php
+$cssVersion = @filemtime("/usr/local/emhttp/plugins/appdata.cleanup.plus/styles/appdata.cleanup.plus.css");
+$jsVersion = @filemtime("/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.js");
 
-
-
-
-function tr($string,$ret=false) {
-	$string = str_replace('"',"&#34;",str_replace("'","&#39;",_($string)));
-	if ( $ret )
-		return $string;
-	else
-		echo $string;
+if ( ! $cssVersion ) {
+  $cssVersion = time();
 }
+
+if ( ! $jsVersion ) {
+  $jsVersion = time();
+}
+
+$config = array(
+  "apiUrl" => "/plugins/appdata.cleanup.plus/include/exec.php",
+  "spinnerUrl" => "/plugins/appdata.cleanup.plus/images/spinner2.gif",
+  "logoUrl" => "/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png",
+  "strings" => array(
+    "loadingTitle" => _("Scanning saved Docker templates"),
+    "loadingMessage" => _("Reviewing orphaned appdata folders and active container mappings."),
+    "emptyTitle" => _("No orphaned appdata found"),
+    "emptyMessage" => _("Nothing currently looks safe to clean up from the saved Docker templates."),
+    "noMatchesTitle" => _("No folders match the current filters"),
+    "noMatchesMessage" => _("Clear the search or risk filters to see the full scan again."),
+    "scanFailedTitle" => _("Scan failed"),
+    "scanFailedMessage" => _("The orphaned appdata scan could not be completed right now."),
+    "deleteEmptyTitle" => _("Nothing selected"),
+    "deleteEmptyMessage" => _("Select at least one deletable folder before continuing."),
+    "deleteConfirmTitle" => _("Delete selected folders?"),
+    "deleteConfirmMessage" => _("These folders will be removed immediately."),
+    "deleteConfirmButton" => _("Delete"),
+    "deleteTypedTitle" => _("Type DELETE to confirm"),
+    "deleteTypedMessage" => _("One or more selected folders sit outside the configured appdata share."),
+    "deleteTypedPlaceholder" => _("DELETE"),
+    "deleteTypedError" => _("Type DELETE to continue."),
+    "deletingTitle" => _("Deleting selected folders"),
+    "deletingMessage" => _("Large folders can take a moment to remove."),
+    "deleteResultTitleSuccess" => _("Cleanup complete"),
+    "deleteResultTitleWarning" => _("Cleanup finished with warnings"),
+    "deleteFailedTitle" => _("Delete failed"),
+    "selectedSingular" => _("folder selected"),
+    "selectedPlural" => _("folders selected"),
+    "selectionHintIdle" => _("Choose the folders you want removed. Locked paths stay visible but cannot be selected."),
+    "selectionHintReview" => _("Review paths outside the configured appdata share carefully. They require typed confirmation."),
+    "visibleSummary" => _("visible"),
+    "detectedSummary" => _("detected"),
+    "cardTotal" => _("Detected"),
+    "cardDeletable" => _("Ready to delete"),
+    "cardReview" => _("Needs review"),
+    "cardBlocked" => _("Locked"),
+    "cardSelected" => _("Selected")
+  )
+);
 ?>
+<link rel="stylesheet" href="/plugins/appdata.cleanup.plus/styles/appdata.cleanup.plus.css?v=<?php echo $cssVersion; ?>">
+
+<div class="acp-shell" id="acp-app">
+  <section class="acp-hero">
+    <div class="acp-hero-copy">
+      <p class="acp-eyebrow"><?php echo _("Cleanup Dashboard"); ?></p>
+      <h2 class="acp-title"><?php echo _("Review orphaned appdata before delete"); ?></h2>
+      <p class="acp-subtitle"><?php echo _("Folders shown here come from saved Docker templates that no longer match active container mappings."); ?></p>
+    </div>
+    <div class="acp-hero-actions">
+      <button type="button" class="acp-button acp-button-secondary" id="acp-done-top"><?php echo _("Done"); ?></button>
+    </div>
+  </section>
+
+  <section class="acp-summary-grid" id="acp-summary-cards" aria-live="polite"></section>
+
+  <section class="acp-toolbar">
+    <div class="acp-toolbar-main">
+      <label class="acp-field">
+        <span class="acp-field-label"><?php echo _("Search"); ?></span>
+        <input type="search" id="acp-search" class="acp-input" placeholder="<?php echo _("Filter by app name or path"); ?>" autocomplete="off">
+      </label>
+
+      <label class="acp-field acp-sort-field">
+        <span class="acp-field-label"><?php echo _("Sort"); ?></span>
+        <select id="acp-sort" class="acp-select">
+          <option value="risk"><?php echo _("Risk first"); ?></option>
+          <option value="path"><?php echo _("Path"); ?></option>
+          <option value="name"><?php echo _("Name"); ?></option>
+        </select>
+      </label>
+
+      <div class="acp-toolbar-actions">
+        <button type="button" class="acp-button acp-button-secondary" id="acp-rescan"><?php echo _("Rescan"); ?></button>
+        <button type="button" class="acp-button acp-button-secondary" id="acp-select-visible"><?php echo _("Select visible"); ?></button>
+        <button type="button" class="acp-button acp-button-secondary" id="acp-clear-selection"><?php echo _("Clear"); ?></button>
+      </div>
+    </div>
+
+    <div class="acp-toolbar-secondary">
+      <div class="acp-filter-group" role="tablist" aria-label="<?php echo _("Risk filter"); ?>">
+        <button type="button" class="acp-filter is-active" data-risk="all"><?php echo _("All"); ?></button>
+        <button type="button" class="acp-filter" data-risk="safe"><?php echo _("Safe"); ?></button>
+        <button type="button" class="acp-filter" data-risk="review"><?php echo _("Review"); ?></button>
+        <button type="button" class="acp-filter" data-risk="blocked"><?php echo _("Locked"); ?></button>
+      </div>
+      <div class="acp-results-meta" id="acp-results-meta" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="acp-notices" id="acp-notices"></section>
+  <section class="acp-results" id="acp-results" aria-live="polite"></section>
+
+  <section class="acp-bottom-bar" id="acp-bottom-bar">
+    <div class="acp-bottom-copy">
+      <strong id="acp-selection-summary">0 <?php echo _("folders selected"); ?></strong>
+      <span id="acp-selection-detail"><?php echo _("Choose the folders you want removed. Locked paths stay visible but cannot be selected."); ?></span>
+    </div>
+    <div class="acp-bottom-actions">
+      <button type="button" class="acp-button acp-button-secondary" id="acp-done-bottom"><?php echo _("Done"); ?></button>
+      <button type="button" class="acp-button acp-button-primary" id="acp-delete-selected" disabled><?php echo _("Delete selected"); ?></button>
+    </div>
+  </section>
+</div>
+
 <script>
-var caURL = "/plugins/appdata.cleanup.plus/include/exec.php";
-
-$(function() {
-  if ( "<?=$dockerRunning?>" == "false" ) {
-    swal({
-      title: "<?tr("Docker Not Running")?>",
-      text: "<?tr("Because the docker service is not currently running, this module will prompt you to delete the appdata for any/all docker applications which are installed.")?>",
-      type: "warning"
-    });
-  }
-  loadAppdata();
-});
-
-function loadAppdata() {
-  $("#settings").html("<img src='/plugins/appdata.cleanup.plus/images/spinner2.gif' width='48px'> Finding orphaned appdata");
-  $.post(caURL,{action:'getOrphanAppdata'},function(data) {
-    if (data) {
-      $("#settings").html(data);
-    }
-  });
-  $("#deleteButton").prop("disabled",true);
-}
-
-function selectAll() {
-  $('.appdata').each(function() {
-    $(this).prop("checked",true);
-  });
-  $("#deleteButton").prop("disabled",false);
-}
-
-function deleteAppdata() {
-  var paths = "";
-  var separator = "";
-  $('.appdata').each(function() {
-    if ( $(this).prop("checked") ) {
-      if ( paths ) {
-        separator = "*";
-      }
-      paths = paths + separator + $(this).val();
-    }
-  });
-
-  var displayPaths = paths.replace(/\*/g,", ");
-  swal({
-    title: "<?tr("Are You Sure?")?>",
-    text: "<?tr("Are you sure you want to delete these folders? Read this carefully as there is no recovery in the event of a mistake")?><br><b><font color='red'>" + displayPaths+"</font></b>",
-    type: "warning",
-    html: true,
-    closeOnConfirm: false,
-    showCancelButton: true,
-    confirmButtonText: "<?tr("Delete")?>",
-    showLoaderOnConfirm: true
-  }, function() {
-    swal("<?tr("Deleting Folders")?>","<?tr("Depending upon the size of the folders, this may take a few minutes")?>" + paths,"info");
-    $.post(caURL,{action:'deleteAppdata',paths:paths},function(data) {
-      if (data) {
-        swal("<?tr("Deleted")?>","","success");
-        loadAppdata();
-      }
-    });
-  });
-  
-}
+window.appdataCleanupPlusConfig = <?php echo json_encode($config, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 </script>
-<br>
-<?tr("The following appdata paths have been determined (based upon your previously installed applications) to be no longer in use.  Select which ones you would like to be deleted")?><br><br>
-<?tr("Note that this module looks at all of your previously installed docker applications to determine which appdata folders are abandoned.  If you have deleted the previously installed list (either through Community Applications or manually), then it will not display those result.  IE:  If there is not a record for the folder within the previously installed apps, then you will not be prompted to delete the folder.")?><br><br>
-
-<font size='5'><?tr("In case of a severely misconfigured app previously installed, the entire contents of a share MAY be offered up to delete.  It is your responsibility to confirm all of the folders being offered up to delete.  If you inadvertently delete a share which you actually do want to keep due to your own mistakes in configuring an application, the deletion is not reversable and the author of the plugin will take no responsiblility.")?><br></font>
-<input type='button' onclick='selectAll();' value='<?tr("Select All")?>' id='selectAll'><br><br>
-<span id='settings'></span>
-
-<input type='button' id='deleteButton' onclick='deleteAppdata();' value='<?tr("Delete Selected")?>' disabled><input type='button' onclick='done();' value='<?tr("Done")?>'>
-<br><br>
+<script src="/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.js?v=<?php echo $jsVersion; ?>"></script>

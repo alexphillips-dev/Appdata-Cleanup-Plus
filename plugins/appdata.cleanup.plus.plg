@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.05">
-<!ENTITY md5 "a2fdbb826601b2f4bb8aeefe1e40fb70">
+<!ENTITY version "2026.03.27.06">
+<!ENTITY md5 "a0c035f8b2f3e8117a1035ed0c51ac96">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="6.9.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.06
+- UX: Replace the legacy settings page with a modern cleanup dashboard, summary cards, filters, and a sticky action bar
+- Safety: Move scan/delete responses to JSON, keep dangerous root-level paths locked, and require typed confirmation for outside-share deletes
+- Maintenance: Split the frontend into dedicated JS/CSS assets and remove leftover debug behavior from the helper layer
+
 ###2026.03.27.05
 - UX: Remove the top warning banner from the settings page
 - UX: Remove the Credits link, support footer, and plugin version footer from the settings page
