@@ -90,10 +90,10 @@ $config = array(
         </div>
       </section>
 
-      <section class="acp-toolbar acp-toolbar-panel">
+      <section class="acp-toolbar acp-toolbar-panel acp-sort-panel">
         <div class="acp-panel-title"><?php echo _("Sort"); ?></div>
         <div class="acp-toolbar-inline acp-toolbar-inline-sort">
-          <label class="acp-field acp-compact-field">
+          <label class="acp-field acp-compact-field acp-sort-field">
             <span class="acp-field-label"><?php echo _("Order"); ?></span>
             <select id="acp-sort" class="acp-select">
               <option value="risk"><?php echo _("Risk first"); ?></option>
