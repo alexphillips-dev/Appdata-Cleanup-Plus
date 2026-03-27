@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.15">
-<!ENTITY md5 "ecad54cb0db86e35679af5d7e6d3f757">
+<!ENTITY version "2026.03.27.16">
+<!ENTITY md5 "b14d102ce3033bed2073cd651eeeafa9">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.16
+- UX: Rebuild the delete confirmation popup with a real warning badge, clearer irreversible-action copy, summary chips, and a boxed folder review list
+- UX: Unify the normal delete and typed-confirm review flows so higher-risk deletes use the same warning layout with a stronger review-required callout
+
 ###2026.03.27.15
 - Maintenance: Remove legacy source comments from the packaged helper files and old manifest comment blocks while keeping the release changelog structure intact
 - UX: Make the orphan-list checkboxes smaller and centered in the left column for faster scanning and cleaner alignment

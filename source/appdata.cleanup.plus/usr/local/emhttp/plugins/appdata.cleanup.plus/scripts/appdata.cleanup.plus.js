@@ -665,6 +665,7 @@
     var reviewRows = $.grep(selectedRows, function(row) {
       return row.risk === "review";
     });
+    var confirmButtonText = buildDeleteConfirmButtonText(selectedRows.length);
 
     if (!selectedRows.length) {
       swal(t("deleteEmptyTitle", "Nothing selected"), t("deleteEmptyMessage", "Select at least one deletable folder before continuing."), "warning");
@@ -673,13 +674,17 @@
 
     if (reviewRows.length) {
       swal({
-        title: t("deleteTypedTitle", "Type DELETE to confirm"),
-        text: t("deleteTypedMessage", "One or more selected folders sit outside the configured appdata share."),
+        title: t("deleteConfirmTitle", "Delete selected folders?"),
+        text: buildDeletePreviewHtml(selectedRows, {
+          reviewCount: reviewRows.length,
+          showTypeHint: true
+        }),
         type: "input",
+        html: true,
         showCancelButton: true,
         closeOnConfirm: false,
         inputPlaceholder: t("deleteTypedPlaceholder", "DELETE"),
-        confirmButtonText: t("deleteConfirmButton", "Delete")
+        confirmButtonText: confirmButtonText
       }, function(inputValue) {
         if (inputValue === false) {
           return false;
@@ -693,24 +698,29 @@
         runDelete(selectedRows);
         return true;
       });
+      applyDeleteModalClass("acp-delete-modal acp-delete-modal-review");
       return;
     }
 
     swal({
       title: t("deleteConfirmTitle", "Delete selected folders?"),
-      text: t("deleteConfirmMessage", "These folders will be removed immediately.") + buildDeletePreviewHtml(selectedRows),
+      text: buildDeletePreviewHtml(selectedRows, {
+        reviewCount: 0,
+        showTypeHint: false
+      }),
       type: "warning",
       html: true,
       showCancelButton: true,
       closeOnConfirm: false,
-      showLoaderOnConfirm: true,
-      confirmButtonText: t("deleteConfirmButton", "Delete")
+      confirmButtonText: confirmButtonText
     }, function() {
       runDelete(selectedRows);
     });
+    applyDeleteModalClass("acp-delete-modal");
   }
 
   function runDelete(selectedRows) {
+    applyDeleteModalClass("");
     swal({
       title: t("deletingTitle", "Deleting selected folders"),
       text: t("deletingMessage", "Large folders can take a moment to remove."),
@@ -752,19 +762,62 @@
     });
   }
 
-  function buildDeletePreviewHtml(rows) {
-    var html = ['<div class="acp-modal-summary"><div class="acp-modal-stats"><span class="acp-modal-stat">' + escapeHtml(String(rows.length)) + ' selected</span></div><ul class="acp-modal-list">'];
+  function buildDeleteConfirmButtonText(count) {
+    var noun = count === 1 ? t("deleteFolderSingular", "folder") : t("deleteFolderPlural", "folders");
+    return t("deleteConfirmButton", "Delete") + " " + count + " " + noun;
+  }
+
+  function buildDeletePreviewHtml(rows, options) {
+    var settings = options || {};
+    var reviewCount = typeof settings.reviewCount === "number" ? settings.reviewCount : $.grep(rows, function(row) {
+      return row.risk === "review";
+    }).length;
+    var safeCount = Math.max(0, rows.length - reviewCount);
+    var html = [
+      '<div class="acp-modal-summary">',
+      '<div class="acp-modal-flag">' + escapeHtml(t("deleteWarningLabel", "WARNING")) + "</div>",
+      '<div class="acp-modal-copy">',
+      '<div class="acp-modal-lead">' + escapeHtml(t("deleteConfirmMessage", "Selected folders will be removed immediately.")) + "</div>",
+      '<div class="acp-modal-subcopy">' + escapeHtml(t("deleteIrreversibleMessage", "This action cannot be undone by this plugin.")) + "</div>",
+      "</div>",
+      '<div class="acp-modal-stats">',
+      '<span class="acp-modal-stat is-selected">' + escapeHtml(String(rows.length)) + " selected</span>",
+      '<span class="acp-modal-stat is-safe">' + escapeHtml(t("deleteSafeLabel", "Safe")) + ": " + escapeHtml(String(safeCount)) + "</span>"
+    ];
     var preview = rows.slice(0, 6);
 
+    if (reviewCount > 0) {
+      html.push('<span class="acp-modal-stat is-review">' + escapeHtml(t("deleteReviewCountLabel", "Review")) + ": " + escapeHtml(String(reviewCount)) + "</span>");
+    }
+
+    html.push("</div>");
+
+    if (reviewCount > 0) {
+      html.push(
+        '<div class="acp-modal-warning-box">' +
+          '<strong>' + escapeHtml(t("deleteReviewLabel", "Review required")) + ".</strong> " +
+          escapeHtml(t("deleteTypedMessage", "One or more selected folders sit outside the configured appdata share.")) +
+        "</div>"
+      );
+    }
+
+    if (settings.showTypeHint) {
+      html.push('<div class="acp-modal-hint">' + escapeHtml(t("deleteTypedHint", "Type DELETE to continue with this higher-risk cleanup.")) + "</div>");
+    }
+
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + escapeHtml(t("deleteListTitle", "Folders to delete")) + "</div>");
+    html.push('<ul class="acp-modal-list">');
+
     $.each(preview, function(_, row) {
-      html.push("<li>" + escapeHtml(row.displayPath || row.path || "") + "</li>");
+      html.push('<li><code class="acp-modal-path">' + escapeHtml(row.displayPath || row.path || "") + "</code></li>");
     });
 
     if (rows.length > preview.length) {
-      html.push("<li>+" + escapeHtml(String(rows.length - preview.length)) + " more</li>");
+      html.push('<li class="acp-modal-list-more">+' + escapeHtml(String(rows.length - preview.length)) + " more</li>");
     }
 
-    html.push("</ul></div>");
+    html.push("</ul></div></div>");
     return html.join("");
   }
 
@@ -789,6 +842,21 @@
 
     html.push("</div>");
     return html.join("");
+  }
+
+  function applyDeleteModalClass(className) {
+    window.setTimeout(function() {
+      var $modal = $(".sweet-alert");
+
+      if (!$modal.length) {
+        return;
+      }
+
+      $modal.removeClass("acp-delete-modal acp-delete-modal-review");
+      if (className) {
+        $modal.addClass(className);
+      }
+    }, 0);
   }
 
   function extractErrorMessage(xhr, fallback) {
