@@ -34,7 +34,6 @@
     els.$rescan = $("#acp-rescan");
     els.$selectVisible = $("#acp-select-visible");
     els.$clearSelection = $("#acp-clear-selection");
-    els.$doneTop = $("#acp-done-top");
     els.$doneBottom = $("#acp-done-bottom");
     els.$deleteSelected = $("#acp-delete-selected");
     els.$resultsMeta = $("#acp-results-meta");
@@ -88,9 +87,21 @@
       updateActionBar();
     });
 
-    els.$doneTop.on("click", closePage);
     els.$doneBottom.on("click", closePage);
     els.$deleteSelected.on("click", startDeleteFlow);
+
+    els.$results.on("click", ".acp-row", function(event) {
+      if ($(event.target).closest(".acp-row-checkbox, .acp-button, .acp-filter, a, button, input, select, textarea").length) {
+        return;
+      }
+
+      var $checkbox = $(this).find(".acp-row-checkbox:not(:disabled)").first();
+      if (!$checkbox.length) {
+        return;
+      }
+
+      $checkbox.prop("checked", !$checkbox.prop("checked")).trigger("change");
+    });
 
     els.$results.on("change", ".acp-row-checkbox", function() {
       var rowId = $(this).data("row-id");
@@ -284,34 +295,41 @@
       var riskClass = "acp-badge-risk-" + escapeHtml(row.risk || "safe");
       var rowClass = "acp-row";
       var sourceText = row.sourceCount > 0 ? row.sourceSummary : row.name;
+      var metaItems = [];
 
       if (isSelected) {
         rowClass += " is-selected";
       }
       if (!row.canDelete) {
         rowClass += " is-disabled";
+      } else {
+        rowClass += " is-clickable";
+      }
+
+      metaItems.push('<span class="acp-row-meta-item"><strong>Template</strong> ' + escapeHtml(sourceText) + "</span>");
+      metaItems.push('<span class="acp-row-meta-item">' + escapeHtml(row.reason || "") + "</span>");
+      if (row.risk !== "safe") {
+        metaItems.push('<span class="acp-row-meta-item">' + escapeHtml(row.riskReason || "") + "</span>");
       }
 
       html.push(
-        '<article class="' + rowClass + '">' +
+        '<article class="' + rowClass + '" data-row-id="' + escapeHtml(row.id) + '">' +
           '<div class="acp-row-check">' +
             '<input type="checkbox" class="acp-row-checkbox" data-row-id="' + escapeHtml(row.id) + '"' + (isSelected ? " checked" : "") + (row.canDelete ? "" : " disabled") + ">" +
           "</div>" +
-          '<div class="acp-row-body">' +
-            '<div class="acp-row-header">' +
-              '<div class="acp-row-title-group">' +
-                '<h3 class="acp-row-title">' + escapeHtml(row.name || row.displayPath || "") + "</h3>" +
-                '<div class="acp-row-badges">' +
-                  '<span class="acp-badge acp-badge-status">' + escapeHtml(row.statusLabel || "Orphaned") + "</span>" +
-                  '<span class="acp-badge ' + riskClass + '">' + escapeHtml(row.riskLabel || "Safe") + "</span>" +
+          '<div class="acp-row-main">' +
+            '<div class="acp-row-primary">' +
+              '<div class="acp-row-title-wrap">' +
+                '<div class="acp-row-title-line">' +
+                  '<h3 class="acp-row-title">' + escapeHtml(row.name || row.displayPath || "") + "</h3>" +
+                  '<div class="acp-row-badges">' +
+                    '<span class="acp-badge acp-badge-status">' + escapeHtml(row.statusLabel || "Orphaned") + "</span>" +
+                    '<span class="acp-badge ' + riskClass + '">' + escapeHtml(row.riskLabel || "Safe") + "</span>" +
+                  "</div>" +
                 "</div>" +
+                '<div class="acp-row-meta">' + metaItems.join('<span class="acp-row-meta-separator">•</span>') + "</div>" +
               "</div>" +
               '<code class="acp-row-path">' + escapeHtml(row.displayPath || row.path || "") + "</code>" +
-            "</div>" +
-            '<div class="acp-row-details">' +
-              '<div class="acp-row-detail"><strong>Templates:</strong> ' + escapeHtml(sourceText) + "</div>" +
-              '<div class="acp-row-detail"><strong>Flagged because:</strong> ' + escapeHtml(row.reason || "") + "</div>" +
-              '<div class="acp-row-detail"><strong>Delete rule:</strong> ' + escapeHtml(row.riskReason || "") + "</div>" +
             "</div>" +
           "</div>" +
         "</article>"

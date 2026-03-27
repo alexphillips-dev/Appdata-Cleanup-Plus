@@ -43,8 +43,8 @@ $config = array(
     "deleteFailedTitle" => _("Delete failed"),
     "selectedSingular" => _("folder selected"),
     "selectedPlural" => _("folders selected"),
-    "selectionHintIdle" => _("Choose the folders you want removed. Locked paths stay visible but cannot be selected."),
-    "selectionHintReview" => _("Review paths outside the configured appdata share carefully. They require typed confirmation."),
+    "selectionHintIdle" => _("Click rows to select. Locked paths stay visible but cannot be selected."),
+    "selectionHintReview" => _("Review rows need typed confirmation before delete."),
     "visibleSummary" => _("visible"),
     "detectedSummary" => _("detected"),
     "cardTotal" => _("Detected"),
@@ -62,10 +62,7 @@ $config = array(
     <div class="acp-hero-copy">
       <p class="acp-eyebrow"><?php echo _("Cleanup Dashboard"); ?></p>
       <h2 class="acp-title"><?php echo _("Review orphaned appdata before delete"); ?></h2>
-      <p class="acp-subtitle"><?php echo _("Folders shown here come from saved Docker templates that no longer match active container mappings."); ?></p>
-    </div>
-    <div class="acp-hero-actions">
-      <button type="button" class="acp-button acp-button-secondary" id="acp-done-top"><?php echo _("Done"); ?></button>
+      <p class="acp-subtitle"><?php echo _("Candidates come from saved Docker templates that no longer match active container mappings."); ?></p>
     </div>
   </section>
 
@@ -111,7 +108,7 @@ $config = array(
   <section class="acp-bottom-bar" id="acp-bottom-bar">
     <div class="acp-bottom-copy">
       <strong id="acp-selection-summary">0 <?php echo _("folders selected"); ?></strong>
-      <span id="acp-selection-detail"><?php echo _("Choose the folders you want removed. Locked paths stay visible but cannot be selected."); ?></span>
+      <span id="acp-selection-detail"><?php echo _("Click rows to select. Locked paths stay visible but cannot be selected."); ?></span>
     </div>
     <div class="acp-bottom-actions">
       <button type="button" class="acp-button acp-button-secondary" id="acp-done-bottom"><?php echo _("Done"); ?></button>
