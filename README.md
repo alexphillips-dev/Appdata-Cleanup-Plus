@@ -1,1 +1,1 @@
-# -Appdata-Cleanup-Plus
+# Appdata-Cleanup-Plus
