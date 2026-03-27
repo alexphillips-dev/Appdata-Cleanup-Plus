@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.13">
+<!ENTITY version "2026.03.27.14">
 <!ENTITY md5 "f6ff255c32c6e9893b7d16ed016899f7">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
@@ -10,9 +10,12 @@
 <!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" min="6.9.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
+<PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.14
+- Compatibility: Raise the supported Unraid minimum version to 7.0.0+ in both the plugin manifest and CA metadata
+
 ###2026.03.27.13
 - Fix: Export the active Unraid host theme from the PHP page shell and stamp explicit host-theme attributes like FolderView Plus so White mode no longer falls back to dark tokens
 - UX: Keep summary values centered in the stat tiles while theme classification now uses host-theme attributes first and luminance fallback second
