@@ -60,6 +60,40 @@ require_commands() {
     fi
 }
 
+plugin_summary_text() {
+    printf '%s' "Appdata Cleanup Plus finds orphaned appdata folders from removed Docker containers so you can review and delete them."
+}
+
+plugin_description_for_branch() {
+    local target_branch="${1:-}"
+    local description=""
+    description="$(plugin_summary_text)"
+    if [ "$target_branch" = "dev" ]; then
+        description="${description} Dev build: testing channel. Expect preview changes before main."
+    fi
+    printf '%s' "$description"
+}
+
+apply_branch_channel_messaging() {
+    local package_root="${1:-}"
+    local target_branch="${2:-}"
+    local readme_file="${package_root}/usr/local/emhttp/plugins/appdata.cleanup.plus/README.md"
+    local description=""
+    local summary=""
+    if [ -z "$package_root" ] || [ -z "$target_branch" ]; then
+        echo "ERROR: apply_branch_channel_messaging requires a package root and branch." >&2
+        exit 1
+    fi
+    summary="$(plugin_summary_text)"
+    if [ -f "$readme_file" ]; then
+        if [ "$target_branch" = "dev" ]; then
+            printf '%s\n\n%s\n' "$summary" "Dev build: testing channel. Expect preview changes before main." > "$readme_file"
+        else
+            printf '%s\n' "$summary" > "$readme_file"
+        fi
+    fi
+}
+
 ensure_repo_layout() {
     if [ ! -f "$plgfile" ]; then
         echo "ERROR: Missing plugin manifest: $plgfile" >&2
@@ -153,15 +187,18 @@ sync_ca_template_metadata() {
     local target_file="${1:-}"
     local target_date="${2:-}"
     local target_branch="${3:-}"
+    local target_description=""
     if [ -z "$target_file" ] || [ -z "$target_date" ] || [ -z "$target_branch" ]; then
         echo "ERROR: sync_ca_template_metadata requires a file, date, and branch." >&2
         exit 1
     fi
+    target_description="$(plugin_description_for_branch "$target_branch")"
     sed -i "s|<Date>.*</Date>|<Date>${target_date}</Date>|" "$target_file"
     sed -i "s|<PluginURL>.*</PluginURL>|<PluginURL>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/${target_branch}/plugins/appdata.cleanup.plus.plg</PluginURL>|" "$target_file"
     sed -i "s|<Icon>.*</Icon>|<Icon>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/${target_branch}/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png</Icon>|" "$target_file"
     sed -i "s|<Beta>.*</Beta>|<Beta>False</Beta>|" "$target_file"
     sed -i "s|<Name>.*</Name>|<Name>Appdata Cleanup Plus</Name>|" "$target_file"
+    perl -0pi -e 's{<Description>\s*.*?\s*</Description>}{<Description>\n'"$target_description"'\n</Description>}s' "$target_file"
 }
 
 validate_manifest_branch_matrix() {
@@ -224,7 +261,7 @@ done
 
 trap cleanup_tmpdir EXIT
 ensure_repo_layout
-require_commands tar sed date awk grep sort head tail mktemp md5sum
+require_commands tar sed date awk grep sort head tail mktemp md5sum perl cp mkdir rm
 
 if [ -n "$branch_override" ]; then
     branch="$branch_override"
@@ -272,6 +309,10 @@ fi
 
 mkdir -p "$archive_dir"
 tmpdir="$(mktemp -d)"
+package_root="${tmpdir}/package"
+mkdir -p "$package_root"
+cp -R "${source_dir}/." "$package_root/"
+apply_branch_channel_messaging "$package_root" "$branch"
 
 tar --sort=name \
     --mtime='UTC 1970-01-01' \
@@ -280,7 +321,7 @@ tar --sort=name \
     --numeric-owner \
     --exclude='./pkg_build.sh' \
     -cJf "$filename" \
-    -C "$source_dir" .
+    -C "$package_root" .
 
 md5="$(md5sum "$filename" | awk '{print $1}')"
 
