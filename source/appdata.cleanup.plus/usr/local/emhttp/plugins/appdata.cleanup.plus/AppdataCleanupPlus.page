@@ -5,6 +5,18 @@ Icon="appdata.cleanup.plus.png"
 <?php
 $cssVersion = @filemtime("/usr/local/emhttp/plugins/appdata.cleanup.plus/styles/appdata.cleanup.plus.css");
 $jsVersion = @filemtime("/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.js");
+$hostThemeName = strtolower(trim((string)($display['theme'] ?? "")));
+$hostThemeClass = "";
+
+if ( $hostThemeName === "grey" ) {
+  $hostThemeName = "gray";
+}
+
+if ( strpos($hostThemeName, "white") !== false || strpos($hostThemeName, "light") !== false ) {
+  $hostThemeClass = "light";
+} elseif ( strpos($hostThemeName, "black") !== false ) {
+  $hostThemeClass = "dark";
+}
 
 if ( ! $cssVersion ) {
   $cssVersion = time();
@@ -55,9 +67,30 @@ $config = array(
   )
 );
 ?>
+<script>
+window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+(function applyAppdataCleanupPlusHostTheme(rawThemeName) {
+  const safeThemeName = String(rawThemeName || '').trim().toLowerCase();
+  if (!safeThemeName) {
+    return;
+  }
+  const applyAttrs = () => {
+    try {
+      document.documentElement?.setAttribute('data-acp-host-theme', safeThemeName);
+      document.body?.setAttribute('data-acp-host-theme', safeThemeName);
+    } catch (_error) {
+      // Best effort only.
+    }
+  };
+  applyAttrs();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyAttrs, { once: true });
+  }
+})(window.AppdataCleanupPlusHostThemeName);
+</script>
 <link rel="stylesheet" href="/plugins/appdata.cleanup.plus/styles/appdata.cleanup.plus.css?v=<?php echo $cssVersion; ?>">
 
-<div class="acp-shell" id="acp-app">
+<div class="acp-shell" id="acp-app" data-acp-host-theme="<?php echo htmlspecialchars($hostThemeName, ENT_QUOTES); ?>"<?php if ( $hostThemeClass ) { ?> data-acp-theme-class="<?php echo htmlspecialchars($hostThemeClass, ENT_QUOTES); ?>"<?php } ?>>
   <section class="acp-hero">
     <div class="acp-hero-copy">
       <p class="acp-eyebrow"><?php echo _("Cleanup Dashboard"); ?></p>
