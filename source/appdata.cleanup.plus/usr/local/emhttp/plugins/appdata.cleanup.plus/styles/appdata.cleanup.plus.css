@@ -5,16 +5,162 @@
   --acp-border-strong: rgba(241, 90, 36, 0.28);
   --acp-muted: #b9c1cc;
   --acp-text: #f4f6f8;
+  --acp-heading: #ffffff;
   --acp-accent: #f15a24;
   --acp-accent-soft: rgba(241, 90, 36, 0.12);
-  --acp-safe: #58c27d;
-  --acp-review: #f2b84b;
-  --acp-blocked: #95a2b6;
+  --acp-accent-text: #ffd8c9;
+  --acp-safe-soft: rgba(88, 194, 125, 0.14);
+  --acp-safe-text: #b8ffcd;
+  --acp-review-soft: rgba(242, 184, 75, 0.14);
+  --acp-review-text: #ffe3a2;
+  --acp-blocked-soft: rgba(149, 162, 182, 0.16);
+  --acp-blocked-text: #d9e0ea;
   --acp-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  --acp-input-bg: rgba(13, 15, 20, 0.92);
+  --acp-input-border: rgba(255, 255, 255, 0.08);
+  --acp-input-text: #f4f6f8;
+  --acp-input-focus: rgba(241, 90, 36, 0.54);
+  --acp-button-bg: rgba(255, 255, 255, 0.03);
+  --acp-button-border: rgba(255, 255, 255, 0.12);
+  --acp-button-text: #f4f6f8;
+  --acp-button-hover-bg: rgba(241, 90, 36, 0.12);
+  --acp-button-hover-border: rgba(241, 90, 36, 0.58);
+  --acp-button-hover-text: #ffd2bf;
+  --acp-button-primary-bg: rgba(241, 90, 36, 0.16);
+  --acp-button-primary-border: rgba(241, 90, 36, 0.72);
+  --acp-button-primary-text: #ffd2bf;
+  --acp-filter-bg: rgba(255, 255, 255, 0.03);
+  --acp-filter-border: rgba(255, 255, 255, 0.08);
+  --acp-filter-text: #b9c1cc;
+  --acp-filter-hover-bg: rgba(241, 90, 36, 0.08);
+  --acp-filter-hover-border: rgba(241, 90, 36, 0.32);
+  --acp-filter-hover-text: #ffd2bf;
+  --acp-filter-active-bg: rgba(241, 90, 36, 0.12);
+  --acp-filter-active-border: rgba(241, 90, 36, 0.44);
+  --acp-filter-active-text: #ffd2bf;
+  --acp-path-bg: rgba(0, 0, 0, 0.24);
+  --acp-path-border: rgba(255, 255, 255, 0.05);
+  --acp-path-text: #ffd2bf;
+  --acp-row-selected-bg: linear-gradient(90deg, rgba(241, 90, 36, 0.08), transparent 22%), var(--acp-panel);
+  --acp-icon-bg: rgba(241, 90, 36, 0.1);
+  --acp-separator: rgba(255, 255, 255, 0.22);
   color: var(--acp-text);
   display: grid;
   gap: 8px;
   padding: 4px 0 72px;
+}
+
+body.black .acp-shell {
+  --acp-panel: linear-gradient(180deg, rgba(36, 40, 47, 0.98) 0%, rgba(23, 26, 31, 0.98) 100%);
+  --acp-panel-soft: linear-gradient(180deg, rgba(32, 35, 41, 0.94) 0%, rgba(20, 23, 28, 0.96) 100%);
+}
+
+body.gray .acp-shell {
+  --acp-panel: linear-gradient(180deg, rgba(46, 49, 54, 0.98) 0%, rgba(31, 34, 38, 0.98) 100%);
+  --acp-panel-soft: linear-gradient(180deg, rgba(53, 57, 63, 0.94) 0%, rgba(37, 40, 45, 0.96) 100%);
+  --acp-border: rgba(255, 255, 255, 0.1);
+  --acp-border-strong: rgba(255, 154, 74, 0.32);
+  --acp-accent: #ff9a4a;
+  --acp-accent-soft: rgba(255, 154, 74, 0.14);
+  --acp-accent-text: #ffe3cf;
+  --acp-input-focus: rgba(255, 154, 74, 0.48);
+  --acp-button-hover-bg: rgba(255, 154, 74, 0.12);
+  --acp-button-hover-border: rgba(255, 154, 74, 0.52);
+  --acp-button-hover-text: #ffe3cf;
+  --acp-button-primary-bg: rgba(255, 154, 74, 0.18);
+  --acp-button-primary-border: rgba(255, 154, 74, 0.62);
+  --acp-button-primary-text: #ffe3cf;
+  --acp-filter-hover-bg: rgba(255, 154, 74, 0.08);
+  --acp-filter-hover-border: rgba(255, 154, 74, 0.3);
+  --acp-filter-hover-text: #ffe3cf;
+  --acp-filter-active-bg: rgba(255, 154, 74, 0.14);
+  --acp-filter-active-border: rgba(255, 154, 74, 0.42);
+  --acp-filter-active-text: #ffe3cf;
+  --acp-path-text: #ffe3cf;
+  --acp-row-selected-bg: linear-gradient(90deg, rgba(255, 154, 74, 0.09), transparent 22%), var(--acp-panel);
+  --acp-icon-bg: rgba(255, 154, 74, 0.12);
+}
+
+body.azure .acp-shell {
+  --acp-panel: linear-gradient(180deg, rgba(31, 48, 69, 0.98) 0%, rgba(21, 34, 51, 0.98) 100%);
+  --acp-panel-soft: linear-gradient(180deg, rgba(39, 58, 83, 0.95) 0%, rgba(24, 39, 58, 0.96) 100%);
+  --acp-border: rgba(129, 179, 219, 0.16);
+  --acp-border-strong: rgba(0, 120, 212, 0.34);
+  --acp-muted: #c4d4e5;
+  --acp-text: #f5fbff;
+  --acp-heading: #ffffff;
+  --acp-accent: #0078d4;
+  --acp-accent-soft: rgba(0, 120, 212, 0.16);
+  --acp-accent-text: #d7ecff;
+  --acp-input-bg: rgba(11, 23, 37, 0.9);
+  --acp-input-border: rgba(129, 179, 219, 0.14);
+  --acp-input-focus: rgba(0, 120, 212, 0.5);
+  --acp-button-hover-bg: rgba(0, 120, 212, 0.12);
+  --acp-button-hover-border: rgba(0, 120, 212, 0.58);
+  --acp-button-hover-text: #d7ecff;
+  --acp-button-primary-bg: rgba(0, 120, 212, 0.18);
+  --acp-button-primary-border: rgba(0, 120, 212, 0.62);
+  --acp-button-primary-text: #d7ecff;
+  --acp-filter-hover-bg: rgba(0, 120, 212, 0.08);
+  --acp-filter-hover-border: rgba(0, 120, 212, 0.32);
+  --acp-filter-hover-text: #d7ecff;
+  --acp-filter-active-bg: rgba(0, 120, 212, 0.14);
+  --acp-filter-active-border: rgba(0, 120, 212, 0.44);
+  --acp-filter-active-text: #d7ecff;
+  --acp-path-bg: rgba(5, 22, 38, 0.38);
+  --acp-path-border: rgba(129, 179, 219, 0.12);
+  --acp-path-text: #bfe3ff;
+  --acp-row-selected-bg: linear-gradient(90deg, rgba(0, 120, 212, 0.1), transparent 22%), var(--acp-panel);
+  --acp-icon-bg: rgba(0, 120, 212, 0.12);
+  --acp-separator: rgba(191, 227, 255, 0.22);
+}
+
+body.white .acp-shell {
+  --acp-panel: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 247, 251, 0.98) 100%);
+  --acp-panel-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(238, 243, 248, 0.98) 100%);
+  --acp-border: rgba(15, 23, 42, 0.09);
+  --acp-border-strong: rgba(226, 91, 35, 0.28);
+  --acp-muted: #5a6678;
+  --acp-text: #18212d;
+  --acp-heading: #111827;
+  --acp-accent: #e25b23;
+  --acp-accent-soft: rgba(226, 91, 35, 0.1);
+  --acp-accent-text: #8b3512;
+  --acp-safe-soft: rgba(34, 161, 96, 0.12);
+  --acp-safe-text: #1f7a49;
+  --acp-review-soft: rgba(233, 181, 43, 0.16);
+  --acp-review-text: #916200;
+  --acp-blocked-soft: rgba(111, 128, 150, 0.12);
+  --acp-blocked-text: #607088;
+  --acp-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+  --acp-input-bg: rgba(247, 250, 252, 0.98);
+  --acp-input-border: rgba(15, 23, 42, 0.1);
+  --acp-input-text: #18212d;
+  --acp-input-focus: rgba(226, 91, 35, 0.44);
+  --acp-button-bg: rgba(255, 255, 255, 0.9);
+  --acp-button-border: rgba(15, 23, 42, 0.12);
+  --acp-button-text: #18212d;
+  --acp-button-hover-bg: rgba(226, 91, 35, 0.08);
+  --acp-button-hover-border: rgba(226, 91, 35, 0.38);
+  --acp-button-hover-text: #8b3512;
+  --acp-button-primary-bg: rgba(226, 91, 35, 0.12);
+  --acp-button-primary-border: rgba(226, 91, 35, 0.44);
+  --acp-button-primary-text: #8b3512;
+  --acp-filter-bg: rgba(255, 255, 255, 0.9);
+  --acp-filter-border: rgba(15, 23, 42, 0.1);
+  --acp-filter-text: #556274;
+  --acp-filter-hover-bg: rgba(226, 91, 35, 0.06);
+  --acp-filter-hover-border: rgba(226, 91, 35, 0.24);
+  --acp-filter-hover-text: #8b3512;
+  --acp-filter-active-bg: rgba(226, 91, 35, 0.1);
+  --acp-filter-active-border: rgba(226, 91, 35, 0.32);
+  --acp-filter-active-text: #8b3512;
+  --acp-path-bg: rgba(15, 23, 42, 0.05);
+  --acp-path-border: rgba(15, 23, 42, 0.08);
+  --acp-path-text: #8b3512;
+  --acp-row-selected-bg: linear-gradient(90deg, rgba(226, 91, 35, 0.08), transparent 22%), var(--acp-panel);
+  --acp-icon-bg: rgba(226, 91, 35, 0.08);
+  --acp-separator: rgba(15, 23, 42, 0.16);
 }
 
 .acp-hero,
@@ -31,8 +177,8 @@
 
 .acp-hero {
   background:
-    radial-gradient(circle at top right, rgba(241, 90, 36, 0.16), transparent 32%),
-    linear-gradient(135deg, rgba(241, 90, 36, 0.08), transparent 42%),
+    radial-gradient(circle at top right, var(--acp-accent-soft), transparent 32%),
+    linear-gradient(135deg, var(--acp-accent-soft), transparent 42%),
     var(--acp-panel);
   border-radius: 14px;
   display: grid;
@@ -41,7 +187,7 @@
 }
 
 .acp-eyebrow {
-  color: #ffd2bf;
+  color: var(--acp-accent-text);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -50,6 +196,7 @@
 }
 
 .acp-title {
+  color: var(--acp-heading);
   font-size: 19px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -83,7 +230,7 @@
 }
 
 .acp-summary-card::before {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--acp-border);
   border-radius: 999px;
   content: "";
   height: 6px;
@@ -98,15 +245,15 @@
 }
 
 .acp-summary-card.is-safe::before {
-  background: var(--acp-safe);
+  background: var(--acp-safe-text);
 }
 
 .acp-summary-card.is-review::before {
-  background: var(--acp-review);
+  background: var(--acp-review-text);
 }
 
 .acp-summary-card.is-blocked::before {
-  background: var(--acp-blocked);
+  background: var(--acp-blocked-text);
 }
 
 .acp-summary-label {
@@ -120,6 +267,7 @@
 }
 
 .acp-summary-value {
+  color: var(--acp-heading);
   display: block;
   font-size: 24px;
   font-weight: 700;
@@ -165,20 +313,24 @@
 .acp-input,
 .acp-select {
   appearance: none;
-  background: rgba(13, 15, 20, 0.92);
+  background: var(--acp-input-bg);
   background-image: none !important;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--acp-input-border);
   border-radius: 10px;
-  color: var(--acp-text);
+  color: var(--acp-input-text);
   font-size: 12px;
   min-height: 34px;
   outline: none;
   padding: 0 10px;
 }
 
+.acp-input::placeholder {
+  color: var(--acp-muted);
+}
+
 .acp-input:focus,
 .acp-select:focus {
-  border-color: rgba(241, 90, 36, 0.54);
+  border-color: var(--acp-input-focus);
   box-shadow: none;
 }
 
@@ -209,10 +361,10 @@
 }
 
 .acp-button {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--acp-button-bg);
+  border: 1px solid var(--acp-button-border);
   border-radius: 10px;
-  color: var(--acp-text);
+  color: var(--acp-button-text);
   cursor: pointer;
   font-size: 11px;
   font-weight: 700;
@@ -227,9 +379,9 @@
 
 .acp-button:hover:not(:disabled),
 .acp-button:focus-visible:not(:disabled) {
-  background: rgba(241, 90, 36, 0.12);
-  border-color: rgba(241, 90, 36, 0.58);
-  color: #ffd2bf;
+  background: var(--acp-button-hover-bg);
+  border-color: var(--acp-button-hover-border);
+  color: var(--acp-button-hover-text);
 }
 
 .acp-button:disabled {
@@ -238,19 +390,20 @@
 }
 
 .acp-button-primary {
-  background: rgba(241, 90, 36, 0.16);
-  border-color: rgba(241, 90, 36, 0.72);
-  color: #ffd2bf;
+  background: var(--acp-button-primary-bg);
+  border-color: var(--acp-button-primary-border);
+  color: var(--acp-button-primary-text);
 }
 
 .acp-button-primary:hover:not(:disabled),
 .acp-button-primary:focus-visible:not(:disabled) {
-  background: rgba(241, 90, 36, 0.24);
-  border-color: rgba(241, 90, 36, 0.88);
+  background: var(--acp-button-hover-bg);
+  border-color: var(--acp-button-hover-border);
+  color: var(--acp-button-hover-text);
 }
 
 .acp-button-secondary {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--acp-button-bg);
 }
 
 .acp-filter-group {
@@ -260,10 +413,10 @@
 }
 
 .acp-filter {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--acp-filter-bg);
+  border: 1px solid var(--acp-filter-border);
   border-radius: 999px;
-  color: var(--acp-muted);
+  color: var(--acp-filter-text);
   cursor: pointer;
   font-size: 10px;
   font-weight: 700;
@@ -276,15 +429,15 @@
 
 .acp-filter:hover:not(:disabled),
 .acp-filter:focus-visible:not(:disabled) {
-  background: rgba(241, 90, 36, 0.08);
-  border-color: rgba(241, 90, 36, 0.32);
-  color: #ffd2bf;
+  background: var(--acp-filter-hover-bg);
+  border-color: var(--acp-filter-hover-border);
+  color: var(--acp-filter-hover-text);
 }
 
 .acp-filter.is-active {
-  background: var(--acp-accent-soft);
-  border-color: rgba(241, 90, 36, 0.44);
-  color: #ffd2bf;
+  background: var(--acp-filter-active-bg);
+  border-color: var(--acp-filter-active-border);
+  color: var(--acp-filter-active-text);
 }
 
 .acp-results-meta {
@@ -308,14 +461,15 @@
 }
 
 .acp-notice.is-warning {
-  border-color: rgba(242, 184, 75, 0.34);
+  border-color: var(--acp-review-soft);
 }
 
 .acp-notice.is-info {
-  border-color: rgba(241, 90, 36, 0.24);
+  border-color: var(--acp-accent-soft);
 }
 
 .acp-notice-title {
+  color: var(--acp-heading);
   font-size: 12px;
   font-weight: 700;
 }
@@ -343,7 +497,7 @@
 
 .acp-state-icon {
   align-items: center;
-  background: rgba(241, 90, 36, 0.1);
+  background: var(--acp-icon-bg);
   border-radius: 50%;
   display: flex;
   height: 46px;
@@ -358,6 +512,7 @@
 }
 
 .acp-state-title {
+  color: var(--acp-heading);
   font-size: 18px;
   font-weight: 700;
   line-height: 1.15;
@@ -393,13 +548,11 @@
 }
 
 .acp-row:hover {
-  border-color: rgba(241, 90, 36, 0.22);
+  border-color: var(--acp-filter-hover-border);
 }
 
 .acp-row.is-selected {
-  background:
-    linear-gradient(90deg, rgba(241, 90, 36, 0.08), transparent 22%),
-    var(--acp-panel);
+  background: var(--acp-row-selected-bg);
   border-color: var(--acp-border-strong);
 }
 
@@ -452,6 +605,7 @@
 }
 
 .acp-row-title {
+  color: var(--acp-heading);
   font-size: 15px;
   font-weight: 700;
   line-height: 1.2;
@@ -477,23 +631,23 @@
 }
 
 .acp-badge-status {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--acp-filter-bg);
   color: var(--acp-text);
 }
 
 .acp-badge-risk-safe {
-  background: rgba(88, 194, 125, 0.14);
-  color: #b8ffcd;
+  background: var(--acp-safe-soft);
+  color: var(--acp-safe-text);
 }
 
 .acp-badge-risk-review {
-  background: rgba(242, 184, 75, 0.14);
-  color: #ffe3a2;
+  background: var(--acp-review-soft);
+  color: var(--acp-review-text);
 }
 
 .acp-badge-risk-blocked {
-  background: rgba(149, 162, 182, 0.16);
-  color: #d9e0ea;
+  background: var(--acp-blocked-soft);
+  color: var(--acp-blocked-text);
 }
 
 .acp-row-meta {
@@ -510,7 +664,7 @@
 }
 
 .acp-row-meta-item strong {
-  color: var(--acp-text);
+  color: var(--acp-heading);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -519,14 +673,14 @@
 }
 
 .acp-row-meta-separator {
-  color: rgba(255, 255, 255, 0.22);
+  color: var(--acp-separator);
 }
 
 .acp-row-path {
-  background: rgba(0, 0, 0, 0.24);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--acp-path-bg);
+  border: 1px solid var(--acp-path-border);
   border-radius: 10px;
-  color: #ffd2bf;
+  color: var(--acp-path-text);
   display: inline-block;
   font-family: Consolas, "Courier New", monospace;
   font-size: 11px;
@@ -542,8 +696,8 @@
 .acp-bottom-bar {
   align-items: center;
   background:
-    linear-gradient(135deg, rgba(241, 90, 36, 0.08), transparent 34%),
-    rgba(18, 20, 25, 0.98);
+    linear-gradient(135deg, var(--acp-accent-soft), transparent 34%),
+    var(--acp-panel-soft);
   border-radius: 14px;
   bottom: 8px;
   display: flex;
@@ -560,6 +714,7 @@
 }
 
 .acp-bottom-copy strong {
+  color: var(--acp-heading);
   font-size: 14px;
   line-height: 1.2;
 }
@@ -584,15 +739,16 @@
 }
 
 .acp-modal-stat {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--acp-filter-bg);
   border-radius: 999px;
+  color: var(--acp-text);
   font-size: 11px;
   font-weight: 700;
   padding: 6px 9px;
 }
 
 .acp-modal-list {
-  color: #d7dce3;
+  color: var(--acp-text);
   margin: 0;
   max-height: 220px;
   overflow: auto;

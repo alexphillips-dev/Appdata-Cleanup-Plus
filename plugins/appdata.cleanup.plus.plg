@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.08">
-<!ENTITY md5 "dde83894c8ad12a90c83c45a2682a90c">
+<!ENTITY version "2026.03.27.09">
+<!ENTITY md5 "32336cd0410126cddb400cc669a578fd">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="6.9.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.09
+- UX: Add a theme token system with explicit Black, Azure, Gray, and White Dynamix theme palettes
+- UX: Keep the compact dashboard layout while adapting contrast, panels, buttons, badges, and path chips to the active Unraid theme
+
 ###2026.03.27.08
 - UX: Remove the top-right Done button and compress the dashboard spacing across the header, stats, toolbar, and sticky action bar
 - UX: Replace tall orphan cards with a compact row list so folders can be scanned and selected much faster
