@@ -2,17 +2,20 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.02">
-<!ENTITY md5 "8ddd84dbe69da44354778e0371d18b06">
+<!ENTITY version "2026.03.27.03">
+<!ENTITY md5 "e6073b515b39e12260a860d5cc3f1bd4">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" min="6.9.0" launch="&launch;" pluginURL="&pluginURL;" icon="paint-brush">
+<PLUGIN name="&name;" author="&author;" version="&version;" min="6.9.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.03
+- Maintenance: Refresh package metadata and build artifacts
+
 ###AS ALWAYS VERIFY THE FOLDERS THE PLUGIN OFFERS UP TO DELETE###
 
 ###2026.03.27.02
