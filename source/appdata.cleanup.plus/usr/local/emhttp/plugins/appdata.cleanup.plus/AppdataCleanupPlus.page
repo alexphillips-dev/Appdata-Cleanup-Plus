@@ -66,39 +66,50 @@ $config = array(
     </div>
   </section>
 
-  <section class="acp-summary-grid" id="acp-summary-cards" aria-live="polite"></section>
+  <section class="acp-top-row">
+    <section class="acp-summary-grid" id="acp-summary-cards" aria-live="polite"></section>
 
-  <section class="acp-toolbar">
-    <div class="acp-toolbar-main">
-      <label class="acp-field">
-        <span class="acp-field-label"><?php echo _("Search"); ?></span>
-        <input type="search" id="acp-search" class="acp-input" placeholder="<?php echo _("Filter by app name or path"); ?>" autocomplete="off">
-      </label>
+    <div class="acp-toolbar-stack">
+      <section class="acp-toolbar acp-toolbar-panel">
+        <div class="acp-panel-title"><?php echo _("Search"); ?></div>
+        <div class="acp-toolbar-inline">
+          <label class="acp-field acp-field-grow">
+            <span class="acp-field-label"><?php echo _("Name Or Path"); ?></span>
+            <input type="search" id="acp-search" class="acp-input" placeholder="<?php echo _("Filter by app name or path"); ?>" autocomplete="off">
+          </label>
 
-      <label class="acp-field acp-sort-field">
-        <span class="acp-field-label"><?php echo _("Sort"); ?></span>
-        <select id="acp-sort" class="acp-select">
-          <option value="risk"><?php echo _("Risk first"); ?></option>
-          <option value="path"><?php echo _("Path"); ?></option>
-          <option value="name"><?php echo _("Name"); ?></option>
-        </select>
-      </label>
+          <label class="acp-field acp-compact-field">
+            <span class="acp-field-label"><?php echo _("Risk"); ?></span>
+            <select id="acp-risk-filter" class="acp-select">
+              <option value="all"><?php echo _("All"); ?></option>
+              <option value="safe"><?php echo _("Safe"); ?></option>
+              <option value="review"><?php echo _("Review"); ?></option>
+              <option value="blocked"><?php echo _("Locked"); ?></option>
+            </select>
+          </label>
+        </div>
+      </section>
 
-      <div class="acp-toolbar-actions">
-        <button type="button" class="acp-button acp-button-secondary" id="acp-rescan"><?php echo _("Rescan"); ?></button>
-        <button type="button" class="acp-button acp-button-secondary" id="acp-select-visible"><?php echo _("Select visible"); ?></button>
-        <button type="button" class="acp-button acp-button-secondary" id="acp-clear-selection"><?php echo _("Clear"); ?></button>
-      </div>
-    </div>
+      <section class="acp-toolbar acp-toolbar-panel">
+        <div class="acp-panel-title"><?php echo _("Sort"); ?></div>
+        <div class="acp-toolbar-inline acp-toolbar-inline-sort">
+          <label class="acp-field acp-compact-field">
+            <span class="acp-field-label"><?php echo _("Order"); ?></span>
+            <select id="acp-sort" class="acp-select">
+              <option value="risk"><?php echo _("Risk first"); ?></option>
+              <option value="path"><?php echo _("Path"); ?></option>
+              <option value="name"><?php echo _("Name"); ?></option>
+            </select>
+          </label>
 
-    <div class="acp-toolbar-secondary">
-      <div class="acp-filter-group" role="tablist" aria-label="<?php echo _("Risk filter"); ?>">
-        <button type="button" class="acp-filter is-active" data-risk="all"><?php echo _("All"); ?></button>
-        <button type="button" class="acp-filter" data-risk="safe"><?php echo _("Safe"); ?></button>
-        <button type="button" class="acp-filter" data-risk="review"><?php echo _("Review"); ?></button>
-        <button type="button" class="acp-filter" data-risk="blocked"><?php echo _("Locked"); ?></button>
-      </div>
-      <div class="acp-results-meta" id="acp-results-meta" aria-live="polite"></div>
+          <div class="acp-toolbar-actions">
+            <button type="button" class="acp-button acp-button-secondary" id="acp-rescan"><?php echo _("Rescan"); ?></button>
+            <button type="button" class="acp-button acp-button-secondary" id="acp-select-visible"><?php echo _("Select visible"); ?></button>
+            <button type="button" class="acp-button acp-button-secondary" id="acp-clear-selection"><?php echo _("Clear"); ?></button>
+          </div>
+        </div>
+        <div class="acp-results-meta" id="acp-results-meta" aria-live="polite"></div>
+      </section>
     </div>
   </section>
 

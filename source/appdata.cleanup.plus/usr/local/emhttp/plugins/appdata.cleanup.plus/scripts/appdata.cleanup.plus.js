@@ -29,8 +29,8 @@
     els.$app = $("#acp-app");
     els.$summaryCards = $("#acp-summary-cards");
     els.$search = $("#acp-search");
+    els.$riskFilter = $("#acp-risk-filter");
     els.$sort = $("#acp-sort");
-    els.$filterButtons = $(".acp-filter");
     els.$rescan = $("#acp-rescan");
     els.$selectVisible = $("#acp-select-visible");
     els.$clearSelection = $("#acp-clear-selection");
@@ -45,23 +45,18 @@
 
   function bindEvents() {
     els.$search.on("input", renderAll);
+
+    els.$riskFilter.on("change", function() {
+      state.riskFilter = els.$riskFilter.val();
+      renderResults();
+      renderResultsMeta();
+      updateActionBar();
+    });
+
     els.$sort.on("change", function() {
       state.sortMode = els.$sort.val();
       renderResults();
       renderResultsMeta();
-    });
-
-    els.$filterButtons.on("click", function() {
-      if (state.busy) {
-        return;
-      }
-
-      state.riskFilter = $(this).data("risk");
-      els.$filterButtons.removeClass("is-active");
-      $(this).addClass("is-active");
-      renderResults();
-      renderResultsMeta();
-      updateActionBar();
     });
 
     els.$rescan.on("click", function() {
@@ -91,7 +86,7 @@
     els.$deleteSelected.on("click", startDeleteFlow);
 
     els.$results.on("click", ".acp-row", function(event) {
-      if ($(event.target).closest(".acp-row-checkbox, .acp-button, .acp-filter, a, button, input, select, textarea").length) {
+      if ($(event.target).closest(".acp-row-checkbox, .acp-button, a, button, input, select, textarea").length) {
         return;
       }
 
@@ -152,8 +147,8 @@
     els.$app.toggleClass("is-busy", state.busy);
     els.$rescan.prop("disabled", state.busy);
     els.$search.prop("disabled", state.busy);
+    els.$riskFilter.prop("disabled", state.busy);
     els.$sort.prop("disabled", state.busy);
-    els.$filterButtons.prop("disabled", state.busy);
     updateActionBar();
   }
 
@@ -327,7 +322,7 @@
                     '<span class="acp-badge ' + riskClass + '">' + escapeHtml(row.riskLabel || "Safe") + "</span>" +
                   "</div>" +
                 "</div>" +
-                '<div class="acp-row-meta">' + metaItems.join('<span class="acp-row-meta-separator">•</span>') + "</div>" +
+                '<div class="acp-row-meta">' + metaItems.join('<span class="acp-row-meta-separator">|</span>') + "</div>" +
               "</div>" +
               '<code class="acp-row-path">' + escapeHtml(row.displayPath || row.path || "") + "</code>" +
             "</div>" +
@@ -438,10 +433,10 @@
       return row.risk === "review";
     }).length;
     var summaryText = selectedRows.length + " " + (selectedRows.length === 1 ? t("selectedSingular", "folder selected") : t("selectedPlural", "folders selected"));
-    var detailText = t("selectionHintIdle", "Choose the folders you want removed. Locked paths stay visible but cannot be selected.");
+    var detailText = t("selectionHintIdle", "Click rows to select. Locked paths stay visible but cannot be selected.");
 
     if (reviewSelected > 0) {
-      detailText = t("selectionHintReview", "Review paths outside the configured appdata share carefully. They require typed confirmation.");
+      detailText = t("selectionHintReview", "Review rows need typed confirmation before delete.");
     }
 
     els.$selectionSummary.text(summaryText);
@@ -460,8 +455,7 @@
   function clearFilters() {
     state.riskFilter = "all";
     els.$search.val("");
-    els.$filterButtons.removeClass("is-active");
-    els.$filterButtons.filter('[data-risk="all"]').addClass("is-active");
+    els.$riskFilter.val("all");
     renderResults();
     renderResultsMeta();
     updateActionBar();

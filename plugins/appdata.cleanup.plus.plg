@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.09">
-<!ENTITY md5 "32336cd0410126cddb400cc669a578fd">
+<!ENTITY version "2026.03.27.10">
+<!ENTITY md5 "f71502a4a6e8b60b8751341aab5a13e4">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="6.9.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.10
+- UX: Shrink the top stat tiles into a compact left-aligned cluster instead of full-width cards
+- UX: Split the old combined toolbar into separate Search and Sort panels positioned beside the stat tiles
+- UX: Replace the header risk buttons with a dropdown so the top control area stays compact
+
 ###2026.03.27.09
 - UX: Add a theme token system with explicit Black, Azure, Gray, and White Dynamix theme palettes
 - UX: Keep the compact dashboard layout while adapting contrast, panels, buttons, badges, and path chips to the active Unraid theme
