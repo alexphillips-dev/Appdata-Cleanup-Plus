@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version   "2026.03.27">
-<!ENTITY md5       "f75888a3840eeaec8a4ffa6f99d6f80d">
+<!ENTITY version "2026.03.27.02">
+<!ENTITY md5 "8ddd84dbe69da44354778e0371d18b06">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -14,6 +14,10 @@
 
 <CHANGES>
 ###AS ALWAYS VERIFY THE FOLDERS THE PLUGIN OFFERS UP TO DELETE###
+
+###2026.03.27.02
+- Docs: Add install, update, and release basics to the repository and bundled plugin README files
+- Maintenance: Add branch-aware CA metadata plus Unraid-friendly YYYY.MM.DD.UU package versioning for main and dev channels
 
 ###2026.03.27
 - Renamed the plugin to Appdata Cleanup Plus
