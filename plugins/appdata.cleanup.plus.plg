@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.06">
-<!ENTITY md5 "a0c035f8b2f3e8117a1035ed0c51ac96">
+<!ENTITY version "2026.03.27.07">
+<!ENTITY md5 "9045a7f9605cc3be6519080265b48713">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="6.9.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.07
+- UX: Tighten the dashboard spacing so cards, controls, and orphan rows take less vertical space
+- UX: Remove button hover motion and switch to a stable highlight so hover outlines do not jitter
+
 ###2026.03.27.06
 - UX: Replace the legacy settings page with a modern cleanup dashboard, summary cards, filters, and a sticky action bar
 - Safety: Move scan/delete responses to JSON, keep dangerous root-level paths locked, and require typed confirmation for outside-share deletes
