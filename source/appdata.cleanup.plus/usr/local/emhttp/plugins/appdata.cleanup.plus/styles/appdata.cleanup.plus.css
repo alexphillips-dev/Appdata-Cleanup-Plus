@@ -622,12 +622,12 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-row {
-  align-items: start;
+  align-items: center;
   background: var(--acp-panel);
   border-radius: 12px;
   display: grid;
-  gap: 10px;
-  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  grid-template-columns: 20px minmax(0, 1fr);
   padding: 10px 12px;
   transition: border-color 120ms ease, background-color 120ms ease;
 }
@@ -650,16 +650,20 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-row-check {
+  align-items: center;
   display: flex;
-  padding-top: 2px;
+  justify-content: center;
+  min-height: 100%;
+  padding: 0;
+  width: 20px;
 }
 
 .acp-row-checkbox {
   accent-color: var(--acp-accent);
   cursor: pointer;
-  height: 18px;
+  height: 14px;
   margin: 0;
-  width: 18px;
+  width: 14px;
 }
 
 .acp-row-checkbox:disabled {

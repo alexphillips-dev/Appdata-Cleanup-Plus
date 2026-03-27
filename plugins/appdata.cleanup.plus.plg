@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.14">
-<!ENTITY md5 "f6ff255c32c6e9893b7d16ed016899f7">
+<!ENTITY version "2026.03.27.15">
+<!ENTITY md5 "ecad54cb0db86e35679af5d7e6d3f757">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.15
+- Maintenance: Remove legacy source comments from the packaged helper files and old manifest comment blocks while keeping the release changelog structure intact
+- UX: Make the orphan-list checkboxes smaller and centered in the left column for faster scanning and cleaner alignment
+
 ###2026.03.27.14
 - Compatibility: Raise the supported Unraid minimum version to 7.0.0+ in both the plugin manifest and CA metadata
 
@@ -61,8 +65,6 @@
 
 ###2026.03.27.03
 - Maintenance: Refresh package metadata and build artifacts
-
-###AS ALWAYS VERIFY THE FOLDERS THE PLUGIN OFFERS UP TO DELETE###
 
 ###2026.03.27.02
 - Docs: Add install, update, and release basics to the repository and bundled plugin README files
@@ -129,18 +131,17 @@
 
 </CHANGES>
 
-<!-- The 'pre-install' script. -->
 <FILE Run="/usr/bin/php">
 <INLINE>
 <![CDATA[
 <?
   $version = parse_ini_file("/etc/unraid-version");
   
-  if ( version_compare($version['version'],"6.1.0", "<") )
+  if ( version_compare($version['version'],"7.0.0", "<") )
   {
     echo "********************************************************************\n";
     echo "\n";
-    echo "Community Applications Requires unRaid version 6.1 or greater to run\n";
+    echo "Appdata Cleanup Plus requires Unraid version 7.0.0 or greater to run\n";
     echo "\n";
     echo "********************************************************************\n";
     exit(1);
@@ -156,22 +157,15 @@
 
 <FILE Run="/bin/bash">
 <INLINE>
-# Remove old 'source' files
 rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&version;')
 </INLINE>
 </FILE>
 
-<!--
-The 'source' file.
--->
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
 <URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
-<!--
-The 'post-install' script
--->
 <FILE Run="/bin/bash">
 <INLINE>
 rm -rf /usr/local/emhttp/plugins/ca.cleanup.appdata/CA.page
@@ -188,9 +182,6 @@ echo ""
 </INLINE>
 </FILE>
 
-<!--
-The 'remove' script.
--->
 <FILE Run="/bin/bash" Method="remove">
 <INLINE>
 removepkg &name;-&version;-x86_64-1

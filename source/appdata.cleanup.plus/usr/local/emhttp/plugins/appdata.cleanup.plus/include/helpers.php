@@ -1,11 +1,5 @@
 <?php
 
-####################################################################################################
-#                                                                                                  #
-# Utility helpers for Appdata Cleanup Plus                                                         #
-#                                                                                                  #
-####################################################################################################
-
 if ( ! function_exists("my_parse_ini_file") ) {
   function my_parse_ini_file($file,$mode=false,$scanner_mode=INI_SCANNER_NORMAL) {
     return parse_ini_string(preg_replace('/^#.*\\n/m', "", @file_get_contents($file)),$mode,$scanner_mode);
@@ -105,14 +99,6 @@ function classifyAppdataCandidate($path) {
   return $classification;
 }
 
-##############################################################
-#                                                            #
-# Searches an array of docker mappings (host:container path) #
-# for a container mapping of /config and returns the host    #
-# path                                                       #
-#                                                            #
-##############################################################
-
 function findAppdata($volumes) {
   $path = false;
   $shareName = getAppdataShareName();
@@ -135,13 +121,6 @@ function findAppdata($volumes) {
 
   return $path;
 }
-
-#############################################################
-#                                                           #
-# Helper function to return an array of directory contents. #
-# Returns an empty array if the directory does not exist    #
-#                                                           #
-#############################################################
 
 function dirContents($path) {
   $dirContents = @scandir($path);

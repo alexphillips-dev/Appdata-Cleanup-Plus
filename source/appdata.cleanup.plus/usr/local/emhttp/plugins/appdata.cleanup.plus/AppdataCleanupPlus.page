@@ -78,9 +78,7 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
     try {
       document.documentElement?.setAttribute('data-acp-host-theme', safeThemeName);
       document.body?.setAttribute('data-acp-host-theme', safeThemeName);
-    } catch (_error) {
-      // Best effort only.
-    }
+    } catch (_error) {}
   };
   applyAttrs();
   if (document.readyState === 'loading') {
