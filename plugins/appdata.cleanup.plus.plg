@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.11">
-<!ENTITY md5 "0bcfac698c9cfdbe3226ea78db0b44be">
+<!ENTITY version "2026.03.27.12">
+<!ENTITY md5 "f667c64eb06a5e4047436313b5e94cb9">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="6.9.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.12
+- UX: Center the stat values within each summary tile while keeping the labels anchored at the top
+- UX: Detect the active Unraid theme at runtime and apply the matching White, Azure, Gray, or Black token palette reliably
+
 ###2026.03.27.11
 - UX: Lock the top stat tile values to a shared baseline so wrapped labels no longer shift the numbers
 - UX: Rebuild the sort panel layout so the order dropdown, actions, and result count align cleanly at the same card height as search

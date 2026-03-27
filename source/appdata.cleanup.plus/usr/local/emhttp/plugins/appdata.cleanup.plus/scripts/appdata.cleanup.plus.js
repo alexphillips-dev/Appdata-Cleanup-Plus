@@ -3,6 +3,8 @@
 
   var config = window.appdataCleanupPlusConfig || {};
   var strings = config.strings || {};
+  var themeNames = ["black", "gray", "azure", "white"];
+  var themeClassNames = "acp-theme-black acp-theme-gray acp-theme-azure acp-theme-white";
   var state = {
     rows: [],
     notices: [],
@@ -18,6 +20,8 @@
 
   function init() {
     cacheElements();
+    applyThemeClass();
+    watchThemeChanges();
     bindEvents();
     renderSummaryCards();
     renderLoadingState();
@@ -132,6 +136,109 @@
   function closePage() {
     if (typeof window.done === "function") {
       window.done();
+    }
+  }
+
+  function applyThemeClass() {
+    var theme = detectThemeName();
+
+    els.$app.removeClass(themeClassNames);
+
+    if (theme) {
+      els.$app.addClass("acp-theme-" + theme);
+    }
+  }
+
+  function detectThemeName() {
+    var theme = detectThemeFromNode(document.body) || detectThemeFromNode(document.documentElement);
+
+    if (!theme) {
+      theme = detectThemeFromClassNames();
+    }
+
+    return theme;
+  }
+
+  function detectThemeFromNode(node) {
+    var i;
+    var theme = "";
+    var attrName = "";
+    var attrValue = "";
+    var attrs = ["data-theme", "data-color-theme", "data-dynamix-theme"];
+
+    if (!node) {
+      return "";
+    }
+
+    if (node.classList) {
+      for (i = 0; i < themeNames.length; i += 1) {
+        theme = themeNames[i];
+        if (node.classList.contains(theme) || node.classList.contains("theme-" + theme) || node.classList.contains("theme_" + theme)) {
+          return theme;
+        }
+      }
+
+      if (node.classList.contains("grey") || node.classList.contains("theme-grey") || node.classList.contains("theme_grey")) {
+        return "gray";
+      }
+    }
+
+    if (typeof node.getAttribute === "function") {
+      for (i = 0; i < attrs.length; i += 1) {
+        attrName = attrs[i];
+        attrValue = String(node.getAttribute(attrName) || "").toLowerCase();
+
+        if (attrValue === "grey") {
+          return "gray";
+        }
+
+        if ($.inArray(attrValue, themeNames) !== -1) {
+          return attrValue;
+        }
+      }
+    }
+
+    return "";
+  }
+
+  function detectThemeFromClassNames() {
+    var bodyClasses = document.body && document.body.className ? String(document.body.className).toLowerCase() : "";
+    var htmlClasses = document.documentElement && document.documentElement.className ? String(document.documentElement.className).toLowerCase() : "";
+    var combined = bodyClasses + " " + htmlClasses;
+    var match = combined.match(/(?:^|\s)(?:theme[-_])?(black|gray|azure|white|grey)(?:\s|$)/);
+
+    if (!match) {
+      return "";
+    }
+
+    if (match[1] === "grey") {
+      return "gray";
+    }
+
+    return match[1];
+  }
+
+  function watchThemeChanges() {
+    var observer;
+    var options = {
+      attributes: true,
+      attributeFilter: ["class", "data-theme", "data-color-theme", "data-dynamix-theme"]
+    };
+
+    if (typeof window.MutationObserver !== "function") {
+      return;
+    }
+
+    observer = new window.MutationObserver(function() {
+      applyThemeClass();
+    });
+
+    if (document.body) {
+      observer.observe(document.body, options);
+    }
+
+    if (document.documentElement) {
+      observer.observe(document.documentElement, options);
     }
   }
 

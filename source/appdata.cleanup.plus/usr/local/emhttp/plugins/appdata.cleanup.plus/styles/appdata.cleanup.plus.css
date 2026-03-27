@@ -51,12 +51,16 @@
   padding: 4px 0 72px;
 }
 
-body.black .acp-shell {
+body.black .acp-shell,
+html.black .acp-shell,
+.acp-shell.acp-theme-black {
   --acp-panel: linear-gradient(180deg, rgba(36, 40, 47, 0.98) 0%, rgba(23, 26, 31, 0.98) 100%);
   --acp-panel-soft: linear-gradient(180deg, rgba(32, 35, 41, 0.94) 0%, rgba(20, 23, 28, 0.96) 100%);
 }
 
-body.gray .acp-shell {
+body.gray .acp-shell,
+html.gray .acp-shell,
+.acp-shell.acp-theme-gray {
   --acp-panel: linear-gradient(180deg, rgba(46, 49, 54, 0.98) 0%, rgba(31, 34, 38, 0.98) 100%);
   --acp-panel-soft: linear-gradient(180deg, rgba(53, 57, 63, 0.94) 0%, rgba(37, 40, 45, 0.96) 100%);
   --acp-border: rgba(255, 255, 255, 0.1);
@@ -82,7 +86,9 @@ body.gray .acp-shell {
   --acp-icon-bg: rgba(255, 154, 74, 0.12);
 }
 
-body.azure .acp-shell {
+body.azure .acp-shell,
+html.azure .acp-shell,
+.acp-shell.acp-theme-azure {
   --acp-panel: linear-gradient(180deg, rgba(31, 48, 69, 0.98) 0%, rgba(21, 34, 51, 0.98) 100%);
   --acp-panel-soft: linear-gradient(180deg, rgba(39, 58, 83, 0.95) 0%, rgba(24, 39, 58, 0.96) 100%);
   --acp-border: rgba(129, 179, 219, 0.16);
@@ -116,7 +122,9 @@ body.azure .acp-shell {
   --acp-separator: rgba(191, 227, 255, 0.22);
 }
 
-body.white .acp-shell {
+body.white .acp-shell,
+html.white .acp-shell,
+.acp-shell.acp-theme-white {
   --acp-panel: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 247, 251, 0.98) 100%);
   --acp-panel-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(238, 243, 248, 0.98) 100%);
   --acp-border: rgba(15, 23, 42, 0.09);
@@ -281,13 +289,15 @@ body.white .acp-shell {
 }
 
 .acp-summary-value {
-  align-self: end;
+  align-self: center;
   color: var(--acp-heading);
   display: block;
   font-size: 20px;
   font-weight: 700;
+  justify-self: center;
   line-height: 1;
-  margin: 2px 0 0;
+  margin: 0;
+  text-align: center;
 }
 
 .acp-toolbar-stack {
