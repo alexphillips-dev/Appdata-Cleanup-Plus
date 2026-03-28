@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.23">
-<!ENTITY md5 "916a70558deb3370b01cead1d36c7be1">
+<!ENTITY version "2026.03.27.24">
+<!ENTITY md5 "ad2ec416fe995ba818754ffe27f9f3bd">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.27.24
+- Fix: Replace the incorrect Community Applications conflict abort with a real CA helper dependency check so fresh installs can place the plugin in Unraid Settings again
+- Fix: Mark the settings page as `Type="xmenu"` so the Settings menu entry follows the same explicit page mode used by other modern plugins
+
 ###2026.03.27.23
 - Release: First Appdata Cleanup Plus release for Unraid 7.0.0+ with a modern, theme-aware dashboard for reviewing orphaned Docker appdata folders
 - UX: Add compact search, sorting, risk filtering, summary stats, size and last-updated metadata, detailed flag reasons, and ignore or restore controls for surfaced paths
@@ -178,8 +182,8 @@
     echo "********************************************************************\n";
     exit(1);
   }
-  if ( is_file("/usr/local/emhttp/plugins/community.applications/Backup.page") ) {
-    echo "Community Applications already includes Cleanup Appdata. Appdata Cleanup Plus cannot be installed alongside it... Aborting Installation\n";
+  if ( ! is_file("/usr/local/emhttp/plugins/community.applications/include/helpers.php") ) {
+    echo "Appdata Cleanup Plus requires Community Applications to be installed because it depends on the CA helper runtime... Aborting Installation\n";
     exit(1);
   }
 ?>
