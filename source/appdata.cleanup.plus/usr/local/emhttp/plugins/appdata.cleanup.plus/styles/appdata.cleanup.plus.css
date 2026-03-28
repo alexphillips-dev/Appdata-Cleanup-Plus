@@ -45,6 +45,8 @@
   --acp-row-selected-bg: linear-gradient(90deg, rgba(241, 90, 36, 0.08), transparent 22%), var(--acp-panel);
   --acp-icon-bg: rgba(241, 90, 36, 0.1);
   --acp-separator: rgba(255, 255, 255, 0.22);
+  --acp-notice-safe-title: #64b8ff;
+  --acp-notice-delete-title: #ff5252;
   color: var(--acp-text);
   display: grid;
   gap: 8px;
@@ -123,6 +125,8 @@ body[data-acp-host-theme="azure"] #acp-app,
   --acp-row-selected-bg: linear-gradient(90deg, rgba(0, 120, 212, 0.1), transparent 22%), var(--acp-panel);
   --acp-icon-bg: rgba(0, 120, 212, 0.12);
   --acp-separator: rgba(191, 227, 255, 0.22);
+  --acp-notice-safe-title: #7ec8ff;
+  --acp-notice-delete-title: #ff6b6b;
 }
 
 html[data-acp-host-theme="white"] #acp-app,
@@ -177,6 +181,8 @@ body[data-acp-host-theme="light"] #acp-app,
   --acp-row-selected-bg: linear-gradient(90deg, rgba(226, 91, 35, 0.08), transparent 22%), var(--acp-panel);
   --acp-icon-bg: rgba(226, 91, 35, 0.08);
   --acp-separator: rgba(15, 23, 42, 0.16);
+  --acp-notice-safe-title: #0b6bcb;
+  --acp-notice-delete-title: #d61f1f;
 }
 
 .acp-hero,
@@ -598,6 +604,14 @@ body[data-acp-host-theme="light"] #acp-app,
   color: var(--acp-heading);
   font-size: 12px;
   font-weight: 700;
+}
+
+.acp-notice-title.is-safe-mode {
+  color: var(--acp-notice-safe-title);
+}
+
+.acp-notice-title.is-delete-mode {
+  color: var(--acp-notice-delete-title);
 }
 
 .acp-notice-message {

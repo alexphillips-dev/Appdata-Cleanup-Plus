@@ -586,12 +586,14 @@
     if (!state.settings.enablePermanentDelete) {
       notices.push({
         type: "info",
+        accentClass: "is-safe-mode",
         title: t("noticeSafeModeTitle", "Safe mode is on"),
         message: t("noticeSafeModeMessage", "The primary action moves selected folders into quarantine instead of permanently deleting them.")
       });
     } else {
       notices.push({
         type: "warning",
+        accentClass: "is-delete-mode",
         title: t("noticeDeleteModeTitle", "Permanent delete mode is enabled"),
         message: t("noticeDeleteModeMessage", "Selected folders will be permanently removed after confirmation. Use this mode carefully.")
       });
@@ -698,9 +700,15 @@
     var html = [];
 
     $.each(notices || [], function(_, notice) {
+      var titleClass = "acp-notice-title";
+
+      if (notice.accentClass) {
+        titleClass += " " + escapeHtml(notice.accentClass);
+      }
+
       html.push(
         '<article class="acp-notice is-' + escapeHtml(notice.type || "info") + '">' +
-          '<div class="acp-notice-title">' + escapeHtml(notice.title || "") + "</div>" +
+          '<div class="' + titleClass + '">' + escapeHtml(notice.title || "") + "</div>" +
           '<div class="acp-notice-message">' + escapeHtml(notice.message || "") + "</div>" +
         "</article>"
       );
