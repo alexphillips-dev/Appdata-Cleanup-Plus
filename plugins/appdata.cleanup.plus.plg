@@ -2,17 +2,24 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.22">
-<!ENTITY md5 "1994586198e08ea61c6b0ac2d17a2030">
+<!ENTITY version "2026.03.27.23">
+<!ENTITY md5 "703819c9383511d11c05a3ff6a39faa9">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.23
+- Release: First Appdata Cleanup Plus release for Unraid 7.0.0+ with a modern, theme-aware dashboard for reviewing orphaned Docker appdata folders
+- UX: Add compact search, sorting, risk filtering, summary stats, size and last-updated metadata, detailed flag reasons, and ignore or restore controls for surfaced paths
+- Safety: Default real actions to quarantine, add dry run support, gate outside-share cleanup and permanent delete behind explicit toggles, and use clearer warning and confirmation dialogs
+- Security: Execute actions from server-side scan snapshots with candidate ids, require CSRF validation, enforce canonical path and target checks, and block unsafe roots, symlinks, and mount points
+- Platform: Ship custom plugin branding, branch-aware main and dev feeds, Unraid-friendly versioning, cleanup audit logging, and theme support for Black, Azure, Gray, and White
+
 ###2026.03.27.22
 - Maintenance: Refresh package metadata and build artifacts
 
@@ -187,7 +194,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
