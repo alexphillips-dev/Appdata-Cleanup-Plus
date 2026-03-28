@@ -8,7 +8,7 @@ This check is based on:
 
 ## Current Status
 
-Not ready for CA submission yet.
+Ready for CA submission from `main`.
 
 ## Passing Items
 
@@ -24,19 +24,15 @@ Not ready for CA submission yet.
   - `Icon`
   - `Project`
 - The icon is hosted from this repo and points at the packaged plugin icon
+- The CA support URL now points at the live Unraid forum thread
+- The plugin manifest now includes a matching `support="..."` forum thread attribute
 - `scripts/release_guard.sh` already enforces manifest/XML URL parity and branch-aware raw GitHub links
 - The repo now has:
   - a docs banner at `docs/images/banner.png`
 
-## Current Blockers
-
-1. `appdata.cleanup.plus.xml` still points `Support` to GitHub issues instead of a full Unraid forum support thread URL.
-2. `plugins/appdata.cleanup.plus.plg` does not yet include a matching `support="..."` forum thread attribute.
-3. The current `dev` branch is a testing feed. CA submission should use the stable `main` channel after promotion.
-
 ## FolderView Plus Comparison
 
-FolderView Plus already has the CA-facing support pattern that Appdata Cleanup Plus still needs:
+FolderView Plus already has the CA-facing support pattern that Appdata Cleanup Plus now matches:
 
 - `folderview.plus.xml` uses a full forum topic in `<Support>`
 - `folderview.plus.plg` includes a matching `support="https://forums.unraid.net/topic/.../"` attribute
@@ -45,17 +41,13 @@ FolderView Plus already has the CA-facing support pattern that Appdata Cleanup P
 
 ## Ready-To-Submit Sequence
 
-1. Post the prepared launch text as the new Unraid forum support topic.
-2. Copy the real forum topic URL.
-   - Placeholder until then: `FORUM_URL_PENDING`
-3. Update:
+1. Submit the `main` branch CA XML to Community Applications.
+2. Keep the forum thread URL in sync across:
    - `appdata.cleanup.plus.xml` `<Support>`
    - `plugins/appdata.cleanup.plus.plg` `support="..."`
    - `README.md` Support section
-4. Promote the stable release to `main`.
-5. Rebuild from `main` so the CA metadata and manifest URLs point to `main`.
-6. Re-run the readiness and release guards.
+3. Re-run the readiness and release guards after release metadata changes.
 
-## Expected Result After Forum URL Update
+## Expected Result
 
-Once the forum thread exists and the support links are updated to it, the remaining CA-facing metadata should be in good shape for submission based on the current Unraid template guidance and the FolderView Plus reference layout.
+The repo metadata is in good shape for CA submission based on the current Unraid template guidance and the FolderView Plus reference layout.

@@ -13,7 +13,7 @@ Appdata Cleanup Plus finds orphaned appdata folders from removed Docker containe
 <Date>2026-03-27</Date>
 <MinVer>7.0.0</MinVer>
 <ExtraSearchTerms>appdata cleanup orphan docker folders remove delete review templates</ExtraSearchTerms>
-<Support>https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues</Support>
+<Support>https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/</Support>
 <Icon>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/dev/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png</Icon>
 <Project>https://github.com/alexphillips-dev/Appdata-Cleanup-Plus</Project>
 </Containers>
