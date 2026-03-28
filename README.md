@@ -1,4 +1,4 @@
-![Appdata Cleanup Plus banner](docs/images/appdata-cleanup-plus-banner.png)
+![Appdata Cleanup Plus banner](docs/images/banner.png)
 
 # Appdata Cleanup Plus
 
@@ -143,5 +143,6 @@ bash scripts/sync_main_to_dev.sh
 
 ## Support
 
+- Forum support thread: `FORUM_URL_PENDING`
 - Repo: `https://github.com/alexphillips-dev/Appdata-Cleanup-Plus`
 - Issues: `https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues`
