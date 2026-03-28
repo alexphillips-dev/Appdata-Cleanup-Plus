@@ -228,15 +228,18 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-top-row {
-  align-items: start;
+  align-items: stretch;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
 .acp-summary-grid {
+  align-self: stretch;
+  align-content: stretch;
   display: grid;
   gap: 6px;
+  grid-auto-rows: minmax(0, 1fr);
   grid-template-columns: repeat(5, 88px);
   justify-content: start;
   width: max-content;
@@ -249,6 +252,7 @@ body[data-acp-host-theme="light"] #acp-app,
   display: grid;
   gap: 3px;
   grid-template-rows: 30px 1fr;
+  height: 100%;
   min-height: var(--acp-top-block-height);
   padding: 8px 9px;
   position: relative;
