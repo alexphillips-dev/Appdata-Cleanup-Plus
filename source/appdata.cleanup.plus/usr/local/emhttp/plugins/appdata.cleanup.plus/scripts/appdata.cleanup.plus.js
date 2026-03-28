@@ -38,10 +38,11 @@
   var state = {
     rows: [],
     notices: [],
-    summary: { total: 0, deletable: 0, review: 0, blocked: 0 },
+    summary: { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 },
     selected: {},
     riskFilter: "all",
     sortMode: "risk",
+    showIgnored: false,
     busy: false
   };
   var els = {};
@@ -64,6 +65,7 @@
     els.$summaryCards = $("#acp-summary-cards");
     els.$search = $("#acp-search");
     els.$riskFilter = $("#acp-risk-filter");
+    els.$showIgnored = $("#acp-show-ignored");
     els.$sort = $("#acp-sort");
     els.$rescan = $("#acp-rescan");
     els.$selectVisible = $("#acp-select-visible");
@@ -82,6 +84,13 @@
 
     els.$riskFilter.on("change", function() {
       state.riskFilter = els.$riskFilter.val();
+      renderResults();
+      renderResultsMeta();
+      updateActionBar();
+    });
+
+    els.$showIgnored.on("change", function() {
+      state.showIgnored = !!els.$showIgnored.prop("checked");
       renderResults();
       renderResultsMeta();
       updateActionBar();
@@ -148,6 +157,20 @@
       renderResults();
       renderSummaryCards();
       updateActionBar();
+    });
+
+    els.$results.on("click", ".acp-row-action", function(event) {
+      var action = $(this).data("row-action");
+      var path = $(this).data("path");
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!action || !path || state.busy) {
+        return;
+      }
+
+      postRowAction(action, path);
     });
 
     els.$results.on("click", "[data-action]", function() {
@@ -379,6 +402,7 @@
     els.$rescan.prop("disabled", state.busy);
     els.$search.prop("disabled", state.busy);
     els.$riskFilter.prop("disabled", state.busy);
+    els.$showIgnored.prop("disabled", state.busy);
     els.$sort.prop("disabled", state.busy);
     updateActionBar();
   }
@@ -395,13 +419,13 @@
     }).done(function(response) {
       state.rows = $.isArray(response.rows) ? response.rows : [];
       state.notices = $.isArray(response.notices) ? response.notices : [];
-      state.summary = response.summary || { total: 0, deletable: 0, review: 0, blocked: 0 };
+      state.summary = response.summary || { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
       reconcileSelection();
       renderAll();
     }).fail(function(xhr) {
       state.rows = [];
       state.notices = [];
-      state.summary = { total: 0, deletable: 0, review: 0, blocked: 0 };
+      state.summary = { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
       state.selected = {};
       renderSummaryCards();
       renderNotices([]);
@@ -492,6 +516,54 @@
     );
   }
 
+  function buildRowMetaHtml(row) {
+    var facts = [];
+    var sourceText = row.sourceCount > 0 ? row.sourceSummary : row.name;
+
+    facts.push('<span class="acp-row-meta-item"><strong>' + escapeHtml(t("templateLabel", "Template")) + "</strong> " + escapeHtml(sourceText || "") + "</span>");
+
+    if (row.targetSummary) {
+      facts.push('<span class="acp-row-meta-item"><strong>' + escapeHtml(t("targetLabel", "Target")) + "</strong> " + escapeHtml(row.targetSummary) + "</span>");
+    }
+
+    facts.push('<span class="acp-row-meta-item"><strong>' + escapeHtml(t("sizeLabel", "Size")) + "</strong> " + escapeHtml(row.sizeLabel || "Unknown") + "</span>");
+    facts.push(
+      '<span class="acp-row-meta-item"' + (row.lastModifiedExact ? ' title="' + escapeHtml(row.lastModifiedExact) + '"' : "") + '><strong>' +
+      escapeHtml(t("updatedLabel", "Updated")) +
+      "</strong> " + escapeHtml(row.lastModifiedLabel || "Unknown") + "</span>"
+    );
+
+    return facts.join('<span class="acp-row-meta-separator">|</span>');
+  }
+
+  function buildRowNotesHtml(row) {
+    var notes = [];
+
+    if (row.reason) {
+      notes.push('<div class="acp-row-note is-primary">' + escapeHtml(row.reason) + "</div>");
+    }
+
+    if (row.ignored && row.ignoredReason) {
+      notes.push('<div class="acp-row-note">' + escapeHtml(row.ignoredReason) + "</div>");
+    } else if (row.risk !== "safe" && row.riskReason) {
+      notes.push('<div class="acp-row-note">' + escapeHtml(row.riskReason) + "</div>");
+    }
+
+    return notes.join("");
+  }
+
+  function buildRowActionHtml(row) {
+    if (row.ignored) {
+      return '<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unignore" data-path="' + escapeHtml(row.path || row.displayPath || "") + '">' + escapeHtml(t("restoreActionLabel", "Restore")) + "</button>";
+    }
+
+    if (row.canDelete) {
+      return '<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="ignore" data-path="' + escapeHtml(row.path || row.displayPath || "") + '">' + escapeHtml(t("ignoreActionLabel", "Ignore")) + "</button>";
+    }
+
+    return "";
+  }
+
   function renderResults() {
     var visibleRows = getVisibleRows();
     var html = [];
@@ -507,6 +579,16 @@
     }
 
     if (!visibleRows.length) {
+      if (!state.showIgnored && Number(state.summary.total || 0) === 0 && Number(state.summary.ignored || 0) > 0) {
+        renderStateMessage(
+          t("ignoredOnlyTitle", "Only ignored paths remain"),
+          t("ignoredOnlyMessage", "Every detected candidate is hidden by your ignore list. Turn on Show ignored to review or restore hidden paths."),
+          null,
+          null
+        );
+        return;
+      }
+
       renderStateMessage(
         t("noMatchesTitle", "No folders match the current filters"),
         t("noMatchesMessage", "Clear the search or risk filters to see the full scan again."),
@@ -520,22 +602,18 @@
       var isSelected = !!state.selected[row.id];
       var riskClass = "acp-badge-risk-" + escapeHtml(row.risk || "safe");
       var rowClass = "acp-row";
-      var sourceText = row.sourceCount > 0 ? row.sourceSummary : row.name;
-      var metaItems = [];
+      var rowActionHtml = buildRowActionHtml(row);
 
       if (isSelected) {
         rowClass += " is-selected";
+      }
+      if (row.ignored) {
+        rowClass += " is-ignored";
       }
       if (!row.canDelete) {
         rowClass += " is-disabled";
       } else {
         rowClass += " is-clickable";
-      }
-
-      metaItems.push('<span class="acp-row-meta-item"><strong>Template</strong> ' + escapeHtml(sourceText) + "</span>");
-      metaItems.push('<span class="acp-row-meta-item">' + escapeHtml(row.reason || "") + "</span>");
-      if (row.risk !== "safe") {
-        metaItems.push('<span class="acp-row-meta-item">' + escapeHtml(row.riskReason || "") + "</span>");
       }
 
       html.push(
@@ -553,9 +631,13 @@
                     '<span class="acp-badge ' + riskClass + '">' + escapeHtml(row.riskLabel || "Safe") + "</span>" +
                   "</div>" +
                 "</div>" +
-                '<div class="acp-row-meta">' + metaItems.join('<span class="acp-row-meta-separator">|</span>') + "</div>" +
+                '<div class="acp-row-meta">' + buildRowMetaHtml(row) + "</div>" +
+                '<div class="acp-row-notes">' + buildRowNotesHtml(row) + "</div>" +
               "</div>" +
-              '<code class="acp-row-path">' + escapeHtml(row.displayPath || row.path || "") + "</code>" +
+              '<div class="acp-row-side">' +
+                '<code class="acp-row-path">' + escapeHtml(row.displayPath || row.path || "") + "</code>" +
+                rowActionHtml +
+              "</div>" +
             "</div>" +
           "</div>" +
         "</article>"
@@ -568,9 +650,13 @@
   function renderResultsMeta() {
     var visibleRows = getVisibleRows();
     var message = "";
+    var ignoredCount = Number(state.summary.ignored || 0);
 
-    if (state.rows.length) {
-      message = visibleRows.length + " " + t("visibleSummary", "visible") + " / " + state.rows.length + " " + t("detectedSummary", "detected");
+    if (state.rows.length || ignoredCount) {
+      message = visibleRows.length + " " + t("visibleSummary", "visible") + " / " + Number(state.summary.total || 0) + " " + t("detectedSummary", "detected");
+      if (ignoredCount > 0) {
+        message += " | " + ignoredCount + " " + t(state.showIgnored ? "ignoredShownSummary" : "ignoredHiddenSummary", state.showIgnored ? "ignored shown" : "ignored hidden");
+      }
     }
 
     els.$resultsMeta.text(message);
@@ -605,8 +691,18 @@
         row.name,
         row.displayPath,
         row.sourceSummary,
-        (row.sourceNames || []).join(" ")
+        row.targetSummary,
+        row.reason,
+        row.ignoredReason,
+        row.sizeLabel,
+        row.lastModifiedLabel,
+        (row.sourceNames || []).join(" "),
+        (row.targetPaths || []).join(" ")
       ].join(" ").toLowerCase();
+
+      if (row.ignored && !state.showIgnored) {
+        return false;
+      }
 
       if (riskFilter !== "all" && row.risk !== riskFilter) {
         return false;
@@ -631,6 +727,10 @@
     var rightPath = String(right.displayPath || right.path || "").toLowerCase();
     var leftRank = Object.prototype.hasOwnProperty.call(riskRank, left.risk) ? riskRank[left.risk] : 9;
     var rightRank = Object.prototype.hasOwnProperty.call(riskRank, right.risk) ? riskRank[right.risk] : 9;
+
+    if (!!left.ignored !== !!right.ignored) {
+      return left.ignored ? 1 : -1;
+    }
 
     if (state.sortMode === "name") {
       return leftName.localeCompare(rightName) || leftPath.localeCompare(rightPath);
@@ -685,11 +785,36 @@
 
   function clearFilters() {
     state.riskFilter = "all";
+    state.showIgnored = false;
     els.$search.val("");
     els.$riskFilter.val("all");
+    els.$showIgnored.prop("checked", false);
     renderResults();
     renderResultsMeta();
     updateActionBar();
+  }
+
+  function postRowAction(action, path) {
+    var requestAction = action === "unignore" ? "unignoreCandidate" : "ignoreCandidate";
+    var failureTitle = action === "unignore" ? t("restoreFailedTitle", "Restore failed") : t("ignoreFailedTitle", "Ignore failed");
+    var failureMessage = action === "unignore" ? t("restoreFailedMessage", "The ignore list could not be updated right now.") : t("ignoreFailedMessage", "The ignore list could not be updated right now.");
+
+    setBusy(true);
+
+    $.ajax({
+      url: config.apiUrl,
+      method: "POST",
+      dataType: "json",
+      data: {
+        action: requestAction,
+        path: path
+      }
+    }).done(function() {
+      loadScan();
+    }).fail(function(xhr) {
+      setBusy(false);
+      swal(failureTitle, extractErrorMessage(xhr, failureMessage), "error");
+    });
   }
 
   function startDeleteFlow() {

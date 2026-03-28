@@ -332,6 +332,13 @@ body[data-acp-host-theme="light"] #acp-app,
   grid-template-rows: auto 1fr auto;
 }
 
+.acp-toolbar-footer {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-height: 18px;
+}
+
 .acp-panel-title {
   color: var(--acp-muted);
   font-size: 9px;
@@ -381,6 +388,25 @@ body[data-acp-host-theme="light"] #acp-app,
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.acp-toggle {
+  align-items: center;
+  color: var(--acp-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 600;
+  gap: 7px;
+  line-height: 1;
+}
+
+.acp-toggle input {
+  accent-color: var(--acp-accent);
+  cursor: pointer;
+  height: 13px;
+  margin: 0;
+  width: 13px;
 }
 
 .acp-input,
@@ -649,6 +675,10 @@ body[data-acp-host-theme="light"] #acp-app,
   opacity: 0.75;
 }
 
+.acp-row.is-ignored {
+  border-color: var(--acp-filter-border);
+}
+
 .acp-row-check {
   align-items: center;
   display: flex;
@@ -685,7 +715,7 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-row-title-wrap {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
 }
 
@@ -747,7 +777,7 @@ body[data-acp-host-theme="light"] #acp-app,
   color: var(--acp-muted);
   display: flex;
   flex-wrap: wrap;
-  font-size: 12px;
+  font-size: 11px;
   gap: 4px 6px;
   line-height: 1.4;
 }
@@ -758,7 +788,7 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-row-meta-item strong {
   color: var(--acp-heading);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.06em;
   margin-right: 4px;
@@ -767,6 +797,29 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-row-meta-separator {
   color: var(--acp-separator);
+}
+
+.acp-row-notes {
+  display: grid;
+  gap: 2px;
+}
+
+.acp-row-note {
+  color: var(--acp-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.acp-row-note.is-primary {
+  color: var(--acp-text);
+}
+
+.acp-row-side {
+  align-items: flex-end;
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  min-width: 0;
 }
 
 .acp-row-path {
@@ -784,6 +837,12 @@ body[data-acp-host-theme="light"] #acp-app,
   padding: 5px 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.acp-row-action.acp-button {
+  font-size: 10px;
+  min-height: 27px;
+  padding: 0 9px;
 }
 
 .acp-bottom-bar {
@@ -1050,6 +1109,11 @@ body[data-acp-host-theme="light"] #acp-app,
 @media (max-width: 980px) {
   .acp-row-primary {
     grid-template-columns: 1fr;
+  }
+
+  .acp-row-side {
+    align-items: start;
+    justify-items: start;
   }
 
   .acp-row-path {

@@ -130,4 +130,130 @@ function dirContents($path) {
   return array_diff($dirContents,array(".",".."));
 }
 
+function appdataCleanupPlusConfigDir() {
+  return "/boot/config/plugins/appdata.cleanup.plus";
+}
+
+function appdataCleanupPlusStateFile($filename) {
+  return appdataCleanupPlusConfigDir() . "/" . ltrim($filename, "/");
+}
+
+function ensureAppdataCleanupPlusConfigDir() {
+  $configDir = appdataCleanupPlusConfigDir();
+
+  if ( is_dir($configDir) ) {
+    return true;
+  }
+
+  return @mkdir($configDir, 0777, true);
+}
+
+function readAppdataCleanupPlusJsonFile($path, $default=array()) {
+  if ( ! is_file($path) ) {
+    return $default;
+  }
+
+  $contents = @file_get_contents($path);
+  if ( $contents === false || $contents === "" ) {
+    return $default;
+  }
+
+  $decoded = json_decode($contents, true);
+  return is_array($decoded) ? $decoded : $default;
+}
+
+function writeAppdataCleanupPlusJsonFile($path, $payload) {
+  if ( ! ensureAppdataCleanupPlusConfigDir() ) {
+    return false;
+  }
+
+  $tmpFile = $path . ".tmp";
+  $encoded = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+
+  if ( $encoded === false ) {
+    return false;
+  }
+
+  if ( @file_put_contents($tmpFile, $encoded . "\n", LOCK_EX) === false ) {
+    return false;
+  }
+
+  return @rename($tmpFile, $path);
+}
+
+function appdataCleanupPlusIgnoreListFile() {
+  return appdataCleanupPlusStateFile("ignored-paths.json");
+}
+
+function appdataCleanupPlusAuditLogFile() {
+  return appdataCleanupPlusStateFile("cleanup-audit.jsonl");
+}
+
+function appdataCleanupPlusCandidateKey($path) {
+  return normalizeUserPath(rtrim($path, "/"));
+}
+
+function getIgnoredAppdataCleanupPlusCandidates() {
+  return readAppdataCleanupPlusJsonFile(appdataCleanupPlusIgnoreListFile(), array());
+}
+
+function setIgnoredAppdataCleanupPlusCandidates($ignoredCandidates) {
+  return writeAppdataCleanupPlusJsonFile(appdataCleanupPlusIgnoreListFile(), $ignoredCandidates);
+}
+
+function ignoreAppdataCleanupPlusCandidate($path, $metadata=array()) {
+  $candidateKey = appdataCleanupPlusCandidateKey($path);
+  $ignoredCandidates = getIgnoredAppdataCleanupPlusCandidates();
+  $ignoredCandidates[$candidateKey] = array(
+    "path" => $candidateKey,
+    "ignoredAt" => date("c"),
+    "name" => isset($metadata["name"]) ? (string)$metadata["name"] : basename($candidateKey),
+    "sourceSummary" => isset($metadata["sourceSummary"]) ? (string)$metadata["sourceSummary"] : "",
+    "targetSummary" => isset($metadata["targetSummary"]) ? (string)$metadata["targetSummary"] : ""
+  );
+
+  return setIgnoredAppdataCleanupPlusCandidates($ignoredCandidates);
+}
+
+function unignoreAppdataCleanupPlusCandidate($path) {
+  $candidateKey = appdataCleanupPlusCandidateKey($path);
+  $ignoredCandidates = getIgnoredAppdataCleanupPlusCandidates();
+
+  if ( ! isset($ignoredCandidates[$candidateKey]) ) {
+    return true;
+  }
+
+  unset($ignoredCandidates[$candidateKey]);
+  return setIgnoredAppdataCleanupPlusCandidates($ignoredCandidates);
+}
+
+function appendAppdataCleanupPlusAuditEntry($entry) {
+  if ( ! ensureAppdataCleanupPlusConfigDir() ) {
+    return false;
+  }
+
+  $encoded = json_encode($entry, JSON_UNESCAPED_SLASHES);
+  if ( $encoded === false ) {
+    return false;
+  }
+
+  return @file_put_contents(appdataCleanupPlusAuditLogFile(), $encoded . "\n", FILE_APPEND | LOCK_EX) !== false;
+}
+
+function getLatestAppdataCleanupPlusAuditEntry() {
+  $auditPath = appdataCleanupPlusAuditLogFile();
+
+  if ( ! is_file($auditPath) ) {
+    return null;
+  }
+
+  $lines = @file($auditPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+  if ( ! is_array($lines) || empty($lines) ) {
+    return null;
+  }
+
+  $decoded = json_decode($lines[count($lines) - 1], true);
+  return is_array($decoded) ? $decoded : null;
+}
+
 ?>

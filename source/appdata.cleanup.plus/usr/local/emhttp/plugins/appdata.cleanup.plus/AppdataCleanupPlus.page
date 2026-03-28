@@ -62,6 +62,19 @@ $config = array(
     "deleteResultTitleSuccess" => _("Cleanup complete"),
     "deleteResultTitleWarning" => _("Cleanup finished with warnings"),
     "deleteFailedTitle" => _("Delete failed"),
+    "ignoreActionLabel" => _("Ignore"),
+    "restoreActionLabel" => _("Restore"),
+    "ignoreFailedTitle" => _("Ignore failed"),
+    "ignoreFailedMessage" => _("The ignore list could not be updated right now."),
+    "restoreFailedTitle" => _("Restore failed"),
+    "restoreFailedMessage" => _("The ignore list could not be updated right now."),
+    "showIgnoredLabel" => _("Show ignored"),
+    "templateLabel" => _("Template"),
+    "targetLabel" => _("Target"),
+    "sizeLabel" => _("Size"),
+    "updatedLabel" => _("Updated"),
+    "ignoredHiddenSummary" => _("ignored hidden"),
+    "ignoredShownSummary" => _("ignored shown"),
     "selectedSingular" => _("folder selected"),
     "selectedPlural" => _("folders selected"),
     "selectionHintIdle" => _("Click rows to select. Locked paths stay visible but cannot be selected."),
@@ -126,6 +139,12 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
               <option value="review"><?php echo _("Review"); ?></option>
               <option value="blocked"><?php echo _("Locked"); ?></option>
             </select>
+          </label>
+        </div>
+        <div class="acp-toolbar-footer">
+          <label class="acp-toggle">
+            <input type="checkbox" id="acp-show-ignored">
+            <span><?php echo _("Show ignored"); ?></span>
           </label>
         </div>
       </section>

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.17">
-<!ENTITY md5 "d1b003fa77b1617c49886c48abb5dd6d">
+<!ENTITY version "2026.03.27.18">
+<!ENTITY md5 "5bd7ee9d6b6e6484204bf49236ad0b3f">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.18
+- UX: Add folder size, last-updated metadata, richer template-to-target flag reasons, and compact ignore or restore actions directly in the cleanup list
+- UX: Add a Show ignored toggle plus clearer result and empty-state messaging when candidates are hidden by the ignore list
+- Safety: Persist ignored paths and write a cleanup audit trail under the plugin config directory, then surface the latest cleanup summary back in the dashboard
+
 ###2026.03.27.17
 - Fix: Copy the active ACP theme tokens onto SweetAlert at runtime so the delete and results popups render a real themed background instead of falling through to the page
 - UX: Harden the popup shell chrome with explicit card sizing, borders, icon styling, and button styling so the delete dialog reads like a proper modal
