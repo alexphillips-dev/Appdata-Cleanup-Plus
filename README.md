@@ -143,6 +143,6 @@ bash scripts/sync_main_to_dev.sh
 
 ## Support
 
-- Forum support thread: `FORUM_URL_PENDING`
+- Forum support thread: `https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/`
 - Repo: `https://github.com/alexphillips-dev/Appdata-Cleanup-Plus`
 - Issues: `https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues`
