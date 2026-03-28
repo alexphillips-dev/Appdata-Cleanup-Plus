@@ -1179,6 +1179,7 @@ if ( ! validateAppdataCleanupPlusCsrfToken($csrfToken) ) {
 switch ( $action ) {
   case "getOrphanAppdata":
     $settings = getAppdataCleanupPlusSafetySettings();
+    $latestAudit = getLatestAppdataCleanupPlusAuditEntry();
     $allFiles = glob("/boot/config/plugins/dockerMan/templates-user/*.xml");
     $dockerRunning = is_dir("/var/lib/docker/tmp");
     $containers = getDockerContainersSafe();
@@ -1205,6 +1206,7 @@ switch ( $action ) {
       "dockerRunning" => $dockerRunning,
       "summary" => $summary,
       "notices" => buildNotices($dockerRunning, $summary, $settings),
+      "latestAuditMessage" => $latestAudit ? buildLatestAuditMessage($latestAudit) : "",
       "rows" => $rows,
       "scanToken" => $snapshot["token"],
       "settings" => $settings

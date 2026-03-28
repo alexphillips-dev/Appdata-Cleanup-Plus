@@ -252,7 +252,6 @@ body[data-acp-host-theme="light"] #acp-app,
   display: grid;
   gap: 3px;
   grid-template-rows: 30px 1fr;
-  height: 100%;
   min-height: var(--acp-top-block-height);
   padding: 8px 9px;
   position: relative;

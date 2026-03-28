@@ -41,6 +41,8 @@
     summary: { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 },
     selected: {},
     scanToken: "",
+    dockerRunning: true,
+    latestAuditMessage: "",
     settings: {
       allowOutsideShareCleanup: false,
       enablePermanentDelete: false,
@@ -480,8 +482,11 @@
       state.notices = $.isArray(response.notices) ? response.notices : [];
       state.summary = response.summary || { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
       state.scanToken = String(response.scanToken || "");
+      state.dockerRunning = response.dockerRunning !== false;
+      state.latestAuditMessage = String(response.latestAuditMessage || "");
       state.settings = $.extend({}, defaultSafetySettings(), response.settings || {});
       syncSafetyControls();
+      applyLocalSafetyState();
       reconcileSelection();
       renderAll();
     }).fail(function(xhr) {
@@ -489,6 +494,8 @@
       state.notices = [];
       state.summary = { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
       state.scanToken = "";
+      state.dockerRunning = true;
+      state.latestAuditMessage = "";
       state.settings = defaultSafetySettings();
       state.selected = {};
       syncSafetyControls();
@@ -505,6 +512,139 @@
     }).always(function() {
       setBusy(false);
     });
+  }
+
+  function applyLocalSafetyStateToRow(row) {
+    var nextRow = $.extend({}, row);
+
+    nextRow.policyLocked = false;
+    nextRow.policyReason = "";
+
+    if (nextRow.ignored) {
+      nextRow.canDelete = false;
+      return nextRow;
+    }
+
+    if (nextRow.securityLockReason) {
+      nextRow.canDelete = false;
+      nextRow.policyLocked = true;
+      nextRow.policyReason = nextRow.securityLockReason;
+      return nextRow;
+    }
+
+    if (nextRow.risk === "blocked") {
+      nextRow.canDelete = false;
+      return nextRow;
+    }
+
+    if (nextRow.risk === "review" && !state.settings.allowOutsideShareCleanup) {
+      nextRow.canDelete = false;
+      nextRow.policyLocked = true;
+      nextRow.policyReason = "Outside-share cleanup is disabled in Safety settings.";
+      return nextRow;
+    }
+
+    nextRow.canDelete = true;
+    return nextRow;
+  }
+
+  function buildLocalSummary(rows) {
+    var summary = { total: 0, safe: 0, review: 0, blocked: 0, deletable: 0, ignored: 0 };
+
+    $.each(rows || [], function(_, row) {
+      if (row.ignored) {
+        summary.ignored += 1;
+        return;
+      }
+
+      summary.total += 1;
+
+      if (Object.prototype.hasOwnProperty.call(summary, row.risk)) {
+        summary[row.risk] += 1;
+      }
+
+      if (row.canDelete) {
+        summary.deletable += 1;
+      }
+    });
+
+    return summary;
+  }
+
+  function buildLocalNotices() {
+    var notices = [];
+    var summary = state.summary || { total: 0, review: 0, blocked: 0, ignored: 0 };
+
+    if (!state.dockerRunning) {
+      notices.push({
+        type: "warning",
+        title: t("noticeDockerOfflineTitle", "Docker is offline"),
+        message: t("noticeDockerOfflineMessage", "Results are based only on saved Docker templates. Review every path before acting on anything.")
+      });
+    }
+
+    if (!state.settings.enablePermanentDelete) {
+      notices.push({
+        type: "info",
+        title: t("noticeSafeModeTitle", "Safe mode is on"),
+        message: t("noticeSafeModeMessage", "The primary action moves selected folders into quarantine instead of permanently deleting them.")
+      });
+    } else {
+      notices.push({
+        type: "warning",
+        title: t("noticeDeleteModeTitle", "Permanent delete mode is enabled"),
+        message: t("noticeDeleteModeMessage", "Selected folders will be permanently removed after confirmation. Use this mode carefully.")
+      });
+    }
+
+    if (Number(summary.ignored || 0) > 0) {
+      notices.push({
+        type: "info",
+        title: t("noticeIgnoredTitle", "Ignore list active"),
+        message: Number(summary.ignored || 0) + " " + (Number(summary.ignored || 0) === 1 ? "path is" : "paths are") + " currently hidden from normal cleanup results. Turn on Show ignored to review or restore them."
+      });
+    }
+
+    if (state.latestAuditMessage) {
+      notices.push({
+        type: "info",
+        title: t("noticeLatestAuditTitle", "Last cleanup"),
+        message: state.latestAuditMessage
+      });
+    }
+
+    if (Number(summary.review || 0) > 0) {
+      if (!state.settings.allowOutsideShareCleanup) {
+        notices.push({
+          type: "info",
+          title: t("noticeOutsideShareDisabledTitle", "Outside-share cleanup is disabled"),
+          message: t("noticeOutsideShareDisabledMessage", "Review paths stay visible but locked until you explicitly enable outside-share cleanup.")
+        });
+      } else {
+        notices.push({
+          type: "warning",
+          title: t("noticeOutsideShareEnabledTitle", "Outside-share cleanup is enabled"),
+          message: t("noticeOutsideShareEnabledMessage", "Review paths sit outside the configured appdata share. Confirm each one carefully before acting.")
+        });
+      }
+    }
+
+    if (Number(summary.blocked || 0) > 0) {
+      notices.push({
+        type: "warning",
+        title: t("noticeLockedPathsTitle", "Locked paths stay blocked"),
+        message: t("noticeLockedPathsMessage", "Any path that resolves to a share root, mount point, symlinked location, or other unsafe target cannot be acted on here.")
+      });
+    }
+
+    return notices;
+  }
+
+  function applyLocalSafetyState() {
+    state.rows = $.map(state.rows || [], function(row) {
+      return applyLocalSafetyStateToRow(row);
+    });
+    state.summary = buildLocalSummary(state.rows);
   }
 
   function reconcileSelection() {
@@ -525,7 +665,7 @@
 
   function renderAll() {
     renderSummaryCards();
-    renderNotices(state.notices);
+    renderNotices(buildLocalNotices());
     renderResults();
     renderResultsMeta();
     updateActionBar();
@@ -876,6 +1016,8 @@
 
   function saveSafetySettings() {
     var previousSettings = $.extend({}, defaultSafetySettings(), state.settings || {});
+    var previousRows = state.rows.slice(0);
+    var previousSummary = $.extend({}, state.summary || {});
     var nextSettings = $.extend({}, previousSettings, {
       allowOutsideShareCleanup: !!els.$allowExternal.prop("checked"),
       enablePermanentDelete: !!els.$enableDelete.prop("checked")
@@ -900,15 +1042,21 @@
     }).done(function(response) {
       state.settings = $.extend({}, defaultSafetySettings(), response.settings || nextSettings);
       syncSafetyControls();
-      loadScan();
+      applyLocalSafetyState();
+      reconcileSelection();
+      setBusy(false);
+      renderAll();
     }).fail(function(xhr) {
       state.settings = previousSettings;
+      state.rows = previousRows;
+      state.summary = previousSummary;
       syncSafetyControls();
       setBusy(false);
       swal(t("settingsSaveFailedTitle", "Safety settings failed"), extractErrorMessage(xhr, t("settingsSaveFailedMessage", "The new safety settings could not be saved right now.")), "error");
       if (xhr && xhr.status === 409) {
         loadScan();
       } else {
+        renderAll();
         updateActionBar();
       }
     });
