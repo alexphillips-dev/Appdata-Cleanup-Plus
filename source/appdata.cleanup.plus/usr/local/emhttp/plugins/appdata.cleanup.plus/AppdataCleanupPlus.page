@@ -3,10 +3,13 @@ Title="Appdata Cleanup Plus"
 Icon="appdata.cleanup.plus.png"
 ---
 <?php
+require_once("/usr/local/emhttp/plugins/appdata.cleanup.plus/include/helpers.php");
+
 $cssVersion = @filemtime("/usr/local/emhttp/plugins/appdata.cleanup.plus/styles/appdata.cleanup.plus.css");
 $jsVersion = @filemtime("/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.js");
 $hostThemeName = strtolower(trim((string)($display['theme'] ?? "")));
 $hostThemeClass = "";
+$csrfToken = getAppdataCleanupPlusCsrfToken();
 
 if ( $hostThemeName === "grey" ) {
   $hostThemeName = "gray";
@@ -28,6 +31,7 @@ if ( ! $jsVersion ) {
 
 $config = array(
   "apiUrl" => "/plugins/appdata.cleanup.plus/include/exec.php",
+  "csrfToken" => $csrfToken,
   "spinnerUrl" => "/plugins/appdata.cleanup.plus/images/spinner2.gif",
   "logoUrl" => "/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png",
   "strings" => array(
@@ -39,16 +43,21 @@ $config = array(
     "noMatchesMessage" => _("Clear the search or risk filters to see the full scan again."),
     "scanFailedTitle" => _("Scan failed"),
     "scanFailedMessage" => _("The orphaned appdata scan could not be completed right now."),
+    "scanExpiredMessage" => _("This scan expired or is no longer valid. Rescan and try again."),
     "deleteEmptyTitle" => _("Nothing selected"),
     "deleteEmptyMessage" => _("Select at least one deletable folder before continuing."),
     "deleteConfirmTitle" => _("Delete selected folders?"),
     "deleteConfirmMessage" => _("Selected folders will be removed immediately."),
     "deleteConfirmButton" => _("Delete"),
+    "quarantineConfirmTitle" => _("Quarantine selected folders?"),
+    "quarantineConfirmMessage" => _("Selected folders will be moved into quarantine instead of being permanently deleted."),
+    "quarantineConfirmButton" => _("Quarantine"),
     "deleteTypedTitle" => _("Type DELETE to confirm"),
     "deleteTypedMessage" => _("One or more selected folders sit outside the configured appdata share."),
     "deleteTypedPlaceholder" => _("DELETE"),
     "deleteTypedError" => _("Type DELETE to continue."),
     "deleteWarningLabel" => _("WARNING"),
+    "previewWarningLabel" => _("DRY RUN"),
     "deleteIrreversibleMessage" => _("This action cannot be undone by this plugin."),
     "deleteListTitle" => _("Folders to delete"),
     "deleteReviewLabel" => _("Review required"),
@@ -57,35 +66,64 @@ $config = array(
     "deleteReviewCountLabel" => _("Review"),
     "deleteFolderSingular" => _("folder"),
     "deleteFolderPlural" => _("folders"),
+    "dryRunLabel" => _("Dry run"),
+    "dryRunTitle" => _("Running dry run"),
+    "dryRunMessage" => _("Reviewing what the current action would do without changing anything."),
     "deletingTitle" => _("Deleting selected folders"),
     "deletingMessage" => _("Large folders can take a moment to remove."),
+    "quarantiningTitle" => _("Moving selected folders to quarantine"),
+    "quarantiningMessage" => _("Selected folders are being moved into a hidden quarantine root."),
     "deleteResultTitleSuccess" => _("Cleanup complete"),
     "deleteResultTitleWarning" => _("Cleanup finished with warnings"),
     "deleteFailedTitle" => _("Delete failed"),
+    "quarantineResultTitleSuccess" => _("Quarantine complete"),
+    "quarantineResultTitleWarning" => _("Quarantine finished with warnings"),
+    "quarantineFailedTitle" => _("Quarantine failed"),
+    "dryRunResultTitleSuccess" => _("Dry run complete"),
+    "dryRunResultTitleWarning" => _("Dry run finished with warnings"),
     "ignoreActionLabel" => _("Ignore"),
     "restoreActionLabel" => _("Restore"),
     "ignoreFailedTitle" => _("Ignore failed"),
     "ignoreFailedMessage" => _("The ignore list could not be updated right now."),
     "restoreFailedTitle" => _("Restore failed"),
     "restoreFailedMessage" => _("The ignore list could not be updated right now."),
+    "settingsSaveFailedTitle" => _("Safety settings failed"),
+    "settingsSaveFailedMessage" => _("The new safety settings could not be saved right now."),
     "showIgnoredLabel" => _("Show ignored"),
+    "showExternalLabel" => _("Allow outside-share cleanup"),
+    "enablePermanentDeleteLabel" => _("Enable permanent delete"),
     "templateLabel" => _("Template"),
     "targetLabel" => _("Target"),
+    "destinationLabel" => _("Destination"),
     "sizeLabel" => _("Size"),
     "updatedLabel" => _("Updated"),
     "ignoredHiddenSummary" => _("ignored hidden"),
     "ignoredShownSummary" => _("ignored shown"),
+    "cardDeletable" => _("Ready"),
     "selectedSingular" => _("folder selected"),
     "selectedPlural" => _("folders selected"),
     "selectionHintIdle" => _("Click rows to select. Locked paths stay visible but cannot be selected."),
     "selectionHintReview" => _("Review rows need typed confirmation before delete."),
+    "selectionHintSafety" => _("Outside-share cleanup is disabled, so review rows stay locked until you enable it."),
+    "selectionHintDeleteMode" => _("Permanent delete mode is enabled."),
+    "selectionHintQuarantineMode" => _("Selected folders will be moved into quarantine instead of being permanently deleted."),
     "visibleSummary" => _("visible"),
     "detectedSummary" => _("detected"),
     "cardTotal" => _("Detected"),
-    "cardDeletable" => _("Ready to delete"),
     "cardReview" => _("Needs review"),
     "cardBlocked" => _("Locked"),
-    "cardSelected" => _("Selected")
+    "cardSelected" => _("Selected"),
+    "quarantineActionLabel" => _("Quarantine selected"),
+    "deleteActionLabel" => _("Delete selected"),
+    "quarantineListTitle" => _("Folders to quarantine"),
+    "quarantineDetailMessage" => _("The selected folders will be moved into the quarantine root instead of being permanently deleted."),
+    "previewListTitle" => _("Operation preview"),
+    "previewReadyLabel" => _("Ready"),
+    "resultDeletedLabel" => _("Deleted"),
+    "resultQuarantinedLabel" => _("Quarantined"),
+    "resultBlockedLabel" => _("Blocked"),
+    "resultMissingLabel" => _("Missing"),
+    "resultErrorLabel" => _("Error")
   )
 );
 ?>
@@ -167,6 +205,16 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
             <button type="button" class="acp-button acp-button-secondary" id="acp-clear-selection"><?php echo _("Clear"); ?></button>
           </div>
         </div>
+        <div class="acp-safety-strip">
+          <label class="acp-toggle">
+            <input type="checkbox" id="acp-allow-external">
+            <span><?php echo _("Allow outside-share cleanup"); ?></span>
+          </label>
+          <label class="acp-toggle">
+            <input type="checkbox" id="acp-enable-delete">
+            <span><?php echo _("Enable permanent delete"); ?></span>
+          </label>
+        </div>
         <div class="acp-results-meta" id="acp-results-meta" aria-live="polite"></div>
       </section>
     </div>
@@ -182,7 +230,8 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
     </div>
     <div class="acp-bottom-actions">
       <button type="button" class="acp-button acp-button-secondary" id="acp-done-bottom"><?php echo _("Done"); ?></button>
-      <button type="button" class="acp-button acp-button-primary" id="acp-delete-selected" disabled><?php echo _("Delete selected"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary" id="acp-dry-run" disabled><?php echo _("Dry run"); ?></button>
+      <button type="button" class="acp-button acp-button-primary" id="acp-primary-action" disabled><?php echo _("Quarantine selected"); ?></button>
     </div>
   </section>
 </div>

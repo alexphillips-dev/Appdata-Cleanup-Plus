@@ -40,6 +40,12 @@
     notices: [],
     summary: { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 },
     selected: {},
+    scanToken: "",
+    settings: {
+      allowOutsideShareCleanup: false,
+      enablePermanentDelete: false,
+      quarantineRoot: ""
+    },
     riskFilter: "all",
     sortMode: "risk",
     showIgnored: false,
@@ -66,12 +72,15 @@
     els.$search = $("#acp-search");
     els.$riskFilter = $("#acp-risk-filter");
     els.$showIgnored = $("#acp-show-ignored");
+    els.$allowExternal = $("#acp-allow-external");
+    els.$enableDelete = $("#acp-enable-delete");
     els.$sort = $("#acp-sort");
     els.$rescan = $("#acp-rescan");
     els.$selectVisible = $("#acp-select-visible");
     els.$clearSelection = $("#acp-clear-selection");
     els.$doneBottom = $("#acp-done-bottom");
-    els.$deleteSelected = $("#acp-delete-selected");
+    els.$dryRun = $("#acp-dry-run");
+    els.$primaryAction = $("#acp-primary-action");
     els.$resultsMeta = $("#acp-results-meta");
     els.$notices = $("#acp-notices");
     els.$results = $("#acp-results");
@@ -126,7 +135,11 @@
     });
 
     els.$doneBottom.on("click", closePage);
-    els.$deleteSelected.on("click", startDeleteFlow);
+    els.$dryRun.on("click", startDryRunFlow);
+    els.$primaryAction.on("click", startPrimaryActionFlow);
+
+    els.$allowExternal.on("change", saveSafetySettings);
+    els.$enableDelete.on("change", saveSafetySettings);
 
     els.$results.on("click", ".acp-row", function(event) {
       if ($(event.target).closest(".acp-row-checkbox, .acp-button, a, button, input, select, textarea").length) {
@@ -161,16 +174,16 @@
 
     els.$results.on("click", ".acp-row-action", function(event) {
       var action = $(this).data("row-action");
-      var path = $(this).data("path");
+      var rowId = $(this).data("row-id");
 
       event.preventDefault();
       event.stopPropagation();
 
-      if (!action || !path || state.busy) {
+      if (!action || !rowId || state.busy) {
         return;
       }
 
-      postRowAction(action, path);
+      postRowAction(action, rowId);
     });
 
     els.$results.on("click", "[data-action]", function() {
@@ -396,6 +409,53 @@
     return fallback;
   }
 
+  function defaultSafetySettings() {
+    return {
+      allowOutsideShareCleanup: false,
+      enablePermanentDelete: false,
+      quarantineRoot: ""
+    };
+  }
+
+  function buildApiRequestData(data) {
+    return $.extend({
+      csrfToken: String(config.csrfToken || "")
+    }, data || {});
+  }
+
+  function apiPost(data) {
+    var requestHeaders = {};
+
+    if (config.csrfToken) {
+      requestHeaders["X-Appdata-Cleanup-Plus-CSRF"] = String(config.csrfToken);
+    }
+
+    return $.ajax({
+      url: config.apiUrl,
+      method: "POST",
+      dataType: "json",
+      headers: requestHeaders,
+      data: buildApiRequestData(data)
+    });
+  }
+
+  function syncSafetyControls() {
+    var settings = $.extend({}, defaultSafetySettings(), state.settings || {});
+
+    els.$allowExternal.prop("checked", !!settings.allowOutsideShareCleanup);
+    els.$enableDelete.prop("checked", !!settings.enablePermanentDelete);
+  }
+
+  function getPrimaryOperation() {
+    return state.settings.enablePermanentDelete ? "delete" : "quarantine";
+  }
+
+  function getPrimaryActionLabel() {
+    return state.settings.enablePermanentDelete
+      ? t("deleteActionLabel", "Delete selected")
+      : t("quarantineActionLabel", "Quarantine selected");
+  }
+
   function setBusy(isBusy) {
     state.busy = !!isBusy;
     els.$app.toggleClass("is-busy", state.busy);
@@ -403,6 +463,8 @@
     els.$search.prop("disabled", state.busy);
     els.$riskFilter.prop("disabled", state.busy);
     els.$showIgnored.prop("disabled", state.busy);
+    els.$allowExternal.prop("disabled", state.busy);
+    els.$enableDelete.prop("disabled", state.busy);
     els.$sort.prop("disabled", state.busy);
     updateActionBar();
   }
@@ -411,22 +473,25 @@
     setBusy(true);
     renderLoadingState();
 
-    $.ajax({
-      url: config.apiUrl,
-      method: "POST",
-      dataType: "json",
-      data: { action: "getOrphanAppdata" }
+    apiPost({
+      action: "getOrphanAppdata"
     }).done(function(response) {
       state.rows = $.isArray(response.rows) ? response.rows : [];
       state.notices = $.isArray(response.notices) ? response.notices : [];
       state.summary = response.summary || { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
+      state.scanToken = String(response.scanToken || "");
+      state.settings = $.extend({}, defaultSafetySettings(), response.settings || {});
+      syncSafetyControls();
       reconcileSelection();
       renderAll();
     }).fail(function(xhr) {
       state.rows = [];
       state.notices = [];
       state.summary = { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
+      state.scanToken = "";
+      state.settings = defaultSafetySettings();
       state.selected = {};
+      syncSafetyControls();
       renderSummaryCards();
       renderNotices([]);
       renderResultsMeta();
@@ -543,9 +608,13 @@
       notes.push('<div class="acp-row-note is-primary">' + escapeHtml(row.reason) + "</div>");
     }
 
+    if (row.policyReason) {
+      notes.push('<div class="acp-row-note is-warning">' + escapeHtml(row.policyReason) + "</div>");
+    }
+
     if (row.ignored && row.ignoredReason) {
       notes.push('<div class="acp-row-note">' + escapeHtml(row.ignoredReason) + "</div>");
-    } else if (row.risk !== "safe" && row.riskReason) {
+    } else if (!row.policyReason && row.risk !== "safe" && row.riskReason) {
       notes.push('<div class="acp-row-note">' + escapeHtml(row.riskReason) + "</div>");
     }
 
@@ -554,11 +623,11 @@
 
   function buildRowActionHtml(row) {
     if (row.ignored) {
-      return '<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unignore" data-path="' + escapeHtml(row.path || row.displayPath || "") + '">' + escapeHtml(t("restoreActionLabel", "Restore")) + "</button>";
+      return '<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unignore" data-row-id="' + escapeHtml(row.id || "") + '">' + escapeHtml(t("restoreActionLabel", "Restore")) + "</button>";
     }
 
-    if (row.canDelete) {
-      return '<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="ignore" data-path="' + escapeHtml(row.path || row.displayPath || "") + '">' + escapeHtml(t("ignoreActionLabel", "Ignore")) + "</button>";
+    if (row.id) {
+      return '<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="ignore" data-row-id="' + escapeHtml(row.id || "") + '">' + escapeHtml(t("ignoreActionLabel", "Ignore")) + "</button>";
     }
 
     return "";
@@ -693,6 +762,8 @@
         row.sourceSummary,
         row.targetSummary,
         row.reason,
+        row.policyReason,
+        row.securityLockReason,
         row.ignoredReason,
         row.sizeLabel,
         row.lastModifiedLabel,
@@ -766,15 +837,24 @@
     var summaryText = selectedRows.length + " " + (selectedRows.length === 1 ? t("selectedSingular", "folder selected") : t("selectedPlural", "folders selected"));
     var detailText = t("selectionHintIdle", "Click rows to select. Locked paths stay visible but cannot be selected.");
 
-    if (reviewSelected > 0) {
+    if (!state.settings.allowOutsideShareCleanup && Number(state.summary.review || 0) > 0) {
+      detailText = t("selectionHintSafety", "Outside-share cleanup is disabled, so review rows stay locked until you enable it.");
+    } else if (reviewSelected > 0 && state.settings.enablePermanentDelete) {
       detailText = t("selectionHintReview", "Review rows need typed confirmation before delete.");
+    } else if (selectedRows.length && state.settings.enablePermanentDelete) {
+      detailText = t("selectionHintDeleteMode", "Permanent delete mode is enabled.");
+    } else if (selectedRows.length) {
+      detailText = t("selectionHintQuarantineMode", "Selected folders will be moved into quarantine instead of being permanently deleted.");
     }
 
     els.$selectionSummary.text(summaryText);
     els.$selectionDetail.text(detailText);
-    els.$deleteSelected.prop("disabled", state.busy || selectedRows.length === 0);
+    els.$primaryAction.text(getPrimaryActionLabel());
+    els.$primaryAction.prop("disabled", state.busy || !state.scanToken || selectedRows.length === 0);
+    els.$dryRun.prop("disabled", state.busy || !state.scanToken || selectedRows.length === 0);
     els.$selectVisible.prop("disabled", state.busy || visibleSelectableCount === 0);
     els.$clearSelection.prop("disabled", state.busy || selectedRows.length === 0);
+    els.$doneBottom.prop("disabled", state.busy);
   }
 
   function getSelectedRows() {
@@ -794,155 +874,116 @@
     updateActionBar();
   }
 
-  function postRowAction(action, path) {
-    var requestAction = action === "unignore" ? "unignoreCandidate" : "ignoreCandidate";
+  function saveSafetySettings() {
+    var previousSettings = $.extend({}, defaultSafetySettings(), state.settings || {});
+    var nextSettings = $.extend({}, previousSettings, {
+      allowOutsideShareCleanup: !!els.$allowExternal.prop("checked"),
+      enablePermanentDelete: !!els.$enableDelete.prop("checked")
+    });
+
+    state.settings = nextSettings;
+    syncSafetyControls();
+    updateActionBar();
+
+    if (!state.scanToken) {
+      loadScan();
+      return;
+    }
+
+    setBusy(true);
+
+    apiPost({
+      action: "saveSafetySettings",
+      scanToken: state.scanToken,
+      allowOutsideShareCleanup: nextSettings.allowOutsideShareCleanup ? "1" : "0",
+      enablePermanentDelete: nextSettings.enablePermanentDelete ? "1" : "0"
+    }).done(function(response) {
+      state.settings = $.extend({}, defaultSafetySettings(), response.settings || nextSettings);
+      syncSafetyControls();
+      loadScan();
+    }).fail(function(xhr) {
+      state.settings = previousSettings;
+      syncSafetyControls();
+      setBusy(false);
+      swal(t("settingsSaveFailedTitle", "Safety settings failed"), extractErrorMessage(xhr, t("settingsSaveFailedMessage", "The new safety settings could not be saved right now.")), "error");
+      if (xhr && xhr.status === 409) {
+        loadScan();
+      } else {
+        updateActionBar();
+      }
+    });
+  }
+
+  function postRowAction(action, rowId) {
+    var intent = action === "unignore" ? "unignore" : "ignore";
     var failureTitle = action === "unignore" ? t("restoreFailedTitle", "Restore failed") : t("ignoreFailedTitle", "Ignore failed");
     var failureMessage = action === "unignore" ? t("restoreFailedMessage", "The ignore list could not be updated right now.") : t("ignoreFailedMessage", "The ignore list could not be updated right now.");
 
     setBusy(true);
 
-    $.ajax({
-      url: config.apiUrl,
-      method: "POST",
-      dataType: "json",
-      data: {
-        action: requestAction,
-        path: path
-      }
+    apiPost({
+      action: "updateCandidateState",
+      scanToken: state.scanToken,
+      candidateIds: JSON.stringify([rowId]),
+      intent: intent
     }).done(function() {
       loadScan();
     }).fail(function(xhr) {
       setBusy(false);
       swal(failureTitle, extractErrorMessage(xhr, failureMessage), "error");
-    });
-  }
-
-  function startDeleteFlow() {
-    var selectedRows = getSelectedRows();
-    var reviewRows = $.grep(selectedRows, function(row) {
-      return row.risk === "review";
-    });
-    var confirmButtonText = buildDeleteConfirmButtonText(selectedRows.length);
-
-    if (!selectedRows.length) {
-      swal(t("deleteEmptyTitle", "Nothing selected"), t("deleteEmptyMessage", "Select at least one deletable folder before continuing."), "warning");
-      return;
-    }
-
-    if (reviewRows.length) {
-      swal({
-        title: t("deleteConfirmTitle", "Delete selected folders?"),
-        text: "",
-        type: "input",
-        html: true,
-        showCancelButton: true,
-        closeOnConfirm: false,
-        inputPlaceholder: t("deleteTypedPlaceholder", "DELETE"),
-        confirmButtonText: confirmButtonText
-      }, function(inputValue) {
-        if (inputValue === false) {
-          return false;
-        }
-
-        if ($.trim(String(inputValue || "")).toUpperCase() !== "DELETE") {
-          swal.showInputError(t("deleteTypedError", "Type DELETE to continue."));
-          return false;
-        }
-
-        runDelete(selectedRows);
-        return true;
-      });
-      applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildDeletePreviewHtml(selectedRows, {
-        reviewCount: reviewRows.length,
-        showTypeHint: true
-      }));
-      return;
-    }
-
-    swal({
-      title: t("deleteConfirmTitle", "Delete selected folders?"),
-      text: "",
-      type: "warning",
-      html: true,
-      showCancelButton: true,
-      closeOnConfirm: false,
-      confirmButtonText: confirmButtonText
-    }, function() {
-      runDelete(selectedRows);
-    });
-    applyDeleteModalClass("acp-delete-modal", buildDeletePreviewHtml(selectedRows, {
-      reviewCount: 0,
-      showTypeHint: false
-    }));
-  }
-
-  function runDelete(selectedRows) {
-    applyDeleteModalClass("");
-    swal({
-      title: t("deletingTitle", "Deleting selected folders"),
-      text: t("deletingMessage", "Large folders can take a moment to remove."),
-      type: "info",
-      showConfirmButton: false,
-      allowEscapeKey: false,
-      allowOutsideClick: false
-    });
-
-    $.ajax({
-      url: config.apiUrl,
-      method: "POST",
-      dataType: "json",
-      data: {
-        action: "deleteAppdata",
-        paths: JSON.stringify($.map(selectedRows, function(row) { return row.path; }))
-      }
-    }).done(function(response) {
-      var summary = response.summary || { deleted: 0, missing: 0, blocked: 0, errors: 0 };
-      var failures = $.grep(response.results || [], function(result) {
-        return result.status !== "deleted";
-      });
-      var modalTitle = failures.length ? t("deleteResultTitleWarning", "Cleanup finished with warnings") : t("deleteResultTitleSuccess", "Cleanup complete");
-      var modalType = failures.length ? "warning" : "success";
-
-      state.selected = {};
-
-      swal({
-        title: modalTitle,
-        text: "",
-        type: modalType,
-        html: true
-      }, function() {
+      if (xhr && xhr.status === 409) {
         loadScan();
-      });
-      applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildDeleteResultsHtml(summary, failures));
-    }).fail(function(xhr) {
-      swal(t("deleteFailedTitle", "Delete failed"), extractErrorMessage(xhr, t("scanFailedMessage", "The orphaned appdata scan could not be completed right now.")), "error");
-      loadScan();
+      }
     });
   }
 
-  function buildDeleteConfirmButtonText(count) {
-    var noun = count === 1 ? t("deleteFolderSingular", "folder") : t("deleteFolderPlural", "folders");
-    return t("deleteConfirmButton", "Delete") + " " + count + " " + noun;
+  function buildOperationContext(operation) {
+    var baseOperation = String(operation || "").replace(/^preview_/, "");
+    var preview = baseOperation !== operation;
+    var isDelete = baseOperation === "delete";
+
+    return {
+      operation: operation,
+      preview: preview,
+      baseOperation: baseOperation,
+      confirmTitle: isDelete ? t("deleteConfirmTitle", "Delete selected folders?") : t("quarantineConfirmTitle", "Quarantine selected folders?"),
+      confirmMessage: isDelete ? t("deleteConfirmMessage", "Selected folders will be removed immediately.") : t("quarantineConfirmMessage", "Selected folders will be moved into quarantine instead of being permanently deleted."),
+      detailMessage: isDelete ? t("deleteIrreversibleMessage", "This action cannot be undone by this plugin.") : t("quarantineDetailMessage", "The selected folders will be moved into the quarantine root instead of being permanently deleted."),
+      confirmButtonLabel: isDelete ? t("deleteConfirmButton", "Delete") : t("quarantineConfirmButton", "Quarantine"),
+      loadingTitle: preview ? t("dryRunTitle", "Running dry run") : (isDelete ? t("deletingTitle", "Deleting selected folders") : t("quarantiningTitle", "Moving selected folders to quarantine")),
+      loadingMessage: preview ? t("dryRunMessage", "Reviewing what the current action would do without changing anything.") : (isDelete ? t("deletingMessage", "Large folders can take a moment to remove.") : t("quarantiningMessage", "Selected folders are being moved into a hidden quarantine root.")),
+      resultTitleSuccess: preview ? t("dryRunResultTitleSuccess", "Dry run complete") : (isDelete ? t("deleteResultTitleSuccess", "Cleanup complete") : t("quarantineResultTitleSuccess", "Quarantine complete")),
+      resultTitleWarning: preview ? t("dryRunResultTitleWarning", "Dry run finished with warnings") : (isDelete ? t("deleteResultTitleWarning", "Cleanup finished with warnings") : t("quarantineResultTitleWarning", "Quarantine finished with warnings")),
+      failureTitle: isDelete ? t("deleteFailedTitle", "Delete failed") : t("quarantineFailedTitle", "Quarantine failed"),
+      listTitle: preview ? t("previewListTitle", "Operation preview") : (isDelete ? t("deleteListTitle", "Folders to delete") : t("quarantineListTitle", "Folders to quarantine")),
+      successStatus: preview ? "ready" : (isDelete ? "deleted" : "quarantined"),
+      warningLabel: preview ? t("previewWarningLabel", "DRY RUN") : t("deleteWarningLabel", "WARNING")
+    };
   }
 
-  function buildDeletePreviewHtml(rows, options) {
+  function buildActionConfirmButtonText(context, count) {
+    var noun = count === 1 ? t("deleteFolderSingular", "folder") : t("deleteFolderPlural", "folders");
+    return context.confirmButtonLabel + " " + count + " " + noun;
+  }
+
+  function buildOperationPreviewHtml(rows, context, options) {
     var settings = options || {};
     var reviewCount = typeof settings.reviewCount === "number" ? settings.reviewCount : $.grep(rows, function(row) {
       return row.risk === "review";
     }).length;
     var safeCount = Math.max(0, rows.length - reviewCount);
+    var preview = rows.slice(0, 6);
     var html = [
       '<div class="acp-modal-summary">',
       '<div class="acp-modal-flag">' + escapeHtml(t("deleteWarningLabel", "WARNING")) + "</div>",
       '<div class="acp-modal-copy">',
-      '<div class="acp-modal-lead">' + escapeHtml(t("deleteConfirmMessage", "Selected folders will be removed immediately.")) + "</div>",
-      '<div class="acp-modal-subcopy">' + escapeHtml(t("deleteIrreversibleMessage", "This action cannot be undone by this plugin.")) + "</div>",
+      '<div class="acp-modal-lead">' + escapeHtml(context.confirmMessage) + "</div>",
+      '<div class="acp-modal-subcopy">' + escapeHtml(context.detailMessage) + "</div>",
       "</div>",
       '<div class="acp-modal-stats">',
       '<span class="acp-modal-stat is-selected">' + escapeHtml(String(rows.length)) + " selected</span>",
       '<span class="acp-modal-stat is-safe">' + escapeHtml(t("deleteSafeLabel", "Safe")) + ": " + escapeHtml(String(safeCount)) + "</span>"
     ];
-    var preview = rows.slice(0, 6);
 
     if (reviewCount > 0) {
       html.push('<span class="acp-modal-stat is-review">' + escapeHtml(t("deleteReviewCountLabel", "Review")) + ": " + escapeHtml(String(reviewCount)) + "</span>");
@@ -964,7 +1005,7 @@
     }
 
     html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + escapeHtml(t("deleteListTitle", "Folders to delete")) + "</div>");
+    html.push('<div class="acp-modal-panel-title">' + escapeHtml(context.listTitle) + "</div>");
     html.push('<ul class="acp-modal-list">');
 
     $.each(preview, function(_, row) {
@@ -979,27 +1020,210 @@
     return html.join("");
   }
 
-  function buildDeleteResultsHtml(summary, failures) {
-    var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-stats">',
-      '<span class="acp-modal-stat">Deleted: ' + escapeHtml(String(summary.deleted || 0)) + "</span>",
-      '<span class="acp-modal-stat">Missing: ' + escapeHtml(String(summary.missing || 0)) + "</span>",
-      '<span class="acp-modal-stat">Blocked: ' + escapeHtml(String(summary.blocked || 0)) + "</span>",
-      '<span class="acp-modal-stat">Errors: ' + escapeHtml(String(summary.errors || 0)) + "</span>",
-      "</div>"
-    ];
+  function formatOperationResultStatus(status) {
+    switch (status) {
+      case "ready":
+        return { label: t("previewReadyLabel", "Ready"), tone: "is-selected" };
+      case "quarantined":
+        return { label: t("resultQuarantinedLabel", "Quarantined"), tone: "is-safe" };
+      case "deleted":
+        return { label: t("resultDeletedLabel", "Deleted"), tone: "is-selected" };
+      case "missing":
+        return { label: t("resultMissingLabel", "Missing"), tone: "is-blocked" };
+      case "blocked":
+        return { label: t("resultBlockedLabel", "Blocked"), tone: "is-review" };
+      default:
+        return { label: t("resultErrorLabel", "Error"), tone: "is-review" };
+    }
+  }
 
-    if (failures.length) {
-      html.push('<ul class="acp-modal-list">');
-      $.each(failures, function(_, failure) {
-        html.push("<li>" + escapeHtml(failure.displayPath || failure.path || "") + ": " + escapeHtml(failure.message || failure.status || "Needs attention") + "</li>");
-      });
-      html.push("</ul>");
+  function buildOperationResultsHtml(summary, results, context) {
+    var stats = [];
+    var html = ['<div class="acp-modal-summary">'];
+
+    if (context.preview) {
+      html.push('<div class="acp-modal-flag is-preview">' + escapeHtml(context.warningLabel) + "</div>");
+      stats.push('<span class="acp-modal-stat is-selected">' + escapeHtml(t("previewReadyLabel", "Ready")) + ": " + escapeHtml(String(summary.ready || 0)) + "</span>");
+    } else if (context.baseOperation === "delete") {
+      stats.push('<span class="acp-modal-stat is-selected">' + escapeHtml(t("resultDeletedLabel", "Deleted")) + ": " + escapeHtml(String(summary.deleted || 0)) + "</span>");
+    } else {
+      stats.push('<span class="acp-modal-stat is-safe">' + escapeHtml(t("resultQuarantinedLabel", "Quarantined")) + ": " + escapeHtml(String(summary.quarantined || 0)) + "</span>");
     }
 
-    html.push("</div>");
+    stats.push('<span class="acp-modal-stat is-review">' + escapeHtml(t("resultBlockedLabel", "Blocked")) + ": " + escapeHtml(String(summary.blocked || 0)) + "</span>");
+    stats.push('<span class="acp-modal-stat">' + escapeHtml(t("resultMissingLabel", "Missing")) + ": " + escapeHtml(String(summary.missing || 0)) + "</span>");
+    stats.push('<span class="acp-modal-stat">' + escapeHtml(t("resultErrorLabel", "Error")) + ": " + escapeHtml(String(summary.errors || 0)) + "</span>");
+
+    html.push('<div class="acp-modal-stats">' + stats.join("") + "</div>");
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + escapeHtml(context.listTitle) + "</div>");
+    html.push('<ul class="acp-modal-list acp-modal-result-list">');
+
+    $.each(results || [], function(_, result) {
+      var statusMeta = formatOperationResultStatus(result.status);
+      var destinationHtml = "";
+      var messageHtml = result.message ? '<div class="acp-modal-result-message">' + escapeHtml(result.message) + "</div>" : "";
+
+      if (result.destination) {
+        destinationHtml =
+          '<div class="acp-modal-result-destination">' +
+            '<span class="acp-modal-result-label">' + escapeHtml(t("destinationLabel", "Destination")) + "</span>" +
+            '<code class="acp-modal-path acp-modal-path-secondary">' + escapeHtml(result.destination) + "</code>" +
+          "</div>";
+      }
+
+      html.push(
+        '<li class="acp-modal-result">' +
+          '<div class="acp-modal-result-head">' +
+            '<span class="acp-modal-stat ' + statusMeta.tone + '">' + escapeHtml(statusMeta.label) + "</span>" +
+            '<code class="acp-modal-path">' + escapeHtml(result.displayPath || result.path || "") + "</code>" +
+          "</div>" +
+          messageHtml +
+          destinationHtml +
+        "</li>"
+      );
+    });
+
+    html.push("</ul></div></div>");
     return html.join("");
+  }
+
+  function startDryRunFlow() {
+    var selectedRows = getSelectedRows();
+
+    if (!selectedRows.length) {
+      swal(t("deleteEmptyTitle", "Nothing selected"), t("deleteEmptyMessage", "Select at least one deletable folder before continuing."), "warning");
+      return;
+    }
+
+    runCandidateOperation(selectedRows, "preview_" + getPrimaryOperation());
+  }
+
+  function startPrimaryActionFlow() {
+    var selectedRows = getSelectedRows();
+    var reviewRows = $.grep(selectedRows, function(row) {
+      return row.risk === "review";
+    });
+    var context = buildOperationContext(getPrimaryOperation());
+    var confirmButtonText = buildActionConfirmButtonText(context, selectedRows.length);
+
+    if (!selectedRows.length) {
+      swal(t("deleteEmptyTitle", "Nothing selected"), t("deleteEmptyMessage", "Select at least one deletable folder before continuing."), "warning");
+      return;
+    }
+
+    if (context.baseOperation === "delete" && reviewRows.length) {
+      swal({
+        title: context.confirmTitle,
+        text: "",
+        type: "input",
+        html: true,
+        showCancelButton: true,
+        closeOnConfirm: false,
+        inputPlaceholder: t("deleteTypedPlaceholder", "DELETE"),
+        confirmButtonText: confirmButtonText
+      }, function(inputValue) {
+        if (inputValue === false) {
+          return false;
+        }
+
+        if ($.trim(String(inputValue || "")).toUpperCase() !== "DELETE") {
+          swal.showInputError(t("deleteTypedError", "Type DELETE to continue."));
+          return false;
+        }
+
+        runCandidateOperation(selectedRows, context.operation);
+        return true;
+      });
+      applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildOperationPreviewHtml(selectedRows, context, {
+        reviewCount: reviewRows.length,
+        showTypeHint: true
+      }));
+      return;
+    }
+
+    swal({
+      title: context.confirmTitle,
+      text: "",
+      type: "warning",
+      html: true,
+      showCancelButton: true,
+      closeOnConfirm: false,
+      confirmButtonText: confirmButtonText
+    }, function() {
+      runCandidateOperation(selectedRows, context.operation);
+    });
+    applyDeleteModalClass("acp-delete-modal", buildOperationPreviewHtml(selectedRows, context, {
+      reviewCount: 0,
+      showTypeHint: false
+    }));
+  }
+
+  function runCandidateOperation(selectedRows, operation) {
+    var context = buildOperationContext(operation);
+
+    setBusy(true);
+    applyDeleteModalClass("");
+    swal({
+      title: context.loadingTitle,
+      text: context.loadingMessage,
+      type: "info",
+      showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false
+    });
+
+    apiPost({
+      action: "executeCandidateAction",
+      scanToken: state.scanToken,
+      candidateIds: JSON.stringify($.map(selectedRows, function(row) {
+        return row.id;
+      })),
+      operation: operation
+    }).done(function(response) {
+      var summary = response.summary || { ready: 0, quarantined: 0, deleted: 0, missing: 0, blocked: 0, errors: 0 };
+      var results = $.isArray(response.results) ? response.results : [];
+      var hasWarnings = Number(summary.blocked || 0) > 0 || Number(summary.missing || 0) > 0 || Number(summary.errors || 0) > 0;
+      var modalTitle = hasWarnings ? context.resultTitleWarning : context.resultTitleSuccess;
+      var modalType = hasWarnings ? "warning" : "success";
+
+      setBusy(false);
+
+      if (!context.preview) {
+        state.selected = {};
+      }
+
+      swal({
+        title: modalTitle,
+        text: "",
+        type: modalType,
+        html: true
+      }, function() {
+        if (!context.preview) {
+          loadScan();
+        }
+      });
+      applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildOperationResultsHtml(summary, results, context));
+      renderSummaryCards();
+      updateActionBar();
+    }).fail(function(xhr) {
+      var fallbackMessage = extractErrorMessage(xhr, t("scanFailedMessage", "The orphaned appdata scan could not be completed right now."));
+
+      setBusy(false);
+
+      if (xhr && xhr.status === 409) {
+        swal({
+          title: context.failureTitle,
+          text: fallbackMessage,
+          type: "error"
+        }, function() {
+          loadScan();
+        });
+        return;
+      }
+
+      swal(context.failureTitle, fallbackMessage, "error");
+    });
   }
 
   function applyDeleteModalClass(className, htmlContent) {
@@ -1011,7 +1235,7 @@
         return;
       }
 
-      $modal.removeClass("acp-delete-modal acp-delete-modal-review");
+      $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal");
       if (className) {
         $modal.addClass(className);
       }

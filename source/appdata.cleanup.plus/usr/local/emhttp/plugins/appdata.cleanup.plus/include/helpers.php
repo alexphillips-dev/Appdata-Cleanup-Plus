@@ -189,6 +189,108 @@ function appdataCleanupPlusAuditLogFile() {
   return appdataCleanupPlusStateFile("cleanup-audit.jsonl");
 }
 
+function appdataCleanupPlusSafetySettingsFile() {
+  return appdataCleanupPlusStateFile("safety-settings.json");
+}
+
+function appdataCleanupPlusSnapshotFile() {
+  return appdataCleanupPlusStateFile("scan-snapshot.json");
+}
+
+function getDefaultAppdataCleanupPlusQuarantineRoot() {
+  $shareName = getAppdataShareName();
+
+  if ( $shareName ) {
+    return "/mnt/user/" . $shareName . "/.appdata-cleanup-plus-quarantine";
+  }
+
+  return "/mnt/user/system/.appdata-cleanup-plus-quarantine";
+}
+
+function getDefaultAppdataCleanupPlusSafetySettings() {
+  return array(
+    "allowOutsideShareCleanup" => false,
+    "enablePermanentDelete" => false,
+    "quarantineRoot" => getDefaultAppdataCleanupPlusQuarantineRoot()
+  );
+}
+
+function normalizeAppdataCleanupPlusSafetySettings($settings) {
+  $defaults = getDefaultAppdataCleanupPlusSafetySettings();
+  $normalized = array(
+    "allowOutsideShareCleanup" => ! empty($settings["allowOutsideShareCleanup"]),
+    "enablePermanentDelete" => ! empty($settings["enablePermanentDelete"]),
+    "quarantineRoot" => isset($settings["quarantineRoot"]) ? trim((string)$settings["quarantineRoot"]) : $defaults["quarantineRoot"]
+  );
+
+  if ( ! $normalized["quarantineRoot"] ) {
+    $normalized["quarantineRoot"] = $defaults["quarantineRoot"];
+  }
+
+  $normalized["quarantineRoot"] = rtrim($normalized["quarantineRoot"], "/");
+  return $normalized;
+}
+
+function getAppdataCleanupPlusSafetySettings() {
+  return normalizeAppdataCleanupPlusSafetySettings(readAppdataCleanupPlusJsonFile(appdataCleanupPlusSafetySettingsFile(), array()));
+}
+
+function setAppdataCleanupPlusSafetySettings($settings) {
+  return writeAppdataCleanupPlusJsonFile(appdataCleanupPlusSafetySettingsFile(), normalizeAppdataCleanupPlusSafetySettings($settings));
+}
+
+function appdataCleanupPlusSnapshotTtlSeconds() {
+  return 1800;
+}
+
+function appdataCleanupPlusRandomToken() {
+  if ( function_exists("random_bytes") ) {
+    return bin2hex(random_bytes(18));
+  }
+
+  if ( function_exists("openssl_random_pseudo_bytes") ) {
+    return bin2hex(openssl_random_pseudo_bytes(18));
+  }
+
+  return md5(uniqid((string)mt_rand(), true));
+}
+
+function ensureAppdataCleanupPlusSession() {
+  if ( function_exists("session_status") && session_status() === PHP_SESSION_ACTIVE ) {
+    return true;
+  }
+
+  if ( headers_sent() ) {
+    return false;
+  }
+
+  @session_start();
+  return function_exists("session_status") && session_status() === PHP_SESSION_ACTIVE;
+}
+
+function getAppdataCleanupPlusCsrfToken() {
+  if ( ! ensureAppdataCleanupPlusSession() ) {
+    return "";
+  }
+
+  if ( empty($_SESSION["appdataCleanupPlusCsrfToken"]) || ! is_string($_SESSION["appdataCleanupPlusCsrfToken"]) ) {
+    $_SESSION["appdataCleanupPlusCsrfToken"] = appdataCleanupPlusRandomToken();
+  }
+
+  return (string)$_SESSION["appdataCleanupPlusCsrfToken"];
+}
+
+function validateAppdataCleanupPlusCsrfToken($token) {
+  $providedToken = trim((string)$token);
+  $storedToken = getAppdataCleanupPlusCsrfToken();
+
+  if ( ! $providedToken || ! $storedToken ) {
+    return false;
+  }
+
+  return hash_equals($storedToken, $providedToken);
+}
+
 function appdataCleanupPlusCandidateKey($path) {
   return normalizeUserPath(rtrim($path, "/"));
 }
@@ -254,6 +356,44 @@ function getLatestAppdataCleanupPlusAuditEntry() {
 
   $decoded = json_decode($lines[count($lines) - 1], true);
   return is_array($decoded) ? $decoded : null;
+}
+
+function writeAppdataCleanupPlusSnapshot($candidateMap) {
+  $snapshot = array(
+    "token" => appdataCleanupPlusRandomToken(),
+    "issuedAt" => date("c"),
+    "expiresAt" => date("c", time() + appdataCleanupPlusSnapshotTtlSeconds()),
+    "candidates" => is_array($candidateMap) ? $candidateMap : array()
+  );
+
+  if ( ! writeAppdataCleanupPlusJsonFile(appdataCleanupPlusSnapshotFile(), $snapshot) ) {
+    return null;
+  }
+
+  return $snapshot;
+}
+
+function getAppdataCleanupPlusSnapshot() {
+  return readAppdataCleanupPlusJsonFile(appdataCleanupPlusSnapshotFile(), array());
+}
+
+function getValidatedAppdataCleanupPlusSnapshot($token) {
+  $snapshot = getAppdataCleanupPlusSnapshot();
+  $expiresAt = isset($snapshot["expiresAt"]) ? strtotime((string)$snapshot["expiresAt"]) : 0;
+
+  if ( ! $token || empty($snapshot["token"]) || ! hash_equals((string)$snapshot["token"], (string)$token) ) {
+    return null;
+  }
+
+  if ( ! $expiresAt || $expiresAt < time() ) {
+    return null;
+  }
+
+  if ( empty($snapshot["candidates"]) || ! is_array($snapshot["candidates"]) ) {
+    return null;
+  }
+
+  return $snapshot;
 }
 
 ?>

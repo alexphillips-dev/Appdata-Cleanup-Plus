@@ -195,6 +195,122 @@ function collectPathStats($path) {
   );
 }
 
+function pathIsMountPoint($path) {
+  $path = rtrim((string)$path, "/");
+
+  if ( ! $path || ! is_dir($path) ) {
+    return false;
+  }
+
+  $parentPath = dirname($path);
+  if ( $parentPath === $path ) {
+    return true;
+  }
+
+  $pathStat = @stat($path);
+  $parentStat = @stat($parentPath);
+
+  if ( ! is_array($pathStat) || ! is_array($parentStat) ) {
+    return false;
+  }
+
+  return isset($pathStat["dev"], $parentStat["dev"]) && $pathStat["dev"] !== $parentStat["dev"];
+}
+
+function pathHasSymlinkSegment($path) {
+  $trimmed = trim((string)$path);
+
+  if ( ! $trimmed || $trimmed[0] !== "/" ) {
+    return false;
+  }
+
+  $segments = array_values(array_filter(explode("/", trim($trimmed, "/")), "strlen"));
+  $currentPath = "";
+
+  foreach ( $segments as $segment ) {
+    $currentPath .= "/" . $segment;
+
+    if ( @is_link($currentPath) ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function inspectDirectoryTreeForUnsafeEntries($path) {
+  if ( @is_link($path) ) {
+    return "Symlinked folders cannot be acted on here.";
+  }
+
+  if ( ! is_dir($path) ) {
+    return "Path no longer exists.";
+  }
+
+  try {
+    $iterator = new RecursiveIteratorIterator(
+      new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+      RecursiveIteratorIterator::SELF_FIRST
+    );
+
+    foreach ( $iterator as $item ) {
+      $itemPath = $item->getPathname();
+
+      if ( $item->isLink() ) {
+        return "Folders containing symlinks are locked for safety.";
+      }
+
+      if ( $item->isDir() && pathIsMountPoint($itemPath) ) {
+        return "Folders containing nested mount points are locked for safety.";
+      }
+
+      if ( ! $item->isDir() && ! $item->isFile() ) {
+        return "Folders containing special filesystem entries are locked for safety.";
+      }
+    }
+  } catch ( Exception $exception ) {
+    return "Folder contents could not be inspected safely.";
+  }
+
+  return "";
+}
+
+function ensureDirectoryExists($path) {
+  if ( is_dir($path) ) {
+    return true;
+  }
+
+  return @mkdir($path, 0777, true);
+}
+
+function buildCandidateQuarantineRoot($path, $settings) {
+  $classification = classifyAppdataCandidate($path);
+
+  if ( ! empty($classification["shareName"]) ) {
+    return "/mnt/user/" . $classification["shareName"] . "/.appdata-cleanup-plus-quarantine";
+  }
+
+  return isset($settings["quarantineRoot"]) ? rtrim((string)$settings["quarantineRoot"], "/") : getDefaultAppdataCleanupPlusQuarantineRoot();
+}
+
+function buildQuarantineDestination($sourcePath, $settings) {
+  $rootPath = rtrim(buildCandidateQuarantineRoot($sourcePath, $settings), "/");
+  $relativePath = trim(normalizeUserPath($sourcePath), "/");
+
+  if ( ! $rootPath || ! $relativePath ) {
+    return "";
+  }
+
+  $safeRelativePath = preg_replace('/[^A-Za-z0-9._\/-]+/', '-', $relativePath);
+  $safeRelativePath = trim($safeRelativePath, "/");
+
+  if ( ! $safeRelativePath ) {
+    return "";
+  }
+
+  return $rootPath . "/" . date("Ymd-His") . "/" . $safeRelativePath;
+}
+
 function buildCandidateReason($sourceNames, $targetPaths, $dockerRunning) {
   $sourceSummary = summarizeCandidateValues($sourceNames);
   $targetSummary = summarizeCandidateValues($targetPaths);
@@ -214,7 +330,12 @@ function buildCandidateReason($sourceNames, $targetPaths, $dockerRunning) {
 function buildLatestAuditMessage($entry) {
   $timestamp = isset($entry['timestamp']) ? strtotime((string)$entry['timestamp']) : 0;
   $summary = isset($entry['summary']) && is_array($entry['summary']) ? $entry['summary'] : array();
+  $operation = isset($entry['operation']) ? (string)$entry['operation'] : "cleanup";
   $parts = array();
+
+  if ( ! empty($summary['quarantined']) ) {
+    $parts[] = $summary['quarantined'] . " moved to quarantine";
+  }
 
   if ( ! empty($summary['deleted']) ) {
     $parts[] = $summary['deleted'] . " deleted";
@@ -236,7 +357,8 @@ function buildLatestAuditMessage($entry) {
     $parts[] = "no changes recorded";
   }
 
-  $message = "Last cleanup ran " . ($timestamp ? formatDateTimeLabel($timestamp) : "recently") . ". " . ucfirst(implode(", ", $parts)) . ".";
+  $label = $operation === "quarantine" ? "quarantine" : "cleanup";
+  $message = "Last " . $label . " ran " . ($timestamp ? formatDateTimeLabel($timestamp) : "recently") . ". " . ucfirst(implode(", ", $parts)) . ".";
 
   if ( ! empty($entry['requestedCount']) ) {
     $message .= " " . $entry['requestedCount'] . " path" . ($entry['requestedCount'] === 1 ? " was" : "s were") . " submitted.";
@@ -371,7 +493,54 @@ function removeParentsUsedByInstalledContainers($availableVolumes, $containers) 
   return $filtered;
 }
 
-function buildCandidateRows($availableVolumes, $dockerRunning) {
+function buildPathSecurityLockReason($resolvedPath) {
+  if ( ! is_dir($resolvedPath) ) {
+    return "Path no longer exists.";
+  }
+
+  if ( @is_link($resolvedPath) ) {
+    return "Symlinked folders are locked for safety.";
+  }
+
+  if ( pathHasSymlinkSegment($resolvedPath) ) {
+    return "Paths containing symlink segments are locked for safety.";
+  }
+
+  if ( pathIsMountPoint($resolvedPath) ) {
+    return "Mount-point folders are locked for safety.";
+  }
+
+  if ( ! @realpath($resolvedPath) ) {
+    return "Path could not be canonicalized safely.";
+  }
+
+  return "";
+}
+
+function applySafetyPolicyToRow($row, $settings) {
+  $row["policyLocked"] = false;
+  $row["policyReason"] = "";
+
+  if ( ! empty($row["securityLockReason"]) ) {
+    $row["policyLocked"] = true;
+    $row["policyReason"] = $row["securityLockReason"];
+    $row["canDelete"] = false;
+    $row["risk"] = "blocked";
+    $row["riskLabel"] = "Locked";
+    $row["riskReason"] = $row["securityLockReason"];
+    return $row;
+  }
+
+  if ( $row["risk"] === "review" && empty($settings["allowOutsideShareCleanup"]) ) {
+    $row["policyLocked"] = true;
+    $row["policyReason"] = "Outside-share cleanup is disabled in Safety settings.";
+    $row["canDelete"] = false;
+  }
+
+  return $row;
+}
+
+function buildCandidateRows($availableVolumes, $dockerRunning, $settings) {
   $rows = array();
   $ignoredCandidates = getIgnoredAppdataCleanupPlusCandidates();
 
@@ -393,6 +562,8 @@ function buildCandidateRows($availableVolumes, $dockerRunning) {
     $candidateKey = appdataCleanupPlusCandidateKey($resolvedPath);
     $ignoredEntry = isset($ignoredCandidates[$candidateKey]) && is_array($ignoredCandidates[$candidateKey]) ? $ignoredCandidates[$candidateKey] : null;
     $ignoredAt = $ignoredEntry && ! empty($ignoredEntry['ignoredAt']) ? strtotime((string)$ignoredEntry['ignoredAt']) : 0;
+    $securityLockReason = buildPathSecurityLockReason($resolvedPath);
+    $realPath = @realpath($resolvedPath);
 
     $row = array(
       "id" => md5($candidateKey),
@@ -406,6 +577,7 @@ function buildCandidateRows($availableVolumes, $dockerRunning) {
       "templateRefs" => $templateRefs,
       "path" => $resolvedPath,
       "displayPath" => $resolvedPath,
+      "realPath" => $realPath ? $realPath : "",
       "risk" => $classification['risk'],
       "riskLabel" => $classification['riskLabel'],
       "riskReason" => $classification['riskReason'],
@@ -422,6 +594,9 @@ function buildCandidateRows($availableVolumes, $dockerRunning) {
       "lastModifiedIso" => $pathStats['lastModifiedIso'],
       "lastModifiedLabel" => $pathStats['lastModifiedLabel'],
       "lastModifiedExact" => $pathStats['lastModifiedExact'],
+      "securityLockReason" => $securityLockReason,
+      "policyLocked" => false,
+      "policyReason" => "",
       "ignored" => false,
       "ignoredAt" => "",
       "ignoredAtLabel" => "",
@@ -440,7 +615,7 @@ function buildCandidateRows($availableVolumes, $dockerRunning) {
       $row['canDelete'] = false;
     }
 
-    $rows[] = $row;
+    $rows[] = applySafetyPolicyToRow($row, $settings);
   }
 
   usort($rows, function($left, $right) {
@@ -480,7 +655,23 @@ function buildSummary($rows) {
   return $summary;
 }
 
-function buildNotices($dockerRunning, $summary) {
+function buildSnapshotCandidateMap($rows) {
+  $candidateMap = array();
+
+  foreach ( $rows as $row ) {
+    $candidateMap[$row['id']] = array(
+      "id" => $row["id"],
+      "path" => $row["path"],
+      "displayPath" => $row["displayPath"],
+      "realPath" => $row["realPath"],
+      "ignored" => ! empty($row["ignored"])
+    );
+  }
+
+  return $candidateMap;
+}
+
+function buildNotices($dockerRunning, $summary, $settings) {
   $notices = array();
   $latestAudit = getLatestAppdataCleanupPlusAuditEntry();
 
@@ -488,7 +679,21 @@ function buildNotices($dockerRunning, $summary) {
     $notices[] = array(
       "type" => "warning",
       "title" => "Docker is offline",
-      "message" => "Results are based only on saved Docker templates. Review every path before deleting anything."
+      "message" => "Results are based only on saved Docker templates. Review every path before acting on anything."
+    );
+  }
+
+  if ( empty($settings["enablePermanentDelete"]) ) {
+    $notices[] = array(
+      "type" => "info",
+      "title" => "Safe mode is on",
+      "message" => "The primary action moves selected folders into quarantine instead of permanently deleting them."
+    );
+  } else {
+    $notices[] = array(
+      "type" => "warning",
+      "title" => "Permanent delete mode is enabled",
+      "message" => "Selected folders will be permanently removed after confirmation. Use this mode carefully."
     );
   }
 
@@ -509,107 +714,425 @@ function buildNotices($dockerRunning, $summary) {
   }
 
   if ( ! empty($summary['review']) ) {
-    $notices[] = array(
-      "type" => "info",
-      "title" => "Review outside-share paths carefully",
-      "message" => "Some candidates sit outside the configured appdata share and require extra confirmation before delete."
-    );
+    if ( empty($settings["allowOutsideShareCleanup"]) ) {
+      $notices[] = array(
+        "type" => "info",
+        "title" => "Outside-share cleanup is disabled",
+        "message" => "Review paths stay visible but locked until you explicitly enable outside-share cleanup."
+      );
+    } else {
+      $notices[] = array(
+        "type" => "warning",
+        "title" => "Outside-share cleanup is enabled",
+        "message" => "Review paths sit outside the configured appdata share. Confirm each one carefully before acting."
+      );
+    }
   }
 
   if ( ! empty($summary['blocked']) ) {
     $notices[] = array(
       "type" => "warning",
-      "title" => "Blocked paths are locked",
-      "message" => "Any path that resolves to a share root or mount root stays visible for review but cannot be deleted here."
+      "title" => "Locked paths stay blocked",
+      "message" => "Any path that resolves to a share root, mount point, symlinked location, or other unsafe target cannot be acted on here."
     );
   }
 
   return $notices;
 }
 
-function parseDeletePaths($rawPaths) {
-  $paths = array();
+function parseCandidateIds($rawIds) {
+  $ids = array();
 
-  if ( ! $rawPaths ) {
-    return $paths;
+  if ( ! $rawIds ) {
+    return $ids;
   }
 
-  $decoded = json_decode($rawPaths, true);
+  $decoded = json_decode($rawIds, true);
   if ( is_array($decoded) ) {
-    $paths = $decoded;
+    $ids = $decoded;
   } else {
-    $paths = explode("*", $rawPaths);
+    $ids = explode("*", $rawIds);
   }
 
-  $cleanPaths = array();
-  foreach ( $paths as $path ) {
-    $path = trim($path);
-    if ( $path ) {
-      $cleanPaths[$path] = true;
+  $cleanIds = array();
+  foreach ( $ids as $id ) {
+    $id = trim((string)$id);
+    if ( $id ) {
+      $cleanIds[$id] = true;
     }
   }
 
-  return array_keys($cleanPaths);
+  return array_keys($cleanIds);
 }
 
-function getRequestedPath() {
-  return isset($_POST['path']) ? trim((string)$_POST['path']) : "";
+function getRequestedToken() {
+  return isset($_POST['scanToken']) ? trim((string)$_POST['scanToken']) : "";
 }
 
-function deleteCandidatePaths($paths) {
-  $results = array();
+function getRequestedOperation() {
+  return isset($_POST['operation']) ? trim((string)$_POST['operation']) : "";
+}
 
-  foreach ( $paths as $path ) {
-    $classification = classifyAppdataCandidate($path);
-    $displayPath = resolveExistingPath($classification);
+function getRequestedCsrfToken() {
+  if ( ! empty($_SERVER["HTTP_X_APPDATA_CLEANUP_PLUS_CSRF"]) ) {
+    return trim((string)$_SERVER["HTTP_X_APPDATA_CLEANUP_PLUS_CSRF"]);
+  }
 
-    if ( ! $classification['canDelete'] ) {
-      $results[] = array(
-        "path" => $path,
-        "displayPath" => $displayPath,
-        "status" => "blocked",
-        "message" => $classification['riskReason']
-      );
-      continue;
-    }
+  return isset($_POST["csrfToken"]) ? trim((string)$_POST["csrfToken"]) : "";
+}
 
-    if ( ! is_dir($displayPath) ) {
-      $results[] = array(
-        "path" => $path,
-        "displayPath" => $displayPath,
-        "status" => "missing",
-        "message" => "Path no longer exists."
-      );
-      continue;
-    }
+function getPostedBoolean($key) {
+  if ( ! isset($_POST[$key]) ) {
+    return false;
+  }
 
-    $output = array();
-    $returnCode = 0;
-    exec("rm -rf " . escapeshellarg($displayPath), $output, $returnCode);
+  $value = strtolower(trim((string)$_POST[$key]));
+  return in_array($value, array("1", "true", "yes", "on"), true);
+}
 
-    if ( $returnCode === 0 && ! is_dir($displayPath) ) {
-      $results[] = array(
-        "path" => $path,
-        "displayPath" => $displayPath,
-        "status" => "deleted",
-        "message" => "Deleted successfully."
-      );
-      continue;
-    }
+function isPreviewOperation($operation) {
+  return startsWith($operation, "preview_");
+}
 
-    $results[] = array(
-      "path" => $path,
-      "displayPath" => $displayPath,
-      "status" => "error",
-      "message" => "Delete command did not complete cleanly."
+function getBaseOperation($operation) {
+  return isPreviewOperation($operation) ? substr($operation, 8) : $operation;
+}
+
+function isSupportedOperation($operation) {
+  $baseOperation = getBaseOperation($operation);
+  return in_array($baseOperation, array("quarantine", "delete"), true);
+}
+
+function resolveSnapshotCandidates($token, $candidateIds) {
+  if ( empty($candidateIds) ) {
+    return array(
+      "ok" => false,
+      "message" => "No candidates were selected.",
+      "statusCode" => 400
     );
   }
 
-  return $results;
+  $snapshot = getValidatedAppdataCleanupPlusSnapshot($token);
+  if ( ! $snapshot ) {
+    return array(
+      "ok" => false,
+      "message" => "This scan expired or is no longer valid. Rescan and try again.",
+      "statusCode" => 409
+    );
+  }
+
+  $resolvedCandidates = array();
+  foreach ( $candidateIds as $candidateId ) {
+    if ( empty($snapshot["candidates"][$candidateId]) || ! is_array($snapshot["candidates"][$candidateId]) ) {
+      return array(
+        "ok" => false,
+        "message" => "One or more selected candidates are no longer valid. Rescan and try again.",
+        "statusCode" => 409
+      );
+    }
+
+    $resolvedCandidates[] = $snapshot["candidates"][$candidateId];
+  }
+
+  return array(
+    "ok" => true,
+    "snapshot" => $snapshot,
+    "candidates" => $resolvedCandidates
+  );
 }
 
-function buildDeleteSummary($results) {
+function resolveCandidateForAction($candidate, $settings, $baseOperation) {
+  $candidatePath = isset($candidate["path"]) ? (string)$candidate["path"] : "";
+  $candidateDisplayPath = isset($candidate["displayPath"]) ? (string)$candidate["displayPath"] : $candidatePath;
+  $snapshotRealPath = isset($candidate["realPath"]) ? (string)$candidate["realPath"] : "";
+
+  if ( ! $candidatePath ) {
+    return array(
+      "ok" => false,
+      "path" => $candidateDisplayPath,
+      "displayPath" => $candidateDisplayPath,
+      "status" => "blocked",
+      "message" => "Candidate data is incomplete."
+    );
+  }
+
+  if ( ! empty($candidate["ignored"]) ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $candidateDisplayPath,
+      "status" => "blocked",
+      "message" => "Ignored paths must be restored before acting on them."
+    );
+  }
+
+  $classification = classifyAppdataCandidate($candidatePath);
+  $displayPath = resolveExistingPath($classification);
+  $currentRealPath = @realpath($displayPath);
+
+  if ( ! is_dir($displayPath) ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "missing",
+      "message" => "Path no longer exists."
+    );
+  }
+
+  if ( ! $currentRealPath ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "blocked",
+      "message" => "Path could not be canonicalized safely."
+    );
+  }
+
+  if ( $snapshotRealPath && ! hash_equals($snapshotRealPath, $currentRealPath) ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "blocked",
+      "message" => "Path changed since the last scan. Rescan before continuing."
+    );
+  }
+
+  if ( @is_link($displayPath) || pathHasSymlinkSegment($displayPath) ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "blocked",
+      "message" => "Symlinked paths cannot be acted on here."
+    );
+  }
+
+  if ( pathIsMountPoint($displayPath) || pathIsMountPoint($currentRealPath) ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "blocked",
+      "message" => "Mount-point folders cannot be acted on here."
+    );
+  }
+
+  if ( ! $classification["canDelete"] ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "blocked",
+      "message" => $classification["riskReason"]
+    );
+  }
+
+  if ( $classification["risk"] === "review" && empty($settings["allowOutsideShareCleanup"]) ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "blocked",
+      "message" => "Outside-share cleanup is disabled in Safety settings."
+    );
+  }
+
+  if ( $baseOperation === "delete" && empty($settings["enablePermanentDelete"]) ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "blocked",
+      "message" => "Permanent delete mode is disabled."
+    );
+  }
+
+  $quarantineRoot = buildCandidateQuarantineRoot($displayPath, $settings);
+  $normalizedDisplayPath = normalizeUserPath($displayPath);
+  $normalizedQuarantineRoot = normalizeUserPath($quarantineRoot);
+
+  if ( $normalizedDisplayPath === $normalizedQuarantineRoot || pathIsDescendant($quarantineRoot, $displayPath) ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "blocked",
+      "message" => "Quarantine folders cannot be acted on here."
+    );
+  }
+
+  return array(
+    "ok" => true,
+    "path" => $candidatePath,
+    "displayPath" => $displayPath,
+    "realPath" => $currentRealPath
+  );
+}
+
+function quarantineCandidatePath($displayPath, $settings) {
+  $destination = buildQuarantineDestination($displayPath, $settings);
+
+  if ( ! $destination ) {
+    return array(
+      "ok" => false,
+      "message" => "Quarantine destination could not be prepared.",
+      "destination" => ""
+    );
+  }
+
+  if ( ! ensureDirectoryExists(dirname($destination)) ) {
+    return array(
+      "ok" => false,
+      "message" => "Quarantine destination could not be created.",
+      "destination" => $destination
+    );
+  }
+
+  if ( @rename($displayPath, $destination) ) {
+    return array(
+      "ok" => true,
+      "message" => "Moved to quarantine.",
+      "destination" => $destination
+    );
+  }
+
+  return array(
+    "ok" => false,
+    "message" => "Quarantine move failed. The source folder was left in place.",
+    "destination" => $destination
+  );
+}
+
+function nativeDeleteDirectory($path) {
+  $unsafeReason = inspectDirectoryTreeForUnsafeEntries($path);
+
+  if ( $unsafeReason ) {
+    return array(
+      "ok" => false,
+      "message" => $unsafeReason
+    );
+  }
+
+  try {
+    $iterator = new RecursiveIteratorIterator(
+      new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+      RecursiveIteratorIterator::CHILD_FIRST
+    );
+
+    foreach ( $iterator as $item ) {
+      $itemPath = $item->getPathname();
+
+      if ( $item->isDir() ) {
+        if ( ! @rmdir($itemPath) ) {
+          return array(
+            "ok" => false,
+            "message" => "A directory could not be removed cleanly."
+          );
+        }
+      } else {
+        if ( ! @unlink($itemPath) ) {
+          return array(
+            "ok" => false,
+            "message" => "A file could not be removed cleanly."
+          );
+        }
+      }
+    }
+  } catch ( Exception $exception ) {
+    return array(
+      "ok" => false,
+      "message" => "Delete walk did not complete cleanly."
+    );
+  }
+
+  if ( ! @rmdir($path) ) {
+    return array(
+      "ok" => false,
+      "message" => "The top-level folder could not be removed cleanly."
+    );
+  }
+
+  return array(
+    "ok" => true,
+    "message" => "Deleted successfully."
+  );
+}
+
+function executeCandidateOperation($candidates, $settings, $operation) {
+  $results = array();
+  $preview = isPreviewOperation($operation);
+  $baseOperation = getBaseOperation($operation);
+
+  foreach ( $candidates as $candidate ) {
+    $resolved = resolveCandidateForAction($candidate, $settings, $baseOperation);
+
+    if ( ! $resolved["ok"] ) {
+      $results[] = array(
+        "path" => $resolved["path"],
+        "displayPath" => $resolved["displayPath"],
+        "status" => $resolved["status"],
+        "message" => $resolved["message"]
+      );
+      continue;
+    }
+
+    if ( $preview ) {
+      $previewResult = array(
+        "path" => $resolved["path"],
+        "displayPath" => $resolved["displayPath"],
+        "status" => "ready",
+        "message" => $baseOperation === "quarantine" ? "Would move to quarantine." : "Would permanently delete."
+      );
+
+      if ( $baseOperation === "quarantine" ) {
+        $previewResult["destination"] = buildQuarantineDestination($resolved["displayPath"], $settings);
+      }
+
+      $results[] = $previewResult;
+      continue;
+    }
+
+    if ( $baseOperation === "quarantine" ) {
+      $quarantineResult = quarantineCandidatePath($resolved["displayPath"], $settings);
+      $result = array(
+        "path" => $resolved["path"],
+        "displayPath" => $resolved["displayPath"],
+        "status" => $quarantineResult["ok"] ? "quarantined" : "error",
+        "message" => $quarantineResult["message"]
+      );
+
+      if ( ! empty($quarantineResult["destination"]) ) {
+        $result["destination"] = $quarantineResult["destination"];
+      }
+
+      $results[] = $result;
+      continue;
+    }
+
+    $deleteResult = nativeDeleteDirectory($resolved["displayPath"]);
+    $results[] = array(
+      "path" => $resolved["path"],
+      "displayPath" => $resolved["displayPath"],
+      "status" => $deleteResult["ok"] ? "deleted" : "error",
+      "message" => $deleteResult["message"]
+    );
+  }
+
+  return array(
+    "preview" => $preview,
+    "operation" => $baseOperation,
+    "results" => $results,
+    "summary" => buildOperationSummary($results)
+  );
+}
+
+function buildOperationSummary($results) {
   $summary = array(
+    "ready" => 0,
+    "quarantined" => 0,
     "deleted" => 0,
     "missing" => 0,
     "blocked" => 0,
@@ -618,6 +1141,12 @@ function buildDeleteSummary($results) {
 
   foreach ( $results as $result ) {
     switch ( $result['status'] ) {
+      case "ready":
+        $summary['ready']++;
+        break;
+      case "quarantined":
+        $summary['quarantined']++;
+        break;
       case "deleted":
         $summary['deleted']++;
         break;
@@ -638,9 +1167,18 @@ function buildDeleteSummary($results) {
 
 libxml_use_internal_errors(true);
 $action = isset($_POST['action']) ? $_POST['action'] : "";
+$csrfToken = getRequestedCsrfToken();
+
+if ( ! validateAppdataCleanupPlusCsrfToken($csrfToken) ) {
+  jsonResponse(array(
+    "ok" => false,
+    "message" => "Security validation failed. Refresh the page and try again."
+  ), 403);
+}
 
 switch ( $action ) {
   case "getOrphanAppdata":
+    $settings = getAppdataCleanupPlusSafetySettings();
     $allFiles = glob("/boot/config/plugins/dockerMan/templates-user/*.xml");
     $dockerRunning = is_dir("/var/lib/docker/tmp");
     $containers = getDockerContainersSafe();
@@ -651,36 +1189,94 @@ switch ( $action ) {
     $availableVolumes = removeParentCandidates($availableVolumes);
     $availableVolumes = removeParentsUsedByInstalledContainers($availableVolumes, $containers);
 
-    $rows = buildCandidateRows($availableVolumes, $dockerRunning);
+    $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings);
     $summary = buildSummary($rows);
+    $snapshot = writeAppdataCleanupPlusSnapshot(buildSnapshotCandidateMap($rows));
+
+    if ( ! $snapshot ) {
+      jsonResponse(array(
+        "ok" => false,
+        "message" => "A secure scan snapshot could not be created right now."
+      ), 500);
+    }
 
     jsonResponse(array(
       "ok" => true,
       "dockerRunning" => $dockerRunning,
       "summary" => $summary,
-      "notices" => buildNotices($dockerRunning, $summary),
-      "rows" => $rows
+      "notices" => buildNotices($dockerRunning, $summary, $settings),
+      "rows" => $rows,
+      "scanToken" => $snapshot["token"],
+      "settings" => $settings
     ));
     break;
 
-  case "ignoreCandidate":
-    $path = getRequestedPath();
+  case "saveSafetySettings":
+    $token = getRequestedToken();
+    $snapshot = getValidatedAppdataCleanupPlusSnapshot($token);
 
-    if ( ! $path ) {
+    if ( ! $snapshot ) {
       jsonResponse(array(
         "ok" => false,
-        "message" => "No path was provided."
+        "message" => "This scan expired or is no longer valid. Rescan and try again."
+      ), 409);
+    }
+
+    $settings = array(
+      "allowOutsideShareCleanup" => getPostedBoolean("allowOutsideShareCleanup"),
+      "enablePermanentDelete" => getPostedBoolean("enablePermanentDelete")
+    );
+
+    if ( ! setAppdataCleanupPlusSafetySettings($settings) ) {
+      jsonResponse(array(
+        "ok" => false,
+        "message" => "Safety settings could not be saved."
+      ), 500);
+    }
+
+    jsonResponse(array(
+      "ok" => true,
+      "settings" => getAppdataCleanupPlusSafetySettings()
+    ));
+    break;
+
+  case "updateCandidateState":
+    $token = getRequestedToken();
+    $candidateIds = parseCandidateIds(getPost("candidateIds", "no"));
+    $intent = isset($_POST["intent"]) ? trim((string)$_POST["intent"]) : "";
+    $resolvedCandidates = resolveSnapshotCandidates($token, $candidateIds);
+
+    if ( ! $resolvedCandidates["ok"] ) {
+      jsonResponse(array(
+        "ok" => false,
+        "message" => $resolvedCandidates["message"]
+      ), $resolvedCandidates["statusCode"]);
+    }
+
+    if ( ! in_array($intent, array("ignore", "unignore"), true) ) {
+      jsonResponse(array(
+        "ok" => false,
+        "message" => "Unsupported candidate state update."
       ), 400);
     }
 
-    $classification = classifyAppdataCandidate($path);
-    $displayPath = resolveExistingPath($classification);
+    foreach ( $resolvedCandidates["candidates"] as $candidate ) {
+      if ( $intent === "ignore" ) {
+        if ( ! ignoreAppdataCleanupPlusCandidate($candidate["displayPath"]) ) {
+          jsonResponse(array(
+            "ok" => false,
+            "message" => "The ignore list could not be updated."
+          ), 500);
+        }
+        continue;
+      }
 
-    if ( ! ignoreAppdataCleanupPlusCandidate($displayPath) ) {
-      jsonResponse(array(
-        "ok" => false,
-        "message" => "The ignore list could not be updated."
-      ), 500);
+      if ( ! unignoreAppdataCleanupPlusCandidate($candidate["displayPath"]) ) {
+        jsonResponse(array(
+          "ok" => false,
+          "message" => "The ignore list could not be updated."
+        ), 500);
+      }
     }
 
     jsonResponse(array(
@@ -688,54 +1284,46 @@ switch ( $action ) {
     ));
     break;
 
-  case "unignoreCandidate":
-    $path = getRequestedPath();
+  case "executeCandidateAction":
+    $token = getRequestedToken();
+    $candidateIds = parseCandidateIds(getPost("candidateIds", "no"));
+    $operation = getRequestedOperation();
+    $resolvedCandidates = resolveSnapshotCandidates($token, $candidateIds);
+    $settings = getAppdataCleanupPlusSafetySettings();
 
-    if ( ! $path ) {
+    if ( ! $resolvedCandidates["ok"] ) {
       jsonResponse(array(
         "ok" => false,
-        "message" => "No path was provided."
+        "message" => $resolvedCandidates["message"]
+      ), $resolvedCandidates["statusCode"]);
+    }
+
+    if ( ! $operation || ! isSupportedOperation($operation) ) {
+      jsonResponse(array(
+        "ok" => false,
+        "message" => "Unsupported cleanup operation."
       ), 400);
     }
 
-    if ( ! unignoreAppdataCleanupPlusCandidate($path) ) {
-      jsonResponse(array(
-        "ok" => false,
-        "message" => "The ignore list could not be updated."
-      ), 500);
+    $execution = executeCandidateOperation($resolvedCandidates["candidates"], $settings, $operation);
+
+    if ( ! $execution["preview"] ) {
+      appendAppdataCleanupPlusAuditEntry(array(
+        "timestamp" => date("c"),
+        "operation" => $execution["operation"],
+        "requestedCount" => count($candidateIds),
+        "requestedIds" => array_values($candidateIds),
+        "summary" => $execution["summary"],
+        "results" => $execution["results"]
+      ));
     }
 
     jsonResponse(array(
-      "ok" => true
-    ));
-    break;
-
-  case "deleteAppdata":
-    $paths = parseDeletePaths(getPost("paths","no"));
-
-    if ( empty($paths) ) {
-      jsonResponse(array(
-        "ok" => false,
-        "message" => "No paths were selected.",
-        "results" => array(),
-        "summary" => array("deleted" => 0, "missing" => 0, "blocked" => 0, "errors" => 0)
-      ), 400);
-    }
-
-    $results = deleteCandidatePaths($paths);
-    $summary = buildDeleteSummary($results);
-    appendAppdataCleanupPlusAuditEntry(array(
-      "timestamp" => date("c"),
-      "requestedCount" => count($paths),
-      "requestedPaths" => array_values($paths),
-      "summary" => $summary,
-      "results" => $results
-    ));
-
-    jsonResponse(array(
-      "ok" => $summary['errors'] === 0,
-      "results" => $results,
-      "summary" => $summary
+      "ok" => $execution["summary"]["errors"] === 0,
+      "operation" => $execution["operation"],
+      "preview" => $execution["preview"],
+      "results" => $execution["results"],
+      "summary" => $execution["summary"]
     ));
     break;
 
