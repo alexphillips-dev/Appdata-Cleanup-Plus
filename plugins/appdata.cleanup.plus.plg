@@ -1,0 +1,217 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+<!ENTITY name      "appdata.cleanup.plus">
+<!ENTITY author    "alexphillips-dev">
+<!ENTITY version "2026.03.27.22">
+<!ENTITY md5 "1994586198e08ea61c6b0ac2d17a2030">
+<!ENTITY launch    "Settings/AppdataCleanupPlus">
+<!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
+<!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
+]>
+
+<PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
+
+<CHANGES>
+###2026.03.27.22
+- Maintenance: Refresh package metadata and build artifacts
+
+###2026.03.27.21
+- Maintenance: Refresh package metadata and build artifacts
+
+###2026.03.27.20
+- Maintenance: Refresh package metadata and build artifacts
+
+###2026.03.27.19
+- Maintenance: Refresh package metadata and build artifacts
+
+###2026.03.27.18
+- UX: Add folder size, last-updated metadata, richer template-to-target flag reasons, and compact ignore or restore actions directly in the cleanup list
+- UX: Add a Show ignored toggle plus clearer result and empty-state messaging when candidates are hidden by the ignore list
+- Safety: Persist ignored paths and write a cleanup audit trail under the plugin config directory, then surface the latest cleanup summary back in the dashboard
+
+###2026.03.27.17
+- Fix: Copy the active ACP theme tokens onto SweetAlert at runtime so the delete and results popups render a real themed background instead of falling through to the page
+- UX: Harden the popup shell chrome with explicit card sizing, borders, icon styling, and button styling so the delete dialog reads like a proper modal
+
+###2026.03.27.16
+- UX: Rebuild the delete confirmation popup with a real warning badge, clearer irreversible-action copy, summary chips, and a boxed folder review list
+- UX: Unify the normal delete and typed-confirm review flows so higher-risk deletes use the same warning layout with a stronger review-required callout
+
+###2026.03.27.15
+- Maintenance: Remove legacy source comments from the packaged helper files and old manifest comment blocks while keeping the release changelog structure intact
+- UX: Make the orphan-list checkboxes smaller and centered in the left column for faster scanning and cleaner alignment
+
+###2026.03.27.14
+- Compatibility: Raise the supported Unraid minimum version to 7.0.0+ in both the plugin manifest and CA metadata
+
+###2026.03.27.13
+- Fix: Export the active Unraid host theme from the PHP page shell and stamp explicit host-theme attributes like FolderView Plus so White mode no longer falls back to dark tokens
+- UX: Keep summary values centered in the stat tiles while theme classification now uses host-theme attributes first and luminance fallback second
+
+###2026.03.27.12
+- UX: Center the stat values within each summary tile while keeping the labels anchored at the top
+- UX: Detect the active Unraid theme at runtime and apply the matching White, Azure, Gray, or Black token palette reliably
+
+###2026.03.27.11
+- UX: Lock the top stat tile values to a shared baseline so wrapped labels no longer shift the numbers
+- UX: Rebuild the sort panel layout so the order dropdown, actions, and result count align cleanly at the same card height as search
+
+###2026.03.27.10
+- UX: Shrink the top stat tiles into a compact left-aligned cluster instead of full-width cards
+- UX: Split the old combined toolbar into separate Search and Sort panels positioned beside the stat tiles
+- UX: Replace the header risk buttons with a dropdown so the top control area stays compact
+
+###2026.03.27.09
+- UX: Add a theme token system with explicit Black, Azure, Gray, and White Dynamix theme palettes
+- UX: Keep the compact dashboard layout while adapting contrast, panels, buttons, badges, and path chips to the active Unraid theme
+
+###2026.03.27.08
+- UX: Remove the top-right Done button and compress the dashboard spacing across the header, stats, toolbar, and sticky action bar
+- UX: Replace tall orphan cards with a compact row list so folders can be scanned and selected much faster
+- UX: Hard-reset button and filter styling to stop hover artifacts from inherited Unraid button effects
+
+###2026.03.27.07
+- UX: Tighten the dashboard spacing so cards, controls, and orphan rows take less vertical space
+- UX: Remove button hover motion and switch to a stable highlight so hover outlines do not jitter
+
+###2026.03.27.06
+- UX: Replace the legacy settings page with a modern cleanup dashboard, summary cards, filters, and a sticky action bar
+- Safety: Move scan/delete responses to JSON, keep dangerous root-level paths locked, and require typed confirmation for outside-share deletes
+- Maintenance: Split the frontend into dedicated JS/CSS assets and remove leftover debug behavior from the helper layer
+
+###2026.03.27.05
+- UX: Remove the top warning banner from the settings page
+- UX: Remove the Credits link, support footer, and plugin version footer from the settings page
+
+###2026.03.27.04
+- UX: Shorten the installed plugin description so it states exactly what the plugin does
+- UX: Show a clear testing-channel note on dev builds while keeping main descriptions clean
+
+###2026.03.27.03
+- Maintenance: Refresh package metadata and build artifacts
+
+###2026.03.27.02
+- Docs: Add install, update, and release basics to the repository and bundled plugin README files
+- Maintenance: Add branch-aware CA metadata plus Unraid-friendly YYYY.MM.DD.UU package versioning for main and dev channels
+
+###2026.03.27
+- Renamed the plugin to Appdata Cleanup Plus
+- Moved package metadata and update feeds to alexphillips-dev/Appdata-Cleanup-Plus on the dev branch
+
+###2024.11.28
+- Fixed: Compatibility with Unraid 6.12.14+
+
+###2022.10.21
+- Support translations by request
+
+###2021.12.08
+- Ignore error if corrupted XML files
+
+###2021.11.27
+- Unraid 6.10 compatibility
+
+###2021.03.10
+- Permission Fix
+
+###2020.10.21
+- Compatibility Fixes
+
+###2019.09.15
+- Fixed: Weirdness if using an appdata folder containing special characters
+
+###2019.08.18
+- Add another CYA banner warning
+
+###2019.08.03
+- Add large warning that if you screwed up, it's your problem
+
+###2019.06.01
+- Fix typo, credits fix, change update notification to CA style
+
+###2019.05.14
+- Suppress errors if xml file is corrupted
+
+###2019.01.13
+- Update Icon
+
+###2018.12.31
+- Add in some checks for when user had a severely misconfigured application previously installed
+
+###2018.10.19
+- Fix Broken Pipe
+
+###2018.03.15
+- Ignore metadata files created by OSX
+
+###2017.11.23
+- Reorganization as part of updates to CA proper
+- Relocate Icon to Settings / User Utilities
+
+###2017.01.28
+- Fixed: Errors when no templates have any possibilities for cleanup
+
+###2016.11.11
+- Initial Release
+
+</CHANGES>
+
+<FILE Run="/usr/bin/php">
+<INLINE>
+<![CDATA[
+<?
+  $version = parse_ini_file("/etc/unraid-version");
+  
+  if ( version_compare($version['version'],"7.0.0", "<") )
+  {
+    echo "********************************************************************\n";
+    echo "\n";
+    echo "Appdata Cleanup Plus requires Unraid version 7.0.0 or greater to run\n";
+    echo "\n";
+    echo "********************************************************************\n";
+    exit(1);
+  }
+  if ( is_file("/usr/local/emhttp/plugins/community.applications/Backup.page") ) {
+    echo "Community Applications already includes Cleanup Appdata. Appdata Cleanup Plus cannot be installed alongside it... Aborting Installation\n";
+    exit(1);
+  }
+?>
+]]>
+</INLINE>
+</FILE>
+
+<FILE Run="/bin/bash">
+<INLINE>
+rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&version;')
+</INLINE>
+</FILE>
+
+<FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
+<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<MD5>&md5;</MD5>
+</FILE>
+
+<FILE Run="/bin/bash">
+<INLINE>
+rm -rf /usr/local/emhttp/plugins/ca.cleanup.appdata/CA.page
+rm -rf /usr/local/emhttp/plugins/ca.cleanup.appdata/caHelp.page
+rm -rf /usr/local/emhttp/plugins/ca.cleanup.appdata
+echo ""
+echo "----------------------------------------------------"
+echo " &name; has been installed."
+echo " Maintainer: &author;"
+echo " Repo: &github;"
+echo " Version: &version;"
+echo "----------------------------------------------------"
+echo ""
+</INLINE>
+</FILE>
+
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+removepkg &name;-&version;-x86_64-1
+rm -rf &plugdir;
+rm -rf /boot/config/plugins/&name;
+</INLINE>
+</FILE> 
+</PLUGIN>
