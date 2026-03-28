@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.27.16">
-<!ENTITY md5 "b14d102ce3033bed2073cd651eeeafa9">
+<!ENTITY version "2026.03.27.17">
+<!ENTITY md5 "d1b003fa77b1617c49886c48abb5dd6d">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png">
 
 <CHANGES>
+###2026.03.27.17
+- Fix: Copy the active ACP theme tokens onto SweetAlert at runtime so the delete and results popups render a real themed background instead of falling through to the page
+- UX: Harden the popup shell chrome with explicit card sizing, borders, icon styling, and button styling so the delete dialog reads like a proper modal
+
 ###2026.03.27.16
 - UX: Rebuild the delete confirmation popup with a real warning badge, clearer irreversible-action copy, summary chips, and a boxed folder review list
 - UX: Unify the normal delete and typed-confirm review flows so higher-risk deletes use the same warning layout with a stronger review-required callout

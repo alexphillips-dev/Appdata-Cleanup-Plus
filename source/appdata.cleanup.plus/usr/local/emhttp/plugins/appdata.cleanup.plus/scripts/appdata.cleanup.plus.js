@@ -3,6 +3,38 @@
 
   var config = window.appdataCleanupPlusConfig || {};
   var strings = config.strings || {};
+  var modalThemeTokens = [
+    "--acp-panel",
+    "--acp-panel-soft",
+    "--acp-border",
+    "--acp-shadow",
+    "--acp-heading",
+    "--acp-text",
+    "--acp-muted",
+    "--acp-input-bg",
+    "--acp-input-border",
+    "--acp-input-text",
+    "--acp-input-focus",
+    "--acp-review-soft",
+    "--acp-review-text",
+    "--acp-filter-bg",
+    "--acp-accent-soft",
+    "--acp-accent-text",
+    "--acp-safe-soft",
+    "--acp-safe-text",
+    "--acp-path-bg",
+    "--acp-path-border",
+    "--acp-path-text",
+    "--acp-button-bg",
+    "--acp-button-border",
+    "--acp-button-text",
+    "--acp-button-hover-bg",
+    "--acp-button-hover-border",
+    "--acp-button-hover-text",
+    "--acp-button-primary-bg",
+    "--acp-button-primary-border",
+    "--acp-button-primary-text"
+  ];
   var state = {
     rows: [],
     notices: [],
@@ -675,10 +707,7 @@
     if (reviewRows.length) {
       swal({
         title: t("deleteConfirmTitle", "Delete selected folders?"),
-        text: buildDeletePreviewHtml(selectedRows, {
-          reviewCount: reviewRows.length,
-          showTypeHint: true
-        }),
+        text: "",
         type: "input",
         html: true,
         showCancelButton: true,
@@ -698,16 +727,16 @@
         runDelete(selectedRows);
         return true;
       });
-      applyDeleteModalClass("acp-delete-modal acp-delete-modal-review");
+      applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildDeletePreviewHtml(selectedRows, {
+        reviewCount: reviewRows.length,
+        showTypeHint: true
+      }));
       return;
     }
 
     swal({
       title: t("deleteConfirmTitle", "Delete selected folders?"),
-      text: buildDeletePreviewHtml(selectedRows, {
-        reviewCount: 0,
-        showTypeHint: false
-      }),
+      text: "",
       type: "warning",
       html: true,
       showCancelButton: true,
@@ -716,7 +745,10 @@
     }, function() {
       runDelete(selectedRows);
     });
-    applyDeleteModalClass("acp-delete-modal");
+    applyDeleteModalClass("acp-delete-modal", buildDeletePreviewHtml(selectedRows, {
+      reviewCount: 0,
+      showTypeHint: false
+    }));
   }
 
   function runDelete(selectedRows) {
@@ -750,12 +782,13 @@
 
       swal({
         title: modalTitle,
-        text: buildDeleteResultsHtml(summary, failures),
+        text: "",
         type: modalType,
         html: true
       }, function() {
         loadScan();
       });
+      applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildDeleteResultsHtml(summary, failures));
     }).fail(function(xhr) {
       swal(t("deleteFailedTitle", "Delete failed"), extractErrorMessage(xhr, t("scanFailedMessage", "The orphaned appdata scan could not be completed right now.")), "error");
       loadScan();
@@ -844,9 +877,10 @@
     return html.join("");
   }
 
-  function applyDeleteModalClass(className) {
+  function applyDeleteModalClass(className, htmlContent) {
     window.setTimeout(function() {
-      var $modal = $(".sweet-alert");
+      var $modal = $(".sweet-alert:visible").first();
+      var $message = $modal.find("p").first();
 
       if (!$modal.length) {
         return;
@@ -856,7 +890,46 @@
       if (className) {
         $modal.addClass(className);
       }
+
+      syncDeleteModalThemeTokens($modal);
+
+      if ($message.length) {
+        $message.removeClass("acp-modal-host");
+        if (typeof htmlContent === "string") {
+          $message.html(htmlContent).addClass("acp-modal-host");
+        } else {
+          $message.empty();
+        }
+      }
     }, 0);
+  }
+
+  function syncDeleteModalThemeTokens($modal) {
+    var modalNode = $modal && $modal.length ? $modal[0] : null;
+    var sourceNode = els.$app && els.$app.length ? els.$app[0] : null;
+    var overlayNode = $(".sweet-overlay:visible").first()[0];
+    var computedStyle;
+
+    if (!modalNode || !sourceNode || typeof window.getComputedStyle !== "function") {
+      return;
+    }
+
+    computedStyle = window.getComputedStyle(sourceNode);
+    $.each(modalThemeTokens, function(_, tokenName) {
+      var tokenValue = String(computedStyle.getPropertyValue(tokenName) || "").trim();
+      if (!tokenValue) {
+        return;
+      }
+      modalNode.style.setProperty(tokenName, tokenValue);
+      if (overlayNode) {
+        overlayNode.style.setProperty(tokenName, tokenValue);
+      }
+    });
+
+    modalNode.style.colorScheme = sourceNode.style.colorScheme || "dark";
+    if (overlayNode) {
+      overlayNode.style.backgroundColor = "rgba(5, 8, 12, 0.76)";
+    }
   }
 
   function extractErrorMessage(xhr, fallback) {

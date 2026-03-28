@@ -826,9 +826,12 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .sweet-alert.acp-delete-modal {
-  background: var(--acp-panel);
-  border: 1px solid var(--acp-border);
-  box-shadow: var(--acp-shadow);
+  background: var(--acp-panel) !important;
+  border: 1px solid var(--acp-border) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--acp-shadow) !important;
+  padding: 20px 24px 18px !important;
+  width: min(560px, calc(100vw - 28px)) !important;
 }
 
 .sweet-alert.acp-delete-modal h2 {
@@ -841,6 +844,14 @@ body[data-acp-host-theme="light"] #acp-app,
 .sweet-alert.acp-delete-modal p {
   color: var(--acp-text);
   margin-top: 10px;
+}
+
+.sweet-alert.acp-delete-modal p.acp-modal-host {
+  margin: 12px 0 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  text-align: left !important;
 }
 
 .sweet-alert.acp-delete-modal input {
@@ -856,6 +867,43 @@ body[data-acp-host-theme="light"] #acp-app,
 .sweet-alert.acp-delete-modal input:focus {
   border-color: var(--acp-input-focus);
   box-shadow: none;
+}
+
+.sweet-alert.acp-delete-modal button.cancel,
+.sweet-alert.acp-delete-modal button.confirm {
+  background: var(--acp-button-bg) !important;
+  border: 1px solid var(--acp-button-border) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  color: var(--acp-button-text) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  min-height: 34px !important;
+  padding: 0 14px !important;
+  text-transform: uppercase !important;
+}
+
+.sweet-alert.acp-delete-modal button.confirm {
+  background: var(--acp-button-primary-bg) !important;
+  border-color: var(--acp-button-primary-border) !important;
+  color: var(--acp-button-primary-text) !important;
+}
+
+.sweet-alert.acp-delete-modal button.cancel:hover,
+.sweet-alert.acp-delete-modal button.confirm:hover {
+  background: var(--acp-button-hover-bg) !important;
+  border-color: var(--acp-button-hover-border) !important;
+  color: var(--acp-button-hover-text) !important;
+}
+
+.sweet-alert.acp-delete-modal .sa-icon.sa-warning {
+  border-color: var(--acp-review-text) !important;
+}
+
+.sweet-alert.acp-delete-modal .sa-icon.sa-warning .sa-body,
+.sweet-alert.acp-delete-modal .sa-icon.sa-warning .sa-dot {
+  background-color: var(--acp-review-text) !important;
 }
 
 .acp-modal-flag {
