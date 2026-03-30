@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.10">
-<!ENTITY md5 "d987bd82555933f29ea2ce14511bd883">
+<!ENTITY version "2026.03.30.12">
+<!ENTITY md5 "5e1aa2f010040fbac71901e9098829c6">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.12
+- UX: Tighten the top mode and audit cards again with shorter chrome, smaller action buttons, and less internal padding
+- UX: Compress result-row spacing so orphan cards read denser with less vertical padding between title, metadata, notes, and action chips
+
+###2026.03.30.11
+- Maintenance: Refresh package metadata and build artifacts
+
 ###2026.03.30.10
 - Fix: Rename the helper INI parser shims to plugin-scoped function names so scan requests stop fatally colliding with other globally declared `my_parse_ini_*` helpers in the Unraid PHP runtime
 
