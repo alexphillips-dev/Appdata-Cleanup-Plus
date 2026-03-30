@@ -1,52 +1,25 @@
 (function(window, document, $) {
   "use strict";
 
+  var ACP = window.AppdataCleanupPlus = window.AppdataCleanupPlus || {};
   var config = window.appdataCleanupPlusConfig || {};
   var strings = config.strings || {};
-  var modalThemeTokens = [
-    "--acp-panel",
-    "--acp-panel-soft",
-    "--acp-border",
-    "--acp-shadow",
-    "--acp-heading",
-    "--acp-text",
-    "--acp-muted",
-    "--acp-input-bg",
-    "--acp-input-border",
-    "--acp-input-text",
-    "--acp-input-focus",
-    "--acp-review-soft",
-    "--acp-review-text",
-    "--acp-filter-bg",
-    "--acp-accent-soft",
-    "--acp-accent-text",
-    "--acp-safe-soft",
-    "--acp-safe-text",
-    "--acp-path-bg",
-    "--acp-path-border",
-    "--acp-path-text",
-    "--acp-button-bg",
-    "--acp-button-border",
-    "--acp-button-text",
-    "--acp-button-hover-bg",
-    "--acp-button-hover-border",
-    "--acp-button-hover-text",
-    "--acp-button-primary-bg",
-    "--acp-button-primary-border",
-    "--acp-button-primary-text"
-  ];
   var state = {
     rows: [],
-    notices: [],
     summary: { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 },
     selected: {},
     scanToken: "",
     dockerRunning: true,
     latestAuditMessage: "",
-    settings: {
-      allowOutsideShareCleanup: false,
-      enablePermanentDelete: false,
-      quarantineRoot: ""
+    auditHistory: [],
+    auditOpen: false,
+    settings: ACP.defaultSafetySettings(),
+    quarantine: {
+      open: false,
+      loading: false,
+      loaded: false,
+      entries: [],
+      summary: { count: 0, sizeLabel: "0 B" }
     },
     riskFilter: "all",
     sortMode: "risk",
@@ -59,10 +32,15 @@
 
   function init() {
     cacheElements();
-    applyThemeState();
-    watchThemeChanges();
+    ACP.applyThemeState(els.$app);
+    ACP.watchThemeChanges(function() {
+      ACP.applyThemeState(els.$app);
+      ACP.syncDeleteModalThemeTokens($(".sweet-alert"));
+    });
     bindEvents();
     renderSummaryCards();
+    renderResultsMeta();
+    renderPanels();
     renderLoadingState();
     updateActionBar();
     loadScan();
@@ -84,7 +62,10 @@
     els.$dryRun = $("#acp-dry-run");
     els.$primaryAction = $("#acp-primary-action");
     els.$resultsMeta = $("#acp-results-meta");
+    els.$modeStrip = $("#acp-mode-strip");
     els.$notices = $("#acp-notices");
+    els.$auditPanel = $("#acp-audit-panel");
+    els.$quarantinePanel = $("#acp-quarantine-panel");
     els.$results = $("#acp-results");
     els.$selectionSummary = $("#acp-selection-summary");
     els.$selectionDetail = $("#acp-selection-detail");
@@ -199,230 +180,59 @@
         loadScan();
       }
     });
+
+    els.$modeStrip.on("click", "[data-action='toggle-quarantine']", function() {
+      if (!state.busy) {
+        toggleQuarantinePanel();
+      }
+    });
+
+    els.$auditPanel.on("click", "[data-action='toggle-audit']", function() {
+      if (!state.busy) {
+        state.auditOpen = !state.auditOpen;
+        renderPanels();
+      }
+    });
+
+    els.$quarantinePanel.on("click", "[data-action='toggle-quarantine']", function() {
+      if (!state.busy) {
+        toggleQuarantinePanel();
+      }
+    });
+
+    els.$quarantinePanel.on("click", "[data-action='refresh-quarantine']", function() {
+      if (!state.busy) {
+        loadQuarantineManager(true);
+      }
+    });
+
+    els.$quarantinePanel.on("click", "[data-entry-action]", function(event) {
+      var action = $(this).data("entry-action");
+      var entryId = $(this).data("entry-id");
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!action || !entryId || state.busy) {
+        return;
+      }
+
+      startQuarantineManagerActionFlow(action, entryId);
+    });
+  }
+
+  function buildContext() {
+    return {
+      state: state,
+      els: els,
+      strings: strings
+    };
   }
 
   function closePage() {
     if (typeof window.done === "function") {
       window.done();
     }
-  }
-
-  function normalizeHostThemeName(value) {
-    var normalized = String(value || "").trim().toLowerCase();
-
-    if (normalized === "grey") {
-      return "gray";
-    }
-
-    return normalized;
-  }
-
-  function clampThemeChannel(value) {
-    var numeric = Number(value);
-
-    if (isNaN(numeric)) {
-      numeric = 0;
-    }
-
-    return Math.max(0, Math.min(255, numeric));
-  }
-
-  function clampThemeAlpha(value) {
-    var numeric = Number(value);
-
-    if (isNaN(numeric)) {
-      numeric = 1;
-    }
-
-    return Math.max(0, Math.min(1, numeric));
-  }
-
-  function parseThemeColor(value) {
-    var trimmed = String(value || "").trim();
-    var rgbMatch;
-    var hex = "";
-
-    if (!trimmed || trimmed === "transparent") {
-      return null;
-    }
-
-    if (trimmed.charAt(0) === "#") {
-      hex = trimmed.slice(1);
-
-      if (hex.length === 3) {
-        return {
-          r: clampThemeChannel(parseInt(hex.charAt(0) + hex.charAt(0), 16)),
-          g: clampThemeChannel(parseInt(hex.charAt(1) + hex.charAt(1), 16)),
-          b: clampThemeChannel(parseInt(hex.charAt(2) + hex.charAt(2), 16)),
-          a: 1
-        };
-      }
-
-      if (hex.length === 6) {
-        return {
-          r: clampThemeChannel(parseInt(hex.slice(0, 2), 16)),
-          g: clampThemeChannel(parseInt(hex.slice(2, 4), 16)),
-          b: clampThemeChannel(parseInt(hex.slice(4, 6), 16)),
-          a: 1
-        };
-      }
-    }
-
-    rgbMatch = trimmed.match(/^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*([0-9.]+))?\s*\)$/i);
-    if (!rgbMatch) {
-      return null;
-    }
-
-    return {
-      r: clampThemeChannel(rgbMatch[1]),
-      g: clampThemeChannel(rgbMatch[2]),
-      b: clampThemeChannel(rgbMatch[3]),
-      a: clampThemeAlpha(rgbMatch[4] !== undefined ? rgbMatch[4] : 1)
-    };
-  }
-
-  function resolveThemeSurfaceColor() {
-    var i;
-    var color;
-
-    for (i = 0; i < arguments.length; i += 1) {
-      color = arguments[i];
-      if (color && clampThemeAlpha(color.a !== undefined ? color.a : 1) >= 0.08) {
-        return color;
-      }
-    }
-
-    for (i = 0; i < arguments.length; i += 1) {
-      if (arguments[i]) {
-        return arguments[i];
-      }
-    }
-
-    return null;
-  }
-
-  function themeColorLuminance(color) {
-    var channels;
-
-    if (!color) {
-      return 0;
-    }
-
-    channels = [color.r, color.g, color.b];
-    return (0.2126 * normalizeChannel(channels[0])) + (0.7152 * normalizeChannel(channels[1])) + (0.0722 * normalizeChannel(channels[2]));
-
-    function normalizeChannel(channel) {
-      var value = clampThemeChannel(channel) / 255;
-      return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
-    }
-  }
-
-  function inferThemeClass(themeName) {
-    var normalized = normalizeHostThemeName(themeName);
-    var bodyStyle = document.body ? window.getComputedStyle(document.body) : null;
-    var htmlStyle = document.documentElement ? window.getComputedStyle(document.documentElement) : null;
-    var background = resolveThemeSurfaceColor(
-      parseThemeColor(bodyStyle ? bodyStyle.backgroundColor : ""),
-      parseThemeColor(htmlStyle ? htmlStyle.backgroundColor : ""),
-      parseThemeColor("#0f1825")
-    );
-    var luminance = themeColorLuminance(background);
-
-    if (normalized.indexOf("white") !== -1 || normalized.indexOf("light") !== -1) {
-      return "light";
-    }
-
-    if (normalized.indexOf("black") !== -1) {
-      return "dark";
-    }
-
-    if (luminance >= 0.58) {
-      return "light";
-    }
-
-    if (luminance <= 0.45) {
-      return "dark";
-    }
-
-    return "mixed";
-  }
-
-  function resolveHostThemeName() {
-    return normalizeHostThemeName(
-      (document.documentElement && document.documentElement.getAttribute("data-acp-host-theme"))
-      || (document.body && document.body.getAttribute("data-acp-host-theme"))
-      || window.AppdataCleanupPlusHostThemeName
-      || ""
-    );
-  }
-
-  function applyThemeState() {
-    var themeName = resolveHostThemeName();
-    var themeClass = inferThemeClass(themeName);
-    var appNode = els.$app && els.$app.length ? els.$app[0] : null;
-
-    if (!appNode) {
-      return;
-    }
-
-    if (themeName) {
-      els.$app.attr("data-acp-host-theme", themeName);
-    } else {
-      els.$app.removeAttr("data-acp-host-theme");
-    }
-
-    if (themeClass) {
-      els.$app.attr("data-acp-theme-class", themeClass);
-    } else {
-      els.$app.removeAttr("data-acp-theme-class");
-    }
-
-    appNode.style.colorScheme = themeClass === "light" ? "light" : "dark";
-  }
-
-  function watchThemeChanges() {
-    var observer;
-    var options = {
-      attributes: true,
-      attributeFilter: ["class", "style", "data-acp-host-theme", "data-theme", "theme", "data-color-scheme", "data-bs-theme"]
-    };
-
-    if (typeof window.MutationObserver !== "function") {
-      return;
-    }
-
-    observer = new window.MutationObserver(function() {
-      applyThemeState();
-    });
-
-    if (document.body) {
-      observer.observe(document.body, options);
-    }
-
-    if (document.documentElement) {
-      observer.observe(document.documentElement, options);
-    }
-  }
-
-  function t(key, fallback) {
-    if (strings[key]) {
-      return strings[key];
-    }
-    return fallback;
-  }
-
-  function defaultSafetySettings() {
-    return {
-      allowOutsideShareCleanup: false,
-      enablePermanentDelete: false,
-      quarantineRoot: ""
-    };
-  }
-
-  function buildApiRequestData(data) {
-    return $.extend({
-      csrfToken: String(config.csrfToken || "")
-    }, data || {});
   }
 
   function apiPost(data) {
@@ -437,12 +247,12 @@
       method: "POST",
       dataType: "json",
       headers: requestHeaders,
-      data: buildApiRequestData(data)
+      data: ACP.buildApiRequestData(config, data)
     });
   }
 
   function syncSafetyControls() {
-    var settings = $.extend({}, defaultSafetySettings(), state.settings || {});
+    var settings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
 
     els.$allowExternal.prop("checked", !!settings.allowOutsideShareCleanup);
     els.$enableDelete.prop("checked", !!settings.enablePermanentDelete);
@@ -454,8 +264,8 @@
 
   function getPrimaryActionLabel() {
     return state.settings.enablePermanentDelete
-      ? t("deleteActionLabel", "Delete selected")
-      : t("quarantineActionLabel", "Quarantine selected");
+      ? ACP.t(strings, "deleteActionLabel", "Delete selected")
+      : ACP.t(strings, "quarantineActionLabel", "Quarantine selected");
   }
 
   function setBusy(isBusy) {
@@ -471,6 +281,18 @@
     updateActionBar();
   }
 
+  function resetDashboardState() {
+    state.rows = [];
+    state.summary = { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
+    state.selected = {};
+    state.scanToken = "";
+    state.dockerRunning = true;
+    state.latestAuditMessage = "";
+    state.auditHistory = [];
+    state.settings = ACP.defaultSafetySettings();
+    state.quarantine.summary = { count: 0, sizeLabel: "0 B" };
+  }
+
   function loadScan() {
     setBusy(true);
     renderLoadingState();
@@ -479,39 +301,74 @@
       action: "getOrphanAppdata"
     }).done(function(response) {
       state.rows = $.isArray(response.rows) ? response.rows : [];
-      state.notices = $.isArray(response.notices) ? response.notices : [];
       state.summary = response.summary || { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
       state.scanToken = String(response.scanToken || "");
       state.dockerRunning = response.dockerRunning !== false;
       state.latestAuditMessage = String(response.latestAuditMessage || "");
-      state.settings = $.extend({}, defaultSafetySettings(), response.settings || {});
+      state.auditHistory = $.isArray(response.auditHistory) ? response.auditHistory : [];
+      state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || {});
+      state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary || {});
       syncSafetyControls();
       applyLocalSafetyState();
       reconcileSelection();
       renderAll();
     }).fail(function(xhr) {
-      state.rows = [];
-      state.notices = [];
-      state.summary = { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
-      state.scanToken = "";
-      state.dockerRunning = true;
-      state.latestAuditMessage = "";
-      state.settings = defaultSafetySettings();
-      state.selected = {};
+      resetDashboardState();
       syncSafetyControls();
       renderSummaryCards();
+      renderPanels();
       renderNotices([]);
       renderResultsMeta();
       renderStateMessage(
-        t("scanFailedTitle", "Scan failed"),
-        extractErrorMessage(xhr, t("scanFailedMessage", "The orphaned appdata scan could not be completed right now.")),
+        ACP.t(strings, "scanFailedTitle", "Scan failed"),
+        ACP.extractErrorMessage(xhr, ACP.t(strings, "scanFailedMessage", "The orphaned appdata scan could not be completed right now.")),
         "rescan",
-        t("rescanLabel", "Rescan")
+        ACP.t(strings, "rescanLabel", "Rescan")
       );
       updateActionBar();
     }).always(function() {
       setBusy(false);
     });
+  }
+
+  function loadQuarantineManager(forceRefresh) {
+    if (state.quarantine.loading) {
+      return;
+    }
+
+    state.quarantine.loading = true;
+    if (forceRefresh) {
+      state.quarantine.loaded = false;
+    }
+    renderPanels();
+
+    apiPost({
+      action: "getQuarantineEntries"
+    }).done(function(response) {
+      var quarantine = response.quarantine || {};
+      state.quarantine.entries = $.isArray(quarantine.entries) ? quarantine.entries : [];
+      state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, quarantine.summary || {});
+      state.quarantine.loaded = true;
+      state.quarantine.loading = false;
+      renderPanels();
+    }).fail(function(xhr) {
+      state.quarantine.loading = false;
+      swal(
+        ACP.t(strings, "quarantineFailedTitle", "Quarantine failed"),
+        ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineLoadFailedMessage", "The quarantine manager could not be loaded right now.")),
+        "error"
+      );
+      renderPanels();
+    });
+  }
+
+  function toggleQuarantinePanel() {
+    state.quarantine.open = !state.quarantine.open;
+    renderPanels();
+
+    if (state.quarantine.open && !state.quarantine.loaded) {
+      loadQuarantineManager(true);
+    }
   }
 
   function applyLocalSafetyStateToRow(row) {
@@ -578,31 +435,15 @@
     if (!state.dockerRunning) {
       notices.push({
         type: "warning",
-        title: t("noticeDockerOfflineTitle", "Docker is offline"),
-        message: t("noticeDockerOfflineMessage", "Results are based only on saved Docker templates. Review every path before acting on anything.")
-      });
-    }
-
-    if (!state.settings.enablePermanentDelete) {
-      notices.push({
-        type: "info",
-        accentClass: "is-safe-mode",
-        title: t("noticeSafeModeTitle", "Safe mode is on"),
-        message: t("noticeSafeModeMessage", "The primary action moves selected folders into quarantine instead of permanently deleting them.")
-      });
-    } else {
-      notices.push({
-        type: "warning",
-        accentClass: "is-delete-mode",
-        title: t("noticeDeleteModeTitle", "Permanent delete mode is enabled"),
-        message: t("noticeDeleteModeMessage", "Selected folders will be permanently removed after confirmation. Use this mode carefully.")
+        title: ACP.t(strings, "noticeDockerOfflineTitle", "Docker is offline"),
+        message: ACP.t(strings, "noticeDockerOfflineMessage", "Results are based only on saved Docker templates. Review every path before acting on anything.")
       });
     }
 
     if (Number(summary.ignored || 0) > 0) {
       notices.push({
         type: "info",
-        title: t("noticeIgnoredTitle", "Ignore list active"),
+        title: ACP.t(strings, "noticeIgnoredTitle", "Ignore list active"),
         message: Number(summary.ignored || 0) + " " + (Number(summary.ignored || 0) === 1 ? "path is" : "paths are") + " currently hidden from normal cleanup results. Turn on Show ignored to review or restore them."
       });
     }
@@ -610,7 +451,7 @@
     if (state.latestAuditMessage) {
       notices.push({
         type: "info",
-        title: t("noticeLatestAuditTitle", "Last cleanup"),
+        title: ACP.t(strings, "noticeLatestAuditTitle", "Last cleanup"),
         message: state.latestAuditMessage
       });
     }
@@ -619,14 +460,14 @@
       if (!state.settings.allowOutsideShareCleanup) {
         notices.push({
           type: "info",
-          title: t("noticeOutsideShareDisabledTitle", "Outside-share cleanup is disabled"),
-          message: t("noticeOutsideShareDisabledMessage", "Review paths stay visible but locked until you explicitly enable outside-share cleanup.")
+          title: ACP.t(strings, "noticeOutsideShareDisabledTitle", "Outside-share cleanup is disabled"),
+          message: ACP.t(strings, "noticeOutsideShareDisabledMessage", "Review paths stay visible but locked until you explicitly enable outside-share cleanup.")
         });
       } else {
         notices.push({
           type: "warning",
-          title: t("noticeOutsideShareEnabledTitle", "Outside-share cleanup is enabled"),
-          message: t("noticeOutsideShareEnabledMessage", "Review paths sit outside the configured appdata share. Confirm each one carefully before acting.")
+          title: ACP.t(strings, "noticeOutsideShareEnabledTitle", "Outside-share cleanup is enabled"),
+          message: ACP.t(strings, "noticeOutsideShareEnabledMessage", "Review paths sit outside the configured appdata share. Confirm each one carefully before acting.")
         });
       }
     }
@@ -634,8 +475,8 @@
     if (Number(summary.blocked || 0) > 0) {
       notices.push({
         type: "warning",
-        title: t("noticeLockedPathsTitle", "Locked paths stay blocked"),
-        message: t("noticeLockedPathsMessage", "Any path that resolves to a share root, mount point, symlinked location, or other unsafe target cannot be acted on here.")
+        title: ACP.t(strings, "noticeLockedPathsTitle", "Locked paths stay blocked"),
+        message: ACP.t(strings, "noticeLockedPathsMessage", "Any path that resolves to a share root, mount point, symlinked location, or other unsafe target cannot be acted on here.")
       });
     }
 
@@ -665,8 +506,15 @@
     });
   }
 
+  function renderPanels() {
+    ACP.renderModeStrip(buildContext());
+    ACP.renderAuditPanel(buildContext());
+    ACP.renderQuarantinePanel(buildContext());
+  }
+
   function renderAll() {
     renderSummaryCards();
+    renderPanels();
     renderNotices(buildLocalNotices());
     renderResults();
     renderResultsMeta();
@@ -676,19 +524,19 @@
   function renderSummaryCards() {
     var selectedCount = getSelectedRows().length;
     var cards = [
-      { label: t("cardTotal", "Detected"), value: state.summary.total || 0, tone: "" },
-      { label: t("cardDeletable", "Ready to delete"), value: state.summary.deletable || 0, tone: "is-accent" },
-      { label: t("cardReview", "Needs review"), value: state.summary.review || 0, tone: "is-review" },
-      { label: t("cardBlocked", "Locked"), value: state.summary.blocked || 0, tone: "is-blocked" },
-      { label: t("cardSelected", "Selected"), value: selectedCount, tone: "is-safe" }
+      { label: ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, tone: "" },
+      { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, tone: "is-accent" },
+      { label: ACP.t(strings, "cardReview", "Needs review"), value: state.summary.review || 0, tone: "is-review" },
+      { label: ACP.t(strings, "cardBlocked", "Locked"), value: state.summary.blocked || 0, tone: "is-blocked" },
+      { label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount, tone: "is-safe" }
     ];
     var html = [];
 
     $.each(cards, function(_, card) {
       html.push(
         '<article class="acp-summary-card ' + card.tone + '">' +
-          '<span class="acp-summary-label">' + escapeHtml(card.label) + "</span>" +
-          '<span class="acp-summary-value">' + escapeHtml(String(card.value)) + "</span>" +
+          '<span class="acp-summary-label">' + ACP.escapeHtml(card.label) + "</span>" +
+          '<span class="acp-summary-value">' + ACP.escapeHtml(String(card.value)) + "</span>" +
         "</article>"
       );
     });
@@ -700,16 +548,10 @@
     var html = [];
 
     $.each(notices || [], function(_, notice) {
-      var titleClass = "acp-notice-title";
-
-      if (notice.accentClass) {
-        titleClass += " " + escapeHtml(notice.accentClass);
-      }
-
       html.push(
-        '<article class="acp-notice is-' + escapeHtml(notice.type || "info") + '">' +
-          '<div class="' + titleClass + '">' + escapeHtml(notice.title || "") + "</div>" +
-          '<div class="acp-notice-message">' + escapeHtml(notice.message || "") + "</div>" +
+        '<article class="acp-notice is-' + ACP.escapeHtml(notice.type || "info") + '">' +
+          '<div class="acp-notice-title">' + ACP.escapeHtml(notice.title || "") + "</div>" +
+          '<div class="acp-notice-message">' + ACP.escapeHtml(notice.message || "") + "</div>" +
         "</article>"
       );
     });
@@ -718,11 +560,12 @@
   }
 
   function renderLoadingState() {
+    renderPanels();
     renderNotices([]);
     renderResultsMeta("");
     renderStateMessage(
-      t("loadingTitle", "Scanning saved Docker templates"),
-      t("loadingMessage", "Reviewing orphaned appdata folders and active container mappings."),
+      ACP.t(strings, "loadingTitle", "Scanning saved Docker templates"),
+      ACP.t(strings, "loadingMessage", "Reviewing orphaned appdata folders and active container mappings."),
       null,
       null,
       true
@@ -733,17 +576,17 @@
     var facts = [];
     var sourceText = row.sourceCount > 0 ? row.sourceSummary : row.name;
 
-    facts.push('<span class="acp-row-meta-item"><strong>' + escapeHtml(t("templateLabel", "Template")) + "</strong> " + escapeHtml(sourceText || "") + "</span>");
+    facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "templateLabel", "Template")) + "</strong> " + ACP.escapeHtml(sourceText || "") + "</span>");
 
     if (row.targetSummary) {
-      facts.push('<span class="acp-row-meta-item"><strong>' + escapeHtml(t("targetLabel", "Target")) + "</strong> " + escapeHtml(row.targetSummary) + "</span>");
+      facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "targetLabel", "Target")) + "</strong> " + ACP.escapeHtml(row.targetSummary) + "</span>");
     }
 
-    facts.push('<span class="acp-row-meta-item"><strong>' + escapeHtml(t("sizeLabel", "Size")) + "</strong> " + escapeHtml(row.sizeLabel || "Unknown") + "</span>");
+    facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + "</strong> " + ACP.escapeHtml(row.sizeLabel || "Unknown") + "</span>");
     facts.push(
-      '<span class="acp-row-meta-item"' + (row.lastModifiedExact ? ' title="' + escapeHtml(row.lastModifiedExact) + '"' : "") + '><strong>' +
-      escapeHtml(t("updatedLabel", "Updated")) +
-      "</strong> " + escapeHtml(row.lastModifiedLabel || "Unknown") + "</span>"
+      '<span class="acp-row-meta-item"' + (row.lastModifiedExact ? ' title="' + ACP.escapeHtml(row.lastModifiedExact) + '"' : "") + '><strong>' +
+      ACP.escapeHtml(ACP.t(strings, "updatedLabel", "Updated")) +
+      "</strong> " + ACP.escapeHtml(row.lastModifiedLabel || "Unknown") + "</span>"
     );
 
     return facts.join('<span class="acp-row-meta-separator">|</span>');
@@ -753,17 +596,17 @@
     var notes = [];
 
     if (row.reason) {
-      notes.push('<div class="acp-row-note is-primary">' + escapeHtml(row.reason) + "</div>");
+      notes.push('<div class="acp-row-note is-primary">' + ACP.escapeHtml(row.reason) + "</div>");
     }
 
     if (row.policyReason) {
-      notes.push('<div class="acp-row-note is-warning">' + escapeHtml(row.policyReason) + "</div>");
+      notes.push('<div class="acp-row-note is-warning">' + ACP.escapeHtml(row.policyReason) + "</div>");
     }
 
     if (row.ignored && row.ignoredReason) {
-      notes.push('<div class="acp-row-note">' + escapeHtml(row.ignoredReason) + "</div>");
+      notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.ignoredReason) + "</div>");
     } else if (!row.policyReason && row.risk !== "safe" && row.riskReason) {
-      notes.push('<div class="acp-row-note">' + escapeHtml(row.riskReason) + "</div>");
+      notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.riskReason) + "</div>");
     }
 
     return notes.join("");
@@ -771,11 +614,11 @@
 
   function buildRowActionHtml(row) {
     if (row.ignored) {
-      return '<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unignore" data-row-id="' + escapeHtml(row.id || "") + '">' + escapeHtml(t("restoreActionLabel", "Restore")) + "</button>";
+      return '<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "restoreActionLabel", "Restore")) + "</button>";
     }
 
     if (row.id) {
-      return '<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="ignore" data-row-id="' + escapeHtml(row.id || "") + '">' + escapeHtml(t("ignoreActionLabel", "Ignore")) + "</button>";
+      return '<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="ignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "ignoreActionLabel", "Ignore")) + "</button>";
     }
 
     return "";
@@ -787,10 +630,10 @@
 
     if (!state.rows.length) {
       renderStateMessage(
-        t("emptyTitle", "No orphaned appdata found"),
-        t("emptyMessage", "Nothing currently looks safe to clean up from the saved Docker templates."),
+        ACP.t(strings, "emptyTitle", "No orphaned appdata found"),
+        ACP.t(strings, "emptyMessage", "Nothing currently looks safe to clean up from the saved Docker templates."),
         "rescan",
-        t("rescanLabel", "Rescan")
+        ACP.t(strings, "rescanLabel", "Rescan")
       );
       return;
     }
@@ -798,8 +641,8 @@
     if (!visibleRows.length) {
       if (!state.showIgnored && Number(state.summary.total || 0) === 0 && Number(state.summary.ignored || 0) > 0) {
         renderStateMessage(
-          t("ignoredOnlyTitle", "Only ignored paths remain"),
-          t("ignoredOnlyMessage", "Every detected candidate is hidden by your ignore list. Turn on Show ignored to review or restore hidden paths."),
+          ACP.t(strings, "ignoredOnlyTitle", "Only ignored paths remain"),
+          ACP.t(strings, "ignoredOnlyMessage", "Every detected candidate is hidden by your ignore list. Turn on Show ignored to review or restore hidden paths."),
           null,
           null
         );
@@ -807,17 +650,17 @@
       }
 
       renderStateMessage(
-        t("noMatchesTitle", "No folders match the current filters"),
-        t("noMatchesMessage", "Clear the search or risk filters to see the full scan again."),
+        ACP.t(strings, "noMatchesTitle", "No folders match the current filters"),
+        ACP.t(strings, "noMatchesMessage", "Clear the search or risk filters to see the full scan again."),
         "clear-filters",
-        t("clearFiltersLabel", "Clear filters")
+        ACP.t(strings, "clearFiltersLabel", "Clear filters")
       );
       return;
     }
 
     $.each(visibleRows, function(_, row) {
       var isSelected = !!state.selected[row.id];
-      var riskClass = "acp-badge-risk-" + escapeHtml(row.risk || "safe");
+      var riskClass = "acp-badge-risk-" + ACP.escapeHtml(row.risk || "safe");
       var rowClass = "acp-row";
       var rowActionHtml = buildRowActionHtml(row);
 
@@ -834,28 +677,28 @@
       }
 
       html.push(
-        '<article class="' + rowClass + '" data-row-id="' + escapeHtml(row.id) + '">' +
+        '<article class="' + rowClass + '" data-row-id="' + ACP.escapeHtml(row.id) + '">' +
           '<div class="acp-row-check">' +
-            '<input type="checkbox" class="acp-row-checkbox" data-row-id="' + escapeHtml(row.id) + '"' + (isSelected ? " checked" : "") + (row.canDelete ? "" : " disabled") + ">" +
+            '<input type="checkbox" class="acp-row-checkbox" data-row-id="' + ACP.escapeHtml(row.id) + '"' + (isSelected ? " checked" : "") + (row.canDelete ? "" : " disabled") + ">" +
           "</div>" +
           '<div class="acp-row-main">' +
             '<div class="acp-row-primary">' +
               '<div class="acp-row-title-wrap">' +
                 '<div class="acp-row-title-line">' +
-                  '<h3 class="acp-row-title">' + escapeHtml(row.name || row.displayPath || "") + "</h3>" +
+                  '<h3 class="acp-row-title">' + ACP.escapeHtml(row.name || row.displayPath || "") + "</h3>" +
                   '<div class="acp-row-badges">' +
-                    '<span class="acp-badge acp-badge-status">' + escapeHtml(row.statusLabel || "Orphaned") + "</span>" +
-                    '<span class="acp-badge ' + riskClass + '">' + escapeHtml(row.riskLabel || "Safe") + "</span>" +
+                    '<span class="acp-badge acp-badge-status">' + ACP.escapeHtml(row.statusLabel || "") + "</span>" +
+                    '<span class="acp-badge ' + riskClass + '">' + ACP.escapeHtml(row.riskLabel || "") + "</span>" +
                   "</div>" +
                 "</div>" +
                 '<div class="acp-row-meta">' + buildRowMetaHtml(row) + "</div>" +
-                '<div class="acp-row-notes">' + buildRowNotesHtml(row) + "</div>" +
               "</div>" +
               '<div class="acp-row-side">' +
-                '<code class="acp-row-path">' + escapeHtml(row.displayPath || row.path || "") + "</code>" +
+                '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
                 rowActionHtml +
               "</div>" +
             "</div>" +
+            '<div class="acp-row-notes">' + buildRowNotesHtml(row) + "</div>" +
           "</div>" +
         "</article>"
       );
@@ -866,76 +709,55 @@
 
   function renderResultsMeta() {
     var visibleRows = getVisibleRows();
-    var message = "";
-    var ignoredCount = Number(state.summary.ignored || 0);
+    var hiddenIgnored = Number(state.summary.ignored || 0) > 0 && !state.showIgnored;
+    var parts = [
+      visibleRows.length + " " + ACP.t(strings, "visibleSummary", "visible"),
+      Number(state.summary.total || 0) + " " + ACP.t(strings, "detectedSummary", "detected")
+    ];
 
-    if (state.rows.length || ignoredCount) {
-      message = visibleRows.length + " " + t("visibleSummary", "visible") + " / " + Number(state.summary.total || 0) + " " + t("detectedSummary", "detected");
-      if (ignoredCount > 0) {
-        message += " | " + ignoredCount + " " + t(state.showIgnored ? "ignoredShownSummary" : "ignoredHiddenSummary", state.showIgnored ? "ignored shown" : "ignored hidden");
-      }
+    if (hiddenIgnored) {
+      parts.push(Number(state.summary.ignored || 0) + " " + ACP.t(strings, "ignoredHiddenSummary", "ignored hidden"));
+    } else if (state.showIgnored && Number(state.summary.ignored || 0) > 0) {
+      parts.push(Number(state.summary.ignored || 0) + " " + ACP.t(strings, "ignoredShownSummary", "ignored shown"));
     }
 
-    els.$resultsMeta.text(message);
+    els.$resultsMeta.text(parts.join(" | "));
   }
 
   function renderStateMessage(title, message, action, actionLabel, isLoading) {
-    var iconSrc = isLoading ? (config.spinnerUrl || "") : (config.logoUrl || config.spinnerUrl || "");
-    var iconHtml = '<div class="acp-state-icon"><img src="' + escapeHtml(iconSrc) + '" alt=""></div>';
-    var actionHtml = "";
-
-    if (action && actionLabel) {
-      actionHtml = '<div class="acp-state-actions"><button type="button" class="acp-button acp-button-secondary" data-action="' + escapeHtml(action) + '">' + escapeHtml(actionLabel) + "</button></div>";
-    }
+    var buttonHtml = action ? '<div class="acp-state-actions"><button type="button" class="acp-button acp-button-secondary" data-action="' + ACP.escapeHtml(action) + '">' + ACP.escapeHtml(actionLabel || "") + "</button></div>" : "";
+    var iconHtml = isLoading ? '<div class="acp-state-icon"><img src="' + ACP.escapeHtml(config.spinnerUrl || "") + '" alt=""></div>' : "";
 
     els.$results.html(
       '<section class="acp-state">' +
         iconHtml +
-        '<h3 class="acp-state-title">' + escapeHtml(title) + "</h3>" +
-        '<p class="acp-state-message">' + escapeHtml(message) + "</p>" +
-        actionHtml +
+        '<h3 class="acp-state-title">' + ACP.escapeHtml(title || "") + "</h3>" +
+        '<p class="acp-state-message">' + ACP.escapeHtml(message || "") + "</p>" +
+        buttonHtml +
       "</section>"
     );
   }
 
   function getVisibleRows() {
-    var riskFilter = state.riskFilter;
-    var searchTerm = $.trim(String(els.$search.val() || "")).toLowerCase();
-    var rows = state.rows.slice(0);
+    var term = $.trim(String(els.$search.val() || "")).toLowerCase();
 
-    rows = $.grep(rows, function(row) {
-      var haystack = [
-        row.name,
-        row.displayPath,
-        row.sourceSummary,
-        row.targetSummary,
-        row.reason,
-        row.policyReason,
-        row.securityLockReason,
-        row.ignoredReason,
-        row.sizeLabel,
-        row.lastModifiedLabel,
-        (row.sourceNames || []).join(" "),
-        (row.targetPaths || []).join(" ")
-      ].join(" ").toLowerCase();
+    return $.grep(state.rows || [], function(row) {
+      var haystack = ((row.name || "") + " " + (row.displayPath || "") + " " + (row.sourceSummary || "") + " " + (row.targetSummary || "")).toLowerCase();
 
-      if (row.ignored && !state.showIgnored) {
+      if (!state.showIgnored && row.ignored) {
         return false;
       }
 
-      if (riskFilter !== "all" && row.risk !== riskFilter) {
+      if (state.riskFilter !== "all" && row.risk !== state.riskFilter) {
         return false;
       }
 
-      if (searchTerm && haystack.indexOf(searchTerm) === -1) {
+      if (term && haystack.indexOf(term) === -1) {
         return false;
       }
 
       return true;
-    });
-
-    rows.sort(compareRows);
-    return rows;
+    }).sort(compareRows);
   }
 
   function compareRows(left, right) {
@@ -982,17 +804,17 @@
     var reviewSelected = $.grep(selectedRows, function(row) {
       return row.risk === "review";
     }).length;
-    var summaryText = selectedRows.length + " " + (selectedRows.length === 1 ? t("selectedSingular", "folder selected") : t("selectedPlural", "folders selected"));
-    var detailText = t("selectionHintIdle", "Click rows to select. Locked paths stay visible but cannot be selected.");
+    var summaryText = selectedRows.length + " " + (selectedRows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
+    var detailText = ACP.t(strings, "selectionHintIdle", "Click rows to select. Locked paths stay visible but cannot be selected.");
 
     if (!state.settings.allowOutsideShareCleanup && Number(state.summary.review || 0) > 0) {
-      detailText = t("selectionHintSafety", "Outside-share cleanup is disabled, so review rows stay locked until you enable it.");
+      detailText = ACP.t(strings, "selectionHintSafety", "Outside-share cleanup is disabled, so review rows stay locked until you enable it.");
     } else if (reviewSelected > 0 && state.settings.enablePermanentDelete) {
-      detailText = t("selectionHintReview", "Review rows still need extra scrutiny before permanent delete.");
+      detailText = ACP.t(strings, "selectionHintReview", "Review rows still need extra scrutiny before permanent delete.");
     } else if (selectedRows.length && state.settings.enablePermanentDelete) {
-      detailText = t("selectionHintDeleteMode", "Permanent delete requires typed confirmation.");
+      detailText = ACP.t(strings, "selectionHintDeleteMode", "Permanent delete requires typed confirmation.");
     } else if (selectedRows.length) {
-      detailText = t("selectionHintQuarantineMode", "Selected folders will be moved into quarantine instead of being permanently deleted.");
+      detailText = ACP.t(strings, "selectionHintQuarantineMode", "Selected folders will be moved into quarantine instead of being permanently deleted.");
     }
 
     els.$selectionSummary.text(summaryText);
@@ -1023,7 +845,7 @@
   }
 
   function saveSafetySettings() {
-    var previousSettings = $.extend({}, defaultSafetySettings(), state.settings || {});
+    var previousSettings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
     var previousRows = state.rows.slice(0);
     var previousSummary = $.extend({}, state.summary || {});
     var nextSettings = $.extend({}, previousSettings, {
@@ -1033,6 +855,7 @@
 
     state.settings = nextSettings;
     syncSafetyControls();
+    renderPanels();
     updateActionBar();
 
     if (!state.scanToken) {
@@ -1048,7 +871,7 @@
       allowOutsideShareCleanup: nextSettings.allowOutsideShareCleanup ? "1" : "0",
       enablePermanentDelete: nextSettings.enablePermanentDelete ? "1" : "0"
     }).done(function(response) {
-      state.settings = $.extend({}, defaultSafetySettings(), response.settings || nextSettings);
+      state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || nextSettings);
       syncSafetyControls();
       applyLocalSafetyState();
       reconcileSelection();
@@ -1060,7 +883,7 @@
       state.summary = previousSummary;
       syncSafetyControls();
       setBusy(false);
-      swal(t("settingsSaveFailedTitle", "Safety settings failed"), extractErrorMessage(xhr, t("settingsSaveFailedMessage", "The new safety settings could not be saved right now.")), "error");
+      swal(ACP.t(strings, "settingsSaveFailedTitle", "Safety settings failed"), ACP.extractErrorMessage(xhr, ACP.t(strings, "settingsSaveFailedMessage", "The new safety settings could not be saved right now.")), "error");
       if (xhr && xhr.status === 409) {
         loadScan();
       } else {
@@ -1072,8 +895,8 @@
 
   function postRowAction(action, rowId) {
     var intent = action === "unignore" ? "unignore" : "ignore";
-    var failureTitle = action === "unignore" ? t("restoreFailedTitle", "Restore failed") : t("ignoreFailedTitle", "Ignore failed");
-    var failureMessage = action === "unignore" ? t("restoreFailedMessage", "The ignore list could not be updated right now.") : t("ignoreFailedMessage", "The ignore list could not be updated right now.");
+    var failureTitle = action === "unignore" ? ACP.t(strings, "restoreFailedTitle", "Restore failed") : ACP.t(strings, "ignoreFailedTitle", "Ignore failed");
+    var failureMessage = action === "unignore" ? ACP.t(strings, "restoreFailedMessage", "The ignore list could not be updated right now.") : ACP.t(strings, "ignoreFailedMessage", "The ignore list could not be updated right now.");
 
     setBusy(true);
 
@@ -1086,7 +909,7 @@
       loadScan();
     }).fail(function(xhr) {
       setBusy(false);
-      swal(failureTitle, extractErrorMessage(xhr, failureMessage), "error");
+      swal(failureTitle, ACP.extractErrorMessage(xhr, failureMessage), "error");
       if (xhr && xhr.status === 409) {
         loadScan();
       }
@@ -1102,23 +925,23 @@
       operation: operation,
       preview: preview,
       baseOperation: baseOperation,
-      confirmTitle: isDelete ? t("deleteConfirmTitle", "Delete selected folders?") : t("quarantineConfirmTitle", "Quarantine selected folders?"),
-      confirmMessage: isDelete ? t("deleteConfirmMessage", "Selected folders will be removed immediately.") : t("quarantineConfirmMessage", "Selected folders will be moved into quarantine instead of being permanently deleted."),
-      detailMessage: isDelete ? t("deleteIrreversibleMessage", "This action cannot be undone by this plugin.") : t("quarantineDetailMessage", "The selected folders will be moved into the quarantine root instead of being permanently deleted."),
-      confirmButtonLabel: isDelete ? t("deleteConfirmButton", "Delete") : t("quarantineConfirmButton", "Quarantine"),
-      loadingTitle: preview ? t("dryRunTitle", "Running dry run") : (isDelete ? t("deletingTitle", "Deleting selected folders") : t("quarantiningTitle", "Moving selected folders to quarantine")),
-      loadingMessage: preview ? t("dryRunMessage", "Reviewing what the current action would do without changing anything.") : (isDelete ? t("deletingMessage", "Large folders can take a moment to remove.") : t("quarantiningMessage", "Selected folders are being moved into a hidden quarantine root.")),
-      resultTitleSuccess: preview ? t("dryRunResultTitleSuccess", "Dry run complete") : (isDelete ? t("deleteResultTitleSuccess", "Cleanup complete") : t("quarantineResultTitleSuccess", "Quarantine complete")),
-      resultTitleWarning: preview ? t("dryRunResultTitleWarning", "Dry run finished with warnings") : (isDelete ? t("deleteResultTitleWarning", "Cleanup finished with warnings") : t("quarantineResultTitleWarning", "Quarantine finished with warnings")),
-      failureTitle: isDelete ? t("deleteFailedTitle", "Delete failed") : t("quarantineFailedTitle", "Quarantine failed"),
-      listTitle: preview ? t("previewListTitle", "Operation preview") : (isDelete ? t("deleteListTitle", "Folders to delete") : t("quarantineListTitle", "Folders to quarantine")),
+      confirmTitle: isDelete ? ACP.t(strings, "deleteConfirmTitle", "Delete selected folders?") : ACP.t(strings, "quarantineConfirmTitle", "Quarantine selected folders?"),
+      confirmMessage: isDelete ? ACP.t(strings, "deleteConfirmMessage", "Selected folders will be removed immediately.") : ACP.t(strings, "quarantineConfirmMessage", "Selected folders will be moved into quarantine instead of being permanently deleted."),
+      detailMessage: isDelete ? ACP.t(strings, "deleteIrreversibleMessage", "This action cannot be undone by this plugin.") : ACP.t(strings, "quarantineDetailMessage", "The selected folders will be moved into the quarantine root instead of being permanently deleted."),
+      confirmButtonLabel: isDelete ? ACP.t(strings, "deleteConfirmButton", "Delete") : ACP.t(strings, "quarantineConfirmButton", "Quarantine"),
+      loadingTitle: preview ? ACP.t(strings, "dryRunTitle", "Running dry run") : (isDelete ? ACP.t(strings, "deletingTitle", "Deleting selected folders") : ACP.t(strings, "quarantiningTitle", "Moving selected folders to quarantine")),
+      loadingMessage: preview ? ACP.t(strings, "dryRunMessage", "Reviewing what the current action would do without changing anything.") : (isDelete ? ACP.t(strings, "deletingMessage", "Large folders can take a moment to remove.") : ACP.t(strings, "quarantiningMessage", "Selected folders are being moved into a hidden quarantine root.")),
+      resultTitleSuccess: preview ? ACP.t(strings, "dryRunResultTitleSuccess", "Dry run complete") : (isDelete ? ACP.t(strings, "deleteResultTitleSuccess", "Cleanup complete") : ACP.t(strings, "quarantineResultTitleSuccess", "Quarantine complete")),
+      resultTitleWarning: preview ? ACP.t(strings, "dryRunResultTitleWarning", "Dry run finished with warnings") : (isDelete ? ACP.t(strings, "deleteResultTitleWarning", "Cleanup finished with warnings") : ACP.t(strings, "quarantineResultTitleWarning", "Quarantine finished with warnings")),
+      failureTitle: isDelete ? ACP.t(strings, "deleteFailedTitle", "Delete failed") : ACP.t(strings, "quarantineFailedTitle", "Quarantine failed"),
+      listTitle: preview ? ACP.t(strings, "previewListTitle", "Operation preview") : (isDelete ? ACP.t(strings, "deleteListTitle", "Folders to delete") : ACP.t(strings, "quarantineListTitle", "Folders to quarantine")),
       successStatus: preview ? "ready" : (isDelete ? "deleted" : "quarantined"),
-      warningLabel: preview ? t("previewWarningLabel", "DRY RUN") : t("deleteWarningLabel", "WARNING")
+      warningLabel: preview ? ACP.t(strings, "previewWarningLabel", "DRY RUN") : ACP.t(strings, "deleteWarningLabel", "WARNING")
     };
   }
 
   function buildActionConfirmButtonText(context, count) {
-    var noun = count === 1 ? t("deleteFolderSingular", "folder") : t("deleteFolderPlural", "folders");
+    var noun = count === 1 ? ACP.t(strings, "deleteFolderSingular", "folder") : ACP.t(strings, "deleteFolderPlural", "folders");
     return context.confirmButtonLabel + " " + count + " " + noun;
   }
 
@@ -1131,18 +954,18 @@
     var preview = rows.slice(0, 6);
     var html = [
       '<div class="acp-modal-summary">',
-      '<div class="acp-modal-flag">' + escapeHtml(t("deleteWarningLabel", "WARNING")) + "</div>",
+      '<div class="acp-modal-flag">' + ACP.escapeHtml(ACP.t(strings, "deleteWarningLabel", "WARNING")) + "</div>",
       '<div class="acp-modal-copy">',
-      '<div class="acp-modal-lead">' + escapeHtml(context.confirmMessage) + "</div>",
-      '<div class="acp-modal-subcopy">' + escapeHtml(context.detailMessage) + "</div>",
+      '<div class="acp-modal-lead">' + ACP.escapeHtml(context.confirmMessage) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(context.detailMessage) + "</div>",
       "</div>",
       '<div class="acp-modal-stats">',
-      '<span class="acp-modal-stat is-selected">' + escapeHtml(String(rows.length)) + " selected</span>",
-      '<span class="acp-modal-stat is-safe">' + escapeHtml(t("deleteSafeLabel", "Safe")) + ": " + escapeHtml(String(safeCount)) + "</span>"
+      '<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(String(rows.length)) + " selected</span>",
+      '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "deleteSafeLabel", "Safe")) + ": " + ACP.escapeHtml(String(safeCount)) + "</span>"
     ];
 
     if (reviewCount > 0) {
-      html.push('<span class="acp-modal-stat is-review">' + escapeHtml(t("deleteReviewCountLabel", "Review")) + ": " + escapeHtml(String(reviewCount)) + "</span>");
+      html.push('<span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "deleteReviewCountLabel", "Review")) + ": " + ACP.escapeHtml(String(reviewCount)) + "</span>");
     }
 
     html.push("</div>");
@@ -1150,47 +973,30 @@
     if (reviewCount > 0) {
       html.push(
         '<div class="acp-modal-warning-box">' +
-          '<strong>' + escapeHtml(t("deleteReviewLabel", "Review required")) + ".</strong> " +
-          escapeHtml(t("deleteTypedMessage", "One or more selected folders sit outside the configured appdata share.")) +
+          '<strong>' + ACP.escapeHtml(ACP.t(strings, "deleteReviewLabel", "Review required")) + ".</strong> " +
+          ACP.escapeHtml(ACP.t(strings, "deleteTypedMessage", "One or more selected folders sit outside the configured appdata share.")) +
         "</div>"
       );
     }
 
     if (settings.showTypeHint) {
-      html.push('<div class="acp-modal-hint">' + escapeHtml(t("deleteTypedHint", "Type DELETE to continue with this permanent delete.")) + "</div>");
+      html.push('<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "deleteTypedHint", "Type DELETE to continue with this permanent delete.")) + "</div>");
     }
 
     html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + escapeHtml(context.listTitle) + "</div>");
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(context.listTitle) + "</div>");
     html.push('<ul class="acp-modal-list">');
 
     $.each(preview, function(_, row) {
-      html.push('<li><code class="acp-modal-path">' + escapeHtml(row.displayPath || row.path || "") + "</code></li>");
+      html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code></li>");
     });
 
     if (rows.length > preview.length) {
-      html.push('<li class="acp-modal-list-more">+' + escapeHtml(String(rows.length - preview.length)) + " more</li>");
+      html.push('<li class="acp-modal-list-more">+' + ACP.escapeHtml(String(rows.length - preview.length)) + " more</li>");
     }
 
     html.push("</ul></div></div>");
     return html.join("");
-  }
-
-  function formatOperationResultStatus(status) {
-    switch (status) {
-      case "ready":
-        return { label: t("previewReadyLabel", "Ready"), tone: "is-selected" };
-      case "quarantined":
-        return { label: t("resultQuarantinedLabel", "Quarantined"), tone: "is-safe" };
-      case "deleted":
-        return { label: t("resultDeletedLabel", "Deleted"), tone: "is-selected" };
-      case "missing":
-        return { label: t("resultMissingLabel", "Missing"), tone: "is-blocked" };
-      case "blocked":
-        return { label: t("resultBlockedLabel", "Blocked"), tone: "is-review" };
-      default:
-        return { label: t("resultErrorLabel", "Error"), tone: "is-review" };
-    }
   }
 
   function buildOperationResultsHtml(summary, results, context) {
@@ -1198,41 +1004,41 @@
     var html = ['<div class="acp-modal-summary">'];
 
     if (context.preview) {
-      html.push('<div class="acp-modal-flag is-preview">' + escapeHtml(context.warningLabel) + "</div>");
-      stats.push('<span class="acp-modal-stat is-selected">' + escapeHtml(t("previewReadyLabel", "Ready")) + ": " + escapeHtml(String(summary.ready || 0)) + "</span>");
+      html.push('<div class="acp-modal-flag is-preview">' + ACP.escapeHtml(context.warningLabel) + "</div>");
+      stats.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(ACP.t(strings, "previewReadyLabel", "Ready")) + ": " + ACP.escapeHtml(String(summary.ready || 0)) + "</span>");
     } else if (context.baseOperation === "delete") {
-      stats.push('<span class="acp-modal-stat is-selected">' + escapeHtml(t("resultDeletedLabel", "Deleted")) + ": " + escapeHtml(String(summary.deleted || 0)) + "</span>");
+      stats.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(ACP.t(strings, "resultDeletedLabel", "Deleted")) + ": " + ACP.escapeHtml(String(summary.deleted || 0)) + "</span>");
     } else {
-      stats.push('<span class="acp-modal-stat is-safe">' + escapeHtml(t("resultQuarantinedLabel", "Quarantined")) + ": " + escapeHtml(String(summary.quarantined || 0)) + "</span>");
+      stats.push('<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "resultQuarantinedLabel", "Quarantined")) + ": " + ACP.escapeHtml(String(summary.quarantined || 0)) + "</span>");
     }
 
-    stats.push('<span class="acp-modal-stat is-review">' + escapeHtml(t("resultBlockedLabel", "Blocked")) + ": " + escapeHtml(String(summary.blocked || 0)) + "</span>");
-    stats.push('<span class="acp-modal-stat">' + escapeHtml(t("resultMissingLabel", "Missing")) + ": " + escapeHtml(String(summary.missing || 0)) + "</span>");
-    stats.push('<span class="acp-modal-stat">' + escapeHtml(t("resultErrorLabel", "Error")) + ": " + escapeHtml(String(summary.errors || 0)) + "</span>");
+    stats.push('<span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "resultBlockedLabel", "Blocked")) + ": " + ACP.escapeHtml(String(summary.blocked || 0)) + "</span>");
+    stats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(ACP.t(strings, "resultMissingLabel", "Missing")) + ": " + ACP.escapeHtml(String(summary.missing || 0)) + "</span>");
+    stats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(ACP.t(strings, "resultErrorLabel", "Error")) + ": " + ACP.escapeHtml(String(summary.errors || 0)) + "</span>");
 
     html.push('<div class="acp-modal-stats">' + stats.join("") + "</div>");
     html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + escapeHtml(context.listTitle) + "</div>");
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(context.listTitle) + "</div>");
     html.push('<ul class="acp-modal-list acp-modal-result-list">');
 
     $.each(results || [], function(_, result) {
-      var statusMeta = formatOperationResultStatus(result.status);
+      var statusMeta = ACP.formatOperationResultStatus(strings, result.status);
       var destinationHtml = "";
-      var messageHtml = result.message ? '<div class="acp-modal-result-message">' + escapeHtml(result.message) + "</div>" : "";
+      var messageHtml = result.message ? '<div class="acp-modal-result-message">' + ACP.escapeHtml(result.message) + "</div>" : "";
 
       if (result.destination) {
         destinationHtml =
           '<div class="acp-modal-result-destination">' +
-            '<span class="acp-modal-result-label">' + escapeHtml(t("destinationLabel", "Destination")) + "</span>" +
-            '<code class="acp-modal-path acp-modal-path-secondary">' + escapeHtml(result.destination) + "</code>" +
+            '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "destinationLabel", "Destination")) + "</span>" +
+            '<code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.destination) + "</code>" +
           "</div>";
       }
 
       html.push(
         '<li class="acp-modal-result">' +
           '<div class="acp-modal-result-head">' +
-            '<span class="acp-modal-stat ' + statusMeta.tone + '">' + escapeHtml(statusMeta.label) + "</span>" +
-            '<code class="acp-modal-path">' + escapeHtml(result.displayPath || result.path || "") + "</code>" +
+            '<span class="acp-modal-stat ' + statusMeta.tone + '">' + ACP.escapeHtml(statusMeta.label) + "</span>" +
+            '<code class="acp-modal-path">' + ACP.escapeHtml(result.displayPath || result.path || "") + '</code>' +
           "</div>" +
           messageHtml +
           destinationHtml +
@@ -1248,7 +1054,7 @@
     var selectedRows = getSelectedRows();
 
     if (!selectedRows.length) {
-      swal(t("deleteEmptyTitle", "Nothing selected"), t("deleteEmptyMessage", "Select at least one deletable folder before continuing."), "warning");
+      swal(ACP.t(strings, "deleteEmptyTitle", "Nothing selected"), ACP.t(strings, "deleteEmptyMessage", "Select at least one deletable folder before continuing."), "warning");
       return;
     }
 
@@ -1264,19 +1070,19 @@
     var confirmButtonText = buildActionConfirmButtonText(context, selectedRows.length);
 
     if (!selectedRows.length) {
-      swal(t("deleteEmptyTitle", "Nothing selected"), t("deleteEmptyMessage", "Select at least one deletable folder before continuing."), "warning");
+      swal(ACP.t(strings, "deleteEmptyTitle", "Nothing selected"), ACP.t(strings, "deleteEmptyMessage", "Select at least one deletable folder before continuing."), "warning");
       return;
     }
 
     if (context.baseOperation === "delete") {
       swal({
-        title: t("deleteTypedTitle", "Type DELETE to confirm permanent delete"),
+        title: ACP.t(strings, "deleteTypedTitle", "Type DELETE to confirm permanent delete"),
         text: "",
         type: "input",
         html: true,
         showCancelButton: true,
         closeOnConfirm: false,
-        inputPlaceholder: t("deleteTypedPlaceholder", "DELETE"),
+        inputPlaceholder: ACP.t(strings, "deleteTypedPlaceholder", "DELETE"),
         confirmButtonText: confirmButtonText
       }, function(inputValue) {
         if (inputValue === false) {
@@ -1284,14 +1090,14 @@
         }
 
         if ($.trim(String(inputValue || "")).toUpperCase() !== "DELETE") {
-          swal.showInputError(t("deleteTypedError", "Type DELETE to continue."));
+          swal.showInputError(ACP.t(strings, "deleteTypedError", "Type DELETE to continue."));
           return false;
         }
 
         runCandidateOperation(selectedRows, context.operation);
         return true;
       });
-      applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildOperationPreviewHtml(selectedRows, context, {
+      ACP.applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildOperationPreviewHtml(selectedRows, context, {
         reviewCount: reviewRows.length,
         showTypeHint: true
       }));
@@ -1309,7 +1115,7 @@
     }, function() {
       runCandidateOperation(selectedRows, context.operation);
     });
-    applyDeleteModalClass("acp-delete-modal", buildOperationPreviewHtml(selectedRows, context, {
+    ACP.applyDeleteModalClass("acp-delete-modal", buildOperationPreviewHtml(selectedRows, context, {
       reviewCount: 0,
       showTypeHint: false
     }));
@@ -1319,7 +1125,7 @@
     var context = buildOperationContext(operation);
 
     setBusy(true);
-    applyDeleteModalClass("");
+    ACP.applyDeleteModalClass("");
     swal({
       title: context.loadingTitle,
       text: context.loadingMessage,
@@ -1349,6 +1155,10 @@
         state.selected = {};
       }
 
+      if (response.quarantineSummary) {
+        state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary);
+      }
+
       swal({
         title: modalTitle,
         text: "",
@@ -1357,13 +1167,17 @@
       }, function() {
         if (!context.preview) {
           loadScan();
+          if (state.quarantine.open) {
+            loadQuarantineManager(true);
+          }
         }
       });
-      applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildOperationResultsHtml(summary, results, context));
+      ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildOperationResultsHtml(summary, results, context));
+      renderPanels();
       renderSummaryCards();
       updateActionBar();
     }).fail(function(xhr) {
-      var fallbackMessage = extractErrorMessage(xhr, t("scanFailedMessage", "The orphaned appdata scan could not be completed right now."));
+      var fallbackMessage = ACP.extractErrorMessage(xhr, ACP.t(strings, "scanFailedMessage", "The orphaned appdata scan could not be completed right now."));
 
       setBusy(false);
 
@@ -1382,85 +1196,198 @@
     });
   }
 
-  function applyDeleteModalClass(className, htmlContent) {
-    window.setTimeout(function() {
-      var $modal = $(".sweet-alert:visible").first();
-      var $message = $modal.find("p").first();
+  function findQuarantineEntry(entryId) {
+    var matches = $.grep(state.quarantine.entries || [], function(entry) {
+      return String(entry.id || "") === String(entryId || "");
+    });
 
-      if (!$modal.length) {
-        return;
-      }
-
-      $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal");
-      if (className) {
-        $modal.addClass(className);
-      }
-
-      syncDeleteModalThemeTokens($modal);
-
-      if ($message.length) {
-        $message.removeClass("acp-modal-host");
-        if (typeof htmlContent === "string") {
-          $message.html(htmlContent).addClass("acp-modal-host");
-        } else {
-          $message.empty();
-        }
-      }
-    }, 0);
+    return matches.length ? matches[0] : null;
   }
 
-  function syncDeleteModalThemeTokens($modal) {
-    var modalNode = $modal && $modal.length ? $modal[0] : null;
-    var sourceNode = els.$app && els.$app.length ? els.$app[0] : null;
-    var overlayNode = $(".sweet-overlay:visible").first()[0];
-    var computedStyle;
+  function buildQuarantineActionConfirmHtml(entry, action) {
+    var title = action === "restore"
+      ? ACP.t(strings, "quarantineRestoreConfirmMessage", "Restore this quarantined folder back to its original location.")
+      : ACP.t(strings, "quarantinePurgeConfirmMessage", "Permanently delete this quarantined folder.");
+    var listTitle = action === "restore"
+      ? ACP.t(strings, "quarantineRestoreListTitle", "Folder to restore")
+      : ACP.t(strings, "quarantinePurgeListTitle", "Folder to purge");
 
-    if (!modalNode || !sourceNode || typeof window.getComputedStyle !== "function") {
+    return [
+      '<div class="acp-modal-summary">',
+      '<div class="acp-modal-flag">' + ACP.escapeHtml(action === "restore" ? ACP.t(strings, "quarantineRestoreActionLabel", "Restore") : ACP.t(strings, "quarantinePurgeActionLabel", "Purge")) + "</div>",
+      '<div class="acp-modal-copy">',
+      '<div class="acp-modal-lead">' + ACP.escapeHtml(title) + "</div>",
+      "</div>",
+      '<div class="acp-modal-panel">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(listTitle) + "</div>",
+      '<code class="acp-modal-path">' + ACP.escapeHtml((entry && entry.sourcePath) || "") + "</code>",
+      "</div>",
+      "</div>"
+    ].join("");
+  }
+
+  function buildQuarantineManagerResultsHtml(action, summary, results) {
+    var html = ['<div class="acp-modal-summary">'];
+    var actionLabel = action === "restore" ? ACP.t(strings, "quarantineRestoreActionLabel", "Restore") : ACP.t(strings, "quarantinePurgeActionLabel", "Purge");
+
+    html.push('<div class="acp-modal-flag">' + ACP.escapeHtml(actionLabel) + "</div>");
+    html.push('<div class="acp-modal-stats">');
+    $.each(summary || {}, function(status, count) {
+      var statusMeta;
+      if (!count) {
+        return;
+      }
+      statusMeta = ACP.formatOperationResultStatus(strings, status);
+      html.push('<span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + ": " + ACP.escapeHtml(String(count)) + "</span>");
+    });
+    html.push("</div>");
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "quarantineManagerTitle", "Quarantine manager")) + "</div>");
+    html.push('<ul class="acp-modal-list acp-modal-result-list">');
+
+    $.each(results || [], function(_, result) {
+      var statusMeta = ACP.formatOperationResultStatus(strings, result.status);
+      html.push('<li class="acp-modal-result">');
+      html.push('<div class="acp-modal-result-head"><span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + "</span><code class=\"acp-modal-path\">" + ACP.escapeHtml(result.sourcePath || result.destination || "") + "</code></div>");
+      if (result.destination) {
+        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "destinationLabel", "Destination")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.destination) + "</code></div>");
+      }
+      if (result.message) {
+        html.push('<div class="acp-modal-result-message">' + ACP.escapeHtml(result.message) + "</div>");
+      }
+      html.push("</li>");
+    });
+
+    html.push("</ul></div></div>");
+    return html.join("");
+  }
+
+  function startQuarantineManagerActionFlow(action, entryId) {
+    var entry = findQuarantineEntry(entryId);
+    var isRestore = action === "restore";
+    var confirmTitle = isRestore
+      ? ACP.t(strings, "quarantineRestoreConfirmTitle", "Restore quarantined folder?")
+      : ACP.t(strings, "quarantinePurgeConfirmTitle", "Purge quarantined folder?");
+    var confirmButton = isRestore
+      ? ACP.t(strings, "quarantineRestoreActionLabel", "Restore")
+      : ACP.t(strings, "quarantinePurgeActionLabel", "Purge");
+
+    if (!entry) {
+      loadQuarantineManager(true);
       return;
     }
 
-    computedStyle = window.getComputedStyle(sourceNode);
-    $.each(modalThemeTokens, function(_, tokenName) {
-      var tokenValue = String(computedStyle.getPropertyValue(tokenName) || "").trim();
-      if (!tokenValue) {
-        return;
-      }
-      modalNode.style.setProperty(tokenName, tokenValue);
-      if (overlayNode) {
-        overlayNode.style.setProperty(tokenName, tokenValue);
-      }
+    if (!isRestore) {
+      swal({
+        title: ACP.t(strings, "quarantinePurgeTypedTitle", "Type DELETE to purge"),
+        text: "",
+        type: "input",
+        html: true,
+        showCancelButton: true,
+        closeOnConfirm: false,
+        inputPlaceholder: ACP.t(strings, "deleteTypedPlaceholder", "DELETE"),
+        confirmButtonText: confirmButton
+      }, function(inputValue) {
+        if (inputValue === false) {
+          return false;
+        }
+
+        if ($.trim(String(inputValue || "")).toUpperCase() !== "DELETE") {
+          swal.showInputError(ACP.t(strings, "deleteTypedError", "Type DELETE to continue."));
+          return false;
+        }
+
+        runQuarantineManagerAction([entryId], action);
+        return true;
+      });
+      ACP.applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildQuarantineActionConfirmHtml(entry, action));
+      return;
+    }
+
+    swal({
+      title: confirmTitle,
+      text: "",
+      type: "warning",
+      html: true,
+      showCancelButton: true,
+      closeOnConfirm: false,
+      confirmButtonText: confirmButton
+    }, function() {
+      runQuarantineManagerAction([entryId], action);
+    });
+    ACP.applyDeleteModalClass("acp-delete-modal", buildQuarantineActionConfirmHtml(entry, action));
+  }
+
+  function runQuarantineManagerAction(entryIds, action) {
+    var isRestore = action === "restore";
+    var loadingTitle = isRestore
+      ? ACP.t(strings, "quarantineRestoreLoadingTitle", "Restoring quarantined folders")
+      : ACP.t(strings, "quarantinePurgeLoadingTitle", "Purging quarantined folders");
+    var loadingMessage = isRestore
+      ? ACP.t(strings, "quarantineRestoreLoadingMessage", "Moving selected folders back to their original locations.")
+      : ACP.t(strings, "quarantinePurgeLoadingMessage", "Permanently deleting selected quarantined folders.");
+    var failureTitle = isRestore
+      ? ACP.t(strings, "quarantineRestoreFailedTitle", "Restore failed")
+      : ACP.t(strings, "quarantinePurgeFailedTitle", "Purge failed");
+
+    setBusy(true);
+    state.quarantine.loading = true;
+    renderPanels();
+    ACP.applyDeleteModalClass("");
+    swal({
+      title: loadingTitle,
+      text: loadingMessage,
+      type: "info",
+      showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false
     });
 
-    modalNode.style.colorScheme = sourceNode.style.colorScheme || "dark";
-    if (overlayNode) {
-      overlayNode.style.backgroundColor = "rgba(5, 8, 12, 0.76)";
-    }
-  }
+    apiPost({
+      action: "quarantineManagerAction",
+      managerAction: action,
+      entryIds: JSON.stringify(entryIds)
+    }).done(function(response) {
+      var quarantine = response.quarantine || {};
+      var summary = response.summary || { restored: 0, purged: 0, missing: 0, blocked: 0, errors: 0 };
+      var results = $.isArray(response.results) ? response.results : [];
+      var hasWarnings = Number(summary.blocked || 0) > 0 || Number(summary.missing || 0) > 0 || Number(summary.errors || 0) > 0;
+      var successTitle = isRestore
+        ? ACP.t(strings, "quarantineRestoreSuccessTitle", "Restore complete")
+        : ACP.t(strings, "quarantinePurgeSuccessTitle", "Purge complete");
+      var warningTitle = isRestore
+        ? ACP.t(strings, "quarantineRestoreWarningTitle", "Restore finished with warnings")
+        : ACP.t(strings, "quarantinePurgeWarningTitle", "Purge finished with warnings");
 
-  function extractErrorMessage(xhr, fallback) {
-    if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
-      return xhr.responseJSON.message;
-    }
+      state.quarantine.entries = $.isArray(quarantine.entries) ? quarantine.entries : [];
+      state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, quarantine.summary || {});
+      state.quarantine.loaded = true;
+      state.quarantine.loading = false;
+      setBusy(false);
+      renderPanels();
 
-    if (xhr && xhr.responseText) {
-      try {
-        var parsed = JSON.parse(xhr.responseText);
-        if (parsed && parsed.message) {
-          return parsed.message;
+      swal({
+        title: hasWarnings ? warningTitle : successTitle,
+        text: "",
+        type: hasWarnings ? "warning" : "success",
+        html: true
+      }, function() {
+        loadScan();
+        if (state.quarantine.open) {
+          loadQuarantineManager(true);
         }
-      } catch (error) {
+      });
+      ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildQuarantineManagerResultsHtml(action, summary, results));
+    }).fail(function(xhr) {
+      state.quarantine.loading = false;
+      setBusy(false);
+      renderPanels();
+
+      if (xhr && xhr.status === 409) {
+        loadQuarantineManager(true);
       }
-    }
 
-    return fallback;
-  }
-
-  function escapeHtml(value) {
-    return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+      swal(failureTitle, ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineManagerActionFailedMessage", "The quarantine manager action could not be completed right now.")), "error");
+    });
   }
 })(window, document, jQuery);

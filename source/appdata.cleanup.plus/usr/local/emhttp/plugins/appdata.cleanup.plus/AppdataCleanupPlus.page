@@ -7,7 +7,12 @@ Type="xmenu"
 require_once("/usr/local/emhttp/plugins/appdata.cleanup.plus/include/helpers.php");
 
 $cssVersion = @filemtime("/usr/local/emhttp/plugins/appdata.cleanup.plus/styles/appdata.cleanup.plus.css");
-$jsVersion = @filemtime("/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.js");
+$scriptVersions = array_filter(array(
+  @filemtime("/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.shared.js"),
+  @filemtime("/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.panels.js"),
+  @filemtime("/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.js")
+));
+$jsVersion = ! empty($scriptVersions) ? max($scriptVersions) : false;
 $hostThemeName = strtolower(trim((string)($display['theme'] ?? "")));
 $hostThemeClass = "";
 $csrfToken = getAppdataCleanupPlusCsrfToken();
@@ -42,9 +47,13 @@ $config = array(
     "emptyMessage" => _("Nothing currently looks safe to clean up from the saved Docker templates."),
     "noMatchesTitle" => _("No folders match the current filters"),
     "noMatchesMessage" => _("Clear the search or risk filters to see the full scan again."),
+    "ignoredOnlyTitle" => _("Only ignored paths remain"),
+    "ignoredOnlyMessage" => _("Every detected candidate is hidden by your ignore list. Turn on Show ignored to review or restore hidden paths."),
     "scanFailedTitle" => _("Scan failed"),
     "scanFailedMessage" => _("The orphaned appdata scan could not be completed right now."),
     "scanExpiredMessage" => _("This scan expired or is no longer valid. Rescan and try again."),
+    "rescanLabel" => _("Rescan"),
+    "clearFiltersLabel" => _("Clear filters"),
     "deleteEmptyTitle" => _("Nothing selected"),
     "deleteEmptyMessage" => _("Select at least one deletable folder before continuing."),
     "deleteConfirmTitle" => _("Delete selected folders?"),
@@ -80,6 +89,7 @@ $config = array(
     "quarantineResultTitleSuccess" => _("Quarantine complete"),
     "quarantineResultTitleWarning" => _("Quarantine finished with warnings"),
     "quarantineFailedTitle" => _("Quarantine failed"),
+    "quarantineLoadFailedMessage" => _("The quarantine manager could not be loaded right now."),
     "dryRunResultTitleSuccess" => _("Dry run complete"),
     "dryRunResultTitleWarning" => _("Dry run finished with warnings"),
     "ignoreActionLabel" => _("Ignore"),
@@ -108,12 +118,64 @@ $config = array(
     "selectionHintSafety" => _("Outside-share cleanup is disabled, so review rows stay locked until you enable it."),
     "selectionHintDeleteMode" => _("Permanent delete requires typed confirmation."),
     "selectionHintQuarantineMode" => _("Selected folders will be moved into quarantine instead of being permanently deleted."),
+    "noticeSafeModeTitle" => _("Safe mode is on"),
+    "noticeSafeModeMessage" => _("The primary action moves selected folders into quarantine instead of permanently deleting them."),
+    "noticeDeleteModeTitle" => _("Permanent delete mode is enabled"),
+    "noticeDeleteModeMessage" => _("Selected folders will be permanently removed after confirmation. Use this mode carefully."),
+    "noticeDockerOfflineTitle" => _("Docker is offline"),
+    "noticeDockerOfflineMessage" => _("Results are based only on saved Docker templates. Review every path before acting on anything."),
+    "noticeIgnoredTitle" => _("Ignore list active"),
+    "noticeLatestAuditTitle" => _("Last cleanup"),
+    "noticeOutsideShareDisabledTitle" => _("Outside-share cleanup is disabled"),
+    "noticeOutsideShareDisabledMessage" => _("Review paths stay visible but locked until you explicitly enable outside-share cleanup."),
+    "noticeOutsideShareEnabledTitle" => _("Outside-share cleanup is enabled"),
+    "noticeOutsideShareEnabledMessage" => _("Review paths sit outside the configured appdata share. Confirm each one carefully before acting."),
+    "noticeLockedPathsTitle" => _("Locked paths stay blocked"),
+    "noticeLockedPathsMessage" => _("Any path that resolves to a share root, mount point, symlinked location, or other unsafe target cannot be acted on here."),
     "visibleSummary" => _("visible"),
     "detectedSummary" => _("detected"),
     "cardTotal" => _("Detected"),
     "cardReview" => _("Needs review"),
     "cardBlocked" => _("Locked"),
     "cardSelected" => _("Selected"),
+    "auditHistoryTitle" => _("Audit history"),
+    "auditHistoryEntriesLabel" => _("entries available"),
+    "auditHistoryOpenLabel" => _("Show history"),
+    "auditHistoryCloseLabel" => _("Hide history"),
+    "auditHistoryEmptySummary" => _("No cleanup history has been recorded yet."),
+    "auditHistoryEmptyMessage" => _("No cleanup, restore, or purge actions have been recorded yet."),
+    "auditRequestedLabel" => _("items submitted"),
+    "quarantineManagerTitle" => _("Quarantine manager"),
+    "quarantineManagerOpenLabel" => _("Open manager"),
+    "quarantineManagerCloseLabel" => _("Close manager"),
+    "quarantineRefreshLabel" => _("Refresh"),
+    "quarantineCountSingular" => _("quarantined folder"),
+    "quarantineCountPlural" => _("quarantined folders"),
+    "quarantineSummaryEmpty" => _("No quarantined folders are tracked right now."),
+    "quarantineEmptyMessage" => _("Tracked quarantine entries will appear here once folders are moved into quarantine."),
+    "quarantineLoadingMessage" => _("Reviewing tracked quarantined folders."),
+    "quarantineSourceLabel" => _("Original"),
+    "quarantineLocationLabel" => _("Quarantine path"),
+    "quarantineRestoreActionLabel" => _("Restore"),
+    "quarantineRestoreConfirmTitle" => _("Restore quarantined folder?"),
+    "quarantineRestoreConfirmMessage" => _("Restore this quarantined folder back to its original location."),
+    "quarantineRestoreListTitle" => _("Folder to restore"),
+    "quarantineRestoreLoadingTitle" => _("Restoring quarantined folders"),
+    "quarantineRestoreLoadingMessage" => _("Moving selected folders back to their original locations."),
+    "quarantineRestoreSuccessTitle" => _("Restore complete"),
+    "quarantineRestoreWarningTitle" => _("Restore finished with warnings"),
+    "quarantineRestoreFailedTitle" => _("Restore failed"),
+    "quarantinePurgeActionLabel" => _("Purge"),
+    "quarantinePurgeConfirmTitle" => _("Purge quarantined folder?"),
+    "quarantinePurgeConfirmMessage" => _("Permanently delete this quarantined folder."),
+    "quarantinePurgeTypedTitle" => _("Type DELETE to purge"),
+    "quarantinePurgeListTitle" => _("Folder to purge"),
+    "quarantinePurgeLoadingTitle" => _("Purging quarantined folders"),
+    "quarantinePurgeLoadingMessage" => _("Permanently deleting selected quarantined folders."),
+    "quarantinePurgeSuccessTitle" => _("Purge complete"),
+    "quarantinePurgeWarningTitle" => _("Purge finished with warnings"),
+    "quarantinePurgeFailedTitle" => _("Purge failed"),
+    "quarantineManagerActionFailedMessage" => _("The quarantine manager action could not be completed right now."),
     "quarantineActionLabel" => _("Quarantine selected"),
     "deleteActionLabel" => _("Delete selected"),
     "quarantineListTitle" => _("Folders to quarantine"),
@@ -122,6 +184,8 @@ $config = array(
     "previewReadyLabel" => _("Ready"),
     "resultDeletedLabel" => _("Deleted"),
     "resultQuarantinedLabel" => _("Quarantined"),
+    "resultRestoredLabel" => _("Restored"),
+    "resultPurgedLabel" => _("Purged"),
     "resultBlockedLabel" => _("Blocked"),
     "resultMissingLabel" => _("Missing"),
     "resultErrorLabel" => _("Error")
@@ -221,7 +285,10 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
     </div>
   </section>
 
+  <section class="acp-mode-strip" id="acp-mode-strip" aria-live="polite"></section>
   <section class="acp-notices" id="acp-notices"></section>
+  <section class="acp-audit-panel" id="acp-audit-panel" aria-live="polite"></section>
+  <section class="acp-quarantine-panel" id="acp-quarantine-panel" aria-live="polite"></section>
   <section class="acp-results" id="acp-results" aria-live="polite"></section>
 
   <section class="acp-bottom-bar" id="acp-bottom-bar">
@@ -240,4 +307,6 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
 <script>
 window.appdataCleanupPlusConfig = <?php echo json_encode($config, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 </script>
+<script src="/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.shared.js?v=<?php echo $jsVersion; ?>"></script>
+<script src="/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.panels.js?v=<?php echo $jsVersion; ?>"></script>
 <script src="/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.js?v=<?php echo $jsVersion; ?>"></script>

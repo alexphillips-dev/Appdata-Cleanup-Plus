@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.02">
-<!ENTITY md5 "37d87a9a115c230c1bfc1f2dae7e1df5">
+<!ENTITY version "2026.03.30.03">
+<!ENTITY md5 "0d456417c6f29950f0617b746754f9ee">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.03
+- UX: Split the mode banner into safe/delete status and a quarantine manager launcher, add a full audit history panel, and surface tracked quarantine entries with restore or purge actions
+- Safety: Scope action snapshots to the active session, track quarantine records explicitly, and keep cached path stats so large appdata trees re-scan faster without trusting stale ids
+- Maintenance: Split the exec backend and dashboard frontend into smaller modules, add local behavior smoke tests, and make plugin state storage overrideable for automated testing
+
 ###2026.03.30.02
 - Security: Remove the unused XML helper, stop depending on Community Applications helper code, tighten internal directory creation to `0755`, and reject non-POST or cross-host exec requests
 - Safety: Require typed confirmation for every permanent delete action, not just outside-share deletes

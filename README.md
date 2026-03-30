@@ -23,11 +23,14 @@ If Docker is offline, the plugin still shows candidates from saved templates, bu
 - Compact review dashboard built for Unraid Settings
 - Search, sorting, risk filtering, and ignored-path visibility
 - Folder size and last-updated metadata in the results list
+- Split mode strip with inline quarantine manager access
+- Quarantine manager with restore and purge actions
+- Full audit history panel for cleanup, restore, and purge activity
 - Ignore and restore actions for paths you do not want surfaced again
 - Dry run mode for the current selected action
 - Quarantine as the default real action
 - Optional permanent delete mode when you explicitly enable it
-- Audit logging for completed cleanup operations
+- Session-scoped action snapshots and cached path statistics
 
 ## Safety Model
 
@@ -93,7 +96,9 @@ Important files:
 - `ignored-paths.json`: hidden candidates
 - `cleanup-audit.jsonl`: cleanup and quarantine audit log
 - `safety-settings.json`: saved safety toggles
-- `scan-snapshot.json`: active scan token and candidate snapshot
+- `snapshots/`: session-scoped action snapshots
+- `path-stats-cache.json`: cached size and mtime lookups
+- `quarantine-records.json`: tracked quarantine entries
 
 Default quarantine root:
 
@@ -125,6 +130,12 @@ Validate manifest, CA metadata, archive, and branch URLs:
 
 ```bash
 bash scripts/release_guard.sh
+```
+
+Run the local backend behavior smoke tests:
+
+```bash
+bash scripts/test_behavior.sh
 ```
 
 After promoting `main`, sync release artifacts back into `dev` while restoring `dev` feed URLs:

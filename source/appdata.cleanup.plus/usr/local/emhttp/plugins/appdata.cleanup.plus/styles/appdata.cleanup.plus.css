@@ -579,6 +579,192 @@ body[data-acp-host-theme="light"] #acp-app,
   text-align: right;
 }
 
+.acp-mode-strip,
+.acp-audit-panel,
+.acp-quarantine-panel {
+  display: grid;
+  gap: 6px;
+}
+
+.acp-mode-strip-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.acp-mode-card,
+.acp-utility-card {
+  background: var(--acp-panel);
+  border: 1px solid var(--acp-border);
+  border-radius: 14px;
+  box-shadow: var(--acp-shadow);
+}
+
+.acp-mode-card {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 72px;
+  padding: 12px 14px;
+}
+
+.acp-mode-card:first-child {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.acp-mode-card.is-safe-mode {
+  border-color: rgba(100, 184, 255, 0.2);
+}
+
+.acp-mode-card.is-delete-mode {
+  border-color: rgba(255, 82, 82, 0.26);
+}
+
+.acp-mode-card.is-manager-card {
+  background:
+    linear-gradient(135deg, var(--acp-accent-soft), transparent 52%),
+    var(--acp-panel);
+}
+
+.acp-mode-card-copy,
+.acp-utility-copy,
+.acp-quarantine-title-wrap {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.acp-mode-card-title,
+.acp-utility-title,
+.acp-quarantine-title {
+  color: var(--acp-heading);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.acp-mode-card.is-safe-mode .acp-mode-card-title {
+  color: var(--acp-notice-safe-title);
+}
+
+.acp-mode-card.is-delete-mode .acp-mode-card-title {
+  color: var(--acp-notice-delete-title);
+}
+
+.acp-mode-card-message,
+.acp-utility-subtitle,
+.acp-quarantine-meta,
+.acp-audit-time-muted,
+.acp-audit-head-meta,
+.acp-audit-result-message,
+.acp-utility-empty {
+  color: var(--acp-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.acp-mode-card-actions,
+.acp-utility-actions,
+.acp-quarantine-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.acp-utility-card {
+  overflow: hidden;
+}
+
+.acp-utility-head {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 12px 14px;
+}
+
+.acp-utility-body {
+  background: var(--acp-panel-soft);
+  border-top: 1px solid var(--acp-border);
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.acp-audit-list,
+.acp-quarantine-list,
+.acp-audit-results {
+  display: grid;
+  gap: 8px;
+}
+
+.acp-audit-entry,
+.acp-quarantine-entry {
+  background: var(--acp-panel);
+  border: 1px solid var(--acp-border);
+  border-radius: 12px;
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.acp-audit-head {
+  display: grid;
+  gap: 6px;
+}
+
+.acp-audit-head-main,
+.acp-audit-result-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.acp-audit-time {
+  color: var(--acp-heading);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.acp-audit-message {
+  color: var(--acp-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.acp-audit-result,
+.acp-quarantine-path-group {
+  background: var(--acp-input-bg);
+  border: 1px solid var(--acp-input-border);
+  border-radius: 12px;
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+.acp-audit-destination,
+.acp-quarantine-paths {
+  display: grid;
+  gap: 8px;
+}
+
+.acp-quarantine-head {
+  align-items: start;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.acp-quarantine-paths {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .acp-notices {
   display: grid;
   gap: 6px;
@@ -1186,6 +1372,11 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 @media (max-width: 980px) {
+  .acp-mode-strip-grid,
+  .acp-quarantine-paths {
+    grid-template-columns: 1fr;
+  }
+
   .acp-row-primary {
     grid-template-columns: 1fr;
   }
@@ -1218,6 +1409,8 @@ body[data-acp-host-theme="light"] #acp-app,
 
   .acp-hero,
   .acp-toolbar,
+  .acp-mode-card,
+  .acp-utility-card,
   .acp-bottom-bar,
   .acp-row,
   .acp-state,
@@ -1263,10 +1456,22 @@ body[data-acp-host-theme="light"] #acp-app,
     justify-content: flex-start;
   }
 
+  .acp-mode-card,
+  .acp-utility-head,
+  .acp-quarantine-head {
+    grid-template-columns: 1fr;
+  }
+
   .acp-field,
   .acp-sort-field,
   .acp-compact-field {
     min-width: 100%;
+  }
+
+  .acp-mode-card-actions,
+  .acp-utility-actions,
+  .acp-quarantine-actions {
+    justify-content: flex-start;
   }
 
   .acp-toolbar-actions,
@@ -1283,6 +1488,10 @@ body[data-acp-host-theme="light"] #acp-app,
 
   .acp-results-meta {
     text-align: left;
+  }
+
+  .acp-quarantine-paths {
+    grid-template-columns: 1fr;
   }
 
   .acp-row {
