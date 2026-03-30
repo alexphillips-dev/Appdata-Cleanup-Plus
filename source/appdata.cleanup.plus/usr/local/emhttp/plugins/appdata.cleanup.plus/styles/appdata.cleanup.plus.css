@@ -954,7 +954,8 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-row-badges {
   display: flex;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   gap: 4px;
   justify-content: flex-end;
 }

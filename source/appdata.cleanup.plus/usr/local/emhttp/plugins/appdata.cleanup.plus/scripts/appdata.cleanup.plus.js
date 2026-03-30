@@ -753,11 +753,11 @@
               "</div>" +
               '<div class="acp-row-side">' +
                 '<div class="acp-row-side-head">' +
-                  '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
                   '<div class="acp-row-badges">' +
                     '<span class="acp-badge acp-badge-status">' + ACP.escapeHtml(row.statusLabel || "") + "</span>" +
                     '<span class="acp-badge ' + riskClass + '">' + ACP.escapeHtml(row.riskLabel || "") + "</span>" +
                   "</div>" +
+                  '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
                 "</div>" +
                 rowActionHtml +
               "</div>" +

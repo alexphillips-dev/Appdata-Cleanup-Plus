@@ -108,6 +108,15 @@ behaviorSmokeAssertTrue(persistAppdataCleanupPlusStatsCacheIfDirty(), "Stats cac
 $statsCache = readAppdataCleanupPlusJsonFile(appdataCleanupPlusStatsCacheFile(), array());
 behaviorSmokeAssertTrue(! empty($statsCache[appdataCleanupPlusPathStatsCacheKey($statsPath)]), "Persisted stats cache should include the cached entry.");
 
+$sizeFixture = $stateRoot . "/size-fixture";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($sizeFixture), "Size fixture directory should be created.");
+file_put_contents($sizeFixture . "/payload.bin", str_repeat("A", 2048));
+clearCachedAppdataCleanupPlusPathStats($sizeFixture);
+$measuredStats = collectPathStats($sizeFixture);
+behaviorSmokeAssertTrue(isset($measuredStats["sizeBytes"]) && $measuredStats["sizeBytes"] >= 2048, "collectPathStats should measure a real directory size when no cache entry exists.");
+$measuredCache = getCachedAppdataCleanupPlusPathStats($sizeFixture);
+behaviorSmokeAssertSame($measuredStats["sizeBytes"], $measuredCache["sizeBytes"], "Measured directory size should be written back to the stats cache.");
+
 $quarantineRoot = $stateRoot . "/quarantine";
 $quarantineDestination = $quarantineRoot . "/20260330-120000/mnt/user/appdata/sample";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($quarantineDestination), "Quarantine destination should be created.");

@@ -308,32 +308,43 @@ function measureDirectoryBytesWithIterator($path) {
 }
 
 function measureDirectoryBytes($path) {
-  $size = measureDirectoryBytesWithDu($path);
-
-  if ( $size !== null ) {
-    return $size;
+  if ( strtoupper(substr(PHP_OS, 0, 3)) === "WIN" ) {
+    return measureDirectoryBytesWithIterator($path);
   }
 
-  return measureDirectoryBytesWithIterator($path);
+  return measureDirectoryBytesWithDu($path);
 }
 
 function collectPathStats($path) {
   $lastModified = @filemtime($path);
   $cached = getCachedAppdataCleanupPlusPathStats($path);
   $sizeBytes = null;
+  $normalizedLastModified = $lastModified ? (int)$lastModified : null;
 
   if ( $cached && isset($cached["sizeBytes"]) ) {
     $cachedLastModified = isset($cached["lastModified"]) ? (int)$cached["lastModified"] : null;
 
-    if ( $cachedLastModified !== null && $cachedLastModified === ( $lastModified ? (int)$lastModified : null ) ) {
-      $sizeBytes = $cached["sizeBytes"];
+    if ( $cachedLastModified !== null && $cachedLastModified === $normalizedLastModified ) {
+      $sizeBytes = (int)$cached["sizeBytes"];
+    }
+  }
+
+  if ( $sizeBytes === null ) {
+    $measuredSize = measureDirectoryBytes($path);
+
+    if ( $measuredSize !== null ) {
+      $sizeBytes = (int)$measuredSize;
+      setCachedAppdataCleanupPlusPathStats($path, array(
+        "sizeBytes" => $sizeBytes,
+        "lastModified" => $normalizedLastModified
+      ));
     }
   }
 
   return array(
     "sizeBytes" => $sizeBytes,
     "sizeLabel" => formatBytesLabel($sizeBytes),
-    "lastModified" => $lastModified ? (int)$lastModified : null,
+    "lastModified" => $normalizedLastModified,
     "lastModifiedIso" => $lastModified ? date("c", $lastModified) : "",
     "lastModifiedLabel" => formatRelativeAgeLabel($lastModified),
     "lastModifiedExact" => formatDateTimeLabel($lastModified)
