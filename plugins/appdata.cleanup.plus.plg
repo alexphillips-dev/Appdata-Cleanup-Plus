@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.38
+- Fix: Restore the plugin page registration to `Menu="Utilities"` so Appdata Cleanup Plus appears under Unraid Settings / User Utilities again instead of disappearing behind the invalid `Menu="Settings"` target
+- Fix: Keep the existing `Type="xmenu"` page mode and `Settings/AppdataCleanupPlus` launch path while only reverting the bad menu bucket change
+
 ###2026.03.30.37
 - Fix: Register the packaged xmenu page under Unraid Settings instead of Utilities so stable installs show up in the same Settings location as the dev channel
 - UX: Keep the page header and manifest launch target aligned on `Settings/AppdataCleanupPlus` for fresh installs and updates
