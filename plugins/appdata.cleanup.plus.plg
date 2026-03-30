@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.16">
-<!ENTITY md5 "fd93cfb7184a13aeb62f5a39b9fc6a99">
+<!ENTITY version "2026.03.30.17">
+<!ENTITY md5 "0ba9d428c647b54d77db0edbe1d09fae">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.17
+- Fix: Hide SweetAlert's base body text whenever the quarantine manager injects custom modal content so stale text no longer bleeds through during refresh
+- UX: Remove the duplicate in-body quarantine manager title so refreshing the manager updates a single clean modal surface instead of echoing the title inside the content host
+
 ###2026.03.30.16
 - UX: Flatten panel backgrounds across every host theme so dashboard cards use plain solid surfaces instead of gradient fades
 - UX: Remove the extra accent fade overlays from the hero banner, quarantine manager launcher card, and sticky action bar so they match the rest of the panel chrome

@@ -78,7 +78,6 @@
     var html = [
       '<div class="acp-modal-summary">',
       '<div class="acp-modal-copy">',
-      '<div class="acp-modal-lead">' + ACP.escapeHtml(ACP.t(strings, "quarantineManagerTitle", "Quarantine manager")) + "</div>",
       '<div class="acp-modal-subcopy">' + ACP.escapeHtml(subtitle) + "</div>",
       "</div>",
       '<div class="acp-modal-actions-row">',
