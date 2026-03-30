@@ -120,6 +120,12 @@ Build package and refresh manifest/XML metadata:
 bash pkg_build.sh
 ```
 
+Promote `dev` into `main`, build the main release, create the matching git tag, and publish the GitHub release from the same top manifest notes:
+
+```bash
+bash scripts/release_main.sh
+```
+
 Preview the next computed package version without writing release files:
 
 ```bash
@@ -138,7 +144,7 @@ Run the local backend behavior smoke tests:
 bash scripts/test_behavior.sh
 ```
 
-After promoting `main`, sync release artifacts back into `dev` while restoring `dev` feed URLs:
+After a manual `main` promotion, sync release artifacts back into `dev` while restoring `dev` feed URLs:
 
 ```bash
 bash scripts/sync_main_to_dev.sh
