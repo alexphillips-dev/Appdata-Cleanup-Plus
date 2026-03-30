@@ -2,12 +2,24 @@
 
 if ( ! function_exists("my_parse_ini_file") ) {
   function my_parse_ini_file($file,$mode=false,$scanner_mode=INI_SCANNER_NORMAL) {
-    return parse_ini_string(preg_replace('/^#.*\\n/m', "", @file_get_contents($file)),$mode,$scanner_mode);
+    $contents = @file_get_contents($file);
+
+    if ( $contents === false || $contents === "" ) {
+      return array();
+    }
+
+    return parse_ini_string(preg_replace('/^#.*\\n/m', "", (string)$contents),$mode,$scanner_mode);
   }
 }
 
 if ( ! function_exists("my_parse_ini_string") ) {
   function my_parse_ini_string($string, $mode=false,$scanner_mode=INI_SCANNER_NORMAL) {
+    $string = (string)$string;
+
+    if ( $string === "" ) {
+      return array();
+    }
+
     return parse_ini_string(preg_replace('/^#.*\\n/m', "", $string),$mode,$scanner_mode);
   }
 }
@@ -257,6 +269,54 @@ function readAppdataCleanupPlusJsonFile($path, $default=array()) {
   return is_array($decoded) ? $decoded : $default;
 }
 
+function appdataCleanupPlusJsonFlags($flags=0) {
+  $flags |= JSON_UNESCAPED_SLASHES;
+
+  if ( defined("JSON_INVALID_UTF8_SUBSTITUTE") ) {
+    $flags |= JSON_INVALID_UTF8_SUBSTITUTE;
+  }
+
+  return $flags;
+}
+
+function appdataCleanupPlusNormalizeUtf8Value($value) {
+  if ( is_array($value) ) {
+    foreach ( $value as $key => $item ) {
+      $value[$key] = appdataCleanupPlusNormalizeUtf8Value($item);
+    }
+
+    return $value;
+  }
+
+  if ( ! is_string($value) || $value === "" ) {
+    return $value;
+  }
+
+  if ( @preg_match('//u', $value) ) {
+    return $value;
+  }
+
+  if ( function_exists("iconv") ) {
+    $normalized = @iconv("UTF-8", "UTF-8//IGNORE", $value);
+
+    if ( $normalized !== false ) {
+      return $normalized;
+    }
+  }
+
+  return preg_replace('/[^\x09\x0A\x0D\x20-\x7E]/', '', $value);
+}
+
+function appdataCleanupPlusJsonEncode($payload, $flags=0) {
+  $encoded = json_encode($payload, appdataCleanupPlusJsonFlags($flags));
+
+  if ( $encoded !== false ) {
+    return $encoded;
+  }
+
+  return json_encode(appdataCleanupPlusNormalizeUtf8Value($payload), appdataCleanupPlusJsonFlags($flags));
+}
+
 function writeAppdataCleanupPlusJsonFile($path, $payload) {
   if ( ! ensureAppdataCleanupPlusConfigDir() ) {
     return false;
@@ -267,7 +327,7 @@ function writeAppdataCleanupPlusJsonFile($path, $payload) {
   }
 
   $tmpFile = $path . ".tmp";
-  $encoded = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+  $encoded = appdataCleanupPlusJsonEncode($payload, JSON_PRETTY_PRINT);
 
   if ( $encoded === false ) {
     return false;
@@ -475,7 +535,7 @@ function appendAppdataCleanupPlusAuditEntry($entry) {
     return false;
   }
 
-  $encoded = json_encode($entry, JSON_UNESCAPED_SLASHES);
+  $encoded = appdataCleanupPlusJsonEncode($entry);
   if ( $encoded === false ) {
     return false;
   }

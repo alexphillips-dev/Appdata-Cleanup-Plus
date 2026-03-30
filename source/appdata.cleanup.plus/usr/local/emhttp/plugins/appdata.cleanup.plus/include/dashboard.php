@@ -326,47 +326,51 @@ function buildCandidateMap($allFiles) {
   $availableVolumes = array();
 
   foreach ( $allFiles as $xmlfile ) {
-    $xml = readAppdataCleanupPlusTemplateFile($xmlfile);
-    if ( ! $xml || ! isset($xml["Config"]) || ! is_array($xml["Config"]) ) {
-      continue;
-    }
-
-    foreach ( $xml["Config"] as $volumeArray ) {
-      if ( ! isset($volumeArray["@attributes"]) || ! isset($volumeArray["value"]) ) {
-        continue;
-      }
-      if ( ! isset($volumeArray["@attributes"]["Type"]) || ! isset($volumeArray["@attributes"]["Target"]) ) {
-        continue;
-      }
-      if ( $volumeArray["@attributes"]["Type"] !== "Path" ) {
+    try {
+      $xml = readAppdataCleanupPlusTemplateFile($xmlfile);
+      if ( ! $xml || ! isset($xml["Config"]) || ! is_array($xml["Config"]) ) {
         continue;
       }
 
-      $hostDir = trim((string)$volumeArray["value"]);
-      $targetPath = trim((string)$volumeArray["@attributes"]["Target"]);
-      $appName = isset($xml["Name"]) && $xml["Name"] ? trim((string)$xml["Name"]) : basename($hostDir);
-      $volumeList = array($hostDir . ":" . $targetPath);
+      foreach ( $xml["Config"] as $volumeArray ) {
+        if ( ! isset($volumeArray["@attributes"]) || ! isset($volumeArray["value"]) ) {
+          continue;
+        }
+        if ( ! isset($volumeArray["@attributes"]["Type"]) || ! isset($volumeArray["@attributes"]["Target"]) ) {
+          continue;
+        }
+        if ( $volumeArray["@attributes"]["Type"] !== "Path" ) {
+          continue;
+        }
 
-      if ( ! $hostDir || ! $targetPath || ! findAppdata($volumeList) ) {
-        continue;
-      }
+        $hostDir = trim((string)$volumeArray["value"]);
+        $targetPath = trim((string)$volumeArray["@attributes"]["Target"]);
+        $appName = isset($xml["Name"]) && $xml["Name"] ? trim((string)$xml["Name"]) : basename($hostDir);
+        $volumeList = array($hostDir . ":" . $targetPath);
 
-      if ( ! isset($availableVolumes[$hostDir]) ) {
-        $availableVolumes[$hostDir] = array(
-          "HostDir" => $hostDir,
-          "Names" => array(),
-          "Targets" => array(),
-          "TemplateRefs" => array()
+        if ( ! $hostDir || ! $targetPath || ! findAppdata($volumeList) ) {
+          continue;
+        }
+
+        if ( ! isset($availableVolumes[$hostDir]) ) {
+          $availableVolumes[$hostDir] = array(
+            "HostDir" => $hostDir,
+            "Names" => array(),
+            "Targets" => array(),
+            "TemplateRefs" => array()
+          );
+        }
+
+        $availableVolumes[$hostDir]["Names"][$appName] = true;
+        $availableVolumes[$hostDir]["Targets"][$targetPath] = true;
+        $availableVolumes[$hostDir]["TemplateRefs"][$appName . "|" . $targetPath] = array(
+          "name" => $appName,
+          "target" => $targetPath,
+          "file" => basename($xmlfile)
         );
       }
-
-      $availableVolumes[$hostDir]["Names"][$appName] = true;
-      $availableVolumes[$hostDir]["Targets"][$targetPath] = true;
-      $availableVolumes[$hostDir]["TemplateRefs"][$appName . "|" . $targetPath] = array(
-        "name" => $appName,
-        "target" => $targetPath,
-        "file" => basename($xmlfile)
-      );
+    } catch ( Throwable $throwable ) {
+      error_log("Appdata Cleanup Plus template scan skipped " . basename((string)$xmlfile) . ": " . $throwable->getMessage());
     }
   }
 
@@ -500,77 +504,81 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings) {
   $ignoredCandidates = getIgnoredAppdataCleanupPlusCandidates();
 
   foreach ( $availableVolumes as $volume ) {
-    $sourceNames = array_values(array_keys($volume["Names"]));
-    $targetPaths = isset($volume["Targets"]) ? array_values(array_keys($volume["Targets"])) : array();
-    $templateRefs = isset($volume["TemplateRefs"]) ? array_values($volume["TemplateRefs"]) : array();
-    natcasesort($sourceNames);
-    natcasesort($targetPaths);
-    $sourceNames = array_values($sourceNames);
-    $targetPaths = array_values($targetPaths);
+    try {
+      $sourceNames = array_values(array_keys($volume["Names"]));
+      $targetPaths = isset($volume["Targets"]) ? array_values(array_keys($volume["Targets"])) : array();
+      $templateRefs = isset($volume["TemplateRefs"]) ? array_values($volume["TemplateRefs"]) : array();
+      natcasesort($sourceNames);
+      natcasesort($targetPaths);
+      $sourceNames = array_values($sourceNames);
+      $targetPaths = array_values($targetPaths);
 
-    $classification = classifyAppdataCandidate($volume["HostDir"]);
-    $resolvedPath = resolveExistingPath($classification);
-    $folderName = basename(rtrim($resolvedPath, "/"));
-    $sourceSummary = summarizeCandidateValues($sourceNames);
-    $targetSummary = summarizeCandidateValues($targetPaths);
-    $pathStats = collectPathStats($resolvedPath);
-    $candidateKey = appdataCleanupPlusCandidateKey($resolvedPath);
-    $ignoredEntry = isset($ignoredCandidates[$candidateKey]) && is_array($ignoredCandidates[$candidateKey]) ? $ignoredCandidates[$candidateKey] : null;
-    $ignoredAt = $ignoredEntry && ! empty($ignoredEntry["ignoredAt"]) ? strtotime((string)$ignoredEntry["ignoredAt"]) : 0;
-    $securityLockReason = buildPathSecurityLockReason($resolvedPath);
-    $realPath = @realpath($resolvedPath);
+      $classification = classifyAppdataCandidate($volume["HostDir"]);
+      $resolvedPath = resolveExistingPath($classification);
+      $folderName = basename(rtrim($resolvedPath, "/"));
+      $sourceSummary = summarizeCandidateValues($sourceNames);
+      $targetSummary = summarizeCandidateValues($targetPaths);
+      $pathStats = collectPathStats($resolvedPath);
+      $candidateKey = appdataCleanupPlusCandidateKey($resolvedPath);
+      $ignoredEntry = isset($ignoredCandidates[$candidateKey]) && is_array($ignoredCandidates[$candidateKey]) ? $ignoredCandidates[$candidateKey] : null;
+      $ignoredAt = $ignoredEntry && ! empty($ignoredEntry["ignoredAt"]) ? strtotime((string)$ignoredEntry["ignoredAt"]) : 0;
+      $securityLockReason = buildPathSecurityLockReason($resolvedPath);
+      $realPath = @realpath($resolvedPath);
 
-    $row = array(
-      "id" => md5($candidateKey),
-      "name" => $folderName ? $folderName : $resolvedPath,
-      "sourceNames" => $sourceNames,
-      "sourceSummary" => $sourceSummary,
-      "sourceCount" => count($sourceNames),
-      "targetPaths" => $targetPaths,
-      "targetSummary" => $targetSummary,
-      "targetCount" => count($targetPaths),
-      "templateRefs" => $templateRefs,
-      "path" => $resolvedPath,
-      "displayPath" => $resolvedPath,
-      "realPath" => $realPath ? $realPath : "",
-      "risk" => $classification["risk"],
-      "riskLabel" => $classification["riskLabel"],
-      "riskReason" => $classification["riskReason"],
-      "reason" => buildCandidateReason($sourceNames, $targetPaths, $dockerRunning),
-      "status" => $dockerRunning ? "orphaned" : "docker_offline",
-      "statusLabel" => $dockerRunning ? "Orphaned" : "Docker offline",
-      "canDelete" => $classification["canDelete"],
-      "insideDefaultShare" => $classification["insideDefaultShare"],
-      "shareName" => $classification["shareName"],
-      "depth" => $classification["depth"],
-      "sizeBytes" => $pathStats["sizeBytes"],
-      "sizeLabel" => $pathStats["sizeLabel"],
-      "lastModified" => $pathStats["lastModified"],
-      "lastModifiedIso" => $pathStats["lastModifiedIso"],
-      "lastModifiedLabel" => $pathStats["lastModifiedLabel"],
-      "lastModifiedExact" => $pathStats["lastModifiedExact"],
-      "securityLockReason" => $securityLockReason,
-      "policyLocked" => false,
-      "policyReason" => "",
-      "ignored" => false,
-      "ignoredAt" => "",
-      "ignoredAtLabel" => "",
-      "ignoredReason" => ""
-    );
+      $row = array(
+        "id" => md5($candidateKey),
+        "name" => $folderName ? $folderName : $resolvedPath,
+        "sourceNames" => $sourceNames,
+        "sourceSummary" => $sourceSummary,
+        "sourceCount" => count($sourceNames),
+        "targetPaths" => $targetPaths,
+        "targetSummary" => $targetSummary,
+        "targetCount" => count($targetPaths),
+        "templateRefs" => $templateRefs,
+        "path" => $resolvedPath,
+        "displayPath" => $resolvedPath,
+        "realPath" => $realPath ? $realPath : "",
+        "risk" => $classification["risk"],
+        "riskLabel" => $classification["riskLabel"],
+        "riskReason" => $classification["riskReason"],
+        "reason" => buildCandidateReason($sourceNames, $targetPaths, $dockerRunning),
+        "status" => $dockerRunning ? "orphaned" : "docker_offline",
+        "statusLabel" => $dockerRunning ? "Orphaned" : "Docker offline",
+        "canDelete" => $classification["canDelete"],
+        "insideDefaultShare" => $classification["insideDefaultShare"],
+        "shareName" => $classification["shareName"],
+        "depth" => $classification["depth"],
+        "sizeBytes" => $pathStats["sizeBytes"],
+        "sizeLabel" => $pathStats["sizeLabel"],
+        "lastModified" => $pathStats["lastModified"],
+        "lastModifiedIso" => $pathStats["lastModifiedIso"],
+        "lastModifiedLabel" => $pathStats["lastModifiedLabel"],
+        "lastModifiedExact" => $pathStats["lastModifiedExact"],
+        "securityLockReason" => $securityLockReason,
+        "policyLocked" => false,
+        "policyReason" => "",
+        "ignored" => false,
+        "ignoredAt" => "",
+        "ignoredAtLabel" => "",
+        "ignoredReason" => ""
+      );
 
-    if ( $ignoredEntry ) {
-      $row["ignored"] = true;
-      $row["ignoredAt"] = ! empty($ignoredEntry["ignoredAt"]) ? (string)$ignoredEntry["ignoredAt"] : "";
-      $row["ignoredAtLabel"] = $ignoredAt ? formatDateTimeLabel($ignoredAt) : "";
-      $row["ignoredReason"] = $row["ignoredAtLabel"]
-        ? "Ignored on " . $row["ignoredAtLabel"] . ". Restore it to include this folder in cleanup scans again."
-        : "This folder is hidden by your ignore list. Restore it to include this folder in cleanup scans again.";
-      $row["status"] = "ignored";
-      $row["statusLabel"] = "Ignored";
-      $row["canDelete"] = false;
+      if ( $ignoredEntry ) {
+        $row["ignored"] = true;
+        $row["ignoredAt"] = ! empty($ignoredEntry["ignoredAt"]) ? (string)$ignoredEntry["ignoredAt"] : "";
+        $row["ignoredAtLabel"] = $ignoredAt ? formatDateTimeLabel($ignoredAt) : "";
+        $row["ignoredReason"] = $row["ignoredAtLabel"]
+          ? "Ignored on " . $row["ignoredAtLabel"] . ". Restore it to include this folder in cleanup scans again."
+          : "This folder is hidden by your ignore list. Restore it to include this folder in cleanup scans again.";
+        $row["status"] = "ignored";
+        $row["statusLabel"] = "Ignored";
+        $row["canDelete"] = false;
+      }
+
+      $rows[] = applySafetyPolicyToRow($row, $settings);
+    } catch ( Throwable $throwable ) {
+      error_log("Appdata Cleanup Plus candidate skipped " . (isset($volume["HostDir"]) ? (string)$volume["HostDir"] : "unknown") . ": " . $throwable->getMessage());
     }
-
-    $rows[] = applySafetyPolicyToRow($row, $settings);
   }
 
   usort($rows, function($left, $right) {

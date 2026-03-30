@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.04">
-<!ENTITY md5 "e53f610443b1a9bd92deb0549c5cac36">
+<!ENTITY version "2026.03.30.05">
+<!ENTITY md5 "da18e52ed0c7090c2689ab09d239c495">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.05
+- Fix: Harden scan responses against missing Docker config text, invalid UTF-8 path data, malformed template entries, and per-candidate scan exceptions so one bad input no longer aborts the whole scan
+- UX: Move the quarantine manager out of the page body and into a dedicated popup window launched from the split mode bar
+
 ###2026.03.30.04
 - Fix: Accept proxied forwarded hosts and catch Docker client failures so scan requests stop failing on reverse-proxied or transient Docker states
 - UX: Collapse the quarantine manager until it is opened and tighten the new utility card spacing so the dashboard stays close to the previous compact height

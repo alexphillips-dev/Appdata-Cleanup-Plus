@@ -6,7 +6,7 @@ function jsonResponse($payload, $statusCode=200) {
   header("Content-Type: application/json");
   header("Pragma: no-cache");
   header("X-Content-Type-Options: nosniff");
-  echo json_encode($payload, JSON_UNESCAPED_SLASHES);
+  echo appdataCleanupPlusJsonEncode($payload);
   exit;
 }
 

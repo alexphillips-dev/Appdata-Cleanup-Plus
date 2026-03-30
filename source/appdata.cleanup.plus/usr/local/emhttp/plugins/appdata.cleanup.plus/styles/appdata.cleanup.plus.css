@@ -1208,6 +1208,24 @@ body[data-acp-host-theme="light"] #acp-app,
   gap: 4px;
 }
 
+.acp-modal-actions-row,
+.acp-modal-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.acp-modal-actions-row {
+  justify-content: flex-end;
+}
+
+.acp-modal-inline-title {
+  color: var(--acp-heading);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .acp-modal-lead {
   color: var(--acp-heading);
   font-size: 13px;
@@ -1345,6 +1363,10 @@ body[data-acp-host-theme="light"] #acp-app,
   gap: 6px;
 }
 
+.acp-quarantine-manager-modal .acp-modal-result-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .acp-modal-result-message {
   color: var(--acp-muted);
   font-size: 12px;
@@ -1453,6 +1475,11 @@ body[data-acp-host-theme="light"] #acp-app,
   }
 
   .acp-toolbar-inline-sort .acp-toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .acp-modal-actions-row,
+  .acp-modal-inline-actions {
     justify-content: flex-start;
   }
 

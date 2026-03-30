@@ -183,7 +183,7 @@
 
     els.$modeStrip.on("click", "[data-action='toggle-quarantine']", function() {
       if (!state.busy) {
-        toggleQuarantinePanel();
+        openQuarantineManagerModal(false);
       }
     });
 
@@ -194,19 +194,16 @@
       }
     });
 
-    els.$quarantinePanel.on("click", "[data-action='toggle-quarantine']", function() {
+    $(document).on("click.acpQuarantine", ".sweet-alert [data-action='refresh-quarantine']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
       if (!state.busy) {
-        toggleQuarantinePanel();
+        openQuarantineManagerModal(true);
       }
     });
 
-    els.$quarantinePanel.on("click", "[data-action='refresh-quarantine']", function() {
-      if (!state.busy) {
-        loadQuarantineManager(true);
-      }
-    });
-
-    els.$quarantinePanel.on("click", "[data-entry-action]", function(event) {
+    $(document).on("click.acpQuarantine", ".sweet-alert [data-entry-action]", function(event) {
       var action = $(this).data("entry-action");
       var entryId = $(this).data("entry-id");
 
@@ -331,7 +328,7 @@
     });
   }
 
-  function loadQuarantineManager(forceRefresh) {
+  function loadQuarantineManager(forceRefresh, onComplete) {
     if (state.quarantine.loading) {
       return;
     }
@@ -351,6 +348,9 @@
       state.quarantine.loaded = true;
       state.quarantine.loading = false;
       renderPanels();
+      if (typeof onComplete === "function") {
+        onComplete();
+      }
     }).fail(function(xhr) {
       state.quarantine.loading = false;
       swal(
@@ -362,13 +362,45 @@
     });
   }
 
-  function toggleQuarantinePanel() {
-    state.quarantine.open = !state.quarantine.open;
-    renderPanels();
+  function showQuarantineManagerModal() {
+    state.quarantine.open = true;
+    swal({
+      title: ACP.t(strings, "quarantineManagerTitle", "Quarantine manager"),
+      text: "",
+      type: "info",
+      html: true,
+      showCancelButton: false,
+      confirmButtonText: ACP.t(strings, "doneLabel", "Done"),
+      closeOnConfirm: true
+    }, function() {
+      state.quarantine.open = false;
+      renderPanels();
+    });
+    ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal acp-quarantine-manager-modal", ACP.buildQuarantineManagerModalHtml(buildContext()));
+  }
 
-    if (state.quarantine.open && !state.quarantine.loaded) {
-      loadQuarantineManager(true);
+  function openQuarantineManagerModal(forceRefresh) {
+    if (state.busy) {
+      return;
     }
+
+    if (!forceRefresh && state.quarantine.loaded) {
+      showQuarantineManagerModal();
+      return;
+    }
+
+    state.quarantine.open = true;
+    renderPanels();
+    swal({
+      title: ACP.t(strings, "quarantineManagerTitle", "Quarantine manager"),
+      text: ACP.t(strings, "quarantineLoadingMessage", "Reviewing tracked quarantined folders."),
+      type: "info",
+      showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false
+    });
+    ACP.applyDeleteModalClass("acp-delete-modal acp-quarantine-manager-modal", '<div class="acp-modal-summary"><div class="acp-modal-copy"><div class="acp-modal-lead">' + ACP.escapeHtml(ACP.t(strings, "quarantineManagerTitle", "Quarantine manager")) + '</div><div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "quarantineLoadingMessage", "Reviewing tracked quarantined folders.")) + "</div></div></div>");
+    loadQuarantineManager(true, showQuarantineManagerModal);
   }
 
   function applyLocalSafetyStateToRow(row) {
@@ -1168,7 +1200,7 @@
         if (!context.preview) {
           loadScan();
           if (state.quarantine.open) {
-            loadQuarantineManager(true);
+            openQuarantineManagerModal(true);
           }
         }
       });
@@ -1273,7 +1305,7 @@
       : ACP.t(strings, "quarantinePurgeActionLabel", "Purge");
 
     if (!entry) {
-      loadQuarantineManager(true);
+      openQuarantineManagerModal(true);
       return;
     }
 
@@ -1374,7 +1406,7 @@
       }, function() {
         loadScan();
         if (state.quarantine.open) {
-          loadQuarantineManager(true);
+          openQuarantineManagerModal(true);
         }
       });
       ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildQuarantineManagerResultsHtml(action, summary, results));
@@ -1384,7 +1416,7 @@
       renderPanels();
 
       if (xhr && xhr.status === 409) {
-        loadQuarantineManager(true);
+        openQuarantineManagerModal(true);
       }
 
       swal(failureTitle, ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineManagerActionFailedMessage", "The quarantine manager action could not be completed right now.")), "error");
