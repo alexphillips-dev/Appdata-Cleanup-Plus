@@ -1120,7 +1120,7 @@ body[data-acp-host-theme="light"] #acp-app,
   margin-top: 10px;
 }
 
-.sweet-alert.acp-delete-modal p.acp-modal-host {
+.sweet-alert.acp-delete-modal .acp-modal-host {
   margin: 12px 0 0 !important;
   max-height: none !important;
   overflow: visible !important;

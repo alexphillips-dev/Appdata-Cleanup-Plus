@@ -330,19 +330,6 @@ function collectPathStats($path) {
     }
   }
 
-  if ( $sizeBytes === null ) {
-    $sizeBytes = measureDirectoryBytes($path);
-
-    if ( $sizeBytes === null && $cached && isset($cached["sizeBytes"]) ) {
-      $sizeBytes = $cached["sizeBytes"];
-    } else {
-      setCachedAppdataCleanupPlusPathStats($path, array(
-        "sizeBytes" => $sizeBytes,
-        "lastModified" => $lastModified ? (int)$lastModified : null
-      ));
-    }
-  }
-
   return array(
     "sizeBytes" => $sizeBytes,
     "sizeLabel" => formatBytesLabel($sizeBytes),

@@ -174,7 +174,7 @@
     }
 
     $baseText = $modal.children("p").first();
-    $existingHost = $modal.children("p.acp-modal-host");
+    $existingHost = $modal.children(".acp-modal-host");
 
     $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-quarantine-manager-modal");
     if (className) {
@@ -186,7 +186,7 @@
     if (htmlContent) {
       if ($baseText.length) {
         $baseText.addClass("acp-modal-hidden");
-        $baseText.after('<p class="acp-modal-host">' + htmlContent + "</p>");
+        $baseText.after('<div class="acp-modal-host">' + htmlContent + "</div>");
       }
     } else if ($baseText.length) {
       $baseText.removeClass("acp-modal-hidden");

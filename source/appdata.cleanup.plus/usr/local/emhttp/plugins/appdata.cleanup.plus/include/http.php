@@ -11,6 +11,7 @@ function appdataCleanupPlusDrainOutputBuffers() {
 }
 
 function jsonResponse($payload, $statusCode=200) {
+  $GLOBALS["appdataCleanupPlusJsonResponded"] = true;
   $strayOutput = appdataCleanupPlusDrainOutputBuffers();
 
   if ( trim($strayOutput) !== "" ) {
@@ -24,6 +25,45 @@ function jsonResponse($payload, $statusCode=200) {
   header("X-Content-Type-Options: nosniff");
   echo appdataCleanupPlusJsonEncode($payload);
   exit;
+}
+
+function appdataCleanupPlusRespondToFatalShutdown() {
+  $lastError = error_get_last();
+  $fatalTypes = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR);
+  $message = "";
+
+  if ( empty($lastError) || ! is_array($lastError) ) {
+    return;
+  }
+
+  if ( ! in_array((int)$lastError["type"], $fatalTypes, true) ) {
+    return;
+  }
+
+  if ( ! empty($GLOBALS["appdataCleanupPlusJsonResponded"]) ) {
+    return;
+  }
+
+  $message = trim((string)($lastError["message"] ?? ""));
+  if ( $message === "" ) {
+    $message = "A fatal backend error interrupted the request.";
+  }
+
+  $GLOBALS["appdataCleanupPlusJsonResponded"] = true;
+  appdataCleanupPlusDrainOutputBuffers();
+
+  if ( ! headers_sent() ) {
+    http_response_code(500);
+    header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+    header("Content-Type: application/json");
+    header("Pragma: no-cache");
+    header("X-Content-Type-Options: nosniff");
+  }
+
+  echo appdataCleanupPlusJsonEncode(array(
+    "ok" => false,
+    "message" => $message
+  ));
 }
 
 function parseCandidateIds($rawIds) {

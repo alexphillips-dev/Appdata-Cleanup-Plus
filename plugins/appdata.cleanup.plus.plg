@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.08">
-<!ENTITY md5 "25d841cf98471a4987ca768141c088c3">
+<!ENTITY version "2026.03.30.09">
+<!ENTITY md5 "dc5de6d350e2339cb3b0f724ac2d0cea">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.09
+- Fix: Replace the quarantine manager modal host paragraph with a block container so refreshes stop stacking duplicate content into the SweetAlert body
+- Fix: Stop live recursive folder-size walks during scan so orphan discovery no longer risks timing out or fatally dying on large appdata trees
+- Debug: Return JSON from fatal backend shutdowns so future scan failures expose the actual PHP fatal message instead of a blank HTTP 500
+
 ###2026.03.30.08
 - Fix: Keep the quarantine manager inside a single SweetAlert instance so refresh updates the current modal instead of reopening and duplicating the content block
 - Fix: Return dashboard results in read-only mode when snapshot persistence fails so scan output can still render instead of aborting the whole request

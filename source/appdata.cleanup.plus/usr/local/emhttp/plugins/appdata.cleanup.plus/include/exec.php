@@ -9,6 +9,8 @@ require_once(__DIR__ . "/quarantine.php");
 require_once(__DIR__ . "/http.php");
 require_once(__DIR__ . "/api.php");
 
+register_shutdown_function("appdataCleanupPlusRespondToFatalShutdown");
+
 libxml_use_internal_errors(true);
 
 $requestMethod = strtoupper((string)($_SERVER["REQUEST_METHOD"] ?? ""));
