@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.15">
-<!ENTITY md5 "c3f1878d16c03b250de513abf56672f7">
+<!ENTITY version "2026.03.30.16">
+<!ENTITY md5 "fd93cfb7184a13aeb62f5a39b9fc6a99">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.16
+- UX: Flatten panel backgrounds across every host theme so dashboard cards use plain solid surfaces instead of gradient fades
+- UX: Remove the extra accent fade overlays from the hero banner, quarantine manager launcher card, and sticky action bar so they match the rest of the panel chrome
+
 ###2026.03.30.15
 - Fix: Restore detected-folder size measurement on uncached scans and write measured bytes back into the stats cache so rows stop showing Unknown by default
 - UX: Keep ORPHANED and SAFE badges to the left of the path chip in one non-wrapping desktop row instead of collapsing the badges into a vertical stack
