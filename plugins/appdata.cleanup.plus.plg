@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.37">
-<!ENTITY md5 "802716be76a0b4f6406124fe244aee34">
+<!ENTITY version "2026.03.30.39">
+<!ENTITY md5 "3ed66a0c893e08acc8ef3240b98d393b">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.39
+- Fix: Publish the corrected dev package with `Menu="Utilities"` restored so the testing channel also registers under Unraid Settings / User Utilities again
+- Fix: Keep the existing `Type="xmenu"` mode and `Settings/AppdataCleanupPlus` launch target while reverting only the invalid menu bucket change
+
 ###2026.03.30.38
 - Fix: Restore the plugin page registration to `Menu="Utilities"` so Appdata Cleanup Plus appears under Unraid Settings / User Utilities again instead of disappearing behind the invalid `Menu="Settings"` target
 - Fix: Keep the existing `Type="xmenu"` page mode and `Settings/AppdataCleanupPlus` launch path while only reverting the bad menu bucket change
