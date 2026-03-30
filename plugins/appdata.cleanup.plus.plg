@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.26">
-<!ENTITY md5 "1e81c6c19f7cb017f2a8a103e234c579">
+<!ENTITY version "2026.03.30.27">
+<!ENTITY md5 "0480119a3767708fb2f88654fa93b1a8">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.27
+- UX: Push the safety toggles lower in the sort panel so they sit bottom-left with clear separation from the order control
+- UX: Vertically center the Rescan, Select visible, and Clear buttons against the sort dropdown and center that button row on desktop
+
 ###2026.03.30.26
 - UX: Stack the safety toggles so Enable permanent delete sits directly under Allow outside-share cleanup
 - UX: Keep the sort order control and toolbar action buttons on one desktop row, with stacked fallback on narrow layouts
