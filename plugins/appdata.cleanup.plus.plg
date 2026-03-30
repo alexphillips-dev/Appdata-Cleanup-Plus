@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.44
+- Fix: Publish the stable package with the `AppdataCleanupPlus.page` header normalized back to CRLF so the registration bytes match the last known working `2026.03.27.23` release
+- Fix: Keep the restored classic Settings registration format and root icon path while removing the mixed-line-ending header that broke discovery on newer builds
+
 ###2026.03.30.43
 - Fix: Normalize the packaged `AppdataCleanupPlus.page` header back to CRLF so the page registration bytes match the last known working `2026.03.27.23` release instead of a mixed LF header
 - Fix: Keep the restored `Menu="Utilities"` plus root icon registration while making the packaged page header byte-for-byte compatible with the format that Unraid previously discovered
