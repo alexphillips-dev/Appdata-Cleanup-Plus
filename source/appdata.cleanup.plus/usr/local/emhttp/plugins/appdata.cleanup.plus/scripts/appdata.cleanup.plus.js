@@ -985,6 +985,49 @@
     });
   }
 
+  function applyLocalOperationResults(results) {
+    var removableStatuses = {
+      quarantined: true,
+      deleted: true,
+      missing: true
+    };
+    var removedPaths = {};
+    var removedAny = false;
+
+    $.each(results || [], function(_, result) {
+      var status = String((result && result.status) || "");
+      var path = String((result && (result.displayPath || result.path)) || "");
+
+      if (removableStatuses[status] && path) {
+        removedPaths[path] = true;
+      }
+    });
+
+    if (!Object.keys(removedPaths).length) {
+      return false;
+    }
+
+    state.rows = $.grep(state.rows || [], function(row) {
+      var path = String((row && (row.displayPath || row.path)) || "");
+
+      if (!removedPaths[path]) {
+        return true;
+      }
+
+      removedAny = true;
+      delete state.selected[row.id];
+      return false;
+    });
+
+    if (!removedAny) {
+      return false;
+    }
+
+    state.summary = buildLocalSummary(state.rows);
+    reconcileSelection();
+    return true;
+  }
+
   function applyLocalCandidateState(rowId, intent) {
     var found = false;
 
@@ -1295,10 +1338,15 @@
 
       if (!context.preview) {
         state.selected = {};
+        applyLocalOperationResults(results);
       }
 
       if (response.quarantineSummary) {
         state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary);
+      }
+
+      if (!context.preview && context.baseOperation === "quarantine") {
+        state.quarantine.loaded = false;
       }
 
       swal({
@@ -1306,18 +1354,9 @@
         text: "",
         type: modalType,
         html: true
-      }, function() {
-        if (!context.preview) {
-          loadScan();
-          if (state.quarantine.open) {
-            openQuarantineManagerModal(true);
-          }
-        }
       });
       ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildOperationResultsHtml(summary, results, context));
-      renderPanels();
-      renderSummaryCards();
-      updateActionBar();
+      renderAll();
     }).fail(function(xhr) {
       var fallbackMessage = ACP.extractErrorMessage(xhr, ACP.t(strings, "scanFailedMessage", "The orphaned appdata scan could not be completed right now."));
 
@@ -1514,9 +1553,8 @@
         type: hasWarnings ? "warning" : "success",
         html: true
       }, function() {
-        loadScan();
         if (state.quarantine.open) {
-          openQuarantineManagerModal(true);
+          openQuarantineManagerModal(false);
         }
       });
       ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildQuarantineManagerResultsHtml(action, summary, results));

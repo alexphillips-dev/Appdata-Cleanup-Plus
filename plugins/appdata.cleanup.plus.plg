@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.22">
-<!ENTITY md5 "8ab75b5f1286825fd32496c25cf03944">
+<!ENTITY version "2026.03.30.23">
+<!ENTITY md5 "89342a14e4ecfb27149eaeace6bf0f84">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.23
+- UX: Keep quarantine and delete actions live in the current results list instead of forcing a full scan refresh after success
+- UX: Update the action bar quarantine summary from persisted size data so tracked quarantine storage no longer sticks at 0 B
+
 ###2026.03.30.22
 - UX: Remove the inline Last cleanup notice now that audit history is available from the action bar
 - UX: Keep ignore and restore actions live in the current results set instead of forcing a full rescan after each row change

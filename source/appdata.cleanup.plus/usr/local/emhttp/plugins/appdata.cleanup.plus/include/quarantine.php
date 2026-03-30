@@ -29,6 +29,12 @@ function buildQuarantineDestination($sourcePath, $settings) {
 }
 
 function normalizeAppdataCleanupPlusQuarantineRecord($record) {
+  $sizeBytes = null;
+
+  if ( isset($record["sizeBytes"]) && $record["sizeBytes"] !== "" && $record["sizeBytes"] !== null ) {
+    $sizeBytes = (int)$record["sizeBytes"];
+  }
+
   $normalized = array(
     "id" => isset($record["id"]) ? trim((string)$record["id"]) : "",
     "name" => isset($record["name"]) ? trim((string)$record["name"]) : "",
@@ -37,7 +43,8 @@ function normalizeAppdataCleanupPlusQuarantineRecord($record) {
     "quarantineRoot" => isset($record["quarantineRoot"]) ? rtrim((string)$record["quarantineRoot"], "/") : "",
     "quarantinedAt" => isset($record["quarantinedAt"]) ? trim((string)$record["quarantinedAt"]) : "",
     "sourceSummary" => isset($record["sourceSummary"]) ? trim((string)$record["sourceSummary"]) : "",
-    "targetSummary" => isset($record["targetSummary"]) ? trim((string)$record["targetSummary"]) : ""
+    "targetSummary" => isset($record["targetSummary"]) ? trim((string)$record["targetSummary"]) : "",
+    "sizeBytes" => $sizeBytes
   );
 
   if ( ! $normalized["id"] ) {
@@ -115,9 +122,11 @@ function buildQuarantineSummary($entries) {
 
 function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false) {
   $registry = pruneMissingAppdataCleanupPlusQuarantineRecords(getAppdataCleanupPlusQuarantineRegistry());
+  $nextRegistry = $registry;
+  $registryDirty = false;
   $entries = array();
 
-  foreach ( $registry as $record ) {
+  foreach ( $registry as $recordId => $record ) {
     $normalized = normalizeAppdataCleanupPlusQuarantineRecord($record);
     $timestamp = strtotime($normalized["quarantinedAt"]);
     $row = array(
@@ -131,17 +140,27 @@ function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false) {
       "quarantinedAgeLabel" => $timestamp ? formatRelativeAgeLabel($timestamp) : "",
       "sourceSummary" => $normalized["sourceSummary"],
       "targetSummary" => $normalized["targetSummary"],
-      "sizeBytes" => null,
-      "sizeLabel" => "Unknown"
+      "sizeBytes" => $normalized["sizeBytes"],
+      "sizeLabel" => $normalized["sizeBytes"] !== null ? formatBytesLabel($normalized["sizeBytes"]) : "Unknown"
     );
 
-    if ( $includeStats ) {
+    if ( $includeStats || $normalized["sizeBytes"] === null ) {
       $stats = collectPathStats($normalized["destination"]);
       $row["sizeBytes"] = $stats["sizeBytes"];
       $row["sizeLabel"] = $stats["sizeLabel"];
+
+      if ( $normalized["sizeBytes"] !== $stats["sizeBytes"] ) {
+        $normalized["sizeBytes"] = $stats["sizeBytes"];
+        $nextRegistry[$recordId] = $normalized;
+        $registryDirty = true;
+      }
     }
 
     $entries[] = $row;
+  }
+
+  if ( $registryDirty ) {
+    setAppdataCleanupPlusQuarantineRegistry($nextRegistry);
   }
 
   usort($entries, function($left, $right) {
@@ -588,7 +607,8 @@ function quarantineCandidatePath($candidate, $displayPath, $settings) {
       "quarantineRoot" => $quarantineRoot,
       "quarantinedAt" => date("c"),
       "sourceSummary" => isset($candidate["sourceSummary"]) ? (string)$candidate["sourceSummary"] : "",
-      "targetSummary" => isset($candidate["targetSummary"]) ? (string)$candidate["targetSummary"] : ""
+      "targetSummary" => isset($candidate["targetSummary"]) ? (string)$candidate["targetSummary"] : "",
+      "sizeBytes" => isset($candidate["sizeBytes"]) && $candidate["sizeBytes"] !== null ? (int)$candidate["sizeBytes"] : null
     ));
     clearCachedAppdataCleanupPlusPathStats($displayPath);
     clearCachedAppdataCleanupPlusPathStats($destination);
@@ -730,4 +750,3 @@ function buildOperationSummary($results) {
 
   return $summary;
 }
-
