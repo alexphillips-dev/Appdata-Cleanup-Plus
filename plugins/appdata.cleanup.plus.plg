@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.43">
-<!ENTITY md5 "f5f3e74b11b477f618b7fdce580d41ae">
+<!ENTITY version "2026.03.30.45">
+<!ENTITY md5 "cd6ac24f52ea72453d37f0051334fbd1">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.45
+- Fix: Match the Appdata Cleanup Plus Settings launcher header to the working FolderView Plus and PlexStreams Plus pattern by restoring `Type="xmenu"` and explicitly declaring `Tabs="false"` plus `Markdown="false"`
+- Fix: Keep the proven `Menu="Utilities"` registration while restoring the xmenu-shell metadata that Unraid's Settings / User Utilities plugins are already using successfully
+
 ###2026.03.30.44
 - Fix: Publish the stable package with the `AppdataCleanupPlus.page` header normalized back to CRLF so the registration bytes match the last known working `2026.03.27.23` release
 - Fix: Keep the restored classic Settings registration format and root icon path while removing the mixed-line-ending header that broke discovery on newer builds
