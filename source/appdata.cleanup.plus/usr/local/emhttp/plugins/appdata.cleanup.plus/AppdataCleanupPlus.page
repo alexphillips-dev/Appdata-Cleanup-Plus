@@ -265,12 +265,15 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
               <option value="name"><?php echo _("Name"); ?></option>
             </select>
           </label>
+        </div>
+      </section>
 
-          <div class="acp-toolbar-actions">
+      <section class="acp-toolbar acp-toolbar-panel acp-control-panel">
+        <div class="acp-panel-title"><?php echo _("Controls"); ?></div>
+        <div class="acp-toolbar-actions acp-control-actions">
             <button type="button" class="acp-button acp-button-secondary" id="acp-rescan"><?php echo _("Rescan"); ?></button>
             <button type="button" class="acp-button acp-button-secondary" id="acp-select-visible"><?php echo _("Select visible"); ?></button>
             <button type="button" class="acp-button acp-button-secondary" id="acp-clear-selection"><?php echo _("Clear"); ?></button>
-          </div>
         </div>
         <div class="acp-safety-strip">
           <label class="acp-toggle">

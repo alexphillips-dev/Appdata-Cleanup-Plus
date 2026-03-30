@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.29">
-<!ENTITY md5 "06d4f7a40b053fbf614add412390bd6f">
+<!ENTITY version "2026.03.30.30">
+<!ENTITY md5 "1df146589cd79291bf602d99130a5c3e">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.30
+- UX: Split the former combined sort/control block into a dedicated Sort panel plus a separate Controls panel to its right
+- UX: Keep the sort panel compact while moving the action buttons, safety toggles, and results meta into their own panel
+
 ###2026.03.30.29
 - UX: Stop stretching the summary cards and top toolbar panels to the tallest neighbor so the top row returns to its compact height
 - UX: Keep the search and sort panels sized to their own content instead of inheriting extra height from the adjacent panel
