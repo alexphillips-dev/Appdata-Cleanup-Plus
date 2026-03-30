@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.45">
-<!ENTITY md5 "cd6ac24f52ea72453d37f0051334fbd1">
+<!ENTITY version "2026.03.30.46">
+<!ENTITY md5 "97b9500c8a5929e58602a4f55d35a372">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.46
+- Fix: Revert the Settings page header to the exact working `45ae105` shell by removing the added `Tabs="false"` and `Markdown="false"` lines that were not present in the last confirmed good dev build
+- Fix: Keep the proven `Menu="Utilities"` plus `Type="xmenu"` registration from `45ae105` while leaving the newer dashboard code in place
+
 ###2026.03.30.45
 - Fix: Match the Appdata Cleanup Plus Settings launcher header to the working FolderView Plus and PlexStreams Plus pattern by restoring `Type="xmenu"` and explicitly declaring `Tabs="false"` plus `Markdown="false"`
 - Fix: Keep the proven `Menu="Utilities"` registration while restoring the xmenu-shell metadata that Unraid's Settings / User Utilities plugins are already using successfully
