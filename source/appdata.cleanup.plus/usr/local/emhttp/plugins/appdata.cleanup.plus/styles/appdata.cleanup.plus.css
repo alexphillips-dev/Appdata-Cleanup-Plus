@@ -568,17 +568,20 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-control-actions {
+  align-content: start;
   align-items: stretch;
-  flex-direction: column;
-  flex-wrap: nowrap;
+  display: grid;
   gap: 0;
-  justify-content: flex-start;
+  justify-items: stretch;
+  justify-self: end;
   margin-left: auto;
+  width: 132px;
 }
 
 .acp-control-actions .acp-button {
   min-height: 24px;
   min-width: 0;
+  margin: 0;
   padding: 0 8px;
   width: 100%;
 }
@@ -1570,10 +1573,12 @@ body[data-acp-host-theme="light"] #acp-app,
 
   .acp-control-actions {
     align-items: stretch;
+    display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-start;
     margin-left: 0;
+    width: 100%;
   }
 
   .acp-control-actions .acp-button {
