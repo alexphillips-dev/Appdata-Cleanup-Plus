@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.41">
-<!ENTITY md5 "8289397316d3054a28bd2451510a4d3f">
+<!ENTITY version "2026.03.30.43">
+<!ENTITY md5 "f5f3e74b11b477f618b7fdce580d41ae">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.43
+- Fix: Normalize the packaged `AppdataCleanupPlus.page` header back to CRLF so the page registration bytes match the last known working `2026.03.27.23` release instead of a mixed LF header
+- Fix: Keep the restored `Menu="Utilities"` plus root icon registration while making the packaged page header byte-for-byte compatible with the format that Unraid previously discovered
+
 ###2026.03.30.42
 - Fix: Publish the stable package with the exact `2026.03.27.23` page registration header so the plugin returns to the Settings / User Utilities location that was known to work
 - Fix: Remove the later `Type="xmenu"` registration change from the stable channel while keeping the newer dashboard functionality intact
