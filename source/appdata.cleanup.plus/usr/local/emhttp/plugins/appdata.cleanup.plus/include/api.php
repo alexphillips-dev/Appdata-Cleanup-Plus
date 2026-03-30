@@ -1,5 +1,54 @@
 <?php
 
+function appdataCleanupPlusBuildDashboardFallbackPayload($dockerRunning, $settings, $rows, $summary, $scanToken, $scanWarningMessage="") {
+  $latestAuditMessage = "";
+  $auditHistory = array();
+  $quarantineSummary = array(
+    "count" => 0,
+    "sizeBytes" => 0,
+    "sizeLabel" => "0 B"
+  );
+
+  try {
+    $latestAudit = getLatestAppdataCleanupPlusAuditEntry();
+    $latestAuditMessage = $latestAudit ? buildLatestAuditMessage($latestAudit) : "";
+  } catch ( Throwable $throwable ) {
+    error_log("Appdata Cleanup Plus audit summary failed during dashboard build: " . $throwable->getMessage());
+  }
+
+  try {
+    $auditHistory = buildAuditHistoryRows();
+  } catch ( Throwable $throwable ) {
+    error_log("Appdata Cleanup Plus audit history failed during dashboard build: " . $throwable->getMessage());
+  }
+
+  try {
+    $quarantineManager = buildQuarantineManagerPayload(false);
+    if ( ! empty($quarantineManager["summary"]) && is_array($quarantineManager["summary"]) ) {
+      $quarantineSummary = $quarantineManager["summary"];
+    }
+  } catch ( Throwable $throwable ) {
+    error_log("Appdata Cleanup Plus quarantine summary failed during dashboard build: " . $throwable->getMessage());
+  }
+
+  return array(
+    "ok" => true,
+    "payload" => array(
+      "ok" => true,
+      "dockerRunning" => $dockerRunning,
+      "summary" => $summary,
+      "notices" => buildNotices($dockerRunning, $summary, $settings),
+      "latestAuditMessage" => $latestAuditMessage,
+      "auditHistory" => $auditHistory,
+      "rows" => $rows,
+      "scanToken" => $scanToken,
+      "scanWarningMessage" => $scanWarningMessage,
+      "settings" => $settings,
+      "quarantineSummary" => $quarantineSummary
+    )
+  );
+}
+
 function resolveSnapshotCandidates($token, $candidateIds) {
   if ( empty($candidateIds) ) {
     return array(
@@ -58,32 +107,20 @@ function buildDashboardPayload() {
   $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings);
   $summary = buildSummary($rows);
   $snapshot = writeAppdataCleanupPlusSnapshot(buildSnapshotCandidateMap($rows));
+  $scanWarningMessage = "";
 
   if ( ! $snapshot ) {
-    return array(
-      "ok" => false,
-      "message" => "A secure scan snapshot could not be created right now.",
-      "statusCode" => 500
-    );
+    error_log("Appdata Cleanup Plus could not persist a scan snapshot. Returning read-only dashboard payload.");
+    $scanWarningMessage = "Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.";
   }
 
-  $latestAudit = getLatestAppdataCleanupPlusAuditEntry();
-  $quarantineManager = buildQuarantineManagerPayload(false);
-
-  return array(
-    "ok" => true,
-    "payload" => array(
-      "ok" => true,
-      "dockerRunning" => $dockerRunning,
-      "summary" => $summary,
-      "notices" => buildNotices($dockerRunning, $summary, $settings),
-      "latestAuditMessage" => $latestAudit ? buildLatestAuditMessage($latestAudit) : "",
-      "auditHistory" => buildAuditHistoryRows(),
-      "rows" => $rows,
-      "scanToken" => $snapshot["token"],
-      "settings" => $settings,
-      "quarantineSummary" => $quarantineManager["summary"]
-    )
+  return appdataCleanupPlusBuildDashboardFallbackPayload(
+    $dockerRunning,
+    $settings,
+    $rows,
+    $summary,
+    $snapshot ? (string)$snapshot["token"] : "",
+    $scanWarningMessage
   );
 }
 

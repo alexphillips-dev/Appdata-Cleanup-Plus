@@ -353,6 +353,19 @@ function collectPathStats($path) {
   );
 }
 
+function collectLightweightPathStats($path) {
+  $lastModified = @filemtime($path);
+
+  return array(
+    "sizeBytes" => null,
+    "sizeLabel" => "Unknown",
+    "lastModified" => $lastModified ? (int)$lastModified : null,
+    "lastModifiedIso" => $lastModified ? date("c", $lastModified) : "",
+    "lastModifiedLabel" => formatRelativeAgeLabel($lastModified),
+    "lastModifiedExact" => formatDateTimeLabel($lastModified)
+  );
+}
+
 function buildCandidateReason($sourceNames, $targetPaths, $dockerRunning) {
   $sourceSummary = summarizeCandidateValues($sourceNames);
   $targetSummary = summarizeCandidateValues($targetPaths);
@@ -663,11 +676,13 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings) {
       $folderName = basename(rtrim($resolvedPath, "/"));
       $sourceSummary = summarizeCandidateValues($sourceNames);
       $targetSummary = summarizeCandidateValues($targetPaths);
-      $pathStats = collectPathStats($resolvedPath);
       $candidateKey = appdataCleanupPlusCandidateKey($resolvedPath);
       $ignoredEntry = isset($ignoredCandidates[$candidateKey]) && is_array($ignoredCandidates[$candidateKey]) ? $ignoredCandidates[$candidateKey] : null;
       $ignoredAt = $ignoredEntry && ! empty($ignoredEntry["ignoredAt"]) ? strtotime((string)$ignoredEntry["ignoredAt"]) : 0;
       $securityLockReason = buildPathSecurityLockReason($resolvedPath);
+      $pathStats = ($securityLockReason || ! $classification["insideDefaultShare"])
+        ? collectLightweightPathStats($resolvedPath)
+        : collectPathStats($resolvedPath);
       $realPath = @realpath($resolvedPath);
 
       $row = array(

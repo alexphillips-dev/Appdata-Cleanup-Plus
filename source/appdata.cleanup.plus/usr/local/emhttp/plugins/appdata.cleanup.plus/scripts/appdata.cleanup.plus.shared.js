@@ -69,6 +69,7 @@
 
   ACP.extractErrorMessage = function(xhr, fallback) {
     var responseJSON = xhr && xhr.responseJSON;
+    var plainText;
 
     if (responseJSON && responseJSON.message) {
       return String(responseJSON.message);
@@ -81,6 +82,21 @@
           return String(responseJSON.message);
         }
       } catch (_error) {}
+
+      plainText = String(xhr.responseText || "")
+        .replace(/<style[\s\S]*?<\/style>/gi, " ")
+        .replace(/<script[\s\S]*?<\/script>/gi, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (plainText) {
+        return plainText.slice(0, 240);
+      }
+    }
+
+    if (xhr && xhr.status) {
+      return fallback + " (HTTP " + String(xhr.status) + ")";
     }
 
     return fallback;

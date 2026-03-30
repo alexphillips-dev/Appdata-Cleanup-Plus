@@ -13,6 +13,7 @@
     latestAuditMessage: "",
     auditHistory: [],
     auditOpen: false,
+    scanWarningMessage: "",
     settings: ACP.defaultSafetySettings(),
     quarantine: {
       open: false,
@@ -286,6 +287,7 @@
     state.dockerRunning = true;
     state.latestAuditMessage = "";
     state.auditHistory = [];
+    state.scanWarningMessage = "";
     state.settings = ACP.defaultSafetySettings();
     state.quarantine.summary = { count: 0, sizeLabel: "0 B" };
   }
@@ -303,6 +305,7 @@
       state.dockerRunning = response.dockerRunning !== false;
       state.latestAuditMessage = String(response.latestAuditMessage || "");
       state.auditHistory = $.isArray(response.auditHistory) ? response.auditHistory : [];
+      state.scanWarningMessage = String(response.scanWarningMessage || "");
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || {});
       state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary || {});
       syncSafetyControls();
@@ -362,7 +365,30 @@
     });
   }
 
-  function showQuarantineManagerModal() {
+  function renderQuarantineManagerModal(loading) {
+    if (loading) {
+      ACP.applyDeleteModalClass(
+        "acp-delete-modal acp-delete-results-modal acp-quarantine-manager-modal",
+        '<div class="acp-modal-summary"><div class="acp-modal-copy"><div class="acp-modal-lead">' +
+        ACP.escapeHtml(ACP.t(strings, "quarantineManagerTitle", "Quarantine manager")) +
+        '</div><div class="acp-modal-subcopy">' +
+        ACP.escapeHtml(ACP.t(strings, "quarantineLoadingMessage", "Reviewing tracked quarantined folders.")) +
+        "</div></div></div>"
+      );
+      return;
+    }
+
+    ACP.applyDeleteModalClass(
+      "acp-delete-modal acp-delete-results-modal acp-quarantine-manager-modal",
+      ACP.buildQuarantineManagerModalHtml(buildContext())
+    );
+  }
+
+  function ensureQuarantineManagerModal() {
+    if (state.quarantine.open) {
+      return;
+    }
+
     state.quarantine.open = true;
     swal({
       title: ACP.t(strings, "quarantineManagerTitle", "Quarantine manager"),
@@ -376,7 +402,6 @@
       state.quarantine.open = false;
       renderPanels();
     });
-    ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal acp-quarantine-manager-modal", ACP.buildQuarantineManagerModalHtml(buildContext()));
   }
 
   function openQuarantineManagerModal(forceRefresh) {
@@ -385,22 +410,17 @@
     }
 
     if (!forceRefresh && state.quarantine.loaded) {
-      showQuarantineManagerModal();
+      ensureQuarantineManagerModal();
+      renderQuarantineManagerModal(false);
       return;
     }
 
-    state.quarantine.open = true;
+    ensureQuarantineManagerModal();
     renderPanels();
-    swal({
-      title: ACP.t(strings, "quarantineManagerTitle", "Quarantine manager"),
-      text: ACP.t(strings, "quarantineLoadingMessage", "Reviewing tracked quarantined folders."),
-      type: "info",
-      showConfirmButton: false,
-      allowEscapeKey: false,
-      allowOutsideClick: false
+    renderQuarantineManagerModal(true);
+    loadQuarantineManager(true, function() {
+      renderQuarantineManagerModal(false);
     });
-    ACP.applyDeleteModalClass("acp-delete-modal acp-quarantine-manager-modal", '<div class="acp-modal-summary"><div class="acp-modal-copy"><div class="acp-modal-lead">' + ACP.escapeHtml(ACP.t(strings, "quarantineManagerTitle", "Quarantine manager")) + '</div><div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "quarantineLoadingMessage", "Reviewing tracked quarantined folders.")) + "</div></div></div>");
-    loadQuarantineManager(true, showQuarantineManagerModal);
   }
 
   function applyLocalSafetyStateToRow(row) {
@@ -485,6 +505,14 @@
         type: "info",
         title: ACP.t(strings, "noticeLatestAuditTitle", "Last cleanup"),
         message: state.latestAuditMessage
+      });
+    }
+
+    if (state.scanWarningMessage) {
+      notices.push({
+        type: "warning",
+        title: ACP.t(strings, "scanReadOnlyTitle", "Read-only scan"),
+        message: state.scanWarningMessage || ACP.t(strings, "scanReadOnlyMessage", "Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.")
       });
     }
 
@@ -839,7 +867,9 @@
     var summaryText = selectedRows.length + " " + (selectedRows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
     var detailText = ACP.t(strings, "selectionHintIdle", "Click rows to select. Locked paths stay visible but cannot be selected.");
 
-    if (!state.settings.allowOutsideShareCleanup && Number(state.summary.review || 0) > 0) {
+    if (!state.scanToken && Number(state.summary.total || 0) > 0) {
+      detailText = ACP.t(strings, "selectionHintReadOnly", "Scan results are read-only right now because the secure action snapshot could not be created.");
+    } else if (!state.settings.allowOutsideShareCleanup && Number(state.summary.review || 0) > 0) {
       detailText = ACP.t(strings, "selectionHintSafety", "Outside-share cleanup is disabled, so review rows stay locked until you enable it.");
     } else if (reviewSelected > 0 && state.settings.enablePermanentDelete) {
       detailText = ACP.t(strings, "selectionHintReview", "Review rows still need extra scrutiny before permanent delete.");

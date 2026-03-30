@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.07">
-<!ENTITY md5 "275db2b80241d6dd883bc52f17948d21">
+<!ENTITY version "2026.03.30.08">
+<!ENTITY md5 "25d841cf98471a4987ca768141c088c3">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.08
+- Fix: Keep the quarantine manager inside a single SweetAlert instance so refresh updates the current modal instead of reopening and duplicating the content block
+- Fix: Return dashboard results in read-only mode when snapshot persistence fails so scan output can still render instead of aborting the whole request
+- UX: Surface plain-text backend response details when exec returns non-JSON output so future scan failures are diagnosable from the page
+
 ###2026.03.30.07
 - Fix: Keep exec responses valid JSON by buffering and discarding stray backend output, and suppress Docker manager warnings so scan requests stop failing on noisy DockerClient calls
 - Fix: Normalize installed-container volume data before orphan filtering so scan requests survive object-shaped Docker metadata
