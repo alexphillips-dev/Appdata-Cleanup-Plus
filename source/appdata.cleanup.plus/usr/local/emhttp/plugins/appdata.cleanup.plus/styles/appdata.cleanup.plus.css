@@ -339,7 +339,7 @@ body[data-acp-host-theme="light"] #acp-app,
   align-items: start;
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(250px, 1fr) 152px 258px;
+  grid-template-columns: minmax(300px, 1fr) 152px 318px;
   flex: 1 1 760px;
 }
 
@@ -371,9 +371,9 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-control-grid {
   align-items: start;
-  column-gap: 12px;
+  column-gap: 14px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 132px;
   row-gap: 8px;
 }
 
@@ -568,7 +568,7 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-control-actions {
-  align-items: flex-end;
+  align-items: stretch;
   flex-direction: column;
   flex-wrap: nowrap;
   justify-content: flex-start;
@@ -577,8 +577,9 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-control-actions .acp-button {
   min-height: 24px;
-  min-width: 120px;
+  min-width: 0;
   padding: 0 8px;
+  width: 100%;
 }
 
 .acp-sort-panel .acp-results-meta {
