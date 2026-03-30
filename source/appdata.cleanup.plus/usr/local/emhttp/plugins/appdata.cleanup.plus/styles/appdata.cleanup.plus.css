@@ -230,18 +230,18 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-top-row {
-  align-items: stretch;
+  align-items: flex-start;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
 .acp-summary-grid {
-  align-self: stretch;
-  align-content: stretch;
+  align-self: flex-start;
+  align-content: start;
   display: grid;
   gap: 6px;
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: auto;
   grid-template-columns: repeat(5, 88px);
   justify-content: start;
   width: max-content;
@@ -336,7 +336,7 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-toolbar-stack {
-  align-items: stretch;
+  align-items: start;
   display: grid;
   gap: 8px;
   grid-template-columns: minmax(250px, 1fr) minmax(320px, auto);
@@ -354,6 +354,7 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-toolbar-panel {
   align-content: start;
+  align-self: start;
 }
 
 .acp-sort-panel {
