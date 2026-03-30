@@ -534,14 +534,6 @@
       });
     }
 
-    if (state.latestAuditMessage) {
-      notices.push({
-        type: "info",
-        title: ACP.t(strings, "noticeLatestAuditTitle", "Last cleanup"),
-        message: state.latestAuditMessage
-      });
-    }
-
     if (state.scanWarningMessage) {
       notices.push({
         type: "warning",
@@ -993,6 +985,47 @@
     });
   }
 
+  function applyLocalCandidateState(rowId, intent) {
+    var found = false;
+
+    state.rows = $.map(state.rows || [], function(row) {
+      var nextRow;
+
+      if (String(row.id || "") !== String(rowId || "")) {
+        return row;
+      }
+
+      found = true;
+      nextRow = $.extend({}, row);
+
+      if (intent === "ignore") {
+        nextRow.ignored = true;
+        nextRow.ignoredAt = "";
+        nextRow.ignoredAtLabel = "";
+        nextRow.ignoredReason = "This folder is hidden by your ignore list. Restore it to include this folder in cleanup scans again.";
+        nextRow.status = "ignored";
+        nextRow.statusLabel = "Ignored";
+      } else {
+        nextRow.ignored = false;
+        nextRow.ignoredAt = "";
+        nextRow.ignoredAtLabel = "";
+        nextRow.ignoredReason = "";
+        nextRow.status = state.dockerRunning ? "orphaned" : "docker_offline";
+        nextRow.statusLabel = state.dockerRunning ? "Orphaned" : "Docker offline";
+      }
+
+      return applyLocalSafetyStateToRow(nextRow);
+    });
+
+    if (!found) {
+      return false;
+    }
+
+    state.summary = buildLocalSummary(state.rows);
+    reconcileSelection();
+    return true;
+  }
+
   function postRowAction(action, rowId) {
     var intent = action === "unignore" ? "unignore" : "ignore";
     var failureTitle = action === "unignore" ? ACP.t(strings, "restoreFailedTitle", "Restore failed") : ACP.t(strings, "ignoreFailedTitle", "Ignore failed");
@@ -1006,7 +1039,16 @@
       candidateIds: JSON.stringify([rowId]),
       intent: intent
     }).done(function() {
-      loadScan();
+      var updated = applyLocalCandidateState(rowId, intent);
+
+      setBusy(false);
+
+      if (!updated) {
+        loadScan();
+        return;
+      }
+
+      renderAll();
     }).fail(function(xhr) {
       setBusy(false);
       swal(failureTitle, ACP.extractErrorMessage(xhr, failureMessage), "error");

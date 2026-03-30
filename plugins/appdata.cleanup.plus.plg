@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.21">
-<!ENTITY md5 "edb2557ccbffb1f6db7d9a74b8608a57">
+<!ENTITY version "2026.03.30.22">
+<!ENTITY md5 "8ab75b5f1286825fd32496c25cf03944">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.22
+- UX: Remove the inline Last cleanup notice now that audit history is available from the action bar
+- UX: Keep ignore and restore actions live in the current results set instead of forcing a full rescan after each row change
+
 ###2026.03.30.21
 - Maintenance: Refresh package metadata and build artifacts
 
