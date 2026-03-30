@@ -1,7 +1,6 @@
 Menu="Utilities"
 Title="Appdata Cleanup Plus"
 Icon="appdata.cleanup.plus.png"
-Type="xmenu"
 ---
 <?php
 require_once("/usr/local/emhttp/plugins/appdata.cleanup.plus/include/helpers.php");
