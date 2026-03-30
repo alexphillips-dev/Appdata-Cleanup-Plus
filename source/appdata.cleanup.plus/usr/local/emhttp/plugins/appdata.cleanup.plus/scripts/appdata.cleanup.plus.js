@@ -1028,6 +1028,42 @@
     return true;
   }
 
+  function applyRestoredRows(results) {
+    var restoredRows = [];
+    var rowsById = {};
+    var mergedRows = [];
+
+    $.each(state.rows || [], function(_, row) {
+      rowsById[String((row && row.id) || "")] = row;
+    });
+
+    $.each(results || [], function(_, result) {
+      var row = result && result.row;
+
+      if (String((result && result.status) || "") !== "restored" || !row || !row.id) {
+        return;
+      }
+
+      rowsById[String(row.id)] = applyLocalSafetyStateToRow($.extend({}, row));
+      restoredRows.push(row);
+    });
+
+    if (!restoredRows.length) {
+      return false;
+    }
+
+    $.each(Object.keys(rowsById), function(_, rowId) {
+      if (rowId) {
+        mergedRows.push(rowsById[rowId]);
+      }
+    });
+
+    state.rows = mergedRows;
+    state.summary = buildLocalSummary(state.rows);
+    reconcileSelection();
+    return true;
+  }
+
   function applyLocalCandidateState(rowId, intent) {
     var found = false;
 
@@ -1527,7 +1563,8 @@
     apiPost({
       action: "quarantineManagerAction",
       managerAction: action,
-      entryIds: JSON.stringify(entryIds)
+      entryIds: JSON.stringify(entryIds),
+      scanToken: state.scanToken
     }).done(function(response) {
       var quarantine = response.quarantine || {};
       var summary = response.summary || { restored: 0, purged: 0, missing: 0, blocked: 0, errors: 0 };
@@ -1544,8 +1581,14 @@
       state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, quarantine.summary || {});
       state.quarantine.loaded = true;
       state.quarantine.loading = false;
+      if (response.scanToken) {
+        state.scanToken = String(response.scanToken);
+      }
+      if (isRestore) {
+        applyRestoredRows(results);
+      }
       setBusy(false);
-      renderPanels();
+      renderAll();
 
       swal({
         title: hasWarnings ? warningTitle : successTitle,

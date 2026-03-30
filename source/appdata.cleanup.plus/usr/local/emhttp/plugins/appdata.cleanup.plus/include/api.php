@@ -261,9 +261,41 @@ function handleGetQuarantineEntries() {
   ));
 }
 
+function buildUpdatedSnapshotTokenFromRestoredResults($token, $results) {
+  $snapshot = getValidatedAppdataCleanupPlusSnapshot($token);
+  $restoredRows = array();
+  $candidateMap = array();
+
+  if ( ! $snapshot || empty($snapshot["candidates"]) || ! is_array($snapshot["candidates"]) ) {
+    return "";
+  }
+
+  foreach ( $results as $result ) {
+    if ( empty($result["row"]) || ! is_array($result["row"]) ) {
+      continue;
+    }
+
+    $restoredRows[] = $result["row"];
+  }
+
+  if ( empty($restoredRows) ) {
+    return (string)$snapshot["token"];
+  }
+
+  $candidateMap = $snapshot["candidates"];
+  foreach ( buildSnapshotCandidateMap($restoredRows) as $candidateId => $candidate ) {
+    $candidateMap[$candidateId] = $candidate;
+  }
+
+  $updatedSnapshot = writeAppdataCleanupPlusSnapshot($candidateMap);
+  return $updatedSnapshot ? (string)$updatedSnapshot["token"] : "";
+}
+
 function handleQuarantineManagerAction() {
   $action = getPostedString("managerAction");
   $entryIds = parseCandidateIds(getPostedString("entryIds"));
+  $scanToken = getRequestedToken();
+  $updatedScanToken = "";
 
   if ( ! in_array($action, array("restore", "purge"), true) ) {
     jsonResponse(array(
@@ -289,6 +321,9 @@ function handleQuarantineManagerAction() {
   }
 
   $execution = executeQuarantineManagerAction($resolvedEntries["entries"], $action);
+  if ( $action === "restore" ) {
+    $updatedScanToken = buildUpdatedSnapshotTokenFromRestoredResults($scanToken, $execution["results"]);
+  }
 
   appendAppdataCleanupPlusAuditEntry(array(
     "timestamp" => date("c"),
@@ -304,6 +339,7 @@ function handleQuarantineManagerAction() {
     "action" => $execution["action"],
     "results" => $execution["results"],
     "summary" => $execution["summary"],
-    "quarantine" => buildQuarantineManagerPayload(true)
+    "quarantine" => buildQuarantineManagerPayload(true),
+    "scanToken" => $updatedScanToken
   ));
 }

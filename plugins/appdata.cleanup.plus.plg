@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.23">
-<!ENTITY md5 "89342a14e4ecfb27149eaeace6bf0f84">
+<!ENTITY version "2026.03.30.24">
+<!ENTITY md5 "cfac7d6f069f6de958518268f091a19c">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.24
+- UX: Restore actions now add the candidate back into the detected list live instead of waiting for a manual rescan
+- UX: Restore actions now return an updated secure snapshot token so restored rows stay actionable without reloading the plugin
+
 ###2026.03.30.23
 - UX: Keep quarantine and delete actions live in the current results list instead of forcing a full scan refresh after success
 - UX: Update the action bar quarantine summary from persisted size data so tracked quarantine storage no longer sticks at 0 B

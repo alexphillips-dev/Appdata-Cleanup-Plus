@@ -30,6 +30,9 @@ function buildQuarantineDestination($sourcePath, $settings) {
 
 function normalizeAppdataCleanupPlusQuarantineRecord($record) {
   $sizeBytes = null;
+  $sourceNames = isset($record["sourceNames"]) && is_array($record["sourceNames"]) ? array_values($record["sourceNames"]) : array();
+  $targetPaths = isset($record["targetPaths"]) && is_array($record["targetPaths"]) ? array_values($record["targetPaths"]) : array();
+  $templateRefs = isset($record["templateRefs"]) && is_array($record["templateRefs"]) ? array_values($record["templateRefs"]) : array();
 
   if ( isset($record["sizeBytes"]) && $record["sizeBytes"] !== "" && $record["sizeBytes"] !== null ) {
     $sizeBytes = (int)$record["sizeBytes"];
@@ -44,6 +47,10 @@ function normalizeAppdataCleanupPlusQuarantineRecord($record) {
     "quarantinedAt" => isset($record["quarantinedAt"]) ? trim((string)$record["quarantinedAt"]) : "",
     "sourceSummary" => isset($record["sourceSummary"]) ? trim((string)$record["sourceSummary"]) : "",
     "targetSummary" => isset($record["targetSummary"]) ? trim((string)$record["targetSummary"]) : "",
+    "sourceNames" => $sourceNames,
+    "targetPaths" => $targetPaths,
+    "templateRefs" => $templateRefs,
+    "reason" => isset($record["reason"]) ? trim((string)$record["reason"]) : "",
     "sizeBytes" => $sizeBytes
   );
 
@@ -177,6 +184,85 @@ function buildQuarantineManagerPayload($includeEntries=true) {
     "summary" => buildQuarantineSummary($entries),
     "entries" => $includeEntries ? $entries : array()
   );
+}
+
+function buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings) {
+  $sourcePath = isset($entry["sourcePath"]) ? trim((string)$entry["sourcePath"]) : "";
+  $sourceNames = isset($entry["sourceNames"]) && is_array($entry["sourceNames"]) ? array_values($entry["sourceNames"]) : array();
+  $targetPaths = isset($entry["targetPaths"]) && is_array($entry["targetPaths"]) ? array_values($entry["targetPaths"]) : array();
+  $templateRefs = isset($entry["templateRefs"]) && is_array($entry["templateRefs"]) ? array_values($entry["templateRefs"]) : array();
+  $sourceSummary = isset($entry["sourceSummary"]) ? trim((string)$entry["sourceSummary"]) : "";
+  $targetSummary = isset($entry["targetSummary"]) ? trim((string)$entry["targetSummary"]) : "";
+  $reason = isset($entry["reason"]) ? trim((string)$entry["reason"]) : "";
+
+  if ( ! $sourcePath || ! is_dir($sourcePath) ) {
+    return null;
+  }
+
+  natcasesort($sourceNames);
+  natcasesort($targetPaths);
+  $sourceNames = array_values($sourceNames);
+  $targetPaths = array_values($targetPaths);
+
+  $classification = classifyAppdataCandidate($sourcePath);
+  $resolvedPath = resolveExistingPath($classification);
+  $securityLockReason = buildPathSecurityLockReason($resolvedPath);
+  $pathStats = ($securityLockReason || ! $classification["insideDefaultShare"])
+    ? collectLightweightPathStats($resolvedPath)
+    : collectPathStats($resolvedPath);
+  $candidateKey = appdataCleanupPlusCandidateKey($resolvedPath);
+  $realPath = @realpath($resolvedPath);
+  $folderName = basename(rtrim($resolvedPath, "/"));
+
+  if ( ! $sourceSummary ) {
+    $sourceSummary = summarizeCandidateValues($sourceNames);
+  }
+
+  if ( ! $targetSummary ) {
+    $targetSummary = summarizeCandidateValues($targetPaths);
+  }
+
+  if ( ! $reason ) {
+    $reason = buildCandidateReason($sourceNames, $targetPaths, $dockerRunning);
+  }
+
+  return applySafetyPolicyToRow(array(
+    "id" => md5($candidateKey),
+    "name" => $folderName ? $folderName : $resolvedPath,
+    "sourceNames" => $sourceNames,
+    "sourceSummary" => $sourceSummary,
+    "sourceCount" => count($sourceNames),
+    "targetPaths" => $targetPaths,
+    "targetSummary" => $targetSummary,
+    "targetCount" => count($targetPaths),
+    "templateRefs" => $templateRefs,
+    "path" => $resolvedPath,
+    "displayPath" => $resolvedPath,
+    "realPath" => $realPath ? $realPath : "",
+    "risk" => $classification["risk"],
+    "riskLabel" => $classification["riskLabel"],
+    "riskReason" => $classification["riskReason"],
+    "reason" => $reason,
+    "status" => $dockerRunning ? "orphaned" : "docker_offline",
+    "statusLabel" => $dockerRunning ? "Orphaned" : "Docker offline",
+    "canDelete" => $classification["canDelete"],
+    "insideDefaultShare" => $classification["insideDefaultShare"],
+    "shareName" => $classification["shareName"],
+    "depth" => $classification["depth"],
+    "sizeBytes" => $pathStats["sizeBytes"],
+    "sizeLabel" => $pathStats["sizeLabel"],
+    "lastModified" => $pathStats["lastModified"],
+    "lastModifiedIso" => $pathStats["lastModifiedIso"],
+    "lastModifiedLabel" => $pathStats["lastModifiedLabel"],
+    "lastModifiedExact" => $pathStats["lastModifiedExact"],
+    "securityLockReason" => $securityLockReason,
+    "policyLocked" => false,
+    "policyReason" => "",
+    "ignored" => false,
+    "ignoredAt" => "",
+    "ignoredAtLabel" => "",
+    "ignoredReason" => ""
+  ), $settings);
 }
 
 function resolveTrackedQuarantineEntries($entryIds) {
@@ -421,6 +507,8 @@ function purgeTrackedQuarantineEntry($entry) {
 
 function executeQuarantineManagerAction($entries, $action) {
   $results = array();
+  $settings = getAppdataCleanupPlusSafetySettings();
+  $dockerRunning = is_dir(appdataCleanupPlusDockerRuntimePath());
 
   foreach ( $entries as $entry ) {
     $result = array(
@@ -432,6 +520,12 @@ function executeQuarantineManagerAction($entries, $action) {
 
     if ( $action === "restore" ) {
       $restoreResult = restoreTrackedQuarantineEntry($entry);
+      if ( isset($restoreResult["status"]) && $restoreResult["status"] === "restored" ) {
+        $restoredRow = buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings);
+        if ( $restoredRow ) {
+          $restoreResult["row"] = $restoredRow;
+        }
+      }
       $results[] = array_merge($result, $restoreResult);
       continue;
     }
@@ -608,6 +702,10 @@ function quarantineCandidatePath($candidate, $displayPath, $settings) {
       "quarantinedAt" => date("c"),
       "sourceSummary" => isset($candidate["sourceSummary"]) ? (string)$candidate["sourceSummary"] : "",
       "targetSummary" => isset($candidate["targetSummary"]) ? (string)$candidate["targetSummary"] : "",
+      "sourceNames" => isset($candidate["sourceNames"]) && is_array($candidate["sourceNames"]) ? array_values($candidate["sourceNames"]) : array(),
+      "targetPaths" => isset($candidate["targetPaths"]) && is_array($candidate["targetPaths"]) ? array_values($candidate["targetPaths"]) : array(),
+      "templateRefs" => isset($candidate["templateRefs"]) && is_array($candidate["templateRefs"]) ? array_values($candidate["templateRefs"]) : array(),
+      "reason" => isset($candidate["reason"]) ? (string)$candidate["reason"] : "",
       "sizeBytes" => isset($candidate["sizeBytes"]) && $candidate["sizeBytes"] !== null ? (int)$candidate["sizeBytes"] : null
     ));
     clearCachedAppdataCleanupPlusPathStats($displayPath);
