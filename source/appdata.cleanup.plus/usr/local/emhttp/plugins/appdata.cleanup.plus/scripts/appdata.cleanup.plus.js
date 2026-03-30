@@ -723,6 +723,7 @@
       var riskClass = "acp-badge-risk-" + ACP.escapeHtml(row.risk || "safe");
       var rowClass = "acp-row";
       var rowActionHtml = buildRowActionHtml(row);
+      var rowNotesHtml = buildRowNotesHtml(row);
 
       if (isSelected) {
         rowClass += " is-selected";
@@ -746,19 +747,21 @@
               '<div class="acp-row-title-wrap">' +
                 '<div class="acp-row-title-line">' +
                   '<h3 class="acp-row-title">' + ACP.escapeHtml(row.name || row.displayPath || "") + "</h3>" +
+                "</div>" +
+                '<div class="acp-row-meta">' + buildRowMetaHtml(row) + "</div>" +
+                (rowNotesHtml ? '<div class="acp-row-notes">' + rowNotesHtml + "</div>" : "") +
+              "</div>" +
+              '<div class="acp-row-side">' +
+                '<div class="acp-row-side-head">' +
+                  '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
                   '<div class="acp-row-badges">' +
                     '<span class="acp-badge acp-badge-status">' + ACP.escapeHtml(row.statusLabel || "") + "</span>" +
                     '<span class="acp-badge ' + riskClass + '">' + ACP.escapeHtml(row.riskLabel || "") + "</span>" +
                   "</div>" +
                 "</div>" +
-                '<div class="acp-row-meta">' + buildRowMetaHtml(row) + "</div>" +
-              "</div>" +
-              '<div class="acp-row-side">' +
-                '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
                 rowActionHtml +
               "</div>" +
             "</div>" +
-            '<div class="acp-row-notes">' + buildRowNotesHtml(row) + "</div>" +
           "</div>" +
         "</article>"
       );

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.12">
-<!ENTITY md5 "5e1aa2f010040fbac71901e9098829c6">
+<!ENTITY version "2026.03.30.14">
+<!ENTITY md5 "b2999b10b514d4e5523e054c0cecb05e">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.14
+- UX: Move detected-card descriptions directly under the metadata line so the right-side action stack no longer creates a blank vertical gap
+- UX: Keep the detected-card path chip and ORPHANED or SAFE badges in one shared header row on desktop, with responsive wrapping only on narrower layouts
+
 ###2026.03.30.12
 - UX: Tighten the top mode and audit cards again with shorter chrome, smaller action buttons, and less internal padding
 - UX: Compress result-row spacing so orphan cards read denser with less vertical padding between title, metadata, notes, and action chips
