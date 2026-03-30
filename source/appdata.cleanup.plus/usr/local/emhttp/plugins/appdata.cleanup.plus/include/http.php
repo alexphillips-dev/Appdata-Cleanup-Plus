@@ -1,6 +1,22 @@
 <?php
 
+function appdataCleanupPlusDrainOutputBuffers() {
+  $captured = array();
+
+  while ( ob_get_level() > 0 ) {
+    $captured[] = (string)ob_get_clean();
+  }
+
+  return implode("", array_reverse($captured));
+}
+
 function jsonResponse($payload, $statusCode=200) {
+  $strayOutput = appdataCleanupPlusDrainOutputBuffers();
+
+  if ( trim($strayOutput) !== "" ) {
+    error_log("Appdata Cleanup Plus discarded unexpected exec output: " . substr(trim(preg_replace('/\s+/', ' ', $strayOutput)), 0, 400));
+  }
+
   http_response_code($statusCode);
   header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
   header("Content-Type: application/json");

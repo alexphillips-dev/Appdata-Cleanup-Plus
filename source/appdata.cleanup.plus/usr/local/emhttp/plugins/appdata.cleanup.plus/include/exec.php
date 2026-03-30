@@ -1,5 +1,7 @@
 <?php
 
+ob_start();
+
 require_once(__DIR__ . "/helpers.php");
 require_once(__DIR__ . "/pathUtils.php");
 require_once(__DIR__ . "/dashboard.php");

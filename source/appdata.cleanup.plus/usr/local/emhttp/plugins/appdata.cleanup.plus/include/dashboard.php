@@ -20,41 +20,145 @@ function appdataCleanupPlusDockerRuntimePath() {
   return "/var/lib/docker/tmp";
 }
 
-function ensureAppdataCleanupPlusDockerClientLoaded() {
-  static $attempted = false;
-  static $loaded = false;
+function appdataCleanupPlusLogTrimmedOutput($context, $message, $limit=400) {
+  $normalized = trim(preg_replace('/\s+/', ' ', (string)$message));
 
-  if ( $attempted ) {
-    return $loaded;
+  if ( $normalized === "" ) {
+    return;
   }
 
-  $attempted = true;
+  if ( strlen($normalized) > $limit ) {
+    $normalized = substr($normalized, 0, $limit) . "...";
+  }
+
+  error_log("Appdata Cleanup Plus " . $context . ": " . $normalized);
+}
+
+function appdataCleanupPlusRunQuietly($callable, $context) {
+  $capturedErrors = array();
+  $result = null;
+
+  ob_start();
+  set_error_handler(function($severity, $message, $file, $line) use (&$capturedErrors) {
+    $capturedErrors[] = trim((string)$message) . " in " . (string)$file . ":" . (int)$line;
+    return true;
+  });
+
+  try {
+    $result = $callable();
+  } finally {
+    restore_error_handler();
+    $strayOutput = ob_get_clean();
+
+    if ( ! empty($capturedErrors) ) {
+      appdataCleanupPlusLogTrimmedOutput($context . " warning", implode(" | ", $capturedErrors));
+    }
+
+    if ( trim((string)$strayOutput) !== "" ) {
+      appdataCleanupPlusLogTrimmedOutput($context . " output", $strayOutput);
+    }
+  }
+
+  return $result;
+}
+
+function ensureAppdataCleanupPlusDockerClientLoaded() {
+  static $loadedByPath = array();
+  $dockerClientPath = appdataCleanupPlusDockerClientPath();
+
+  if ( isset($loadedByPath[$dockerClientPath]) ) {
+    return $loadedByPath[$dockerClientPath];
+  }
 
   if ( class_exists("DockerClient", false) ) {
-    $loaded = true;
+    $loadedByPath[$dockerClientPath] = true;
     return true;
   }
 
-  $dockerClientPath = appdataCleanupPlusDockerClientPath();
-
   if ( ! $dockerClientPath || ! is_file($dockerClientPath) ) {
+    $loadedByPath[$dockerClientPath] = false;
     return false;
   }
 
   try {
-    require_once($dockerClientPath);
+    appdataCleanupPlusRunQuietly(function() use ($dockerClientPath) {
+      require_once($dockerClientPath);
+    }, "DockerClient include");
   } catch ( Throwable $throwable ) {
     error_log("Appdata Cleanup Plus could not load DockerClient from " . $dockerClientPath . ": " . $throwable->getMessage());
+    $loadedByPath[$dockerClientPath] = false;
     return false;
   }
 
-  $loaded = class_exists("DockerClient", false);
+  $loadedByPath[$dockerClientPath] = class_exists("DockerClient", false);
 
-  if ( ! $loaded ) {
+  if ( ! $loadedByPath[$dockerClientPath] ) {
     error_log("Appdata Cleanup Plus could not find DockerClient after loading " . $dockerClientPath . ".");
   }
 
-  return $loaded;
+  return $loadedByPath[$dockerClientPath];
+}
+
+function appdataCleanupPlusNormalizeDockerRecord($record) {
+  if ( is_object($record) ) {
+    return get_object_vars($record);
+  }
+
+  return is_array($record) ? $record : array();
+}
+
+function appdataCleanupPlusExtractDockerVolumeHostPath($volume) {
+  $record = appdataCleanupPlusNormalizeDockerRecord($volume);
+
+  if ( is_string($volume) ) {
+    $parts = explode(":", trim((string)$volume));
+    return isset($parts[0]) ? trim((string)$parts[0]) : "";
+  }
+
+  if ( empty($record) ) {
+    return "";
+  }
+
+  foreach ( array("HostDir", "host_volume", "Source", "source", "HostPath", "hostPath", "Bind", "bind") as $key ) {
+    if ( ! empty($record[$key]) && is_string($record[$key]) ) {
+      return trim((string)$record[$key]);
+    }
+  }
+
+  if ( ! empty($record["Volume"]) && is_string($record["Volume"]) ) {
+    $parts = explode(":", trim((string)$record["Volume"]));
+    return isset($parts[0]) ? trim((string)$parts[0]) : "";
+  }
+
+  return "";
+}
+
+function appdataCleanupPlusExtractDockerVolumeHostPaths($containers) {
+  $paths = array();
+
+  foreach ( $containers as $container ) {
+    $containerRecord = appdataCleanupPlusNormalizeDockerRecord($container);
+    $volumeSets = array();
+
+    foreach ( array("Volumes", "Mounts", "Binds") as $key ) {
+      if ( ! empty($containerRecord[$key]) ) {
+        $volumeSets[] = $containerRecord[$key];
+      }
+    }
+
+    foreach ( $volumeSets as $volumeSet ) {
+      foreach ( (array)$volumeSet as $volume ) {
+        $hostPath = appdataCleanupPlusExtractDockerVolumeHostPath($volume);
+
+        if ( $hostPath !== "" ) {
+          $paths[normalizeUserPath($hostPath)] = true;
+          $paths[normalizeCachePath($hostPath)] = true;
+        }
+      }
+    }
+  }
+
+  return array_keys($paths);
 }
 
 function getDockerContainersSafe() {
@@ -63,9 +167,14 @@ function getDockerContainersSafe() {
   }
 
   try {
-    $DockerClient = new DockerClient();
-    return $DockerClient->getDockerContainers();
+    $containers = appdataCleanupPlusRunQuietly(function() {
+      $DockerClient = new DockerClient();
+      return $DockerClient->getDockerContainers();
+    }, "DockerClient query");
+
+    return is_array($containers) ? $containers : array();
   } catch ( Throwable $throwable ) {
+    error_log("Appdata Cleanup Plus Docker query failed: " . $throwable->getMessage());
     return array();
   }
 }
@@ -430,18 +539,9 @@ function buildCandidateMap($allFiles) {
 }
 
 function removeInstalledVolumeMatches($availableVolumes, $containers) {
-  foreach ( $containers as $installedDocker ) {
-    if ( ! isset($installedDocker["Volumes"]) || ! is_array($installedDocker["Volumes"]) ) {
-      continue;
-    }
-
-    foreach ( $installedDocker["Volumes"] as $volume ) {
-      $folders = explode(":", $volume);
-      $cacheFolder = normalizeCachePath($folders[0]);
-      $userFolder = normalizeUserPath($folders[0]);
-      unset($availableVolumes[$cacheFolder]);
-      unset($availableVolumes[$userFolder]);
-    }
+  foreach ( appdataCleanupPlusExtractDockerVolumeHostPaths($containers) as $hostPath ) {
+    unset($availableVolumes[normalizeCachePath($hostPath)]);
+    unset($availableVolumes[normalizeUserPath($hostPath)]);
   }
 
   return $availableVolumes;
@@ -483,20 +583,13 @@ function removeParentCandidates($availableVolumes) {
 
 function removeParentsUsedByInstalledContainers($availableVolumes, $containers) {
   $filtered = $availableVolumes;
+  $installedHostPaths = appdataCleanupPlusExtractDockerVolumeHostPaths($containers);
 
   foreach ( $availableVolumes as $candidate ) {
-    foreach ( $containers as $installedDocker ) {
-      if ( ! isset($installedDocker["Volumes"]) || ! is_array($installedDocker["Volumes"]) ) {
-        continue;
-      }
-
-      foreach ( $installedDocker["Volumes"] as $volume ) {
-        $folders = explode(":", $volume);
-
-        if ( pathIsDescendant($candidate["HostDir"], $folders[0]) ) {
-          unset($filtered[$candidate["HostDir"]]);
-          break 2;
-        }
+    foreach ( $installedHostPaths as $hostPath ) {
+      if ( pathIsDescendant($candidate["HostDir"], $hostPath) ) {
+        unset($filtered[$candidate["HostDir"]]);
+        break;
       }
     }
   }

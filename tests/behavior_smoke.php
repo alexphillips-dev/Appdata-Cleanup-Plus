@@ -164,13 +164,23 @@ behaviorSmokeAssertTrue($auditRows[0]["message"] !== "", "Audit rows should incl
 $dockerRuntimeFixture = $stateRoot . "/docker-runtime";
 $dockerClientFixture = $stateRoot . "/DockerClient.php";
 mkdir($dockerRuntimeFixture, 0777, true);
-file_put_contents($dockerClientFixture, "<?php\nthrow new RuntimeException('docker client fixture failure');\n");
+file_put_contents($dockerClientFixture, "<?php\ntrigger_error('docker client fixture include warning', E_USER_WARNING);\nclass DockerClient {\n  public function getDockerContainers() {\n    trigger_error('docker client fixture query warning', E_USER_WARNING);\n    echo \"docker-fixture-noise\";\n    return array((object)array(\n      'Volumes' => array(\n        (object)array('Source' => '/mnt/user/appdata/live', 'Destination' => '/config')\n      )\n    ));\n  }\n}\n");
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_RUNTIME_PATH=" . str_replace("\\", "/", $dockerRuntimeFixture));
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_CLIENT_PATH=" . str_replace("\\", "/", $dockerClientFixture));
 $containers = getDockerContainersSafe();
-behaviorSmokeAssertSame(array(), $containers, "Docker container scan should fail closed when DockerClient cannot be loaded.");
+behaviorSmokeAssertSame(1, count($containers), "Docker container scan should return fixture containers even when the Docker client emits warnings.");
+$filteredVolumes = removeInstalledVolumeMatches(array(
+  "/mnt/user/appdata/live" => array(
+    "HostDir" => "/mnt/user/appdata/live"
+  ),
+  "/mnt/user/appdata/leftover" => array(
+    "HostDir" => "/mnt/user/appdata/leftover"
+  )
+), $containers);
+behaviorSmokeAssertTrue(! isset($filteredVolumes["/mnt/user/appdata/live"]), "Installed container paths should be removed even when Docker volumes arrive as objects.");
+behaviorSmokeAssertTrue(isset($filteredVolumes["/mnt/user/appdata/leftover"]), "Unmatched candidate paths should remain after Docker volume filtering.");
 $dashboard = buildDashboardPayload();
-behaviorSmokeAssertTrue(is_array($dashboard) && ! empty($dashboard["ok"]), "Dashboard build should survive DockerClient include failures.");
+behaviorSmokeAssertTrue(is_array($dashboard) && ! empty($dashboard["ok"]), "Dashboard build should survive DockerClient warnings and output.");
 
 behaviorSmokeRemoveTree($stateRoot);
 echo "behavior_smoke: OK" . PHP_EOL;

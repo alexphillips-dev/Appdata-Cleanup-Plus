@@ -145,25 +145,35 @@
   };
 
   ACP.applyDeleteModalClass = function(className, htmlContent) {
-    var $modal = $(".sweet-alert");
-    var existingHost = $modal.find("p.acp-modal-host");
+    var $modal = $(".sweet-alert:visible").last();
+    var $baseText;
+    var $existingHost;
+
+    if (!$modal.length) {
+      $modal = $(".sweet-alert.showSweetAlert").last();
+    }
 
     if (!$modal.length) {
       return;
     }
 
-    $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal");
+    $baseText = $modal.children("p").first();
+    $existingHost = $modal.children("p.acp-modal-host");
+
+    $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-quarantine-manager-modal");
     if (className) {
       $modal.addClass(className);
     }
 
-    existingHost.remove();
+    $existingHost.remove();
 
     if (htmlContent) {
-      $modal.find("> p").first().addClass("acp-modal-hidden");
-      $modal.find("> p").first().after('<p class="acp-modal-host">' + htmlContent + "</p>");
-    } else {
-      $modal.find("> p").first().removeClass("acp-modal-hidden");
+      if ($baseText.length) {
+        $baseText.addClass("acp-modal-hidden");
+        $baseText.after('<p class="acp-modal-host">' + htmlContent + "</p>");
+      }
+    } else if ($baseText.length) {
+      $baseText.removeClass("acp-modal-hidden");
     }
 
     ACP.syncDeleteModalThemeTokens($modal);
@@ -324,4 +334,3 @@
     return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
   };
 })(window, document, jQuery);
-
