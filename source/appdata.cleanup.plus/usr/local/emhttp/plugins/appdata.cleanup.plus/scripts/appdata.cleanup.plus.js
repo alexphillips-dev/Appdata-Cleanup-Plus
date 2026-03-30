@@ -188,10 +188,9 @@
       }
     });
 
-    els.$auditPanel.on("click", "[data-action='toggle-audit']", function() {
+    els.$modeStrip.on("click", "[data-action='open-audit-history']", function() {
       if (!state.busy) {
-        state.auditOpen = !state.auditOpen;
-        renderPanels();
+        openAuditHistoryModal();
       }
     });
 
@@ -382,6 +381,13 @@
     );
   }
 
+  function renderAuditHistoryModal() {
+    ACP.applyDeleteModalClass(
+      "acp-delete-modal acp-delete-results-modal acp-audit-history-modal",
+      ACP.buildAuditHistoryModalHtml(buildContext())
+    );
+  }
+
   function ensureQuarantineManagerModal() {
     if (state.quarantine.open) {
       return;
@@ -398,6 +404,26 @@
       closeOnConfirm: true
     }, function() {
       state.quarantine.open = false;
+      renderPanels();
+    });
+  }
+
+  function ensureAuditHistoryModal() {
+    if (state.auditOpen) {
+      return;
+    }
+
+    state.auditOpen = true;
+    swal({
+      title: ACP.t(strings, "auditHistoryTitle", "Audit history"),
+      text: "",
+      type: "info",
+      html: true,
+      showCancelButton: false,
+      confirmButtonText: ACP.t(strings, "doneLabel", "Done"),
+      closeOnConfirm: true
+    }, function() {
+      state.auditOpen = false;
       renderPanels();
     });
   }
@@ -419,6 +445,16 @@
     loadQuarantineManager(true, function() {
       renderQuarantineManagerModal(false);
     });
+  }
+
+  function openAuditHistoryModal() {
+    if (state.busy) {
+      return;
+    }
+
+    ensureAuditHistoryModal();
+    renderPanels();
+    renderAuditHistoryModal();
   }
 
   function applyLocalSafetyStateToRow(row) {

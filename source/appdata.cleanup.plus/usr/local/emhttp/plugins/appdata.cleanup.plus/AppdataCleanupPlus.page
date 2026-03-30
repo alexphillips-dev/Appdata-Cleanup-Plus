@@ -141,6 +141,7 @@ $config = array(
     "cardReview" => _("Needs review"),
     "cardBlocked" => _("Locked"),
     "cardSelected" => _("Selected"),
+    "actionBarTitle" => _("Action bar"),
     "auditHistoryTitle" => _("Audit history"),
     "auditHistoryEntriesLabel" => _("entries available"),
     "auditHistoryOpenLabel" => _("Show history"),
@@ -149,8 +150,9 @@ $config = array(
     "auditHistoryEmptyMessage" => _("No cleanup, restore, or purge actions have been recorded yet."),
     "auditRequestedLabel" => _("items submitted"),
     "quarantineManagerTitle" => _("Quarantine manager"),
-    "quarantineManagerOpenLabel" => _("Open manager"),
+    "quarantineManagerOpenLabel" => _("Show quarantine"),
     "quarantineManagerCloseLabel" => _("Close manager"),
+    "quarantineLoadingLabel" => _("Loading quarantine"),
     "quarantineRefreshLabel" => _("Refresh"),
     "quarantineCountSingular" => _("quarantined folder"),
     "quarantineCountPlural" => _("quarantined folders"),
@@ -290,7 +292,6 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
 
   <section class="acp-mode-strip" id="acp-mode-strip" aria-live="polite"></section>
   <section class="acp-notices" id="acp-notices"></section>
-  <section class="acp-audit-panel" id="acp-audit-panel" aria-live="polite"></section>
   <section class="acp-quarantine-panel" id="acp-quarantine-panel" aria-live="polite"></section>
   <section class="acp-results" id="acp-results" aria-live="polite"></section>
 

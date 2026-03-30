@@ -40,9 +40,10 @@
       ? summary.count + " " + (summary.count === 1 ? ACP.t(strings, "quarantineCountSingular", "quarantined folder") : ACP.t(strings, "quarantineCountPlural", "quarantined folders")) + " tracked"
       : ACP.t(strings, "quarantineSummaryEmpty", "No quarantined folders are tracked right now.");
     var managerMeta = summary.count > 0 && summary.sizeLabel ? " | " + summary.sizeLabel : "";
-    var buttonLabel = state.quarantine && state.quarantine.loading
-      ? ACP.t(strings, "quarantineLoadingLabel", "Loading manager")
-      : ACP.t(strings, "quarantineManagerOpenLabel", "Open manager");
+    var quarantineButtonLabel = state.quarantine && state.quarantine.loading
+      ? ACP.t(strings, "quarantineLoadingLabel", "Loading quarantine")
+      : ACP.t(strings, "quarantineManagerOpenLabel", "Show quarantine");
+    var auditButtonLabel = ACP.t(strings, "auditHistoryOpenLabel", "Show history");
     var html = [
       '<div class="acp-mode-strip-grid">',
       '<article class="acp-mode-card ' + (isDeleteMode ? "is-delete-mode" : "is-safe-mode") + '">',
@@ -53,11 +54,12 @@
       "</article>",
       '<article class="acp-mode-card is-manager-card">',
       '<div class="acp-mode-card-copy">',
-      '<div class="acp-mode-card-title">' + ACP.escapeHtml(ACP.t(strings, "quarantineManagerTitle", "Quarantine manager")) + "</div>",
+      '<div class="acp-mode-card-title">' + ACP.escapeHtml(ACP.t(strings, "actionBarTitle", "Action bar")) + "</div>",
       '<div class="acp-mode-card-message">' + ACP.escapeHtml(managerMessage + managerMeta) + "</div>",
       "</div>",
       '<div class="acp-mode-card-actions">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(buttonLabel) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(quarantineButtonLabel) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history">' + ACP.escapeHtml(auditButtonLabel) + "</button>",
       "</div>",
       "</article>",
       "</div>"
@@ -114,91 +116,88 @@
     return html.join("");
   };
 
-  ACP.renderAuditPanel = function(context) {
+  ACP.buildAuditHistoryModalHtml = function(context) {
     var state = context.state || {};
-    var els = context.els || {};
     var strings = context.strings || {};
     var auditHistory = $.isArray(state.auditHistory) ? state.auditHistory : [];
-    var isOpen = !!state.auditOpen;
-    var buttonLabel = isOpen
-      ? ACP.t(strings, "auditHistoryCloseLabel", "Hide history")
-      : ACP.t(strings, "auditHistoryOpenLabel", "Show history");
+    var subtitle = auditHistory.length
+      ? (auditHistory.length + " " + ACP.t(strings, "auditHistoryEntriesLabel", "entries available"))
+      : ACP.t(strings, "auditHistoryEmptySummary", "No cleanup history has been recorded yet.");
     var html = [
-      '<section class="acp-utility-card">',
-      '<div class="acp-utility-head">',
-      '<div class="acp-utility-copy">',
-      '<div class="acp-utility-title">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryTitle", "Audit history")) + "</div>",
-      '<div class="acp-utility-subtitle">' + ACP.escapeHtml(auditHistory.length ? (auditHistory.length + " " + ACP.t(strings, "auditHistoryEntriesLabel", "entries available")) : ACP.t(strings, "auditHistoryEmptySummary", "No cleanup history has been recorded yet.")) + "</div>",
+      '<div class="acp-modal-summary">',
+      '<div class="acp-modal-copy">',
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(subtitle) + "</div>",
       "</div>",
-      '<div class="acp-utility-actions">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-audit">' + ACP.escapeHtml(buttonLabel) + "</button>",
-      "</div>",
-      "</div>"
+      '<div class="acp-modal-panel acp-modal-panel-scroll">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryTitle", "Audit history")) + "</div>"
     ];
 
-    if (isOpen) {
-      html.push('<div class="acp-utility-body">');
-
-      if (!auditHistory.length) {
-        html.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryEmptyMessage", "No cleanup, restore, or purge actions have been recorded yet.")) + "</div>");
-      } else {
-        html.push('<div class="acp-audit-list">');
-        $.each(auditHistory, function(_, entry) {
-          html.push('<article class="acp-audit-entry">');
-          html.push('<div class="acp-audit-head">');
-          html.push('<div class="acp-audit-head-main">');
-          html.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(entry.operationLabel || "") + "</span>");
-          html.push('<span class="acp-audit-time">' + ACP.escapeHtml(entry.timestampLabel || entry.timestamp || "") + "</span>");
-          if (entry.relativeLabel) {
-            html.push('<span class="acp-audit-time-muted">' + ACP.escapeHtml(entry.relativeLabel) + "</span>");
+    if (!auditHistory.length) {
+      html.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryEmptyMessage", "No cleanup, restore, or purge actions have been recorded yet.")) + "</div>");
+    } else {
+      html.push('<div class="acp-audit-list">');
+      $.each(auditHistory, function(_, entry) {
+        html.push('<article class="acp-audit-entry">');
+        html.push('<div class="acp-audit-head">');
+        html.push('<div class="acp-audit-head-main">');
+        html.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(entry.operationLabel || "") + "</span>");
+        html.push('<span class="acp-audit-time">' + ACP.escapeHtml(entry.timestampLabel || entry.timestamp || "") + "</span>");
+        if (entry.relativeLabel) {
+          html.push('<span class="acp-audit-time-muted">' + ACP.escapeHtml(entry.relativeLabel) + "</span>");
+        }
+        html.push("</div>");
+        html.push('<div class="acp-audit-head-meta">' + ACP.escapeHtml(String(entry.requestedCount || 0)) + " " + ACP.escapeHtml(ACP.t(strings, "auditRequestedLabel", "items submitted")) + "</div>");
+        html.push("</div>");
+        html.push('<div class="acp-audit-message">' + ACP.escapeHtml(entry.message || "") + "</div>");
+        html.push('<div class="acp-modal-stats">');
+        $.each(entry.summary || {}, function(status, count) {
+          var statusMeta;
+          if (!count) {
+            return;
           }
-          html.push("</div>");
-          html.push('<div class="acp-audit-head-meta">' + ACP.escapeHtml(String(entry.requestedCount || 0)) + " " + ACP.escapeHtml(ACP.t(strings, "auditRequestedLabel", "items submitted")) + "</div>");
-          html.push("</div>");
-          html.push('<div class="acp-audit-message">' + ACP.escapeHtml(entry.message || "") + "</div>");
-          html.push('<div class="acp-modal-stats">');
-          $.each(entry.summary || {}, function(status, count) {
-            var statusMeta;
-            if (!count) {
-              return;
-            }
-            statusMeta = ACP.formatOperationResultStatus(strings, status);
-            html.push('<span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + ": " + ACP.escapeHtml(String(count)) + "</span>");
-          });
-          html.push("</div>");
-
-          if ($.isArray(entry.results) && entry.results.length) {
-            html.push('<div class="acp-audit-results">');
-            $.each(entry.results, function(_, result) {
-              var statusMeta = ACP.formatOperationResultStatus(strings, result.status);
-              html.push('<div class="acp-audit-result">');
-              html.push('<div class="acp-audit-result-head"><span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + "</span></div>");
-              html.push('<code class="acp-modal-path">' + ACP.escapeHtml(result.displayPath || result.sourcePath || result.path || result.destination || "") + "</code>");
-              if (result.destination && result.destination !== (result.displayPath || result.path || "")) {
-                html.push('<div class="acp-audit-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "destinationLabel", "Destination")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.destination) + "</code></div>");
-              }
-              if (result.message) {
-                html.push('<div class="acp-audit-result-message">' + ACP.escapeHtml(result.message) + "</div>");
-              }
-              html.push("</div>");
-            });
-            html.push("</div>");
-          }
-
-          html.push("</article>");
+          statusMeta = ACP.formatOperationResultStatus(strings, status);
+          html.push('<span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + ": " + ACP.escapeHtml(String(count)) + "</span>");
         });
         html.push("</div>");
-      }
 
+        if ($.isArray(entry.results) && entry.results.length) {
+          html.push('<div class="acp-audit-results">');
+          $.each(entry.results, function(_, result) {
+            var statusMeta = ACP.formatOperationResultStatus(strings, result.status);
+            html.push('<div class="acp-audit-result">');
+            html.push('<div class="acp-audit-result-head"><span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + "</span></div>");
+            html.push('<code class="acp-modal-path">' + ACP.escapeHtml(result.displayPath || result.sourcePath || result.path || result.destination || "") + "</code>");
+            if (result.destination && result.destination !== (result.displayPath || result.path || "")) {
+              html.push('<div class="acp-audit-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "destinationLabel", "Destination")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.destination) + "</code></div>");
+            }
+            if (result.message) {
+              html.push('<div class="acp-audit-result-message">' + ACP.escapeHtml(result.message) + "</div>");
+            }
+            html.push("</div>");
+          });
+          html.push("</div>");
+        }
+
+        html.push("</article>");
+      });
       html.push("</div>");
     }
 
-    html.push("</section>");
-    els.$auditPanel.html(html.join(""));
+    html.push("</div></div>");
+    return html.join("");
+  };
+
+  ACP.renderAuditPanel = function(context) {
+    var els = context.els || {};
+    if (els.$auditPanel && els.$auditPanel.length) {
+      els.$auditPanel.empty();
+    }
   };
 
   ACP.renderQuarantinePanel = function(context) {
     var els = context.els || {};
-    els.$quarantinePanel.empty();
+    if (els.$quarantinePanel && els.$quarantinePanel.length) {
+      els.$quarantinePanel.empty();
+    }
   };
 })(window, document, jQuery);
