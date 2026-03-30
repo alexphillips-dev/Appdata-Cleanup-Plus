@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.19">
-<!ENTITY md5 "ad9a8a229322641f40a8cd222f0df728">
+<!ENTITY version "2026.03.30.20">
+<!ENTITY md5 "edb2557ccbffb1f6db7d9a74b8608a57">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.20
+- UX: Limit the summary-tile glow effect to nonzero values so empty stats stay visually quiet while active stats still pick up their tone color
+- UX: Center the detected-row copy block vertically inside each orphan card so the title, metadata, and reason sit more evenly beside the checkbox and actions
+- Fix: Hide SweetAlert's built-in info icon chrome for the quarantine and audit popups so the custom modal content stops artifacting behind the manager surface
+
 ###2026.03.30.19
 - UX: Add a color-matched glow to the summary-card values so each number picks up the same tone family as its status dot
 - UX: Rename the top utility launcher to Action bar, move Show history into it beside Show quarantine, and remove the old inline audit-history card

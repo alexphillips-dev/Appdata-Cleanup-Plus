@@ -627,8 +627,9 @@
     var html = [];
 
     $.each(cards, function(_, card) {
+      var glowClass = Number(card.value || 0) > 0 ? " has-glow" : "";
       html.push(
-        '<article class="acp-summary-card ' + card.tone + '">' +
+        '<article class="acp-summary-card ' + card.tone + glowClass + '">' +
           '<span class="acp-summary-label">' + ACP.escapeHtml(card.label) + "</span>" +
           '<span class="acp-summary-value">' + ACP.escapeHtml(String(card.value)) + "</span>" +
         "</article>"

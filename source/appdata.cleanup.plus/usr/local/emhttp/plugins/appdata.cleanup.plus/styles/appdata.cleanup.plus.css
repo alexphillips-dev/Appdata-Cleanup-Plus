@@ -327,6 +327,9 @@ body[data-acp-host-theme="light"] #acp-app,
   line-height: 1;
   margin: 0;
   text-align: center;
+}
+
+.acp-summary-card.has-glow .acp-summary-value {
   text-shadow:
     0 0 8px var(--acp-summary-glow-color),
     0 0 16px var(--acp-summary-glow-color);
@@ -937,13 +940,14 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-row-main {
+  align-content: center;
   display: grid;
   gap: 0;
   min-width: 0;
 }
 
 .acp-row-primary {
-  align-items: start;
+  align-items: center;
   display: grid;
   gap: 6px;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1167,6 +1171,16 @@ body[data-acp-host-theme="light"] #acp-app,
   overflow: visible !important;
   padding: 0 !important;
   text-align: left !important;
+}
+
+.sweet-alert.acp-quarantine-manager-modal .sa-icon,
+.sweet-alert.acp-audit-history-modal .sa-icon {
+  display: none !important;
+}
+
+.sweet-alert.acp-quarantine-manager-modal h2,
+.sweet-alert.acp-audit-history-modal h2 {
+  margin-top: 0 !important;
 }
 
 .sweet-alert.acp-delete-modal input {
