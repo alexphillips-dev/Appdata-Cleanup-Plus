@@ -2,17 +2,28 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.34">
-<!ENTITY md5 "f7eadcf7dda6ed082df667b084f73e0d">
+<!ENTITY version "2026.03.30.35">
+<!ENTITY md5 "5f131b08a4031f70ed3e93ec0fed99f8">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.35
+- Release: Merge the full March 30 development stream into main with the quarantine workflow, audit history, action bar, and refreshed compact dashboard shell
+- Fix: Harden scan execution against Docker client include failures, noisy Docker warnings, reverse-proxied hosts, malformed templates or configs, object-shaped volume metadata, UTF-8 path issues, and snapshot persistence failures so scans stop aborting on common Unraid edge cases
+- Fix: Eliminate the helper-name collision and return backend fatal details as JSON or plain text so scan failures are diagnosable instead of collapsing into blank HTTP 500 responses
+- Fix: Rework the quarantine and audit modals to use a single SweetAlert host, remove duplicate or stale modal chrome, and stop refresh artifacting or duplicated content
+- Fix: Restore measured detected-folder sizes and persisted quarantine size tracking so detected rows and the action bar stop reporting Unknown or 0 B by default
+- UX: Add the quarantine manager, show ignored view, tracked quarantine restore or purge actions, popup audit history, and live ignore, quarantine, delete, and restore updates without forced rescans
+- UX: Rebuild the top control area into compact Search, Sort, and Controls panels, flatten panel backgrounds, tighten spacing, improve detected-row badge and path alignment, and refine the summary stat glow behavior
+- Safety: Parse Docker template XML locally, enforce same-host POST exec actions, require typed confirmation for permanent deletes, scope action snapshots to the active session, and keep strict canonical path and target validation around risky operations
+- Maintenance: Split the backend into dedicated dashboard, API, HTTP, quarantine, and path utility modules, remove dead dashboard plumbing and the unused XML helper, and add behavior smoke coverage for scan regressions
+
 ###2026.03.30.34
 - UX: Pin the stacked Controls buttons to the top-right of the panel instead of letting the action column float
 - UX: Render the desktop Controls buttons as a tight grid stack so no vertical spacing is introduced by flex layout
@@ -327,7 +338,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
