@@ -186,18 +186,4 @@
     html.push("</div></div>");
     return html.join("");
   };
-
-  ACP.renderAuditPanel = function(context) {
-    var els = context.els || {};
-    if (els.$auditPanel && els.$auditPanel.length) {
-      els.$auditPanel.empty();
-    }
-  };
-
-  ACP.renderQuarantinePanel = function(context) {
-    var els = context.els || {};
-    if (els.$quarantinePanel && els.$quarantinePanel.length) {
-      els.$quarantinePanel.empty();
-    }
-  };
 })(window, document, jQuery);

@@ -10,7 +10,6 @@
     selected: {},
     scanToken: "",
     dockerRunning: true,
-    latestAuditMessage: "",
     auditHistory: [],
     auditOpen: false,
     scanWarningMessage: "",
@@ -65,8 +64,6 @@
     els.$resultsMeta = $("#acp-results-meta");
     els.$modeStrip = $("#acp-mode-strip");
     els.$notices = $("#acp-notices");
-    els.$auditPanel = $("#acp-audit-panel");
-    els.$quarantinePanel = $("#acp-quarantine-panel");
     els.$results = $("#acp-results");
     els.$selectionSummary = $("#acp-selection-summary");
     els.$selectionDetail = $("#acp-selection-detail");
@@ -284,7 +281,6 @@
     state.selected = {};
     state.scanToken = "";
     state.dockerRunning = true;
-    state.latestAuditMessage = "";
     state.auditHistory = [];
     state.scanWarningMessage = "";
     state.settings = ACP.defaultSafetySettings();
@@ -302,7 +298,6 @@
       state.summary = response.summary || { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
       state.scanToken = String(response.scanToken || "");
       state.dockerRunning = response.dockerRunning !== false;
-      state.latestAuditMessage = String(response.latestAuditMessage || "");
       state.auditHistory = $.isArray(response.auditHistory) ? response.auditHistory : [];
       state.scanWarningMessage = String(response.scanWarningMessage || "");
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || {});
@@ -594,8 +589,6 @@
 
   function renderPanels() {
     ACP.renderModeStrip(buildContext());
-    ACP.renderAuditPanel(buildContext());
-    ACP.renderQuarantinePanel(buildContext());
   }
 
   function renderAll() {

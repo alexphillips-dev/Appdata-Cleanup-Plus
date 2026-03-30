@@ -598,9 +598,7 @@ body[data-acp-host-theme="light"] #acp-app,
   text-align: right;
 }
 
-.acp-mode-strip,
-.acp-audit-panel,
-.acp-quarantine-panel {
+.acp-mode-strip {
   display: grid;
   gap: 4px;
 }

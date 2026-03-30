@@ -1,20 +1,12 @@
 <?php
 
 function appdataCleanupPlusBuildDashboardFallbackPayload($dockerRunning, $settings, $rows, $summary, $scanToken, $scanWarningMessage="") {
-  $latestAuditMessage = "";
   $auditHistory = array();
   $quarantineSummary = array(
     "count" => 0,
     "sizeBytes" => 0,
     "sizeLabel" => "0 B"
   );
-
-  try {
-    $latestAudit = getLatestAppdataCleanupPlusAuditEntry();
-    $latestAuditMessage = $latestAudit ? buildLatestAuditMessage($latestAudit) : "";
-  } catch ( Throwable $throwable ) {
-    error_log("Appdata Cleanup Plus audit summary failed during dashboard build: " . $throwable->getMessage());
-  }
 
   try {
     $auditHistory = buildAuditHistoryRows();
@@ -37,8 +29,6 @@ function appdataCleanupPlusBuildDashboardFallbackPayload($dockerRunning, $settin
       "ok" => true,
       "dockerRunning" => $dockerRunning,
       "summary" => $summary,
-      "notices" => buildNotices($dockerRunning, $summary, $settings),
-      "latestAuditMessage" => $latestAuditMessage,
       "auditHistory" => $auditHistory,
       "rows" => $rows,
       "scanToken" => $scanToken,

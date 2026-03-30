@@ -128,7 +128,6 @@ $config = array(
     "noticeDockerOfflineTitle" => _("Docker is offline"),
     "noticeDockerOfflineMessage" => _("Results are based only on saved Docker templates. Review every path before acting on anything."),
     "noticeIgnoredTitle" => _("Ignore list active"),
-    "noticeLatestAuditTitle" => _("Last cleanup"),
     "noticeOutsideShareDisabledTitle" => _("Outside-share cleanup is disabled"),
     "noticeOutsideShareDisabledMessage" => _("Review paths stay visible but locked until you explicitly enable outside-share cleanup."),
     "noticeOutsideShareEnabledTitle" => _("Outside-share cleanup is enabled"),
@@ -145,13 +144,11 @@ $config = array(
     "auditHistoryTitle" => _("Audit history"),
     "auditHistoryEntriesLabel" => _("entries available"),
     "auditHistoryOpenLabel" => _("Show history"),
-    "auditHistoryCloseLabel" => _("Hide history"),
     "auditHistoryEmptySummary" => _("No cleanup history has been recorded yet."),
     "auditHistoryEmptyMessage" => _("No cleanup, restore, or purge actions have been recorded yet."),
     "auditRequestedLabel" => _("items submitted"),
     "quarantineManagerTitle" => _("Quarantine manager"),
     "quarantineManagerOpenLabel" => _("Show quarantine"),
-    "quarantineManagerCloseLabel" => _("Close manager"),
     "quarantineLoadingLabel" => _("Loading quarantine"),
     "quarantineRefreshLabel" => _("Refresh"),
     "quarantineCountSingular" => _("quarantined folder"),
@@ -292,7 +289,6 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
 
   <section class="acp-mode-strip" id="acp-mode-strip" aria-live="polite"></section>
   <section class="acp-notices" id="acp-notices"></section>
-  <section class="acp-quarantine-panel" id="acp-quarantine-panel" aria-live="polite"></section>
   <section class="acp-results" id="acp-results" aria-live="polite"></section>
 
   <section class="acp-bottom-bar" id="acp-bottom-bar">
