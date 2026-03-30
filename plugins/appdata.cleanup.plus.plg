@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.42
+- Fix: Publish the stable package with the exact `2026.03.27.23` page registration header so the plugin returns to the Settings / User Utilities location that was known to work
+- Fix: Remove the later `Type="xmenu"` registration change from the stable channel while keeping the newer dashboard functionality intact
+
 ###2026.03.30.41
 - Fix: Restore the plugin page header to the exact working `2026.03.27.23` registration format by removing the later `Type="xmenu"` line
 - Fix: Keep the `Menu="Utilities"` and `Icon="appdata.cleanup.plus.png"` registration that worked in `2026.03.27.23` while preserving the newer dashboard code underneath it
