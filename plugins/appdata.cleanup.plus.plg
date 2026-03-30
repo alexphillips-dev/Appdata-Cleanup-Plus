@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.41
+- Fix: Publish the stable package with the restored root icon so the page header and manifest icon name both resolve during Unraid Settings / User Utilities registration
+- Fix: Keep the dashboard image asset layout intact while restoring the root `appdata.cleanup.plus.png` file expected by the plugin page metadata
+
 ###2026.03.30.40
 - Fix: Ship `appdata.cleanup.plus.png` at the plugin root so the page header and manifest icon name resolve to a real installed file during Unraid Settings registration
 - Fix: Keep the existing `images/appdata.cleanup.plus.png` asset for the dashboard while restoring the root icon path expected by the plugin page metadata
