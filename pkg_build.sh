@@ -104,6 +104,18 @@ apply_branch_channel_messaging() {
     fi
 }
 
+normalize_packaged_page_line_endings() {
+    local package_root="${1:-}"
+    local page_file="${package_root}/usr/local/emhttp/plugins/appdata.cleanup.plus/AppdataCleanupPlus.page"
+    if [ -z "$package_root" ]; then
+        echo "ERROR: normalize_packaged_page_line_endings requires a package root." >&2
+        exit 1
+    fi
+    if [ -f "$page_file" ]; then
+        perl -0pi -e 's/\r\n/\n/g' "$page_file"
+    fi
+}
+
 ensure_repo_layout() {
     if [ ! -f "$plgfile" ]; then
         echo "ERROR: Missing plugin manifest: $plgfile" >&2
@@ -323,6 +335,7 @@ package_root="${tmpdir}/package"
 mkdir -p "$package_root"
 cp -R "${source_dir}/." "$package_root/"
 apply_branch_channel_messaging "$package_root" "$branch"
+normalize_packaged_page_line_endings "$package_root"
 
 tar --sort=name \
     --mtime='UTC 1970-01-01' \

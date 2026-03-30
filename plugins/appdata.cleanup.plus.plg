@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.47">
-<!ENTITY md5 "502f9fbd55ecddae9ec3f6a8eda02cbd">
+<!ENTITY version "2026.03.30.48">
+<!ENTITY md5 "f895a93e660992f21c00fcdd61e374da">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.48
+- Fix: Republish the stable channel from the same `45ae105` codebase that was verified to appear in Unraid Settings / User Utilities on the dev feed
+- Maintenance: Keep the stable manifest and CA metadata pointed at `main` so Community Applications continues following the stable URL
+
 ###2026.03.30.47
 - Fix: Publish the stable package with the exact `45ae105` Settings page header by removing the later `Tabs="false"` and `Markdown="false"` lines that were absent from the last confirmed working dev build
 - Fix: Keep the working `Menu="Utilities"` plus `Type="xmenu"` registration from `45ae105`, along with the CRLF page-header bytes that matched the known-good package
