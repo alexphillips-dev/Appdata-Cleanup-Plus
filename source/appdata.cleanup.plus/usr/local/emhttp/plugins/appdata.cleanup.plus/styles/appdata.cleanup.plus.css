@@ -357,8 +357,9 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-sort-panel {
-  align-content: start;
-  grid-template-rows: auto auto 1fr auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .acp-toolbar-footer {
@@ -372,7 +373,7 @@ body[data-acp-host-theme="light"] #acp-app,
   display: grid;
   gap: 6px;
   justify-items: start;
-  margin-top: 6px;
+  margin-top: auto;
   min-height: auto;
 }
 
@@ -414,7 +415,7 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-toolbar-inline-sort {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   flex-wrap: nowrap;
   gap: 10px;
@@ -485,6 +486,7 @@ body[data-acp-host-theme="light"] #acp-app,
   flex-wrap: nowrap;
   justify-content: center;
   margin-left: 0;
+  padding-top: 13px;
 }
 
 .acp-button,
@@ -1531,10 +1533,6 @@ body[data-acp-host-theme="light"] #acp-app,
     width: 100%;
   }
 
-  .acp-sort-panel {
-    grid-template-rows: auto auto auto auto;
-  }
-
   .acp-toolbar-inline-sort {
     align-items: stretch;
     flex-direction: column;
@@ -1548,6 +1546,7 @@ body[data-acp-host-theme="light"] #acp-app,
   .acp-toolbar-inline-sort .acp-toolbar-actions {
     flex-wrap: wrap;
     justify-content: flex-start;
+    padding-top: 0;
   }
 
   .acp-modal-actions-row,

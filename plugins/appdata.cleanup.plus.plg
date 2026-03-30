@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.27">
-<!ENTITY md5 "0480119a3767708fb2f88654fa93b1a8">
+<!ENTITY version "2026.03.30.28">
+<!ENTITY md5 "5a6de715789da4b2e3fb354dbcced7ea">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.28
+- UX: Restore the previous compact top-row height by removing the stretched sort-panel row behavior
+- UX: Align the Rescan, Select visible, and Clear buttons to the sort select control instead of the full labeled field
+
 ###2026.03.30.27
 - UX: Push the safety toggles lower in the sort panel so they sit bottom-left with clear separation from the order control
 - UX: Vertically center the Rescan, Select visible, and Clear buttons against the sort dropdown and center that button row on desktop
