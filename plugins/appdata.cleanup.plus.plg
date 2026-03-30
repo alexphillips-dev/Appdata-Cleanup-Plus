@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.30">
-<!ENTITY md5 "1df146589cd79291bf602d99130a5c3e">
+<!ENTITY version "2026.03.30.31">
+<!ENTITY md5 "3c60c4600e3dd71acd4a4c51e35f2b32">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.31
+- UX: Move the visible and detected results count into the Sort panel and keep the Controls panel focused on actions and safety toggles
+- UX: Narrow the Controls panel and stack Rescan, Select visible, and Clear vertically on the right side of the panel
+
 ###2026.03.30.30
 - UX: Split the former combined sort/control block into a dedicated Sort panel plus a separate Controls panel to its right
 - UX: Keep the sort panel compact while moving the action buttons, safety toggles, and results meta into their own panel

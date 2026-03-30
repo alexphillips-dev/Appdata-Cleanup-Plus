@@ -339,7 +339,7 @@ body[data-acp-host-theme="light"] #acp-app,
   align-items: start;
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(250px, 1fr) minmax(148px, auto) minmax(312px, auto);
+  grid-template-columns: minmax(250px, 1fr) 152px 258px;
   flex: 1 1 760px;
 }
 
@@ -369,6 +369,14 @@ body[data-acp-host-theme="light"] #acp-app,
   justify-content: flex-start;
 }
 
+.acp-control-grid {
+  align-items: start;
+  column-gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  row-gap: 8px;
+}
+
 .acp-toolbar-footer {
   align-items: center;
   display: flex;
@@ -380,7 +388,6 @@ body[data-acp-host-theme="light"] #acp-app,
   display: grid;
   gap: 6px;
   justify-items: start;
-  margin-top: auto;
   min-height: auto;
 }
 
@@ -561,11 +568,20 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-control-actions {
+  align-items: flex-end;
+  flex-direction: column;
   flex-wrap: nowrap;
-  justify-content: center;
+  justify-content: flex-start;
+  margin-left: auto;
 }
 
-.acp-control-panel .acp-results-meta {
+.acp-control-actions .acp-button {
+  min-height: 24px;
+  min-width: 120px;
+  padding: 0 8px;
+}
+
+.acp-sort-panel .acp-results-meta {
   margin-top: auto;
 }
 
@@ -1546,9 +1562,22 @@ body[data-acp-host-theme="light"] #acp-app,
     margin-top: 0;
   }
 
+  .acp-control-grid {
+    grid-template-columns: 1fr;
+  }
+
   .acp-control-actions {
+    align-items: stretch;
+    flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-start;
+    margin-left: 0;
+  }
+
+  .acp-control-actions .acp-button {
+    min-height: 34px;
+    min-width: 0;
+    padding: 0 11px;
   }
 
   .acp-modal-actions-row,

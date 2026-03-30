@@ -262,30 +262,32 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
             <select id="acp-sort" class="acp-select">
               <option value="risk"><?php echo _("Risk first"); ?></option>
               <option value="path"><?php echo _("Path"); ?></option>
-              <option value="name"><?php echo _("Name"); ?></option>
-            </select>
-          </label>
+            <option value="name"><?php echo _("Name"); ?></option>
+          </select>
+        </label>
         </div>
+        <div class="acp-results-meta" id="acp-results-meta" aria-live="polite"></div>
       </section>
 
       <section class="acp-toolbar acp-toolbar-panel acp-control-panel">
         <div class="acp-panel-title"><?php echo _("Controls"); ?></div>
-        <div class="acp-toolbar-actions acp-control-actions">
+        <div class="acp-control-grid">
+          <div class="acp-safety-strip">
+            <label class="acp-toggle">
+              <input type="checkbox" id="acp-allow-external">
+              <span><?php echo _("Allow outside-share cleanup"); ?></span>
+            </label>
+            <label class="acp-toggle">
+              <input type="checkbox" id="acp-enable-delete">
+              <span><?php echo _("Enable permanent delete"); ?></span>
+            </label>
+          </div>
+          <div class="acp-toolbar-actions acp-control-actions">
             <button type="button" class="acp-button acp-button-secondary" id="acp-rescan"><?php echo _("Rescan"); ?></button>
             <button type="button" class="acp-button acp-button-secondary" id="acp-select-visible"><?php echo _("Select visible"); ?></button>
             <button type="button" class="acp-button acp-button-secondary" id="acp-clear-selection"><?php echo _("Clear"); ?></button>
+          </div>
         </div>
-        <div class="acp-safety-strip">
-          <label class="acp-toggle">
-            <input type="checkbox" id="acp-allow-external">
-            <span><?php echo _("Allow outside-share cleanup"); ?></span>
-          </label>
-          <label class="acp-toggle">
-            <input type="checkbox" id="acp-enable-delete">
-            <span><?php echo _("Enable permanent delete"); ?></span>
-          </label>
-        </div>
-        <div class="acp-results-meta" id="acp-results-meta" aria-live="polite"></div>
       </section>
     </div>
   </section>
