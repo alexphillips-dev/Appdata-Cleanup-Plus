@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.47
+- Fix: Publish the stable package with the exact `45ae105` Settings page header by removing the later `Tabs="false"` and `Markdown="false"` lines that were absent from the last confirmed working dev build
+- Fix: Keep the working `Menu="Utilities"` plus `Type="xmenu"` registration from `45ae105`, along with the CRLF page-header bytes that matched the known-good package
+
 ###2026.03.30.46
 - Fix: Revert the Settings page header to the exact working `45ae105` shell by removing the added `Tabs="false"` and `Markdown="false"` lines that were not present in the last confirmed good dev build
 - Fix: Keep the proven `Menu="Utilities"` plus `Type="xmenu"` registration from `45ae105` while leaving the newer dashboard code in place
