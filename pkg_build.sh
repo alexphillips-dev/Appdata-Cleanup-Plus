@@ -64,6 +64,15 @@ plugin_summary_text() {
     printf '%s' "Appdata Cleanup Plus finds orphaned appdata folders from removed Docker containers so you can review and delete them."
 }
 
+plugin_readme_title_for_branch() {
+    local target_branch="${1:-}"
+    if [ "$target_branch" = "dev" ]; then
+        printf '%s' "**Appdata Cleanup Plus (Dev)**"
+        return
+    fi
+    printf '%s' "**Appdata Cleanup Plus**"
+}
+
 plugin_description_for_branch() {
     local target_branch="${1:-}"
     local description=""
@@ -78,18 +87,19 @@ apply_branch_channel_messaging() {
     local package_root="${1:-}"
     local target_branch="${2:-}"
     local readme_file="${package_root}/usr/local/emhttp/plugins/appdata.cleanup.plus/README.md"
-    local description=""
     local summary=""
+    local title=""
     if [ -z "$package_root" ] || [ -z "$target_branch" ]; then
         echo "ERROR: apply_branch_channel_messaging requires a package root and branch." >&2
         exit 1
     fi
     summary="$(plugin_summary_text)"
+    title="$(plugin_readme_title_for_branch "$target_branch")"
     if [ -f "$readme_file" ]; then
         if [ "$target_branch" = "dev" ]; then
-            printf '%s\n\n%s\n' "$summary" "Dev build: testing channel. Expect preview changes before main." > "$readme_file"
+            printf '%s\n\n%s\n\n%s\n' "$title" "$summary" "Dev build: testing channel. Expect preview changes before main." > "$readme_file"
         else
-            printf '%s\n' "$summary" > "$readme_file"
+            printf '%s\n\n%s\n' "$title" "$summary" > "$readme_file"
         fi
     fi
 }
