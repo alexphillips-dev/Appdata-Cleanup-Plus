@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.32">
-<!ENTITY md5 "1be7d52f56591524ad1717064196b79a">
+<!ENTITY version "2026.03.30.33">
+<!ENTITY md5 "332d707531d9e4bfe7e7a024067d49a4">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.33
+- UX: Shorten the Search panel another step on desktop so the Controls panel gets more breathing room
+- UX: Remove the gap between the stacked Controls buttons so the action column reads as one tight group
+
 ###2026.03.30.32
 - UX: Shorten the Search panel width and widen the Controls panel so the safety labels fit cleanly on desktop
 - UX: Give the stacked action buttons a fixed right-side column so the Controls panel reads cleanly instead of collapsing

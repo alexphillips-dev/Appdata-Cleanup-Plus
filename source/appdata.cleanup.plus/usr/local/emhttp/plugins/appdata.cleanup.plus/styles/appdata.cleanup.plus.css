@@ -339,7 +339,7 @@ body[data-acp-host-theme="light"] #acp-app,
   align-items: start;
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(300px, 1fr) 152px 318px;
+  grid-template-columns: minmax(280px, 1fr) 152px 338px;
   flex: 1 1 760px;
 }
 
@@ -571,6 +571,7 @@ body[data-acp-host-theme="light"] #acp-app,
   align-items: stretch;
   flex-direction: column;
   flex-wrap: nowrap;
+  gap: 0;
   justify-content: flex-start;
   margin-left: auto;
 }
