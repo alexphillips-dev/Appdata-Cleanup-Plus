@@ -1,7 +1,7 @@
 <?php
 
-if ( ! function_exists("my_parse_ini_file") ) {
-  function my_parse_ini_file($file,$mode=false,$scanner_mode=INI_SCANNER_NORMAL) {
+if ( ! function_exists("appdataCleanupPlusParseIniFile") ) {
+  function appdataCleanupPlusParseIniFile($file,$mode=false,$scanner_mode=INI_SCANNER_NORMAL) {
     $contents = @file_get_contents($file);
 
     if ( $contents === false || $contents === "" ) {
@@ -12,8 +12,8 @@ if ( ! function_exists("my_parse_ini_file") ) {
   }
 }
 
-if ( ! function_exists("my_parse_ini_string") ) {
-  function my_parse_ini_string($string, $mode=false,$scanner_mode=INI_SCANNER_NORMAL) {
+if ( ! function_exists("appdataCleanupPlusParseIniString") ) {
+  function appdataCleanupPlusParseIniString($string, $mode=false,$scanner_mode=INI_SCANNER_NORMAL) {
     $string = (string)$string;
 
     if ( $string === "" ) {
@@ -44,7 +44,7 @@ function getAppdataShareName() {
     return $shareName;
   }
 
-  $dockerOptions = @my_parse_ini_file("/boot/config/docker.cfg");
+  $dockerOptions = @appdataCleanupPlusParseIniFile("/boot/config/docker.cfg");
   $defaultShareName = isset($dockerOptions['DOCKER_APP_CONFIG_PATH']) ? basename($dockerOptions['DOCKER_APP_CONFIG_PATH']) : "";
   $shareName = str_replace("/mnt/user/","",$defaultShareName);
   $shareName = str_replace("/mnt/cache/","",$shareName);

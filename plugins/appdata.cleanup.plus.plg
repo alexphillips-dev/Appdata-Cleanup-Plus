@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.09">
-<!ENTITY md5 "dc5de6d350e2339cb3b0f724ac2d0cea">
+<!ENTITY version "2026.03.30.10">
+<!ENTITY md5 "d987bd82555933f29ea2ce14511bd883">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.10
+- Fix: Rename the helper INI parser shims to plugin-scoped function names so scan requests stop fatally colliding with other globally declared `my_parse_ini_*` helpers in the Unraid PHP runtime
+
 ###2026.03.30.09
 - Fix: Replace the quarantine manager modal host paragraph with a block container so refreshes stop stacking duplicate content into the SweetAlert body
 - Fix: Stop live recursive folder-size walks during scan so orphan discovery no longer risks timing out or fatally dying on large appdata trees
