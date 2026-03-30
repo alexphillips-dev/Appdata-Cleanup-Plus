@@ -12,6 +12,19 @@ if ( ! function_exists("my_parse_ini_string") ) {
   }
 }
 
+if ( ! function_exists("startsWith") ) {
+  function startsWith($haystack, $needle) {
+    $haystack = (string)$haystack;
+    $needle = (string)$needle;
+
+    if ( $needle === "" ) {
+      return true;
+    }
+
+    return strncmp($haystack, $needle, strlen($needle)) === 0;
+  }
+}
+
 function getAppdataShareName() {
   static $shareName = null;
 
@@ -138,14 +151,63 @@ function appdataCleanupPlusStateFile($filename) {
   return appdataCleanupPlusConfigDir() . "/" . ltrim($filename, "/");
 }
 
-function ensureAppdataCleanupPlusConfigDir() {
-  $configDir = appdataCleanupPlusConfigDir();
+function appdataCleanupPlusDirectoryMode() {
+  return 0755;
+}
 
-  if ( is_dir($configDir) ) {
+function ensureAppdataCleanupPlusDirectory($path) {
+  $path = rtrim((string)$path, "/");
+
+  if ( ! $path ) {
+    return false;
+  }
+
+  if ( is_dir($path) ) {
+    @chmod($path, appdataCleanupPlusDirectoryMode());
     return true;
   }
 
-  return @mkdir($configDir, 0777, true);
+  if ( ! @mkdir($path, appdataCleanupPlusDirectoryMode(), true) ) {
+    return false;
+  }
+
+  @chmod($path, appdataCleanupPlusDirectoryMode());
+  return true;
+}
+
+function ensureAppdataCleanupPlusConfigDir() {
+  return ensureAppdataCleanupPlusDirectory(appdataCleanupPlusConfigDir());
+}
+
+function readAppdataCleanupPlusTemplateFile($path) {
+  if ( ! is_file($path) ) {
+    return array();
+  }
+
+  $xml = @simplexml_load_file($path, "SimpleXMLElement", LIBXML_NOCDATA | LIBXML_NONET);
+  if ( ! ($xml instanceof SimpleXMLElement) ) {
+    return array();
+  }
+
+  $template = array(
+    "Name" => isset($xml->Name) ? trim((string)$xml->Name) : "",
+    "Config" => array()
+  );
+
+  foreach ( $xml->Config as $configNode ) {
+    $attributes = array();
+
+    foreach ( $configNode->attributes() as $attributeName => $attributeValue ) {
+      $attributes[(string)$attributeName] = trim((string)$attributeValue);
+    }
+
+    $template["Config"][] = array(
+      "@attributes" => $attributes,
+      "value" => trim((string)$configNode)
+    );
+  }
+
+  return $template;
 }
 
 function readAppdataCleanupPlusJsonFile($path, $default=array()) {

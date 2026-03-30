@@ -1,12 +1,14 @@
 <?php
 
 require_once("/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php");
-require_once("/usr/local/emhttp/plugins/community.applications/include/helpers.php");
 require_once("/usr/local/emhttp/plugins/appdata.cleanup.plus/include/helpers.php");
 
 function jsonResponse($payload, $statusCode=200) {
   http_response_code($statusCode);
+  header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
   header("Content-Type: application/json");
+  header("Pragma: no-cache");
+  header("X-Content-Type-Options: nosniff");
   echo json_encode($payload, JSON_UNESCAPED_SLASHES);
   exit;
 }
@@ -276,11 +278,7 @@ function inspectDirectoryTreeForUnsafeEntries($path) {
 }
 
 function ensureDirectoryExists($path) {
-  if ( is_dir($path) ) {
-    return true;
-  }
-
-  return @mkdir($path, 0777, true);
+  return ensureAppdataCleanupPlusDirectory($path);
 }
 
 function buildCandidateQuarantineRoot($path, $settings) {
@@ -371,7 +369,7 @@ function buildCandidateMap($allFiles) {
   $availableVolumes = array();
 
   foreach ( $allFiles as $xmlfile ) {
-    $xml = readXmlFile($xmlfile);
+    $xml = readAppdataCleanupPlusTemplateFile($xmlfile);
     if ( ! $xml || ! isset($xml['Config']) || ! is_array($xml['Config']) ) {
       continue;
     }
@@ -769,8 +767,16 @@ function getRequestedToken() {
   return isset($_POST['scanToken']) ? trim((string)$_POST['scanToken']) : "";
 }
 
+function getPostedString($key) {
+  if ( ! isset($_POST[$key]) || is_array($_POST[$key]) ) {
+    return "";
+  }
+
+  return trim((string)$_POST[$key]);
+}
+
 function getRequestedOperation() {
-  return isset($_POST['operation']) ? trim((string)$_POST['operation']) : "";
+  return getPostedString("operation");
 }
 
 function getRequestedCsrfToken() {
@@ -796,6 +802,50 @@ function isPreviewOperation($operation) {
 
 function getBaseOperation($operation) {
   return isPreviewOperation($operation) ? substr($operation, 8) : $operation;
+}
+
+function appdataCleanupPlusRequestHost() {
+  $host = "";
+
+  if ( ! empty($_SERVER["HTTP_HOST"]) ) {
+    $host = (string)$_SERVER["HTTP_HOST"];
+  } elseif ( ! empty($_SERVER["SERVER_NAME"]) ) {
+    $host = (string)$_SERVER["SERVER_NAME"];
+  }
+
+  $host = strtolower(trim($host));
+  return preg_replace('/:\d+$/', "", $host);
+}
+
+function appdataCleanupPlusUrlHost($url) {
+  $host = parse_url((string)$url, PHP_URL_HOST);
+
+  if ( ! is_string($host) || $host === "" ) {
+    return "";
+  }
+
+  return strtolower($host);
+}
+
+function requestTargetsCurrentHost() {
+  $expectedHost = appdataCleanupPlusRequestHost();
+
+  if ( ! $expectedHost ) {
+    return true;
+  }
+
+  foreach ( array("HTTP_ORIGIN", "HTTP_REFERER") as $headerName ) {
+    if ( empty($_SERVER[$headerName]) ) {
+      continue;
+    }
+
+    $headerHost = appdataCleanupPlusUrlHost($_SERVER[$headerName]);
+    if ( $headerHost && ! hash_equals($expectedHost, $headerHost) ) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function isSupportedOperation($operation) {
@@ -1166,8 +1216,24 @@ function buildOperationSummary($results) {
 }
 
 libxml_use_internal_errors(true);
-$action = isset($_POST['action']) ? $_POST['action'] : "";
+$requestMethod = strtoupper((string)($_SERVER["REQUEST_METHOD"] ?? ""));
+$action = getPostedString("action");
 $csrfToken = getRequestedCsrfToken();
+
+if ( $requestMethod !== "POST" ) {
+  header("Allow: POST");
+  jsonResponse(array(
+    "ok" => false,
+    "message" => "Unsupported request method."
+  ), 405);
+}
+
+if ( ! requestTargetsCurrentHost() ) {
+  jsonResponse(array(
+    "ok" => false,
+    "message" => "Request origin did not match this host."
+  ), 403);
+}
 
 if ( ! validateAppdataCleanupPlusCsrfToken($csrfToken) ) {
   jsonResponse(array(
@@ -1244,8 +1310,8 @@ switch ( $action ) {
 
   case "updateCandidateState":
     $token = getRequestedToken();
-    $candidateIds = parseCandidateIds(getPost("candidateIds", "no"));
-    $intent = isset($_POST["intent"]) ? trim((string)$_POST["intent"]) : "";
+    $candidateIds = parseCandidateIds(getPostedString("candidateIds"));
+    $intent = getPostedString("intent");
     $resolvedCandidates = resolveSnapshotCandidates($token, $candidateIds);
 
     if ( ! $resolvedCandidates["ok"] ) {
@@ -1288,7 +1354,7 @@ switch ( $action ) {
 
   case "executeCandidateAction":
     $token = getRequestedToken();
-    $candidateIds = parseCandidateIds(getPost("candidateIds", "no"));
+    $candidateIds = parseCandidateIds(getPostedString("candidateIds"));
     $operation = getRequestedOperation();
     $resolvedCandidates = resolveSnapshotCandidates($token, $candidateIds);
     $settings = getAppdataCleanupPlusSafetySettings();

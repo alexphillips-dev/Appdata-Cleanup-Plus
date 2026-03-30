@@ -988,9 +988,9 @@
     if (!state.settings.allowOutsideShareCleanup && Number(state.summary.review || 0) > 0) {
       detailText = t("selectionHintSafety", "Outside-share cleanup is disabled, so review rows stay locked until you enable it.");
     } else if (reviewSelected > 0 && state.settings.enablePermanentDelete) {
-      detailText = t("selectionHintReview", "Review rows need typed confirmation before delete.");
+      detailText = t("selectionHintReview", "Review rows still need extra scrutiny before permanent delete.");
     } else if (selectedRows.length && state.settings.enablePermanentDelete) {
-      detailText = t("selectionHintDeleteMode", "Permanent delete mode is enabled.");
+      detailText = t("selectionHintDeleteMode", "Permanent delete requires typed confirmation.");
     } else if (selectedRows.length) {
       detailText = t("selectionHintQuarantineMode", "Selected folders will be moved into quarantine instead of being permanently deleted.");
     }
@@ -1157,7 +1157,7 @@
     }
 
     if (settings.showTypeHint) {
-      html.push('<div class="acp-modal-hint">' + escapeHtml(t("deleteTypedHint", "Type DELETE to continue with this higher-risk cleanup.")) + "</div>");
+      html.push('<div class="acp-modal-hint">' + escapeHtml(t("deleteTypedHint", "Type DELETE to continue with this permanent delete.")) + "</div>");
     }
 
     html.push('<div class="acp-modal-panel">');
@@ -1268,9 +1268,9 @@
       return;
     }
 
-    if (context.baseOperation === "delete" && reviewRows.length) {
+    if (context.baseOperation === "delete") {
       swal({
-        title: context.confirmTitle,
+        title: t("deleteTypedTitle", "Type DELETE to confirm permanent delete"),
         text: "",
         type: "input",
         html: true,

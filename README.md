@@ -102,7 +102,7 @@ Default quarantine root:
 
 ## Compatibility Notes
 
-- Appdata Cleanup Plus requires Community Applications because it uses the CA helper runtime already present on standard Unraid installs
+- Appdata Cleanup Plus no longer depends on the Community Applications helper runtime
 - Stable `main` builds point to `main` metadata and archives
 - Testing `dev` builds point to `dev` metadata and archives
 - Package versions use `YYYY.MM.DD.UU` so same-day updates sort correctly in Unraid
