@@ -157,6 +157,12 @@
     var entries = $.isArray(quarantine.entries) ? quarantine.entries : [];
     var summary = quarantine.summary || { count: 0, sizeLabel: "0 B" };
     var isOpen = !!quarantine.open;
+
+    if (!isOpen && !quarantine.loading) {
+      els.$quarantinePanel.empty();
+      return;
+    }
+
     var html = [
       '<section class="acp-utility-card' + (isOpen ? " is-open" : "") + '">',
       '<div class="acp-utility-head">',

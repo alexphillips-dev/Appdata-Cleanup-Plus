@@ -10,8 +10,12 @@ function getDockerContainersSafe() {
     return array();
   }
 
-  $DockerClient = new DockerClient();
-  return $DockerClient->getDockerContainers();
+  try {
+    $DockerClient = new DockerClient();
+    return $DockerClient->getDockerContainers();
+  } catch ( Throwable $throwable ) {
+    return array();
+  }
 }
 
 function summarizeCandidateValues($values, $limit=2) {

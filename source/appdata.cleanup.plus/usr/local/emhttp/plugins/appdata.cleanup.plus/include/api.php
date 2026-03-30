@@ -43,6 +43,11 @@ function buildDashboardPayload() {
   $allFiles = glob("/boot/config/plugins/dockerMan/templates-user/*.xml");
   $dockerRunning = is_dir("/var/lib/docker/tmp");
   $containers = getDockerContainersSafe();
+
+  if ( ! is_array($allFiles) ) {
+    $allFiles = array();
+  }
+
   $availableVolumes = buildCandidateMap($allFiles);
 
   $availableVolumes = removeInstalledVolumeMatches($availableVolumes, $containers);
@@ -265,4 +270,3 @@ function handleQuarantineManagerAction() {
     "quarantine" => buildQuarantineManagerPayload(true)
   ));
 }
-

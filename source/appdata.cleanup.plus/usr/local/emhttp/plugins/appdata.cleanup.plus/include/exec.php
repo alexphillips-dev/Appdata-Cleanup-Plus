@@ -1,11 +1,11 @@
 <?php
 
-require_once("/usr/local/emhttp/plugins/appdata.cleanup.plus/include/helpers.php");
-require_once("/usr/local/emhttp/plugins/appdata.cleanup.plus/include/pathUtils.php");
-require_once("/usr/local/emhttp/plugins/appdata.cleanup.plus/include/dashboard.php");
-require_once("/usr/local/emhttp/plugins/appdata.cleanup.plus/include/quarantine.php");
-require_once("/usr/local/emhttp/plugins/appdata.cleanup.plus/include/http.php");
-require_once("/usr/local/emhttp/plugins/appdata.cleanup.plus/include/api.php");
+require_once(__DIR__ . "/helpers.php");
+require_once(__DIR__ . "/pathUtils.php");
+require_once(__DIR__ . "/dashboard.php");
+require_once(__DIR__ . "/quarantine.php");
+require_once(__DIR__ . "/http.php");
+require_once(__DIR__ . "/api.php");
 
 libxml_use_internal_errors(true);
 
@@ -35,35 +35,42 @@ if ( ! validateAppdataCleanupPlusCsrfToken($csrfToken) ) {
   ), 403);
 }
 
-switch ( $action ) {
-  case "getOrphanAppdata":
-    handleGetOrphanAppdata();
-    break;
+try {
+  switch ( $action ) {
+    case "getOrphanAppdata":
+      handleGetOrphanAppdata();
+      break;
 
-  case "saveSafetySettings":
-    handleSaveSafetySettings();
-    break;
+    case "saveSafetySettings":
+      handleSaveSafetySettings();
+      break;
 
-  case "updateCandidateState":
-    handleUpdateCandidateState();
-    break;
+    case "updateCandidateState":
+      handleUpdateCandidateState();
+      break;
 
-  case "executeCandidateAction":
-    handleExecuteCandidateAction();
-    break;
+    case "executeCandidateAction":
+      handleExecuteCandidateAction();
+      break;
 
-  case "getQuarantineEntries":
-    handleGetQuarantineEntries();
-    break;
+    case "getQuarantineEntries":
+      handleGetQuarantineEntries();
+      break;
 
-  case "quarantineManagerAction":
-    handleQuarantineManagerAction();
-    break;
+    case "quarantineManagerAction":
+      handleQuarantineManagerAction();
+      break;
 
-  default:
-    jsonResponse(array(
-      "ok" => false,
-      "message" => "Unsupported action."
-    ), 400);
+    default:
+      jsonResponse(array(
+        "ok" => false,
+        "message" => "Unsupported action."
+      ), 400);
+  }
+} catch ( Throwable $throwable ) {
+  error_log("Appdata Cleanup Plus exec failure: " . $throwable->getMessage() . " in " . $throwable->getFile() . ":" . $throwable->getLine());
+  jsonResponse(array(
+    "ok" => false,
+    "message" => "The orphaned appdata scan could not be completed right now."
+  ), 500);
 }
-

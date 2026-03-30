@@ -91,10 +91,36 @@ function appdataCleanupPlusUrlHost($url) {
   return strtolower($host);
 }
 
-function requestTargetsCurrentHost() {
-  $expectedHost = appdataCleanupPlusRequestHost();
+function appdataCleanupPlusExpectedHosts() {
+  $hosts = array();
+  $headerValues = array(
+    appdataCleanupPlusRequestHost(),
+    isset($_SERVER["HTTP_X_FORWARDED_HOST"]) ? (string)$_SERVER["HTTP_X_FORWARDED_HOST"] : "",
+    isset($_SERVER["HTTP_X_FORWARDED_SERVER"]) ? (string)$_SERVER["HTTP_X_FORWARDED_SERVER"] : ""
+  );
 
-  if ( ! $expectedHost ) {
+  foreach ( $headerValues as $headerValue ) {
+    if ( ! $headerValue ) {
+      continue;
+    }
+
+    foreach ( explode(",", $headerValue) as $candidateHost ) {
+      $candidateHost = strtolower(trim((string)$candidateHost));
+      $candidateHost = preg_replace('/:\d+$/', "", $candidateHost);
+
+      if ( $candidateHost ) {
+        $hosts[$candidateHost] = true;
+      }
+    }
+  }
+
+  return array_keys($hosts);
+}
+
+function requestTargetsCurrentHost() {
+  $expectedHosts = appdataCleanupPlusExpectedHosts();
+
+  if ( empty($expectedHosts) ) {
     return true;
   }
 
@@ -104,11 +130,10 @@ function requestTargetsCurrentHost() {
     }
 
     $headerHost = appdataCleanupPlusUrlHost($_SERVER[$headerName]);
-    if ( $headerHost && ! hash_equals($expectedHost, $headerHost) ) {
+    if ( $headerHost && ! in_array($headerHost, $expectedHosts, true) ) {
       return false;
     }
   }
 
   return true;
 }
-

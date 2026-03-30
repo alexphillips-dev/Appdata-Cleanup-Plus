@@ -603,10 +603,10 @@ body[data-acp-host-theme="light"] #acp-app,
 .acp-mode-card {
   align-items: center;
   display: grid;
-  gap: 12px;
+  gap: 10px;
   grid-template-columns: minmax(0, 1fr) auto;
-  min-height: 72px;
-  padding: 12px 14px;
+  min-height: 56px;
+  padding: 8px 12px;
 }
 
 .acp-mode-card:first-child {
@@ -631,7 +631,7 @@ body[data-acp-host-theme="light"] #acp-app,
 .acp-utility-copy,
 .acp-quarantine-title-wrap {
   display: grid;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -639,7 +639,7 @@ body[data-acp-host-theme="light"] #acp-app,
 .acp-utility-title,
 .acp-quarantine-title {
   color: var(--acp-heading);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.2;
   margin: 0;
@@ -661,8 +661,8 @@ body[data-acp-host-theme="light"] #acp-app,
 .acp-audit-result-message,
 .acp-utility-empty {
   color: var(--acp-muted);
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .acp-mode-card-actions,
@@ -682,17 +682,17 @@ body[data-acp-host-theme="light"] #acp-app,
 .acp-utility-head {
   align-items: center;
   display: grid;
-  gap: 12px;
+  gap: 10px;
   grid-template-columns: minmax(0, 1fr) auto;
-  padding: 12px 14px;
+  padding: 8px 12px;
 }
 
 .acp-utility-body {
   background: var(--acp-panel-soft);
   border-top: 1px solid var(--acp-border);
   display: grid;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 10px 12px;
 }
 
 .acp-audit-list,
@@ -709,7 +709,7 @@ body[data-acp-host-theme="light"] #acp-app,
   border-radius: 12px;
   display: grid;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 
 .acp-audit-head {
