@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.34">
-<!ENTITY md5 "f7eadcf7dda6ed082df667b084f73e0d">
+<!ENTITY version "2026.03.30.36">
+<!ENTITY md5 "96117dbfd2ec282d57f655cb0b22eddf">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.36
+- Fix: Change the packaged page menu registration from Utilities to Settings so fresh installs on the stable and testing channels register under Unraid Settings consistently
+- UX: Keep the existing xmenu page mode while aligning the page header with the manifest launch target of `Settings/AppdataCleanupPlus`
+
 ###2026.03.30.34
 - UX: Pin the stacked Controls buttons to the top-right of the panel instead of letting the action column float
 - UX: Render the desktop Controls buttons as a tight grid stack so no vertical spacing is introduced by flex layout
