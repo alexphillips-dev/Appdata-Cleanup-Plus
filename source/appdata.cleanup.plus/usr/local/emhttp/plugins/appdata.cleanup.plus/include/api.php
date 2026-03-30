@@ -41,7 +41,7 @@ function resolveSnapshotCandidates($token, $candidateIds) {
 function buildDashboardPayload() {
   $settings = getAppdataCleanupPlusSafetySettings();
   $allFiles = glob("/boot/config/plugins/dockerMan/templates-user/*.xml");
-  $dockerRunning = is_dir("/var/lib/docker/tmp");
+  $dockerRunning = is_dir(appdataCleanupPlusDockerRuntimePath());
   $containers = getDockerContainersSafe();
 
   if ( ! is_array($allFiles) ) {

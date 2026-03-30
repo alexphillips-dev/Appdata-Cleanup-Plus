@@ -24,6 +24,8 @@ session_start();
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/helpers.php");
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/dashboard.php");
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/quarantine.php");
+require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/pathUtils.php");
+require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/api.php");
 
 function behaviorSmokeFail($message) {
   fwrite(STDERR, "behavior_smoke: FAIL: " . $message . PHP_EOL);
@@ -158,6 +160,17 @@ behaviorSmokeAssertSame(2, count($auditRows), "Audit history rows should include
 behaviorSmokeAssertSame("restore", $auditRows[0]["operation"], "Audit history should be newest-first.");
 behaviorSmokeAssertSame("quarantine", $auditRows[1]["operation"], "Audit history should preserve older entries.");
 behaviorSmokeAssertTrue($auditRows[0]["message"] !== "", "Audit rows should include a summary message.");
+
+$dockerRuntimeFixture = $stateRoot . "/docker-runtime";
+$dockerClientFixture = $stateRoot . "/DockerClient.php";
+mkdir($dockerRuntimeFixture, 0777, true);
+file_put_contents($dockerClientFixture, "<?php\nthrow new RuntimeException('docker client fixture failure');\n");
+putenv("APPDATA_CLEANUP_PLUS_DOCKER_RUNTIME_PATH=" . str_replace("\\", "/", $dockerRuntimeFixture));
+putenv("APPDATA_CLEANUP_PLUS_DOCKER_CLIENT_PATH=" . str_replace("\\", "/", $dockerClientFixture));
+$containers = getDockerContainersSafe();
+behaviorSmokeAssertSame(array(), $containers, "Docker container scan should fail closed when DockerClient cannot be loaded.");
+$dashboard = buildDashboardPayload();
+behaviorSmokeAssertTrue(is_array($dashboard) && ! empty($dashboard["ok"]), "Dashboard build should survive DockerClient include failures.");
 
 behaviorSmokeRemoveTree($stateRoot);
 echo "behavior_smoke: OK" . PHP_EOL;

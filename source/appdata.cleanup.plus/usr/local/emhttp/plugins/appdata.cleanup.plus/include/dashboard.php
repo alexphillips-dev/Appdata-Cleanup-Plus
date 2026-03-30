@@ -1,12 +1,64 @@
 <?php
 
-$appdataCleanupPlusDockerClientPath = "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php";
-if ( ! class_exists("DockerClient") && is_file($appdataCleanupPlusDockerClientPath) ) {
-  require_once($appdataCleanupPlusDockerClientPath);
+function appdataCleanupPlusDockerClientPath() {
+  $override = trim((string)getenv("APPDATA_CLEANUP_PLUS_DOCKER_CLIENT_PATH"));
+
+  if ( $override ) {
+    return $override;
+  }
+
+  return "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php";
+}
+
+function appdataCleanupPlusDockerRuntimePath() {
+  $override = trim((string)getenv("APPDATA_CLEANUP_PLUS_DOCKER_RUNTIME_PATH"));
+
+  if ( $override ) {
+    return $override;
+  }
+
+  return "/var/lib/docker/tmp";
+}
+
+function ensureAppdataCleanupPlusDockerClientLoaded() {
+  static $attempted = false;
+  static $loaded = false;
+
+  if ( $attempted ) {
+    return $loaded;
+  }
+
+  $attempted = true;
+
+  if ( class_exists("DockerClient", false) ) {
+    $loaded = true;
+    return true;
+  }
+
+  $dockerClientPath = appdataCleanupPlusDockerClientPath();
+
+  if ( ! $dockerClientPath || ! is_file($dockerClientPath) ) {
+    return false;
+  }
+
+  try {
+    require_once($dockerClientPath);
+  } catch ( Throwable $throwable ) {
+    error_log("Appdata Cleanup Plus could not load DockerClient from " . $dockerClientPath . ": " . $throwable->getMessage());
+    return false;
+  }
+
+  $loaded = class_exists("DockerClient", false);
+
+  if ( ! $loaded ) {
+    error_log("Appdata Cleanup Plus could not find DockerClient after loading " . $dockerClientPath . ".");
+  }
+
+  return $loaded;
 }
 
 function getDockerContainersSafe() {
-  if ( ! is_dir("/var/lib/docker/tmp") || ! class_exists("DockerClient") ) {
+  if ( ! is_dir(appdataCleanupPlusDockerRuntimePath()) || ! ensureAppdataCleanupPlusDockerClientLoaded() ) {
     return array();
   }
 

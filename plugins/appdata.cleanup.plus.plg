@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.05">
-<!ENTITY md5 "da18e52ed0c7090c2689ab09d239c495">
+<!ENTITY version "2026.03.30.06">
+<!ENTITY md5 "cfb0268b1791a72f51a7ac00e058c907">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.30.06
+- Fix: Stop loading Unraid's Docker client at file import time so a Docker manager include failure cannot abort scan or quarantine requests before the API responds
+- Test: Add a behavior smoke regression that forces the Docker client include to fail and verifies the dashboard still builds
+
 ###2026.03.30.05
 - Fix: Harden scan responses against missing Docker config text, invalid UTF-8 path data, malformed template entries, and per-candidate scan exceptions so one bad input no longer aborts the whole scan
 - UX: Move the quarantine manager out of the page body and into a dedicated popup window launched from the split mode bar
