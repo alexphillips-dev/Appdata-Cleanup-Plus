@@ -59,6 +59,7 @@
     els.$selectVisible = $("#acp-select-visible");
     els.$clearSelection = $("#acp-clear-selection");
     els.$doneBottom = $("#acp-done-bottom");
+    els.$selectAll = $("#acp-select-all");
     els.$dryRun = $("#acp-dry-run");
     els.$primaryAction = $("#acp-primary-action");
     els.$resultsMeta = $("#acp-results-meta");
@@ -116,6 +117,11 @@
     });
 
     els.$doneBottom.on("click", closePage);
+    els.$selectAll.on("click", function() {
+      if (!state.busy) {
+        selectAllRows();
+      }
+    });
     els.$dryRun.on("click", startDryRunFlow);
     els.$primaryAction.on("click", startPrimaryActionFlow);
 
@@ -209,6 +215,17 @@
       }
 
       clearQuarantineSelection();
+    });
+
+    $(document).on("click.acpQuarantine", ".sweet-alert [data-action='select-all-quarantine']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (state.busy || state.quarantine.loading) {
+        return;
+      }
+
+      selectAllQuarantineEntries();
     });
 
     $(document).on("click.acpQuarantine", ".sweet-alert [data-action='restore-selected-quarantine'], .sweet-alert [data-action='purge-selected-quarantine']", function(event) {
@@ -770,6 +787,18 @@
     return selectedIds;
   }
 
+  function selectAllQuarantineEntries() {
+    $.each(state.quarantine.entries || [], function(_, entry) {
+      var entryId = String(entry.id || "");
+
+      if (entryId) {
+        state.quarantine.selected[entryId] = true;
+      }
+    });
+
+    syncQuarantineManagerSelectionUi();
+  }
+
   function buildQuarantineSelectionSummaryText(selectedCount) {
     return selectedCount + " " + (selectedCount === 1
       ? ACP.t(strings, "selectedSingular", "folder selected")
@@ -778,6 +807,7 @@
 
   function syncQuarantineManagerSelectionUi() {
     var selectedIds = getSelectedQuarantineEntryIds();
+    var totalEntries = (state.quarantine.entries || []).length;
     var $modal = getActiveSweetAlertModal();
 
     if (!$modal.length || !$modal.hasClass("acp-quarantine-manager-modal")) {
@@ -785,6 +815,8 @@
     }
 
     $modal.find(".acp-quarantine-selected-summary").text(buildQuarantineSelectionSummaryText(selectedIds.length));
+    $modal.find("[data-action='select-all-quarantine']")
+      .prop("disabled", state.busy || state.quarantine.loading || totalEntries === 0 || selectedIds.length >= totalEntries);
     $modal.find("[data-action='restore-selected-quarantine'], [data-action='purge-selected-quarantine'], [data-action='clear-quarantine-selection']")
       .prop("disabled", state.busy || state.quarantine.loading || selectedIds.length === 0);
 
@@ -1132,8 +1164,23 @@
     updateActionBar();
   }
 
+  function selectAllRows() {
+    $.each(state.rows || [], function(_, row) {
+      if (row.canDelete) {
+        state.selected[row.id] = true;
+      }
+    });
+
+    renderResults();
+    renderSummaryCards();
+    updateActionBar();
+  }
+
   function updateActionBar() {
     var selectedRows = getSelectedRows();
+    var totalSelectableCount = $.grep(state.rows || [], function(row) {
+      return !!row.canDelete;
+    }).length;
     var visibleSelectableCount = $.grep(getVisibleRows(), function(row) {
       return !!row.canDelete;
     }).length;
@@ -1160,6 +1207,7 @@
     els.$primaryAction.text(getPrimaryActionLabel());
     els.$primaryAction.prop("disabled", state.busy || !state.scanToken || selectedRows.length === 0);
     els.$dryRun.prop("disabled", state.busy || !state.scanToken || selectedRows.length === 0);
+    els.$selectAll.prop("disabled", state.busy || totalSelectableCount === 0 || selectedRows.length >= totalSelectableCount);
     els.$selectVisible.prop("disabled", state.busy || visibleSelectableCount === 0);
     els.$clearSelection.prop("disabled", state.busy || selectedRows.length === 0);
     els.$doneBottom.prop("disabled", state.busy);

@@ -74,6 +74,7 @@
     var quarantine = state.quarantine || {};
     var entries = $.isArray(quarantine.entries) ? quarantine.entries : [];
     var selected = quarantine.selected || {};
+    var allSelected = false;
     var selectedCount = 0;
     var selectionDisabled = !!quarantine.loading || selectedCount === 0;
     var summary = quarantine.summary || { count: 0, sizeLabel: "0 B" };
@@ -85,6 +86,7 @@
         selectedCount += 1;
       }
     });
+    allSelected = entries.length > 0 && selectedCount >= entries.length;
     selectionDisabled = !!quarantine.loading || selectedCount === 0;
     var html = [
       '<div class="acp-modal-summary">',
@@ -95,6 +97,7 @@
       '<div class="acp-modal-subcopy acp-quarantine-selected-summary">' + ACP.escapeHtml(selectedCount + " " + (selectedCount === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"))) + "</div>",
       '<div class="acp-modal-inline-actions">',
       '<button type="button" class="acp-button acp-button-secondary" data-action="refresh-quarantine"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantineRefreshLabel", "Refresh")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="select-all-quarantine"' + (quarantine.loading || !entries.length || allSelected ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "selectAllLabel", "Select all")) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="clear-quarantine-selection"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "clearLabel", "Clear")) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="restore-selected-quarantine"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "restoreSelectedLabel", "Restore selected")) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="purge-selected-quarantine"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "purgeSelectedLabel", "Purge selected")) + "</button>",

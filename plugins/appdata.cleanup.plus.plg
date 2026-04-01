@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.31.10">
-<!ENTITY md5 "3e1dcd3d124d4052c8d21cb146fae595">
+<!ENTITY version "2026.03.31.11">
+<!ENTITY md5 "375a2af838fcbca5bd72a2267c6ad952">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.11
+- Feature: Add a `Select all` button to the main bottom action bar for selecting every deletable scan result
+- Feature: Add a `Select all` button to the quarantine manager toolbar for bulk restore and purge workflows
+
 ###2026.03.31.10
 - Fix: Restore true centered positioning for SweetAlert confirmation and utility dialogs after the wider modal overrides
 - Fix: Reset modal `margin-top` and use full `translate(-50%, -50%)` centering so tall confirm dialogs do not open cut off near the bottom of the screen

@@ -55,6 +55,7 @@ $config = array(
     "scanReadOnlyMessage" => _("Scan results loaded, but actions are disabled because a secure snapshot could not be created right now."),
     "scanExpiredMessage" => _("This scan expired or is no longer valid. Rescan and try again."),
     "rescanLabel" => _("Rescan"),
+    "selectAllLabel" => _("Select all"),
     "clearFiltersLabel" => _("Clear filters"),
     "clearLabel" => _("Clear"),
     "deleteEmptyTitle" => _("Nothing selected"),
@@ -320,6 +321,7 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
     </div>
     <div class="acp-bottom-actions">
       <button type="button" class="acp-button acp-button-secondary" id="acp-done-bottom"><?php echo _("Done"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary" id="acp-select-all" disabled><?php echo _("Select all"); ?></button>
       <button type="button" class="acp-button acp-button-secondary" id="acp-dry-run" disabled><?php echo _("Dry run"); ?></button>
       <button type="button" class="acp-button acp-button-primary" id="acp-primary-action" disabled><?php echo _("Quarantine selected"); ?></button>
     </div>
