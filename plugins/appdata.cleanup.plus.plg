@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.31.15">
-<!ENTITY md5 "8cfd18d18e2fae8ae7d4d544eaf86399">
+<!ENTITY version "2026.03.31.16">
+<!ENTITY md5 "e87e18083575e9df73f724ea512ceed3">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.16
+- Tweak: Give `Locked` badges a stronger stop color and `Discovery` badges a distinct blue source color while keeping `Template` neutral
+
 ###2026.03.31.15
 - Fix: Render clickable badges as badge-styled spans instead of host-styled buttons so the row badges keep the previous filled-pill look while remaining filterable
 - Accessibility: Allow badge filters to activate from keyboard with `Enter` or `Space`

@@ -14,6 +14,10 @@
   --acp-safe-text: #b8ffcd;
   --acp-review-soft: rgba(242, 184, 75, 0.14);
   --acp-review-text: #ffe3a2;
+  --acp-discovery-soft: rgba(86, 146, 255, 0.16);
+  --acp-discovery-text: #cfe1ff;
+  --acp-locked-soft: rgba(255, 96, 96, 0.16);
+  --acp-locked-text: #ffc0c0;
   --acp-blocked-soft: rgba(149, 162, 182, 0.16);
   --acp-blocked-text: #d9e0ea;
   --acp-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
@@ -74,6 +78,10 @@ body[data-acp-host-theme="grey"] #acp-app,
   --acp-accent-soft: rgba(255, 154, 74, 0.14);
   --acp-accent-text: #ffe3cf;
   --acp-input-focus: rgba(255, 154, 74, 0.48);
+  --acp-discovery-soft: rgba(101, 158, 255, 0.18);
+  --acp-discovery-text: #d9e7ff;
+  --acp-locked-soft: rgba(255, 116, 84, 0.18);
+  --acp-locked-text: #ffd2bf;
   --acp-button-hover-bg: rgba(255, 154, 74, 0.12);
   --acp-button-hover-border: rgba(255, 154, 74, 0.52);
   --acp-button-hover-text: #ffe3cf;
@@ -104,6 +112,10 @@ body[data-acp-host-theme="azure"] #acp-app,
   --acp-accent: #0078d4;
   --acp-accent-soft: rgba(0, 120, 212, 0.16);
   --acp-accent-text: #d7ecff;
+  --acp-discovery-soft: rgba(0, 120, 212, 0.2);
+  --acp-discovery-text: #d7ecff;
+  --acp-locked-soft: rgba(255, 107, 107, 0.18);
+  --acp-locked-text: #ffd6d6;
   --acp-input-bg: rgba(11, 23, 37, 0.9);
   --acp-input-border: rgba(129, 179, 219, 0.14);
   --acp-input-focus: rgba(0, 120, 212, 0.5);
@@ -150,6 +162,10 @@ body[data-acp-host-theme="light"] #acp-app,
   --acp-safe-text: #1f7a49;
   --acp-review-soft: rgba(233, 181, 43, 0.16);
   --acp-review-text: #916200;
+  --acp-discovery-soft: rgba(11, 107, 203, 0.12);
+  --acp-discovery-text: #0b6bcb;
+  --acp-locked-soft: rgba(214, 31, 31, 0.1);
+  --acp-locked-text: #b42318;
   --acp-blocked-soft: rgba(111, 128, 150, 0.12);
   --acp-blocked-text: #607088;
   --acp-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
@@ -1135,14 +1151,14 @@ body[data-acp-host-theme="light"] #acp-app,
   color: var(--acp-review-text);
 }
 
-.acp-badge-tone-locked {
-  background: var(--acp-blocked-soft);
-  color: var(--acp-blocked-text);
+.acp-badge-tone-discovery {
+  background: var(--acp-discovery-soft);
+  color: var(--acp-discovery-text);
 }
 
-.acp-badge-kind-source {
-  background: var(--acp-filter-bg);
-  color: var(--acp-text);
+.acp-badge-tone-locked {
+  background: var(--acp-locked-soft);
+  color: var(--acp-locked-text);
 }
 
 .acp-badge-kind-meta,

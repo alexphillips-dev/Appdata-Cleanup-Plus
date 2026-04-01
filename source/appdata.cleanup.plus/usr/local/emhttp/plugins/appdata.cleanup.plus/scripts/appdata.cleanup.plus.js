@@ -1170,6 +1170,10 @@
       return value || "neutral";
     }
 
+    if (filter.kind === "source" && value === "filesystem") {
+      return "discovery";
+    }
+
     if (filter.kind === "reason") {
       if (value === "outside_share") {
         return "review";
@@ -1297,7 +1301,7 @@
       kind: "source",
       value: String(row.sourceKind || "template"),
       label: row.sourceLabel || ACP.t(strings, "sourceLabel", "Source"),
-      tone: "neutral",
+      tone: row.sourceKind === "filesystem" ? "discovery" : "neutral",
       title: row.sourceDisplay || row.sourceSummary || "",
       kindClass: "source"
     };
