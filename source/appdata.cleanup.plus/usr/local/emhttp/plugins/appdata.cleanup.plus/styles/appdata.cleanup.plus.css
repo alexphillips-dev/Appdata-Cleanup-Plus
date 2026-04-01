@@ -1396,7 +1396,6 @@ body[data-acp-host-theme="light"] #acp-app,
   border: 1px solid var(--acp-button-border) !important;
   border-radius: 10px !important;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65) !important;
-  color: var(--acp-button-text) !important;
 }
 
 .sweet-alert.acp-delete-modal .acp-button:hover:not(:disabled),
@@ -1404,6 +1403,14 @@ body[data-acp-host-theme="light"] #acp-app,
   background: var(--acp-button-hover-bg) !important;
   border-color: var(--acp-button-hover-border) !important;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65) !important;
+}
+
+.sweet-alert.acp-delete-modal .acp-button-secondary {
+  color: var(--acp-button-hover-text) !important;
+}
+
+.sweet-alert.acp-delete-modal .acp-button-secondary:hover:not(:disabled),
+.sweet-alert.acp-delete-modal .acp-button-secondary:focus-visible:not(:disabled) {
   color: var(--acp-button-hover-text) !important;
 }
 
