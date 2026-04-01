@@ -705,8 +705,128 @@
     return "";
   }
 
+  function buildResultsSectionDefinitions() {
+    return [
+      {
+        key: "template",
+        title: ACP.t(strings, "templateSectionTitle", "Saved template references"),
+        message: ACP.t(strings, "templateSectionMessage", "Paths still referenced by saved Docker templates but not by installed containers.")
+      },
+      {
+        key: "filesystem",
+        title: ACP.t(strings, "discoverySectionTitle", "Appdata share discovery"),
+        message: ACP.t(strings, "discoverySectionMessage", "Folders found directly in the configured appdata share with no saved template or live container reference.")
+      },
+      {
+        key: "ignored",
+        title: ACP.t(strings, "ignoredSectionTitle", "Ignored"),
+        message: ACP.t(strings, "ignoredSectionMessage", "Hidden by your ignore list. Restore them to include them in cleanup results again.")
+      }
+    ];
+  }
+
+  function getResultsSectionKey(row) {
+    if (row.ignored) {
+      return "ignored";
+    }
+
+    if (row.sourceKind === "filesystem") {
+      return "filesystem";
+    }
+
+    return "template";
+  }
+
+  function groupVisibleRowsBySection(rows) {
+    var sections = {};
+
+    $.each(buildResultsSectionDefinitions(), function(_, definition) {
+      sections[definition.key] = {
+        key: definition.key,
+        title: definition.title,
+        message: definition.message,
+        rows: []
+      };
+    });
+
+    $.each(rows || [], function(_, row) {
+      var key = getResultsSectionKey(row);
+
+      if (!sections[key]) {
+        sections[key] = {
+          key: key,
+          title: row.sourceLabel || ACP.t(strings, "sourceLabel", "Source"),
+          message: "",
+          rows: []
+        };
+      }
+
+      sections[key].rows.push(row);
+    });
+
+    return $.grep($.map(buildResultsSectionDefinitions(), function(definition) {
+      return sections[definition.key];
+    }), function(section) {
+      return section && section.rows.length;
+    });
+  }
+
+  function buildSectionMetaLabel(count) {
+    return String(count || 0) + " " + ACP.t(strings, "visibleSummary", "visible");
+  }
+
+  function buildRowHtml(row) {
+    var isSelected = !!state.selected[row.id];
+    var riskClass = "acp-badge-risk-" + ACP.escapeHtml(row.risk || "safe");
+    var rowClass = "acp-row";
+    var rowActionHtml = buildRowActionHtml(row);
+    var rowNotesHtml = buildRowNotesHtml(row);
+
+    if (isSelected) {
+      rowClass += " is-selected";
+    }
+    if (row.ignored) {
+      rowClass += " is-ignored";
+    }
+    if (!row.canDelete) {
+      rowClass += " is-disabled";
+    } else {
+      rowClass += " is-clickable";
+    }
+
+    return (
+      '<article class="' + rowClass + '" data-row-id="' + ACP.escapeHtml(row.id) + '">' +
+        '<div class="acp-row-check">' +
+          '<input type="checkbox" class="acp-row-checkbox" data-row-id="' + ACP.escapeHtml(row.id) + '"' + (isSelected ? " checked" : "") + (row.canDelete ? "" : " disabled") + ">" +
+        "</div>" +
+        '<div class="acp-row-main">' +
+          '<div class="acp-row-primary">' +
+            '<div class="acp-row-title-wrap">' +
+              '<div class="acp-row-title-line">' +
+                '<h3 class="acp-row-title">' + ACP.escapeHtml(row.name || row.displayPath || "") + "</h3>" +
+              "</div>" +
+              '<div class="acp-row-meta">' + buildRowMetaHtml(row) + "</div>" +
+              (rowNotesHtml ? '<div class="acp-row-notes">' + rowNotesHtml + "</div>" : "") +
+            "</div>" +
+            '<div class="acp-row-side">' +
+              '<div class="acp-row-side-head">' +
+                '<div class="acp-row-badges">' +
+                  '<span class="acp-badge acp-badge-status">' + ACP.escapeHtml(row.statusLabel || "") + "</span>" +
+                  '<span class="acp-badge ' + riskClass + '">' + ACP.escapeHtml(row.riskLabel || "") + "</span>" +
+                "</div>" +
+                '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
+              "</div>" +
+              rowActionHtml +
+            "</div>" +
+          "</div>" +
+        "</div>" +
+      "</article>"
+    );
+  }
+
   function renderResults() {
     var visibleRows = getVisibleRows();
+    var sections = [];
     var html = [];
 
     if (!state.rows.length) {
@@ -739,52 +859,26 @@
       return;
     }
 
-    $.each(visibleRows, function(_, row) {
-      var isSelected = !!state.selected[row.id];
-      var riskClass = "acp-badge-risk-" + ACP.escapeHtml(row.risk || "safe");
-      var rowClass = "acp-row";
-      var rowActionHtml = buildRowActionHtml(row);
-      var rowNotesHtml = buildRowNotesHtml(row);
+    sections = groupVisibleRowsBySection(visibleRows);
 
-      if (isSelected) {
-        rowClass += " is-selected";
-      }
-      if (row.ignored) {
-        rowClass += " is-ignored";
-      }
-      if (!row.canDelete) {
-        rowClass += " is-disabled";
-      } else {
-        rowClass += " is-clickable";
-      }
+    $.each(sections, function(_, section) {
+      var rowHtml = [];
+
+      $.each(section.rows || [], function(__, row) {
+        rowHtml.push(buildRowHtml(row));
+      });
 
       html.push(
-        '<article class="' + rowClass + '" data-row-id="' + ACP.escapeHtml(row.id) + '">' +
-          '<div class="acp-row-check">' +
-            '<input type="checkbox" class="acp-row-checkbox" data-row-id="' + ACP.escapeHtml(row.id) + '"' + (isSelected ? " checked" : "") + (row.canDelete ? "" : " disabled") + ">" +
-          "</div>" +
-          '<div class="acp-row-main">' +
-            '<div class="acp-row-primary">' +
-              '<div class="acp-row-title-wrap">' +
-                '<div class="acp-row-title-line">' +
-                  '<h3 class="acp-row-title">' + ACP.escapeHtml(row.name || row.displayPath || "") + "</h3>" +
-                "</div>" +
-                '<div class="acp-row-meta">' + buildRowMetaHtml(row) + "</div>" +
-                (rowNotesHtml ? '<div class="acp-row-notes">' + rowNotesHtml + "</div>" : "") +
-              "</div>" +
-              '<div class="acp-row-side">' +
-                '<div class="acp-row-side-head">' +
-                  '<div class="acp-row-badges">' +
-                    '<span class="acp-badge acp-badge-status">' + ACP.escapeHtml(row.statusLabel || "") + "</span>" +
-                    '<span class="acp-badge ' + riskClass + '">' + ACP.escapeHtml(row.riskLabel || "") + "</span>" +
-                  "</div>" +
-                  '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
-                "</div>" +
-                rowActionHtml +
-              "</div>" +
+        '<section class="acp-results-section acp-results-section-' + ACP.escapeHtml(section.key || "group") + '">' +
+          '<header class="acp-results-section-head">' +
+            '<div class="acp-results-section-copy">' +
+              '<h3 class="acp-results-section-title">' + ACP.escapeHtml(section.title || "") + "</h3>" +
+              (section.message ? '<p class="acp-results-section-message">' + ACP.escapeHtml(section.message) + "</p>" : "") +
             "</div>" +
-          "</div>" +
-        "</article>"
+            '<div class="acp-results-section-meta">' + ACP.escapeHtml(buildSectionMetaLabel((section.rows || []).length)) + "</div>" +
+          "</header>" +
+          '<div class="acp-results-section-body">' + rowHtml.join("") + "</div>" +
+        "</section>"
       );
     });
 

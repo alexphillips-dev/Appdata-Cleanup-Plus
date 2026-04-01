@@ -869,6 +869,55 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-results {
   display: grid;
+  gap: 12px;
+}
+
+.acp-results-section {
+  display: grid;
+  gap: 4px;
+}
+
+.acp-results-section-head {
+  align-items: end;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.acp-results-section-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.acp-results-section-title {
+  color: var(--acp-heading);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.acp-results-section-message {
+  color: var(--acp-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.acp-results-section-meta {
+  color: var(--acp-muted);
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.acp-results-section-body {
+  display: grid;
   gap: 4px;
 }
 
@@ -1494,6 +1543,15 @@ body[data-acp-host-theme="light"] #acp-app,
   .acp-mode-strip-grid,
   .acp-quarantine-paths {
     grid-template-columns: 1fr;
+  }
+
+  .acp-results-section-head {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .acp-results-section-meta {
+    white-space: normal;
   }
 
   .acp-row-primary {
