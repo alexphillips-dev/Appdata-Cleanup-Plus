@@ -13,6 +13,18 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.22
+- Release: Promote the full `2026.04.01.10` through `2026.04.01.21` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
+- Quarantine UI: Render the exact scheduled purge timestamp as its own colored, outlined badge beside the relative purge timer badge so pending permanent deletion is more obvious at a glance
+- Quarantine: Persist a configurable `Default purge in days` setting, automatically apply that timer to newly quarantined folders, and let selected tracked entries be overridden with an exact `Set purge at` date/time
+- Quarantine: When the default purge timer changes, immediately reschedule existing default-managed entries and refresh the open quarantine manager so badges and scheduled purge timestamps update without a manual reload
+- Quarantine safety: Recalculate default-managed purge timers from each entry's original quarantine timestamp instead of restarting them from the moment the default changes, while preserving manual per-entry exact-time overrides and legacy schedules that do not match the previous default
+- Fix: Correct the quarantine purge-schedule API field mismatch that caused `Set purge` to fail, while keeping the temporary legacy request key compatible internally
+- UI: Regroup the quarantine manager toolbar so purge scheduling controls stay on the left, bulk actions stay on the right, and the action buttons align cleanly with the purge input fields
+- UI: Remove the unused bottom action-bar `Done` button and fix the stale action-bar reference that could leave the dashboard stuck on the initial scan screen after the button was removed
+- UI: Make the audit history popup use the same wide modal sizing as the quarantine manager so both review windows share the same footprint
+- UI: Unify dashboard and quarantine-manager button styling, keep the orange-accent text on modal secondary actions, and add a clearly visible thin black outline that remains visible at rest instead of only reading as outlined once hover changes the fill
+
 ###2026.04.01.21
 - UI: Strengthen the shared button stroke so dashboard and quarantine-manager buttons show a clearly visible thin black outline at rest instead of only reading as outlined once hover changes the fill
 
