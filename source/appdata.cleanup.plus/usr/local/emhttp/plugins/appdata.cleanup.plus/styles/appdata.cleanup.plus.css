@@ -1085,7 +1085,8 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-badge {
   align-items: center;
-  border: 1px solid transparent;
+  background-clip: padding-box;
+  border: 0;
   border-radius: 999px;
   display: inline-flex;
   font-size: 9px;
@@ -1099,29 +1100,36 @@ body[data-acp-host-theme="light"] #acp-app,
 
 button.acp-badge {
   appearance: none;
+  background-image: none;
+  border: 0;
+  box-shadow: none;
   cursor: pointer;
   font: inherit;
   line-height: 1;
   margin: 0;
   outline: none;
+  padding: 0 7px;
 }
 
 .acp-badge-filter {
-  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+  transition: filter 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
 }
 
-.acp-badge-filter:hover {
-  border-color: var(--acp-filter-hover-border);
-  transform: translateY(-1px);
+.acp-badge-filter:hover,
+.acp-badge-filter:focus-visible {
+  border: 0;
+  box-shadow: none;
+  filter: brightness(1.04);
 }
 
 .acp-badge-filter.is-active {
-  box-shadow: inset 0 0 0 1px var(--acp-border-strong);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  filter: saturate(1.06);
 }
 
 .acp-badge.is-primary {
-  min-height: 20px;
-  padding: 0 9px;
+  min-height: 18px;
+  padding: 0 7px;
 }
 
 .acp-badge-tone-neutral {
@@ -1145,9 +1153,8 @@ button.acp-badge {
 }
 
 .acp-badge-kind-source {
-  background: transparent;
-  border-color: var(--acp-filter-border);
-  color: var(--acp-muted);
+  background: var(--acp-filter-bg);
+  color: var(--acp-text);
 }
 
 .acp-badge-kind-meta,
