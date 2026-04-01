@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.31.18">
-<!ENTITY md5 "a3b9e84a3ab658314fb35d57a5fcf883">
+<!ENTITY version "2026.04.01.01">
+<!ENTITY md5 "b7bc1e116b2df19614b33857d609a0c3">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.01
+- Fix: Treat the configured appdata share root symlink as an allowed path segment so inside-share rows do not get hard-locked when the appdata root itself is intentionally symlinked
+- Safety: Keep direct folder symlinks and deeper nested symlink segments locked, so only the configured appdata root symlink exemption is allowed
+- Scan: Exclude `.Recycle.Bin` from direct-child appdata share discovery so recycle metadata does not surface as an orphaned appdata folder
+- Test: Cover symlinked appdata share roots and `.Recycle.Bin` discovery exclusion in the behavior smoke regression
+
 ###2026.03.31.18
 - Release: Promote the full `2026.03.31.12` through `2026.03.31.17` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
 - Feature: Add quarantine restore collision handling with `Skip conflicts`, `Restore with suffix`, and `Review conflict`, plus explicit conflict and skipped restore results

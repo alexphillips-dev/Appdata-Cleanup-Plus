@@ -73,6 +73,44 @@ function buildSymlinkLockReason($path, $prefix="Path") {
   return $message . " and is locked for safety.";
 }
 
+function appdataCleanupPlusAllowedSymlinkSegmentRoots() {
+  static $allowedRoots = null;
+  $roots = array();
+
+  if ( $allowedRoots !== null ) {
+    return $allowedRoots;
+  }
+
+  foreach ( array(getAppdataShareUserPath(), getAppdataShareCachePath()) as $rootPath ) {
+    $normalizedRoot = normalizeUserPath($rootPath);
+
+    if ( ! $normalizedRoot || isset($roots[$normalizedRoot]) ) {
+      continue;
+    }
+
+    $roots[$normalizedRoot] = true;
+  }
+
+  $allowedRoots = array_keys($roots);
+  return $allowedRoots;
+}
+
+function appdataCleanupPlusIsAllowedSymlinkSegment($segmentPath) {
+  $normalizedSegmentPath = normalizeUserPath($segmentPath);
+
+  if ( ! $normalizedSegmentPath ) {
+    return false;
+  }
+
+  foreach ( appdataCleanupPlusAllowedSymlinkSegmentRoots() as $allowedRoot ) {
+    if ( $normalizedSegmentPath === $allowedRoot ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function getPathSymlinkSegment($path) {
   $trimmed = trim((string)$path);
 
@@ -87,6 +125,10 @@ function getPathSymlinkSegment($path) {
     $currentPath .= "/" . $segment;
 
     if ( @is_link($currentPath) ) {
+      if ( appdataCleanupPlusIsAllowedSymlinkSegment($currentPath) ) {
+        continue;
+      }
+
       return $currentPath;
     }
   }

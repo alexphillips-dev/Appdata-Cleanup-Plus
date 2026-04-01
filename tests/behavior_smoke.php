@@ -12,6 +12,8 @@ $shareConfigFixtureDir = $stateRoot . "/boot/config/shares";
 $templateFixtureDir = $stateRoot . "/boot/config/plugins/dockerMan/templates-user";
 $appdataShareName = "acp-smoke-share-" . getmypid();
 $appdataShareRoot = "/mnt/user/" . $appdataShareName;
+$appdataSharePhysicalRoot = $stateRoot . "/appdata-share-root";
+$appdataShareUsesSymlink = false;
 
 putenv("APPDATA_CLEANUP_PLUS_STATE_ROOT=" . $stateRoot);
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_CONFIG_PATH=" . $dockerConfigFixture);
@@ -104,6 +106,7 @@ function behaviorSmokeFindRowByPath($rows, $path) {
 
 behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);
+behaviorSmokeRemoveTree($appdataSharePhysicalRoot);
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusConfigDir(), "State root should be created.");
 
 $snapshot = writeAppdataCleanupPlusSnapshot(array(
@@ -252,12 +255,19 @@ $vmIsosPath = $appdataShareRoot . "/vm-isos";
 $libvirtRoot = $appdataShareRoot . "/system/libvirt";
 $libvirtImagePath = $libvirtRoot . "/libvirt.img";
 $libvirtParentPath = $appdataShareRoot . "/system";
+$recycleBinPath = $appdataShareRoot . "/.Recycle.Bin";
 $quarantinePath = $appdataShareRoot . "/.appdata-cleanup-plus-quarantine";
 mkdir($dockerRuntimeFixture, 0777, true);
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($dockerConfigFixture)), "Docker config fixture directory should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($shareConfigFixtureDir), "Share config fixture directory should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templateFixtureDir), "Template fixture directory should be created.");
-behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($appdataShareRoot), "Appdata share fixture root should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($appdataShareRoot)), "Appdata share parent fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($appdataSharePhysicalRoot), "Appdata share physical fixture root should be created.");
+if ( function_exists("symlink") && @symlink($appdataSharePhysicalRoot, $appdataShareRoot) ) {
+  $appdataShareUsesSymlink = true;
+} else {
+  behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($appdataShareRoot), "Appdata share fixture root should be created.");
+}
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templatedOrphanPath), "Templated orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($filesystemOrphanPath), "Filesystem orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($liveAppPath), "Live app fixture should be created.");
@@ -266,6 +276,7 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($slashLivePath), "Trai
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmDomainTemplatePath), "VM domains fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmIsosPath), "VM ISO fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($libvirtRoot), "Libvirt fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($recycleBinPath), "Recycle Bin fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($quarantinePath), "Quarantine fixture should be created.");
 file_put_contents($vmConfigFixture, "DOMAINDIR=\"" . $vmDomainsPath . "/\"\nMEDIADIR=\"" . $vmIsosPath . "/\"\nIMAGE_FILE=\"" . $libvirtImagePath . "\"\n");
 file_put_contents($dockerConfigFixture, "DOCKER_APP_CONFIG_PATH=\"" . $appdataShareRoot . "\"\n");
@@ -303,6 +314,7 @@ $vmDomainsRow = behaviorSmokeFindRowByPath($dashboardRows, $vmDomainsPath);
 $vmTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $vmDomainTemplatePath);
 $vmIsosRow = behaviorSmokeFindRowByPath($dashboardRows, $vmIsosPath);
 $libvirtParentRow = behaviorSmokeFindRowByPath($dashboardRows, $libvirtParentPath);
+$recycleBinRow = behaviorSmokeFindRowByPath($dashboardRows, $recycleBinPath);
 $quarantineRow = behaviorSmokeFindRowByPath($dashboardRows, $quarantinePath);
 behaviorSmokeAssertTrue(is_array($templatedRow), "Template-backed orphan should be detected.");
 behaviorSmokeAssertTrue(is_array($filesystemRow), "Filesystem-only orphan should be detected.");
@@ -314,6 +326,7 @@ behaviorSmokeAssertSame(null, $vmDomainsRow, "VM Manager vdisk storage paths sho
 behaviorSmokeAssertSame(null, $vmTemplateRow, "Template-backed paths inside VM Manager storage should be excluded from orphaned results.");
 behaviorSmokeAssertSame(null, $vmIsosRow, "VM Manager ISO storage paths should be excluded from orphaned results.");
 behaviorSmokeAssertSame(null, $libvirtParentRow, "Parents containing the configured libvirt path should be excluded from orphaned results.");
+behaviorSmokeAssertSame(null, $recycleBinRow, ".Recycle.Bin should be excluded from filesystem orphan discovery.");
 behaviorSmokeAssertSame(null, $quarantineRow, "The plugin quarantine root should not be surfaced as a filesystem orphan.");
 behaviorSmokeAssertSame("template", $templatedRow["sourceKind"], "Template-backed rows should preserve their source kind.");
 behaviorSmokeAssertSame("filesystem", $filesystemRow["sourceKind"], "Filesystem-only rows should be marked as discovery candidates.");
@@ -322,6 +335,11 @@ behaviorSmokeAssertContains("Saved templates", $templatedRow["reason"], "Templat
 behaviorSmokeAssertContains("no saved Docker template or installed container currently references it", $filesystemRow["reason"], "Filesystem-only rows should explain that they are unreferenced.");
 behaviorSmokeAssertSame($slashLivePath, normalizeUserPath($slashTemplatePath), "Path normalization should collapse trailing slashes on saved template paths.");
 behaviorSmokeAssertTrue(! empty($templatedRow["statsPending"]), "Initial dashboard rows should mark heavy stats as pending for progressive hydration.");
+if ( $appdataShareUsesSymlink ) {
+  behaviorSmokeAssertSame("", buildPathSecurityLockReason($templatedOrphanPath), "Configured appdata share root symlinks should not lock inside-share candidates.");
+  behaviorSmokeAssertSame(false, ! empty($templatedRow["policyLocked"]), "Configured appdata share root symlinks should leave inside-share template rows actionable.");
+  behaviorSmokeAssertSame(false, ! empty($filesystemRow["policyLocked"]), "Configured appdata share root symlinks should leave inside-share discovery rows actionable.");
+}
 $hydratedCandidate = resolveSnapshotCandidates($dashboard["payload"]["scanToken"], array($templatedRow["id"]));
 behaviorSmokeAssertTrue(! empty($hydratedCandidate["ok"]), "Hydration should be able to resolve the initial snapshot candidate.");
 $hydratedStatsRow = buildHydratedCandidateStatRow($hydratedCandidate["candidates"][0]);
@@ -352,4 +370,5 @@ if ( function_exists("symlink") && @symlink($symlinkTargetPath, $symlinkLinkPath
 
 behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);
+behaviorSmokeRemoveTree($appdataSharePhysicalRoot);
 echo "behavior_smoke: OK" . PHP_EOL;

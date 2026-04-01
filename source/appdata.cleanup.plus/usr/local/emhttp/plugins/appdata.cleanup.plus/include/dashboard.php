@@ -612,6 +612,16 @@ function resolveAppdataShareScanRoot() {
   return $cacheRoot;
 }
 
+function appdataCleanupPlusShouldExcludeFilesystemDiscoveryEntry($entryName) {
+  $normalizedEntryName = trim((string)$entryName);
+
+  if ( $normalizedEntryName === "" ) {
+    return false;
+  }
+
+  return strcasecmp($normalizedEntryName, ".Recycle.Bin") === 0;
+}
+
 function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning) {
   $availableVolumes = array();
 
@@ -653,6 +663,10 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
   }
 
   foreach ( array_diff($entries, array(".", "..")) as $entryName ) {
+    if ( appdataCleanupPlusShouldExcludeFilesystemDiscoveryEntry($entryName) ) {
+      continue;
+    }
+
     $candidatePath = rtrim($shareRoot, "/") . "/" . $entryName;
 
     if ( ! is_dir($candidatePath) ) {
