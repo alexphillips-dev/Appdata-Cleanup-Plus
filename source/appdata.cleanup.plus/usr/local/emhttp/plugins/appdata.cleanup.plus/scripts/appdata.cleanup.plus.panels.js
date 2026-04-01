@@ -22,7 +22,7 @@
       case "missing":
         return { label: ACP.t(strings, "resultMissingLabel", "Missing"), tone: "is-blocked" };
       case "blocked":
-        return { label: ACP.t(strings, "resultBlockedLabel", "Blocked"), tone: "is-review" };
+        return { label: ACP.t(strings, "resultBlockedLabel", "Locked"), tone: "is-review" };
       default:
         return { label: ACP.t(strings, "resultErrorLabel", "Error"), tone: "is-review" };
     }

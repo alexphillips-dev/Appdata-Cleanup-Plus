@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.31.12">
-<!ENTITY md5 "ca2593434c2096b5d0443115ec1298c3">
+<!ENTITY version "2026.03.31.13">
+<!ENTITY md5 "1eab4c09da8903aa5bd0fd67e7c6cd4b">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.13
+- UX: Rework result badges into ordered actionability, state, source, and reason badges so rows read clearly at a glance without mixing status and safety
+- UX: Add clickable badge filters, active badge-filter feedback, section header count badges, and tooltips so badges are functional instead of decorative
+- Tweak: Rename `Safe` row states to `Ready` and `Blocked` row states to `Locked` across the scan UI and result summaries for clearer wording
+
 ###2026.03.31.12
 - Feature: Add restore collision handling in the quarantine manager so existing original paths trigger a conflict flow instead of a dead-end restore failure
 - UX: Show a restore conflict dialog with `Skip conflicts`, `Restore with suffix`, and `Review conflict` options, plus explicit conflict and skipped result states in restore results and audit history

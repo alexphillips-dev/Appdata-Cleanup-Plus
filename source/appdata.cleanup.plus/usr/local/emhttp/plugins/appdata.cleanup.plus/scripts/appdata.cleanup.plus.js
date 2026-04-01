@@ -31,6 +31,7 @@
     riskFilter: "all",
     sortMode: "risk",
     showIgnored: false,
+    badgeFilter: null,
     busy: false
   };
   var els = {};
@@ -165,6 +166,9 @@
       renderSummaryCards();
       updateActionBar();
     });
+
+    els.$results.on("click", ".acp-badge-filter", handleBadgeFilterClick);
+    els.$resultsMeta.on("click", ".acp-badge-filter", handleBadgeFilterClick);
 
     els.$results.on("click", ".acp-row-action", function(event) {
       var action = $(this).data("row-action");
@@ -314,6 +318,34 @@
 
       startQuarantineManagerActionFlow(action, [entryId]);
     });
+  }
+
+  function handleBadgeFilterClick(event) {
+    var $badge = $(this);
+    var kind = $.trim(String($badge.data("badgeKind") || ""));
+    var value = $.trim(String($badge.data("badgeValue") || ""));
+    var label = $.trim(String($badge.data("badgeLabel") || $badge.text() || ""));
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!kind || !value) {
+      return;
+    }
+
+    if (isBadgeFilterActive(kind, value)) {
+      state.badgeFilter = null;
+    } else {
+      state.badgeFilter = {
+        kind: kind,
+        value: value,
+        label: label || value
+      };
+    }
+
+    renderResults();
+    renderResultsMeta();
+    updateActionBar();
   }
 
   function buildContext() {
@@ -1088,6 +1120,308 @@
     return "template";
   }
 
+  function sanitizeBadgeToken(value) {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
+  }
+
+  function getActiveBadgeFilter() {
+    if (!state.badgeFilter || !state.badgeFilter.kind || !state.badgeFilter.value) {
+      return null;
+    }
+
+    return {
+      kind: String(state.badgeFilter.kind),
+      value: String(state.badgeFilter.value),
+      label: String(state.badgeFilter.label || state.badgeFilter.value)
+    };
+  }
+
+  function isBadgeFilterActive(kind, value) {
+    var filter = getActiveBadgeFilter();
+
+    if (!filter) {
+      return false;
+    }
+
+    return filter.kind === String(kind || "") && filter.value === String(value || "");
+  }
+
+  function getBadgeFilterTone(filter) {
+    var value = filter && filter.value ? String(filter.value) : "";
+
+    if (!filter) {
+      return "neutral";
+    }
+
+    if (filter.kind === "actionability") {
+      return value || "neutral";
+    }
+
+    if (filter.kind === "reason") {
+      if (value === "outside_share") {
+        return "review";
+      }
+
+      if (value === "symlink" || value === "mount_point" || value === "root_path" || value === "unsafe_path" || value === "safety_lock") {
+        return "locked";
+      }
+    }
+
+    return "neutral";
+  }
+
+  function buildBadgeHtml(badge) {
+    var classes = ["acp-badge", "acp-badge-tone-" + sanitizeBadgeToken(badge.tone || "neutral")];
+    var kindClass = badge.kindClass || badge.kind || "";
+    var interactive = badge.kind && badge.value;
+    var active = interactive && isBadgeFilterActive(badge.kind, badge.value);
+    var title = $.trim(String(badge.title || ""));
+
+    if (kindClass) {
+      classes.push("acp-badge-kind-" + sanitizeBadgeToken(kindClass));
+    }
+
+    if (badge.isPrimary) {
+      classes.push("is-primary");
+    }
+
+    if (interactive) {
+      classes.push("acp-badge-filter");
+
+      if (active) {
+        classes.push("is-active");
+      }
+
+      title = $.trim((title ? title + " " : "") + ACP.t(strings, "badgeFilterHint", "Click to filter rows by this badge."));
+
+      return (
+        '<button type="button" class="' + classes.join(" ") + '"' +
+          ' data-badge-kind="' + ACP.escapeHtml(String(badge.kind)) + '"' +
+          ' data-badge-value="' + ACP.escapeHtml(String(badge.value)) + '"' +
+          ' data-badge-label="' + ACP.escapeHtml(String(badge.label || badge.value)) + '"' +
+          ' aria-pressed="' + (active ? "true" : "false") + '"' +
+          (title ? ' title="' + ACP.escapeHtml(title) + '"' : "") +
+        ">" + ACP.escapeHtml(String(badge.label || "")) + "</button>"
+      );
+    }
+
+    return '<span class="' + classes.join(" ") + '"' + (title ? ' title="' + ACP.escapeHtml(title) + '"' : "") + ">" + ACP.escapeHtml(String(badge.label || "")) + "</span>";
+  }
+
+  function getActionabilityLabel(actionability) {
+    if (actionability === "locked") {
+      return ACP.t(strings, "cardBlocked", "Locked");
+    }
+
+    if (actionability === "review") {
+      return ACP.t(strings, "deleteReviewCountLabel", "Review");
+    }
+
+    return ACP.t(strings, "cardDeletable", "Ready");
+  }
+
+  function getRowActionabilityDescriptor(row) {
+    if (row.policyLocked || row.risk === "blocked") {
+      return {
+        kind: "actionability",
+        value: "locked",
+        label: ACP.t(strings, "cardBlocked", "Locked"),
+        tone: "locked",
+        title: row.policyReason || row.securityLockReason || row.riskReason || "",
+        kindClass: "actionability",
+        isPrimary: true
+      };
+    }
+
+    if (row.risk === "review") {
+      return {
+        kind: "actionability",
+        value: "review",
+        label: row.riskLabel || ACP.t(strings, "deleteReviewCountLabel", "Review"),
+        tone: "review",
+        title: row.riskReason || row.policyReason || "",
+        kindClass: "actionability",
+        isPrimary: true
+      };
+    }
+
+    return {
+      kind: "actionability",
+      value: "ready",
+      label: row.riskLabel || ACP.t(strings, "cardDeletable", "Ready"),
+      tone: "ready",
+      title: row.riskReason || "",
+      kindClass: "actionability",
+      isPrimary: true
+    };
+  }
+
+  function getRowStateDescriptor(row) {
+    var title = "";
+
+    if (row.ignored && row.ignoredReason) {
+      title = row.ignoredReason;
+    } else if (row.status === "docker_offline") {
+      title = row.reason || row.riskReason || "";
+    } else {
+      title = row.reason || "";
+    }
+
+    return {
+      kind: "status",
+      value: String(row.status || "orphaned"),
+      label: row.statusLabel || "Orphaned",
+      tone: "neutral",
+      title: title,
+      kindClass: "status"
+    };
+  }
+
+  function getRowSourceDescriptor(row) {
+    return {
+      kind: "source",
+      value: String(row.sourceKind || "template"),
+      label: row.sourceLabel || ACP.t(strings, "sourceLabel", "Source"),
+      tone: "neutral",
+      title: row.sourceDisplay || row.sourceSummary || "",
+      kindClass: "source"
+    };
+  }
+
+  function pushBadgeDescriptor(descriptors, badge) {
+    var exists;
+
+    if (!badge || !badge.kind || !badge.value) {
+      return;
+    }
+
+    exists = $.grep(descriptors, function(existing) {
+      return existing.kind === badge.kind && existing.value === badge.value;
+    }).length > 0;
+
+    if (!exists) {
+      descriptors.push(badge);
+    }
+  }
+
+  function getRowReasonDescriptors(row) {
+    var descriptors = [];
+    var securityReason = String(row.securityLockReason || "");
+    var policyReason = String(row.policyReason || "");
+    var riskReason = String(row.riskReason || "");
+
+    if (securityReason) {
+      if (/symlink/i.test(securityReason)) {
+        pushBadgeDescriptor(descriptors, {
+          kind: "reason",
+          value: "symlink",
+          label: ACP.t(strings, "badgeReasonSymlink", "Symlink"),
+          tone: "locked",
+          title: securityReason,
+          kindClass: "reason"
+        });
+      } else if (/mount-point/i.test(securityReason)) {
+        pushBadgeDescriptor(descriptors, {
+          kind: "reason",
+          value: "mount_point",
+          label: ACP.t(strings, "badgeReasonMountPoint", "Mount point"),
+          tone: "locked",
+          title: securityReason,
+          kindClass: "reason"
+        });
+      } else if (/share root|mount root/i.test(securityReason)) {
+        pushBadgeDescriptor(descriptors, {
+          kind: "reason",
+          value: "root_path",
+          label: ACP.t(strings, "badgeReasonRootPath", "Root path"),
+          tone: "locked",
+          title: securityReason,
+          kindClass: "reason"
+        });
+      } else if (/canonicalized safely/i.test(securityReason)) {
+        pushBadgeDescriptor(descriptors, {
+          kind: "reason",
+          value: "unsafe_path",
+          label: ACP.t(strings, "badgeReasonUnsafePath", "Unsafe path"),
+          tone: "locked",
+          title: securityReason,
+          kindClass: "reason"
+        });
+      } else {
+        pushBadgeDescriptor(descriptors, {
+          kind: "reason",
+          value: "safety_lock",
+          label: ACP.t(strings, "badgeReasonSafetyLock", "Safety lock"),
+          tone: "locked",
+          title: securityReason,
+          kindClass: "reason"
+        });
+      }
+
+      return descriptors;
+    }
+
+    if (row.risk === "review" || /outside-share cleanup is disabled/i.test(policyReason)) {
+      pushBadgeDescriptor(descriptors, {
+        kind: "reason",
+        value: "outside_share",
+        label: ACP.t(strings, "badgeReasonOutsideShare", "Outside share"),
+        tone: "review",
+        title: policyReason || riskReason,
+        kindClass: "reason"
+      });
+    }
+
+    return descriptors;
+  }
+
+  function getRowBadgeDescriptors(row) {
+    return [getRowActionabilityDescriptor(row), getRowStateDescriptor(row), getRowSourceDescriptor(row)].concat(getRowReasonDescriptors(row));
+  }
+
+  function rowMatchesBadgeFilter(row, filter) {
+    var reasonDescriptors;
+
+    if (!filter) {
+      return true;
+    }
+
+    if (filter.kind === "actionability") {
+      return getRowActionabilityDescriptor(row).value === filter.value;
+    }
+
+    if (filter.kind === "status") {
+      return String(row.status || "") === filter.value;
+    }
+
+    if (filter.kind === "source") {
+      return String(row.sourceKind || "") === filter.value;
+    }
+
+    if (filter.kind === "reason") {
+      reasonDescriptors = getRowReasonDescriptors(row);
+      return $.grep(reasonDescriptors, function(descriptor) {
+        return descriptor.value === filter.value;
+      }).length > 0;
+    }
+
+    return true;
+  }
+
+  function buildSectionActionabilitySummary(rows) {
+    var summary = { ready: 0, review: 0, locked: 0 };
+
+    $.each(rows || [], function(_, row) {
+      var actionability = getRowActionabilityDescriptor(row).value;
+
+      if (Object.prototype.hasOwnProperty.call(summary, actionability)) {
+        summary[actionability] += 1;
+      }
+    });
+
+    return summary;
+  }
+
   function groupVisibleRowsBySection(rows) {
     var sections = {};
 
@@ -1122,16 +1456,43 @@
     });
   }
 
-  function buildSectionMetaLabel(count) {
-    return String(count || 0) + " " + ACP.t(strings, "visibleSummary", "visible");
+  function buildSectionMetaHtml(rows) {
+    var badges = [];
+    var summary = buildSectionActionabilitySummary(rows);
+
+    badges.push(buildBadgeHtml({
+      label: String((rows || []).length || 0) + " " + ACP.t(strings, "visibleSummary", "visible"),
+      tone: "neutral",
+      kindClass: "count"
+    }));
+
+    $.each(["locked", "review", "ready"], function(_, actionability) {
+      var count = Number(summary[actionability] || 0);
+
+      if (!count) {
+        return;
+      }
+
+      badges.push(buildBadgeHtml({
+        kind: "actionability",
+        value: actionability,
+        label: String(count) + " " + getActionabilityLabel(actionability),
+        tone: actionability,
+        kindClass: "count"
+      }));
+    });
+
+    return '<div class="acp-results-section-badges">' + badges.join("") + "</div>";
   }
 
   function buildRowHtml(row) {
     var isSelected = !!state.selected[row.id];
-    var riskClass = "acp-badge-risk-" + ACP.escapeHtml(row.risk || "safe");
     var rowClass = "acp-row";
     var rowActionHtml = buildRowActionHtml(row);
     var rowNotesHtml = buildRowNotesHtml(row);
+    var badgeHtml = $.map(getRowBadgeDescriptors(row), function(badge) {
+      return buildBadgeHtml(badge);
+    }).join("");
 
     if (isSelected) {
       rowClass += " is-selected";
@@ -1162,8 +1523,7 @@
             '<div class="acp-row-side">' +
               '<div class="acp-row-side-head">' +
                 '<div class="acp-row-badges">' +
-                  '<span class="acp-badge acp-badge-status">' + ACP.escapeHtml(row.statusLabel || "") + "</span>" +
-                  '<span class="acp-badge ' + riskClass + '">' + ACP.escapeHtml(row.riskLabel || "") + "</span>" +
+                  badgeHtml +
                 "</div>" +
                 '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
               "</div>" +
@@ -1203,7 +1563,7 @@
 
       renderStateMessage(
         ACP.t(strings, "noMatchesTitle", "No folders match the current filters"),
-        ACP.t(strings, "noMatchesMessage", "Clear the search or risk filters to see the full scan again."),
+        ACP.t(strings, "noMatchesMessage", "Clear the search, badge, or risk filters to see the full scan again."),
         "clear-filters",
         ACP.t(strings, "clearFiltersLabel", "Clear filters")
       );
@@ -1226,7 +1586,7 @@
               '<h3 class="acp-results-section-title">' + ACP.escapeHtml(section.title || "") + "</h3>" +
               (section.message ? '<p class="acp-results-section-message">' + ACP.escapeHtml(section.message) + "</p>" : "") +
             "</div>" +
-            '<div class="acp-results-section-meta">' + ACP.escapeHtml(buildSectionMetaLabel((section.rows || []).length)) + "</div>" +
+            '<div class="acp-results-section-meta">' + buildSectionMetaHtml(section.rows || []) + "</div>" +
           "</header>" +
           '<div class="acp-results-section-body">' + rowHtml.join("") + "</div>" +
         "</section>"
@@ -1237,6 +1597,7 @@
   }
 
   function renderResultsMeta() {
+    var badgeFilter = getActiveBadgeFilter();
     var visibleRows = getVisibleRows();
     var hiddenIgnored = Number(state.summary.ignored || 0) > 0 && !state.showIgnored;
     var parts = [
@@ -1250,7 +1611,22 @@
       parts.push(Number(state.summary.ignored || 0) + " " + ACP.t(strings, "ignoredShownSummary", "ignored shown"));
     }
 
-    els.$resultsMeta.text(parts.join(" | "));
+    if (!badgeFilter) {
+      els.$resultsMeta.text(parts.join(" | "));
+      return;
+    }
+
+    els.$resultsMeta.html(
+      '<span class="acp-results-meta-copy">' + ACP.escapeHtml(parts.join(" | ")) + "</span>" +
+      '<span class="acp-results-meta-filter-label">' + ACP.escapeHtml(ACP.t(strings, "filteredByLabel", "Filtered by")) + "</span>" +
+      buildBadgeHtml({
+        kind: badgeFilter.kind,
+        value: badgeFilter.value,
+        label: badgeFilter.label,
+        tone: getBadgeFilterTone(badgeFilter),
+        kindClass: "meta"
+      })
+    );
   }
 
   function renderStateMessage(title, message, action, actionLabel, isLoading) {
@@ -1268,6 +1644,7 @@
   }
 
   function getVisibleRows() {
+    var badgeFilter = getActiveBadgeFilter();
     var term = $.trim(String(els.$search.val() || "")).toLowerCase();
 
     return $.grep(state.rows || [], function(row) {
@@ -1281,6 +1658,10 @@
         return false;
       }
 
+      if (badgeFilter && !rowMatchesBadgeFilter(row, badgeFilter)) {
+        return false;
+      }
+
       if (term && haystack.indexOf(term) === -1) {
         return false;
       }
@@ -1290,13 +1671,15 @@
   }
 
   function compareRows(left, right) {
-    var riskRank = { review: 0, safe: 1, blocked: 2 };
+    var actionabilityRank = { locked: 0, review: 1, ready: 2 };
+    var leftActionability = getRowActionabilityDescriptor(left).value;
+    var rightActionability = getRowActionabilityDescriptor(right).value;
     var leftName = String(left.name || "").toLowerCase();
     var rightName = String(right.name || "").toLowerCase();
     var leftPath = String(left.displayPath || left.path || "").toLowerCase();
     var rightPath = String(right.displayPath || right.path || "").toLowerCase();
-    var leftRank = Object.prototype.hasOwnProperty.call(riskRank, left.risk) ? riskRank[left.risk] : 9;
-    var rightRank = Object.prototype.hasOwnProperty.call(riskRank, right.risk) ? riskRank[right.risk] : 9;
+    var leftRank = Object.prototype.hasOwnProperty.call(actionabilityRank, leftActionability) ? actionabilityRank[leftActionability] : 9;
+    var rightRank = Object.prototype.hasOwnProperty.call(actionabilityRank, rightActionability) ? actionabilityRank[rightActionability] : 9;
 
     if (!!left.ignored !== !!right.ignored) {
       return left.ignored ? 1 : -1;
@@ -1383,6 +1766,7 @@
   function clearFilters() {
     state.riskFilter = "all";
     state.showIgnored = false;
+    state.badgeFilter = null;
     els.$search.val("");
     els.$riskFilter.val("all");
     els.$showIgnored.prop("checked", false);
@@ -1637,7 +2021,7 @@
       "</div>",
       '<div class="acp-modal-stats">',
       '<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(String(rows.length)) + " selected</span>",
-      '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "deleteSafeLabel", "Safe")) + ": " + ACP.escapeHtml(String(safeCount)) + "</span>"
+      '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "deleteSafeLabel", "Ready")) + ": " + ACP.escapeHtml(String(safeCount)) + "</span>"
     ];
 
     if (reviewCount > 0) {
@@ -1688,7 +2072,7 @@
       stats.push('<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "resultQuarantinedLabel", "Quarantined")) + ": " + ACP.escapeHtml(String(summary.quarantined || 0)) + "</span>");
     }
 
-    stats.push('<span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "resultBlockedLabel", "Blocked")) + ": " + ACP.escapeHtml(String(summary.blocked || 0)) + "</span>");
+    stats.push('<span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "resultBlockedLabel", "Locked")) + ": " + ACP.escapeHtml(String(summary.blocked || 0)) + "</span>");
     stats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(ACP.t(strings, "resultMissingLabel", "Missing")) + ": " + ACP.escapeHtml(String(summary.missing || 0)) + "</span>");
     stats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(ACP.t(strings, "resultErrorLabel", "Error")) + ": " + ACP.escapeHtml(String(summary.errors || 0)) + "</span>");
 

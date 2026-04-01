@@ -153,14 +153,14 @@ function classifyAppdataCandidate($path) {
     "depth" => count($segments),
     "insideDefaultShare" => $insideDefaultShare ? true : false,
     "risk" => "safe",
-    "riskLabel" => "Safe",
+    "riskLabel" => "Ready",
     "riskReason" => "Inside the configured appdata share and not used by installed containers.",
     "canDelete" => true
   );
 
   if ( ! $shareName || in_array($userPath, array("/", "/mnt", "/mnt/user", "/mnt/cache"), true) ) {
     $classification["risk"] = "blocked";
-    $classification["riskLabel"] = "Blocked";
+    $classification["riskLabel"] = "Locked";
     $classification["riskReason"] = "This path looks like a mount root and cannot be deleted here.";
     $classification["canDelete"] = false;
     return $classification;
@@ -169,7 +169,7 @@ function classifyAppdataCandidate($path) {
   if ( $insideDefaultShare ) {
     if ( count($segments) <= 1 ) {
       $classification["risk"] = "blocked";
-      $classification["riskLabel"] = "Blocked";
+      $classification["riskLabel"] = "Locked";
       $classification["riskReason"] = "This is the configured appdata share root and cannot be deleted here.";
       $classification["canDelete"] = false;
     }
@@ -178,7 +178,7 @@ function classifyAppdataCandidate($path) {
 
   if ( count($segments) <= 1 ) {
     $classification["risk"] = "blocked";
-    $classification["riskLabel"] = "Blocked";
+    $classification["riskLabel"] = "Locked";
     $classification["riskReason"] = "This path looks like a share root and cannot be deleted here.";
     $classification["canDelete"] = false;
     return $classification;
