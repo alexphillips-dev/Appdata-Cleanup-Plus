@@ -41,10 +41,10 @@ $config = array(
   "spinnerUrl" => "/plugins/appdata.cleanup.plus/images/spinner2.gif",
   "logoUrl" => "/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png",
   "strings" => array(
-    "loadingTitle" => _("Scanning saved Docker templates"),
+    "loadingTitle" => _("Scanning appdata share and saved Docker templates"),
     "loadingMessage" => _("Reviewing orphaned appdata folders and active container mappings."),
     "emptyTitle" => _("No orphaned appdata found"),
-    "emptyMessage" => _("Nothing currently looks safe to clean up from the saved Docker templates."),
+    "emptyMessage" => _("Nothing currently looks safe to clean up from the appdata share or saved Docker templates."),
     "noMatchesTitle" => _("No folders match the current filters"),
     "noMatchesMessage" => _("Clear the search or risk filters to see the full scan again."),
     "ignoredOnlyTitle" => _("Only ignored paths remain"),
@@ -105,6 +105,7 @@ $config = array(
     "showIgnoredLabel" => _("Show ignored"),
     "showExternalLabel" => _("Allow outside-share cleanup"),
     "enablePermanentDeleteLabel" => _("Enable permanent delete"),
+    "sourceLabel" => _("Source"),
     "templateLabel" => _("Template"),
     "targetLabel" => _("Target"),
     "destinationLabel" => _("Destination"),
@@ -220,7 +221,7 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
     <div class="acp-hero-copy">
       <p class="acp-eyebrow"><?php echo _("Cleanup Dashboard"); ?></p>
       <h2 class="acp-title"><?php echo _("Review orphaned appdata before delete"); ?></h2>
-      <p class="acp-subtitle"><?php echo _("Candidates come from saved Docker templates that no longer match active container mappings."); ?></p>
+      <p class="acp-subtitle"><?php echo _("Candidates come from orphaned saved template paths plus unused folders discovered in the configured appdata share."); ?></p>
     </div>
   </section>
 

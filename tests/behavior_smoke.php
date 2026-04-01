@@ -6,8 +6,16 @@ $repoRoot = dirname(__DIR__);
 $stateRoot = $repoRoot . DIRECTORY_SEPARATOR . "tests" . DIRECTORY_SEPARATOR . ".tmp" . DIRECTORY_SEPARATOR . "state-" . getmypid();
 $stateRoot = str_replace("\\", "/", $stateRoot);
 $sessionRoot = $stateRoot . "/sessions";
+$dockerConfigFixture = $stateRoot . "/boot/config/docker.cfg";
+$shareConfigFixtureDir = $stateRoot . "/boot/config/shares";
+$templateFixtureDir = $stateRoot . "/boot/config/plugins/dockerMan/templates-user";
+$appdataShareName = "acp-smoke-share-" . getmypid();
+$appdataShareRoot = "/mnt/user/" . $appdataShareName;
 
 putenv("APPDATA_CLEANUP_PLUS_STATE_ROOT=" . $stateRoot);
+putenv("APPDATA_CLEANUP_PLUS_DOCKER_CONFIG_PATH=" . $dockerConfigFixture);
+putenv("APPDATA_CLEANUP_PLUS_SHARE_CONFIG_DIR=" . $shareConfigFixtureDir);
+putenv("APPDATA_CLEANUP_PLUS_DOCKER_TEMPLATE_DIR=" . $templateFixtureDir);
 
 if ( function_exists("session_status") && session_status() === PHP_SESSION_ACTIVE ) {
   session_write_close();
@@ -44,6 +52,12 @@ function behaviorSmokeAssertSame($expected, $actual, $message) {
   }
 }
 
+function behaviorSmokeAssertContains($needle, $haystack, $message) {
+  if ( strpos((string)$haystack, (string)$needle) === false ) {
+    behaviorSmokeFail($message . " needle=" . var_export($needle, true) . " actual=" . var_export($haystack, true));
+  }
+}
+
 function behaviorSmokeRemoveTree($path) {
   if ( ! $path || ! file_exists($path) ) {
     return;
@@ -71,7 +85,23 @@ function behaviorSmokeRemoveTree($path) {
   @rmdir($path);
 }
 
+function behaviorSmokeWriteTemplateFixture($path, $name, $hostDir, $targetPath) {
+  $xml = "<?xml version='1.0'?>\n<Container>\n  <Name>" . htmlspecialchars($name, ENT_QUOTES) . "</Name>\n  <Config Type=\"Path\" Target=\"" . htmlspecialchars($targetPath, ENT_QUOTES) . "\">" . htmlspecialchars($hostDir, ENT_QUOTES) . "</Config>\n</Container>\n";
+  file_put_contents($path, $xml);
+}
+
+function behaviorSmokeFindRowByPath($rows, $path) {
+  foreach ( $rows as $row ) {
+    if ( isset($row["displayPath"]) && $row["displayPath"] === $path ) {
+      return $row;
+    }
+  }
+
+  return null;
+}
+
 behaviorSmokeRemoveTree($stateRoot);
+behaviorSmokeRemoveTree($appdataShareRoot);
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusConfigDir(), "State root should be created.");
 
 $snapshot = writeAppdataCleanupPlusSnapshot(array(
@@ -172,24 +202,70 @@ behaviorSmokeAssertTrue($auditRows[0]["message"] !== "", "Audit rows should incl
 
 $dockerRuntimeFixture = $stateRoot . "/docker-runtime";
 $dockerClientFixture = $stateRoot . "/DockerClient.php";
+$templatedOrphanPath = $appdataShareRoot . "/templated-orphan";
+$filesystemOrphanPath = $appdataShareRoot . "/fs-orphan";
+$liveAppPath = $appdataShareRoot . "/live-app";
+$nestedAppRoot = $appdataShareRoot . "/nested-app";
+$nestedTemplatePath = $nestedAppRoot . "/config";
+$quarantinePath = $appdataShareRoot . "/.appdata-cleanup-plus-quarantine";
 mkdir($dockerRuntimeFixture, 0777, true);
-file_put_contents($dockerClientFixture, "<?php\ntrigger_error('docker client fixture include warning', E_USER_WARNING);\nclass DockerClient {\n  public function getDockerContainers() {\n    trigger_error('docker client fixture query warning', E_USER_WARNING);\n    echo \"docker-fixture-noise\";\n    return array((object)array(\n      'Volumes' => array(\n        (object)array('Source' => '/mnt/user/appdata/live', 'Destination' => '/config')\n      )\n    ));\n  }\n}\n");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($dockerConfigFixture)), "Docker config fixture directory should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($shareConfigFixtureDir), "Share config fixture directory should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templateFixtureDir), "Template fixture directory should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($appdataShareRoot), "Appdata share fixture root should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templatedOrphanPath), "Templated orphan fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($filesystemOrphanPath), "Filesystem orphan fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($liveAppPath), "Live app fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($nestedTemplatePath), "Nested template fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($quarantinePath), "Quarantine fixture should be created.");
+file_put_contents($dockerConfigFixture, "DOCKER_APP_CONFIG_PATH=\"" . $appdataShareRoot . "\"\n");
+file_put_contents($shareConfigFixtureDir . "/" . $appdataShareName . ".cfg", "shareUseCache=\"yes\"\n");
+behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/templated-orphan.xml", "templated-orphan", $templatedOrphanPath, "/config");
+behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/nested-app.xml", "nested-app", $nestedTemplatePath, "/config");
+file_put_contents($dockerClientFixture, "<?php\ntrigger_error('docker client fixture include warning', E_USER_WARNING);\nclass DockerClient {\n  public function getDockerContainers() {\n    trigger_error('docker client fixture query warning', E_USER_WARNING);\n    echo \"docker-fixture-noise\";\n    return array((object)array(\n      'Volumes' => array(\n        (object)array('Source' => '" . addslashes($liveAppPath) . "', 'Destination' => '/config')\n      )\n    ));\n  }\n}\n");
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_RUNTIME_PATH=" . str_replace("\\", "/", $dockerRuntimeFixture));
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_CLIENT_PATH=" . str_replace("\\", "/", $dockerClientFixture));
 $containers = getDockerContainersSafe();
 behaviorSmokeAssertSame(1, count($containers), "Docker container scan should return fixture containers even when the Docker client emits warnings.");
 $filteredVolumes = removeInstalledVolumeMatches(array(
-  "/mnt/user/appdata/live" => array(
-    "HostDir" => "/mnt/user/appdata/live"
+  $liveAppPath => array(
+    "HostDir" => $liveAppPath
   ),
-  "/mnt/user/appdata/leftover" => array(
-    "HostDir" => "/mnt/user/appdata/leftover"
+  $templatedOrphanPath => array(
+    "HostDir" => $templatedOrphanPath
   )
 ), $containers);
-behaviorSmokeAssertTrue(! isset($filteredVolumes["/mnt/user/appdata/live"]), "Installed container paths should be removed even when Docker volumes arrive as objects.");
-behaviorSmokeAssertTrue(isset($filteredVolumes["/mnt/user/appdata/leftover"]), "Unmatched candidate paths should remain after Docker volume filtering.");
+behaviorSmokeAssertTrue(! isset($filteredVolumes[$liveAppPath]), "Installed container paths should be removed even when Docker volumes arrive as objects.");
+behaviorSmokeAssertTrue(isset($filteredVolumes[$templatedOrphanPath]), "Unmatched candidate paths should remain after Docker volume filtering.");
 $dashboard = buildDashboardPayload();
 behaviorSmokeAssertTrue(is_array($dashboard) && ! empty($dashboard["ok"]), "Dashboard build should survive DockerClient warnings and output.");
+$dashboardRows = isset($dashboard["payload"]["rows"]) && is_array($dashboard["payload"]["rows"]) ? $dashboard["payload"]["rows"] : array();
+$templatedRow = behaviorSmokeFindRowByPath($dashboardRows, $templatedOrphanPath);
+$filesystemRow = behaviorSmokeFindRowByPath($dashboardRows, $filesystemOrphanPath);
+$liveRow = behaviorSmokeFindRowByPath($dashboardRows, $liveAppPath);
+$nestedRootRow = behaviorSmokeFindRowByPath($dashboardRows, $nestedAppRoot);
+$nestedTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $nestedTemplatePath);
+$quarantineRow = behaviorSmokeFindRowByPath($dashboardRows, $quarantinePath);
+behaviorSmokeAssertTrue(is_array($templatedRow), "Template-backed orphan should be detected.");
+behaviorSmokeAssertTrue(is_array($filesystemRow), "Filesystem-only orphan should be detected.");
+behaviorSmokeAssertSame(null, $liveRow, "Installed appdata paths should not be surfaced as orphaned.");
+behaviorSmokeAssertSame(null, $nestedRootRow, "Top-level share folders containing a nested tracked path should not be duplicated as filesystem orphans.");
+behaviorSmokeAssertTrue(is_array($nestedTemplateRow), "Nested template-backed orphan should still be surfaced.");
+behaviorSmokeAssertSame(null, $quarantineRow, "The plugin quarantine root should not be surfaced as a filesystem orphan.");
+behaviorSmokeAssertSame("template", $templatedRow["sourceKind"], "Template-backed rows should preserve their source kind.");
+behaviorSmokeAssertSame("filesystem", $filesystemRow["sourceKind"], "Filesystem-only rows should be marked as discovery candidates.");
+behaviorSmokeAssertSame("Appdata share scan", $filesystemRow["sourceDisplay"], "Filesystem-only rows should explain their discovery source.");
+behaviorSmokeAssertContains("Saved templates", $templatedRow["reason"], "Template-backed rows should explain their saved-template reference.");
+behaviorSmokeAssertContains("no saved Docker template or installed container currently references it", $filesystemRow["reason"], "Filesystem-only rows should explain that they are unreferenced.");
+
+$symlinkTargetPath = $appdataShareRoot . "/symlink-target";
+$symlinkLinkPath = $appdataShareRoot . "/symlink-link";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($symlinkTargetPath . "/child"), "Symlink target fixture should be created.");
+if ( function_exists("symlink") && @symlink($symlinkTargetPath, $symlinkLinkPath) ) {
+  $symlinkReason = buildPathSecurityLockReason($symlinkLinkPath . "/child");
+  behaviorSmokeAssertContains($symlinkLinkPath, $symlinkReason, "Symlink lock reasons should identify the exact offending path segment.");
+}
 
 behaviorSmokeRemoveTree($stateRoot);
+behaviorSmokeRemoveTree($appdataShareRoot);
 echo "behavior_smoke: OK" . PHP_EOL;

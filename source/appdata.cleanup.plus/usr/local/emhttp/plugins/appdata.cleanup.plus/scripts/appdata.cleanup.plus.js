@@ -644,7 +644,7 @@
     renderNotices([]);
     renderResultsMeta("");
     renderStateMessage(
-      ACP.t(strings, "loadingTitle", "Scanning saved Docker templates"),
+      ACP.t(strings, "loadingTitle", "Scanning appdata share and saved Docker templates"),
       ACP.t(strings, "loadingMessage", "Reviewing orphaned appdata folders and active container mappings."),
       null,
       null,
@@ -654,9 +654,10 @@
 
   function buildRowMetaHtml(row) {
     var facts = [];
-    var sourceText = row.sourceCount > 0 ? row.sourceSummary : row.name;
+    var sourceLabel = row.sourceLabel || ACP.t(strings, "sourceLabel", "Source");
+    var sourceText = row.sourceDisplay || row.sourceSummary || row.name;
 
-    facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "templateLabel", "Template")) + "</strong> " + ACP.escapeHtml(sourceText || "") + "</span>");
+    facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(sourceLabel) + "</strong> " + ACP.escapeHtml(sourceText || "") + "</span>");
 
     if (row.targetSummary) {
       facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "targetLabel", "Target")) + "</strong> " + ACP.escapeHtml(row.targetSummary) + "</span>");
@@ -711,7 +712,7 @@
     if (!state.rows.length) {
       renderStateMessage(
         ACP.t(strings, "emptyTitle", "No orphaned appdata found"),
-        ACP.t(strings, "emptyMessage", "Nothing currently looks safe to clean up from the saved Docker templates."),
+        ACP.t(strings, "emptyMessage", "Nothing currently looks safe to clean up from the appdata share or saved Docker templates."),
         "rescan",
         ACP.t(strings, "rescanLabel", "Rescan")
       );

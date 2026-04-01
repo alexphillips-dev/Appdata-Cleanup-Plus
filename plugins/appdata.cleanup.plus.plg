@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.34">
-<!ENTITY md5 "f7eadcf7dda6ed082df667b084f73e0d">
+<!ENTITY version "2026.03.31.01">
+<!ENTITY md5 "f57223d0e12b1e95711803c89572e0ea">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.01
+- UX: Explain locked symlink candidates with the exact offending path segment instead of a generic safety warning
+- Scan: Detect direct child orphan folders in the configured appdata share even when no saved Docker template still references them
+
 ###2026.03.30.34
 - UX: Pin the stacked Controls buttons to the top-right of the panel instead of letting the action column float
 - UX: Render the desktop Controls buttons as a tight grid stack so no vertical spacing is introduced by flex layout

@@ -364,7 +364,15 @@ function collectLightweightPathStats($path) {
   );
 }
 
-function buildCandidateReason($sourceNames, $targetPaths, $dockerRunning) {
+function buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning) {
+  if ( $sourceKind === "filesystem" ) {
+    if ( ! $dockerRunning ) {
+      return "Appdata share scan found this folder, but Docker is offline, so active container mappings could not be verified.";
+    }
+
+    return "Appdata share scan found this folder, and no saved Docker template or installed container currently references it.";
+  }
+
   $sourceSummary = summarizeCandidateValues($sourceNames);
   $targetSummary = summarizeCandidateValues($targetPaths);
   $sourceLabel = $sourceSummary ? "Saved templates " . $sourceSummary : "Saved Docker templates";
@@ -494,6 +502,20 @@ function buildAuditHistoryRows($limit=0) {
   return $rows;
 }
 
+function appdataCleanupPlusCreateCandidateVolume($hostDir, $sourceKind="template") {
+  $normalizedHostDir = normalizeUserPath($hostDir);
+
+  return array(
+    "HostDir" => $normalizedHostDir,
+    "Names" => array(),
+    "Targets" => array(),
+    "TemplateRefs" => array(),
+    "SourceKind" => $sourceKind,
+    "SourceLabel" => $sourceKind === "filesystem" ? "Discovery" : "Template",
+    "SourceDisplay" => $sourceKind === "filesystem" ? "Appdata share scan" : ""
+  );
+}
+
 function buildCandidateMap($allFiles) {
   $availableVolumes = array();
 
@@ -524,18 +546,15 @@ function buildCandidateMap($allFiles) {
           continue;
         }
 
-        if ( ! isset($availableVolumes[$hostDir]) ) {
-          $availableVolumes[$hostDir] = array(
-            "HostDir" => $hostDir,
-            "Names" => array(),
-            "Targets" => array(),
-            "TemplateRefs" => array()
-          );
+        $candidatePath = normalizeUserPath($hostDir);
+
+        if ( ! isset($availableVolumes[$candidatePath]) ) {
+          $availableVolumes[$candidatePath] = appdataCleanupPlusCreateCandidateVolume($candidatePath, "template");
         }
 
-        $availableVolumes[$hostDir]["Names"][$appName] = true;
-        $availableVolumes[$hostDir]["Targets"][$targetPath] = true;
-        $availableVolumes[$hostDir]["TemplateRefs"][$appName . "|" . $targetPath] = array(
+        $availableVolumes[$candidatePath]["Names"][$appName] = true;
+        $availableVolumes[$candidatePath]["Targets"][$targetPath] = true;
+        $availableVolumes[$candidatePath]["TemplateRefs"][$appName . "|" . $targetPath] = array(
           "name" => $appName,
           "target" => $targetPath,
           "file" => basename($xmlfile)
@@ -544,6 +563,109 @@ function buildCandidateMap($allFiles) {
     } catch ( Throwable $throwable ) {
       error_log("Appdata Cleanup Plus template scan skipped " . basename((string)$xmlfile) . ": " . $throwable->getMessage());
     }
+  }
+
+  return $availableVolumes;
+}
+
+function resolveAppdataShareScanRoot() {
+  $userRoot = getAppdataShareUserPath();
+
+  if ( $userRoot && is_dir($userRoot) ) {
+    return $userRoot;
+  }
+
+  $cacheRoot = getAppdataShareCachePath();
+
+  if ( $cacheRoot && is_dir($cacheRoot) ) {
+    return $cacheRoot;
+  }
+
+  if ( $userRoot ) {
+    return $userRoot;
+  }
+
+  return $cacheRoot;
+}
+
+function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning) {
+  $availableVolumes = array();
+
+  if ( ! $dockerRunning ) {
+    return $availableVolumes;
+  }
+
+  $shareRoot = resolveAppdataShareScanRoot();
+
+  if ( ! $shareRoot || ! is_dir($shareRoot) ) {
+    return $availableVolumes;
+  }
+
+  $entries = @scandir($shareRoot);
+
+  if ( ! is_array($entries) ) {
+    return $availableVolumes;
+  }
+
+  $templatePaths = array();
+  $installedHostPaths = appdataCleanupPlusExtractDockerVolumeHostPaths($containers);
+  $excludedRoots = array();
+  $defaultQuarantineRoot = normalizeUserPath(getDefaultAppdataCleanupPlusQuarantineRoot());
+
+  if ( $defaultQuarantineRoot ) {
+    $excludedRoots[$defaultQuarantineRoot] = true;
+  }
+
+  if ( ! empty($settings["quarantineRoot"]) ) {
+    $excludedRoots[normalizeUserPath($settings["quarantineRoot"])] = true;
+  }
+
+  foreach ( $templateVolumes as $volume ) {
+    if ( empty($volume["HostDir"]) ) {
+      continue;
+    }
+
+    $templatePaths[] = (string)$volume["HostDir"];
+  }
+
+  foreach ( array_diff($entries, array(".", "..")) as $entryName ) {
+    $candidatePath = rtrim($shareRoot, "/") . "/" . $entryName;
+
+    if ( ! is_dir($candidatePath) ) {
+      continue;
+    }
+
+    $candidatePath = normalizeUserPath($candidatePath);
+
+    if ( isset($excludedRoots[$candidatePath]) ) {
+      continue;
+    }
+
+    $skipCandidate = false;
+
+    foreach ( $templatePaths as $referencePath ) {
+      if ( pathMatchesOrIsDescendant($candidatePath, $referencePath) ) {
+        $skipCandidate = true;
+        break;
+      }
+    }
+
+    if ( $skipCandidate ) {
+      continue;
+    }
+
+    foreach ( $installedHostPaths as $referencePath ) {
+      if ( pathMatchesOrIsDescendant($candidatePath, $referencePath) ) {
+        $skipCandidate = true;
+        break;
+      }
+    }
+
+    if ( $skipCandidate ) {
+      continue;
+    }
+
+    $availableVolumes[$candidatePath] = appdataCleanupPlusCreateCandidateVolume($candidatePath, "filesystem");
   }
 
   return $availableVolumes;
@@ -614,11 +736,11 @@ function buildPathSecurityLockReason($resolvedPath) {
   }
 
   if ( @is_link($resolvedPath) ) {
-    return "Symlinked folders are locked for safety.";
+    return buildSymlinkLockReason($resolvedPath, "Folder");
   }
 
   if ( pathHasSymlinkSegment($resolvedPath) ) {
-    return "Paths containing symlink segments are locked for safety.";
+    return buildPathSymlinkSegmentLockReason($resolvedPath);
   }
 
   if ( pathIsMountPoint($resolvedPath) ) {
@@ -661,6 +783,10 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings) {
 
   foreach ( $availableVolumes as $volume ) {
     try {
+      $sourceKind = isset($volume["SourceKind"]) ? trim((string)$volume["SourceKind"]) : "template";
+      $sourceLabel = isset($volume["SourceLabel"]) && trim((string)$volume["SourceLabel"]) !== ""
+        ? trim((string)$volume["SourceLabel"])
+        : ($sourceKind === "filesystem" ? "Discovery" : "Template");
       $sourceNames = array_values(array_keys($volume["Names"]));
       $targetPaths = isset($volume["Targets"]) ? array_values(array_keys($volume["Targets"])) : array();
       $templateRefs = isset($volume["TemplateRefs"]) ? array_values($volume["TemplateRefs"]) : array();
@@ -673,6 +799,7 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings) {
       $resolvedPath = resolveExistingPath($classification);
       $folderName = basename(rtrim($resolvedPath, "/"));
       $sourceSummary = summarizeCandidateValues($sourceNames);
+      $sourceDisplay = isset($volume["SourceDisplay"]) ? trim((string)$volume["SourceDisplay"]) : "";
       $targetSummary = summarizeCandidateValues($targetPaths);
       $candidateKey = appdataCleanupPlusCandidateKey($resolvedPath);
       $ignoredEntry = isset($ignoredCandidates[$candidateKey]) && is_array($ignoredCandidates[$candidateKey]) ? $ignoredCandidates[$candidateKey] : null;
@@ -683,9 +810,26 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings) {
         : collectPathStats($resolvedPath);
       $realPath = @realpath($resolvedPath);
 
+      if ( ! $sourceDisplay ) {
+        if ( $sourceSummary ) {
+          $sourceDisplay = $sourceSummary;
+        } elseif ( $sourceKind === "filesystem" ) {
+          $sourceDisplay = "Appdata share scan";
+        } else {
+          $sourceDisplay = "Saved Docker templates";
+        }
+      }
+
+      if ( ! $sourceSummary ) {
+        $sourceSummary = $sourceDisplay;
+      }
+
       $row = array(
         "id" => md5($candidateKey),
         "name" => $folderName ? $folderName : $resolvedPath,
+        "sourceKind" => $sourceKind,
+        "sourceLabel" => $sourceLabel,
+        "sourceDisplay" => $sourceDisplay,
         "sourceNames" => $sourceNames,
         "sourceSummary" => $sourceSummary,
         "sourceCount" => count($sourceNames),
@@ -699,7 +843,7 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings) {
         "risk" => $classification["risk"],
         "riskLabel" => $classification["riskLabel"],
         "riskReason" => $classification["riskReason"],
-        "reason" => buildCandidateReason($sourceNames, $targetPaths, $dockerRunning),
+        "reason" => buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning),
         "status" => $dockerRunning ? "orphaned" : "docker_offline",
         "statusLabel" => $dockerRunning ? "Orphaned" : "Docker offline",
         "canDelete" => $classification["canDelete"],
@@ -786,9 +930,16 @@ function buildSnapshotCandidateMap($rows) {
       "path" => $row["path"],
       "displayPath" => $row["displayPath"],
       "realPath" => $row["realPath"],
+      "sourceKind" => isset($row["sourceKind"]) ? $row["sourceKind"] : "template",
+      "sourceLabel" => isset($row["sourceLabel"]) ? $row["sourceLabel"] : "Template",
+      "sourceDisplay" => isset($row["sourceDisplay"]) ? $row["sourceDisplay"] : $row["sourceSummary"],
+      "sourceNames" => isset($row["sourceNames"]) ? $row["sourceNames"] : array(),
       "sourceSummary" => $row["sourceSummary"],
+      "targetPaths" => isset($row["targetPaths"]) ? $row["targetPaths"] : array(),
       "targetSummary" => $row["targetSummary"],
+      "templateRefs" => isset($row["templateRefs"]) ? $row["templateRefs"] : array(),
       "sizeBytes" => $row["sizeBytes"],
+      "reason" => isset($row["reason"]) ? $row["reason"] : "",
       "ignored" => ! empty($row["ignored"])
     );
   }
