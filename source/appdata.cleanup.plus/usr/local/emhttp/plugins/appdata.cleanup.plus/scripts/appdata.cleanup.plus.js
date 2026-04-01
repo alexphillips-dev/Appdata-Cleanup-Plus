@@ -20,6 +20,7 @@
       entries: [],
       selected: {},
       summary: { count: 0, sizeLabel: "0 B" },
+      purgeDays: 30,
       restoreConflict: null
     },
     scanHydration: {
@@ -241,6 +242,19 @@
       selectAllQuarantineEntries();
     });
 
+    $(document).on("click.acpQuarantine", ".sweet-alert [data-action='set-quarantine-purge-schedule'], .sweet-alert [data-action='clear-quarantine-purge-schedule']", function(event) {
+      var mode = $(this).data("action") === "clear-quarantine-purge-schedule" ? "clear" : "set";
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (state.busy || state.quarantine.loading) {
+        return;
+      }
+
+      startQuarantinePurgeScheduleFlow(mode, getSelectedQuarantineEntryIds());
+    });
+
     $(document).on("click.acpQuarantine", ".sweet-alert [data-action='restore-selected-quarantine'], .sweet-alert [data-action='purge-selected-quarantine']", function(event) {
       var action = $(this).data("action") === "restore-selected-quarantine" ? "restore" : "purge";
 
@@ -284,6 +298,14 @@
     $(document).on("input.acpQuarantine", ".sweet-alert .acp-restore-conflict-name", function() {
       updateRestoreConflictPreview($(this));
       setRestoreConflictFeedback("");
+    });
+
+    $(document).on("input.acpQuarantine change.acpQuarantine", ".sweet-alert .acp-quarantine-schedule-input", function() {
+      var nextDays = parseInt($.trim(String($(this).val() || "")), 10);
+
+      if (!isNaN(nextDays) && nextDays > 0) {
+        state.quarantine.purgeDays = nextDays;
+      }
     });
 
     $(document).on("click.acpQuarantine", ".sweet-alert .acp-quarantine-entry", function(event) {
@@ -448,6 +470,7 @@
     state.quarantine.loaded = false;
     state.quarantine.selected = {};
     state.quarantine.summary = { count: 0, sizeLabel: "0 B" };
+    state.quarantine.purgeDays = 30;
     state.quarantine.restoreConflict = null;
     state.scanHydration.active = false;
     state.scanHydration.queue = [];
@@ -1025,6 +1048,20 @@
       : ACP.t(strings, "selectedPlural", "folders selected"));
   }
 
+  function getQuarantineScheduleDays() {
+    var $modal = getActiveSweetAlertModal();
+    var $input = $modal.find(".acp-quarantine-schedule-input").first();
+    var rawValue = $input.length ? $.trim(String($input.val() || "")) : String(state.quarantine.purgeDays || 30);
+    var days = parseInt(rawValue, 10);
+
+    if (isNaN(days) || days <= 0) {
+      return null;
+    }
+
+    state.quarantine.purgeDays = days;
+    return days;
+  }
+
   function syncQuarantineManagerSelectionUi() {
     var selectedIds = getSelectedQuarantineEntryIds();
     var totalEntries = (state.quarantine.entries || []).length;
@@ -1035,10 +1072,17 @@
     }
 
     $modal.find(".acp-quarantine-selected-summary").text(buildQuarantineSelectionSummaryText(selectedIds.length));
+    $modal.find(".acp-quarantine-schedule-input")
+      .prop("disabled", state.busy || state.quarantine.loading)
+      .val(String(state.quarantine.purgeDays || 30));
     $modal.find("[data-action='select-all-quarantine']")
       .prop("disabled", state.busy || state.quarantine.loading || totalEntries === 0 || selectedIds.length >= totalEntries);
-    $modal.find("[data-action='restore-selected-quarantine'], [data-action='purge-selected-quarantine'], [data-action='clear-quarantine-selection']")
+    $modal.find("[data-action='restore-selected-quarantine'], [data-action='purge-selected-quarantine'], [data-action='clear-quarantine-selection'], [data-action='set-quarantine-purge-schedule'], [data-action='clear-quarantine-purge-schedule']")
       .prop("disabled", state.busy || state.quarantine.loading || selectedIds.length === 0);
+    $modal.find("[data-entry-action]")
+      .prop("disabled", state.busy || state.quarantine.loading);
+    $modal.find("[data-action='refresh-quarantine']")
+      .prop("disabled", state.busy || state.quarantine.loading);
 
     $modal.find(".acp-quarantine-entry").each(function() {
       var $entry = $(this);
@@ -1055,11 +1099,84 @@
     syncQuarantineManagerSelectionUi();
   }
 
+  function renderOpenQuarantineManagerModal() {
+    if (isQuarantineManagerModalVisible()) {
+      renderQuarantineManagerModal(false);
+      syncQuarantineManagerSelectionUi();
+    }
+  }
+
   function reopenQuarantineManagerModal(forceRefresh) {
     window.setTimeout(function() {
       ACP.releaseModalScrollLock(true);
       openQuarantineManagerModal(!!forceRefresh);
     }, 180);
+  }
+
+  function startQuarantinePurgeScheduleFlow(mode, entryIds) {
+    var requestedEntryIds = $.map($.isArray(entryIds) ? entryIds : [entryIds], function(entryId) {
+      var entryKey = String(entryId || "");
+      return entryKey ? entryKey : null;
+    });
+    var purgeDays = 0;
+
+    if (!requestedEntryIds.length) {
+      swal(
+        ACP.t(strings, "deleteEmptyTitle", "Nothing selected"),
+        ACP.t(strings, "quarantineManagerSelectionEmptyMessage", "Select at least one quarantined folder before continuing."),
+        "warning"
+      );
+      return;
+    }
+
+    if (mode === "set") {
+      purgeDays = getQuarantineScheduleDays();
+
+      if (!purgeDays) {
+        swal(
+          ACP.t(strings, "quarantinePurgeScheduleFailedTitle", "Purge timer update failed"),
+          ACP.t(strings, "quarantinePurgeScheduleInvalidMessage", "Enter a whole number of days greater than 0."),
+          "warning"
+        );
+        return;
+      }
+    }
+
+    runQuarantinePurgeScheduleUpdate(mode, requestedEntryIds, purgeDays);
+  }
+
+  function runQuarantinePurgeScheduleUpdate(mode, entryIds, purgeDays) {
+    state.quarantine.loading = true;
+    setBusy(true);
+    renderOpenQuarantineManagerModal();
+
+    apiPost({
+      action: "updateQuarantinePurgeSchedule",
+      entryIds: JSON.stringify(entryIds),
+      mode: mode,
+      purgeAfterDays: purgeDays || 0
+    }).done(function(response) {
+      var quarantine = response.quarantine || {};
+
+      setQuarantineEntries(quarantine.entries, quarantine.summary);
+      state.quarantine.loaded = true;
+      state.quarantine.loading = false;
+      setBusy(false);
+      renderPanels();
+      renderOpenQuarantineManagerModal();
+    }).fail(function(xhr) {
+      state.quarantine.loading = false;
+      setBusy(false);
+      renderPanels();
+
+      swal({
+        title: ACP.t(strings, "quarantinePurgeScheduleFailedTitle", "Purge timer update failed"),
+        text: ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantinePurgeScheduleFailedMessage", "The purge timer could not be updated right now.")),
+        type: "error"
+      }, function() {
+        reopenQuarantineManagerModal(true);
+      });
+    });
   }
 
   function buildRowMetaHtml(row) {

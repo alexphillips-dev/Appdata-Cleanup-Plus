@@ -28,6 +28,78 @@ function buildQuarantineDestination($sourcePath, $settings) {
   return $rootPath . "/" . date("Ymd-His") . "/" . $safeRelativePath;
 }
 
+function normalizeAppdataCleanupPlusQuarantinePurgeAt($purgeAt) {
+  $rawValue = trim((string)$purgeAt);
+  $timestamp = $rawValue !== "" ? strtotime($rawValue) : 0;
+
+  if ( ! $timestamp ) {
+    return "";
+  }
+
+  return date("c", $timestamp);
+}
+
+function formatAppdataCleanupPlusFutureIntervalLabel($secondsRemaining) {
+  $seconds = max(0, (int)$secondsRemaining);
+  $units = array(
+    array("seconds" => 86400, "suffix" => "d"),
+    array("seconds" => 3600, "suffix" => "h"),
+    array("seconds" => 60, "suffix" => "m")
+  );
+
+  if ( $seconds < 60 ) {
+    return "in under 1m";
+  }
+
+  foreach ( $units as $unit ) {
+    if ( $seconds >= $unit["seconds"] ) {
+      $value = (int)floor($seconds / $unit["seconds"]);
+      return "in " . $value . $unit["suffix"];
+    }
+  }
+
+  return "in under 1m";
+}
+
+function buildAppdataCleanupPlusScheduledPurgeMeta($purgeAt) {
+  $normalizedPurgeAt = normalizeAppdataCleanupPlusQuarantinePurgeAt($purgeAt);
+  $timestamp = $normalizedPurgeAt !== "" ? strtotime($normalizedPurgeAt) : 0;
+  $secondsRemaining = $timestamp ? ($timestamp - time()) : 0;
+  $tone = "is-selected";
+  $badgeLabel = "";
+
+  if ( ! $timestamp ) {
+    return array(
+      "scheduled" => false,
+      "purgeAt" => "",
+      "purgeAtLabel" => "",
+      "purgeBadgeLabel" => "",
+      "purgeBadgeTone" => "",
+      "purgeDue" => false
+    );
+  }
+
+  if ( $secondsRemaining <= 0 ) {
+    $badgeLabel = "Due now";
+    $tone = "is-blocked";
+  } else {
+    $badgeLabel = "Purges " . formatAppdataCleanupPlusFutureIntervalLabel($secondsRemaining);
+
+    if ( $secondsRemaining <= 3 * 86400 ) {
+      $tone = "is-review";
+    }
+  }
+
+  return array(
+    "scheduled" => true,
+    "purgeAt" => $normalizedPurgeAt,
+    "purgeAtLabel" => formatDateTimeLabel($timestamp),
+    "purgeBadgeLabel" => $badgeLabel,
+    "purgeBadgeTone" => $tone,
+    "purgeDue" => $secondsRemaining <= 0
+  );
+}
+
 function normalizeAppdataCleanupPlusQuarantineRecord($record) {
   $sizeBytes = null;
   $sourceNames = isset($record["sourceNames"]) && is_array($record["sourceNames"]) ? array_values($record["sourceNames"]) : array();
@@ -45,6 +117,7 @@ function normalizeAppdataCleanupPlusQuarantineRecord($record) {
     "destination" => isset($record["destination"]) ? trim((string)$record["destination"]) : "",
     "quarantineRoot" => isset($record["quarantineRoot"]) ? rtrim((string)$record["quarantineRoot"], "/") : "",
     "quarantinedAt" => isset($record["quarantinedAt"]) ? trim((string)$record["quarantinedAt"]) : "",
+    "purgeAt" => normalizeAppdataCleanupPlusQuarantinePurgeAt(isset($record["purgeAt"]) ? $record["purgeAt"] : ""),
     "sourceKind" => isset($record["sourceKind"]) ? trim((string)$record["sourceKind"]) : "template",
     "sourceLabel" => isset($record["sourceLabel"]) ? trim((string)$record["sourceLabel"]) : "",
     "sourceDisplay" => isset($record["sourceDisplay"]) ? trim((string)$record["sourceDisplay"]) : "",
@@ -139,6 +212,7 @@ function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false) {
   foreach ( $registry as $recordId => $record ) {
     $normalized = normalizeAppdataCleanupPlusQuarantineRecord($record);
     $timestamp = strtotime($normalized["quarantinedAt"]);
+    $scheduledPurge = buildAppdataCleanupPlusScheduledPurgeMeta(isset($normalized["purgeAt"]) ? $normalized["purgeAt"] : "");
     $row = array(
       "id" => $normalized["id"],
       "name" => $normalized["name"],
@@ -148,6 +222,12 @@ function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false) {
       "quarantinedAt" => $normalized["quarantinedAt"],
       "quarantinedAtLabel" => $timestamp ? formatDateTimeLabel($timestamp) : "",
       "quarantinedAgeLabel" => $timestamp ? formatRelativeAgeLabel($timestamp) : "",
+      "purgeAt" => $scheduledPurge["purgeAt"],
+      "purgeAtLabel" => $scheduledPurge["purgeAtLabel"],
+      "purgeScheduled" => $scheduledPurge["scheduled"],
+      "purgeBadgeLabel" => $scheduledPurge["purgeBadgeLabel"],
+      "purgeBadgeTone" => $scheduledPurge["purgeBadgeTone"],
+      "purgeDue" => $scheduledPurge["purgeDue"],
       "sourceKind" => $normalized["sourceKind"],
       "sourceLabel" => $normalized["sourceLabel"],
       "sourceDisplay" => $normalized["sourceDisplay"],
@@ -187,7 +267,100 @@ function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false) {
   return $entries;
 }
 
+function buildQuarantinePurgeScheduleSummary($results) {
+  $summary = array(
+    "scheduled" => 0,
+    "cleared" => 0,
+    "missing" => 0,
+    "errors" => 0
+  );
+
+  foreach ( $results as $result ) {
+    switch ( isset($result["status"]) ? $result["status"] : "" ) {
+      case "scheduled":
+        $summary["scheduled"]++;
+        break;
+      case "cleared":
+        $summary["cleared"]++;
+        break;
+      case "missing":
+        $summary["missing"]++;
+        break;
+      default:
+        $summary["errors"]++;
+        break;
+    }
+  }
+
+  return $summary;
+}
+
+function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0) {
+  $registry = getAppdataCleanupPlusQuarantineRegistry();
+  $results = array();
+  $normalizedMode = strtolower(trim((string)$mode));
+  $effectiveDays = max(0, (int)$purgeAfterDays);
+  $purgeAt = $normalizedMode === "set" ? date("c", time() + ($effectiveDays * 86400)) : "";
+  $registryDirty = false;
+
+  foreach ( $entries as $entry ) {
+    $entryId = isset($entry["id"]) ? trim((string)$entry["id"]) : "";
+    $normalized = $entryId && isset($registry[$entryId])
+      ? normalizeAppdataCleanupPlusQuarantineRecord($registry[$entryId])
+      : normalizeAppdataCleanupPlusQuarantineRecord($entry);
+    $result = array(
+      "id" => $entryId,
+      "name" => isset($normalized["name"]) ? $normalized["name"] : "",
+      "sourcePath" => isset($normalized["sourcePath"]) ? $normalized["sourcePath"] : "",
+      "destination" => isset($normalized["destination"]) ? $normalized["destination"] : ""
+    );
+
+    if ( ! $normalized["destination"] || ! is_dir($normalized["destination"]) ) {
+      if ( $entryId ) {
+        removeAppdataCleanupPlusQuarantineRecord($entryId);
+      }
+      $results[] = array_merge($result, array(
+        "status" => "missing",
+        "message" => "Quarantine path no longer exists."
+      ));
+      continue;
+    }
+
+    if ( $normalizedMode === "set" ) {
+      $normalized["purgeAt"] = $purgeAt;
+      $results[] = array_merge($result, array(
+        "status" => "scheduled",
+        "message" => "Scheduled to purge in " . $effectiveDays . " day" . ($effectiveDays === 1 ? "" : "s") . ".",
+        "purgeAt" => $purgeAt
+      ));
+    } else {
+      $hadSchedule = $normalized["purgeAt"] !== "";
+      $normalized["purgeAt"] = "";
+      $results[] = array_merge($result, array(
+        "status" => "cleared",
+        "message" => $hadSchedule ? "Scheduled purge cleared." : "No scheduled purge was set."
+      ));
+    }
+
+    if ( $entryId ) {
+      $registry[$entryId] = $normalized;
+      $registryDirty = true;
+    }
+  }
+
+  if ( $registryDirty ) {
+    setAppdataCleanupPlusQuarantineRegistry($registry);
+  }
+
+  return array(
+    "action" => $normalizedMode === "set" ? "schedule-purge" : "clear-purge-schedule",
+    "results" => $results,
+    "summary" => buildQuarantinePurgeScheduleSummary($results)
+  );
+}
+
 function buildQuarantineManagerPayload($includeEntries=true) {
+  sweepExpiredAppdataCleanupPlusQuarantineEntries();
   $entries = getActiveAppdataCleanupPlusQuarantineEntries($includeEntries);
 
   return array(
@@ -690,9 +863,10 @@ function nativeDeleteDirectory($path) {
   );
 }
 
-function purgeTrackedQuarantineEntry($entry) {
+function purgeTrackedQuarantineEntry($entry, $options=array()) {
   $destination = isset($entry["destination"]) ? trim((string)$entry["destination"]) : "";
   $quarantineRoot = isset($entry["quarantineRoot"]) ? trim((string)$entry["quarantineRoot"]) : "";
+  $scheduledPurge = ! empty($options["scheduledPurge"]);
 
   if ( ! $destination || ! is_dir($destination) ) {
     removeAppdataCleanupPlusQuarantineRecord($entry["id"]);
@@ -716,7 +890,9 @@ function purgeTrackedQuarantineEntry($entry) {
 
   return array(
     "status" => "purged",
-    "message" => "Permanently deleted from quarantine."
+    "message" => $scheduledPurge
+      ? "Permanently deleted from quarantine after the scheduled purge window expired."
+      : "Permanently deleted from quarantine."
   );
 }
 
@@ -750,7 +926,7 @@ function executeQuarantineManagerAction($entries, $action, $options=array()) {
       continue;
     }
 
-    $purgeResult = purgeTrackedQuarantineEntry($entry);
+    $purgeResult = purgeTrackedQuarantineEntry($entry, $options);
     $results[] = array_merge($result, $purgeResult);
   }
 
@@ -759,6 +935,48 @@ function executeQuarantineManagerAction($entries, $action, $options=array()) {
     "results" => $results,
     "summary" => buildQuarantineManagerActionSummary($results)
   );
+}
+
+function sweepExpiredAppdataCleanupPlusQuarantineEntries() {
+  $dueEntries = array();
+  $registry = pruneMissingAppdataCleanupPlusQuarantineRecords(getAppdataCleanupPlusQuarantineRegistry());
+  $nowTimestamp = time();
+  $execution = array(
+    "action" => "scheduled-purge",
+    "results" => array(),
+    "summary" => buildQuarantineManagerActionSummary(array())
+  );
+
+  foreach ( $registry as $record ) {
+    $normalized = normalizeAppdataCleanupPlusQuarantineRecord($record);
+    $purgeTimestamp = $normalized["purgeAt"] !== "" ? strtotime($normalized["purgeAt"]) : 0;
+
+    if ( $purgeTimestamp && $purgeTimestamp <= $nowTimestamp ) {
+      $dueEntries[] = $normalized;
+    }
+  }
+
+  if ( empty($dueEntries) ) {
+    return $execution;
+  }
+
+  $execution = executeQuarantineManagerAction($dueEntries, "purge", array(
+    "scheduledPurge" => true
+  ));
+  $execution["action"] = "scheduled-purge";
+
+  appendAppdataCleanupPlusAuditEntry(array(
+    "timestamp" => date("c"),
+    "operation" => "scheduled-purge",
+    "requestedCount" => count($dueEntries),
+    "requestedIds" => array_values(array_map(function($entry) {
+      return isset($entry["id"]) ? (string)$entry["id"] : "";
+    }, $dueEntries)),
+    "summary" => $execution["summary"],
+    "results" => $execution["results"]
+  ));
+
+  return $execution;
 }
 
 function resolveCandidateForAction($candidate, $settings, $baseOperation) {

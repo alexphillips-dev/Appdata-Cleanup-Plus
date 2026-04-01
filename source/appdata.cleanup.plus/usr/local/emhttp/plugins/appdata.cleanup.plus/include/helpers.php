@@ -301,7 +301,7 @@ function appdataCleanupPlusBuildManagedSystemLockReason($path) {
 function getAppdataShareName() {
   static $shareName = null;
 
-  if ( $shareName !== null ) {
+  if ( $shareName !== null && $shareName !== "" ) {
     return $shareName;
   }
 

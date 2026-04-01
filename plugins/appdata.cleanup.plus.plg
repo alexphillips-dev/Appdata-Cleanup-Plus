@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.03">
-<!ENTITY md5 "67b4033295d816ace7151deb7bcad652">
+<!ENTITY version "2026.04.01.04">
+<!ENTITY md5 "4aac14c257712c1d2c5e540e529c021e">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,14 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.04
+- Quarantine: Add per-entry scheduled purge timers so selected quarantine records can be marked for purge in a chosen number of days
+- Quarantine: Sweep due scheduled purges automatically when quarantine state is loaded, using the normal purge path and recording scheduled purges in audit history
+- Quarantine UI: Add bulk `Purge in days`, `Set purge`, and `Clear purge timer` controls to the quarantine manager toolbar
+- Quarantine UI: Show scheduled purge badges and exact scheduled purge timestamps on quarantined entries so pending permanent deletion is visible at a glance
+- Audit: Label scheduled auto-purge history entries as `Scheduled purge` instead of showing the raw internal operation key
+- Test: Cover setting, clearing, and expiring quarantine purge schedules in the behavior smoke suite
+
 ###2026.04.01.03
 - Restore: Let the quarantine restore-conflict dialog accept per-folder edited restore names instead of only offering a generated suffix
 - Safety: Validate edited restore names server-side, reject invalid names cleanly, and report edited restore destinations back in the restore results summary

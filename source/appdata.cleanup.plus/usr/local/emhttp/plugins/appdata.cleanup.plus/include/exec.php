@@ -65,6 +65,10 @@ try {
       handleGetQuarantineEntries();
       break;
 
+    case "updateQuarantinePurgeSchedule":
+      handleUpdateQuarantinePurgeSchedule();
+      break;
+
     case "inspectQuarantineRestore":
       handleInspectQuarantineRestore();
       break;

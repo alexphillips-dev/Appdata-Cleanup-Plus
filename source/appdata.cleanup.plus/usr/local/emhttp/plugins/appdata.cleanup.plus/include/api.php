@@ -278,6 +278,51 @@ function handleGetQuarantineEntries() {
   ));
 }
 
+function handleUpdateQuarantinePurgeSchedule() {
+  $entryIds = parseCandidateIds(getPostedString("entryIds"));
+  $mode = strtolower(getPostedString("purgeScheduleMode"));
+  $purgeAfterDays = (int)getPostedString("purgeAfterDays");
+
+  if ( empty($entryIds) ) {
+    jsonResponse(array(
+      "ok" => false,
+      "message" => "No quarantine entries were selected."
+    ), 400);
+  }
+
+  if ( ! in_array($mode, array("set", "clear"), true) ) {
+    jsonResponse(array(
+      "ok" => false,
+      "message" => "Unsupported purge schedule action."
+    ), 400);
+  }
+
+  if ( $mode === "set" && ($purgeAfterDays < 1 || $purgeAfterDays > 3650) ) {
+    jsonResponse(array(
+      "ok" => false,
+      "message" => "Purge delay must be between 1 and 3650 days."
+    ), 400);
+  }
+
+  $resolvedEntries = resolveTrackedQuarantineEntries($entryIds);
+
+  if ( ! $resolvedEntries["ok"] ) {
+    jsonResponse(array(
+      "ok" => false,
+      "message" => $resolvedEntries["message"]
+    ), $resolvedEntries["statusCode"]);
+  }
+
+  $execution = updateTrackedQuarantinePurgeSchedule($resolvedEntries["entries"], $mode, $purgeAfterDays);
+  jsonResponse(array(
+    "ok" => empty($execution["summary"]["errors"]) && empty($execution["summary"]["missing"]),
+    "action" => $execution["action"],
+    "results" => $execution["results"],
+    "summary" => $execution["summary"],
+    "quarantine" => buildQuarantineManagerPayload(true)
+  ));
+}
+
 function handleInspectQuarantineRestore() {
   $entryIds = parseCandidateIds(getPostedString("entryIds"));
   $resolvedEntries = array();

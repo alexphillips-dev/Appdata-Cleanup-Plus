@@ -170,6 +170,16 @@ behaviorSmokeAssertSame(1, count($activeEntries), "Quarantine registry should re
 behaviorSmokeAssertSame("entry-one", $activeEntries[0]["id"], "Quarantine entry id should round-trip.");
 $quarantineSummary = buildQuarantineSummary($activeEntries);
 behaviorSmokeAssertSame(1, $quarantineSummary["count"], "Quarantine summary should count active entries.");
+$scheduleSetResult = updateTrackedQuarantinePurgeSchedule($activeEntries, "set", 14);
+behaviorSmokeAssertSame("scheduled", $scheduleSetResult["results"][0]["status"], "Purge scheduling should mark selected quarantine entries as scheduled.");
+$scheduledEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
+behaviorSmokeAssertSame(true, ! empty($scheduledEntries[0]["purgeScheduled"]), "Scheduled purge entries should expose their scheduled state in the manager payload.");
+behaviorSmokeAssertTrue($scheduledEntries[0]["purgeAt"] !== "", "Scheduled purge entries should expose a purge timestamp.");
+behaviorSmokeAssertTrue($scheduledEntries[0]["purgeBadgeLabel"] !== "", "Scheduled purge entries should expose a purge badge label.");
+$scheduleClearResult = updateTrackedQuarantinePurgeSchedule($scheduledEntries, "clear", 0);
+behaviorSmokeAssertSame("cleared", $scheduleClearResult["results"][0]["status"], "Clearing a scheduled purge should update the entry status.");
+$clearedEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
+behaviorSmokeAssertSame(false, ! empty($clearedEntries[0]["purgeScheduled"]), "Cleared purge schedules should disappear from the manager payload.");
 
 $restoreCollisionSource = $appdataShareRoot . "/restore-collision";
 $restoreCollisionQuarantineRoot = $stateRoot . "/restore-collision-quarantine";
@@ -291,6 +301,27 @@ behaviorSmokeAssertSame(2, count($auditRows), "Audit history rows should include
 behaviorSmokeAssertSame("restore", $auditRows[0]["operation"], "Audit history should be newest-first.");
 behaviorSmokeAssertSame("quarantine", $auditRows[1]["operation"], "Audit history should preserve older entries.");
 behaviorSmokeAssertTrue($auditRows[0]["message"] !== "", "Audit rows should include a summary message.");
+
+$scheduledPurgeQuarantineRoot = $stateRoot . "/scheduled-purge-quarantine";
+$scheduledPurgeDestination = $scheduledPurgeQuarantineRoot . "/20260330-121000/mnt/user/appdata/scheduled-purge";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($scheduledPurgeDestination), "Scheduled purge quarantine fixture should be created.");
+registerAppdataCleanupPlusQuarantineRecord(array(
+  "id" => "scheduled-purge-entry",
+  "name" => "scheduled-purge",
+  "sourcePath" => "/mnt/user/appdata/scheduled-purge",
+  "destination" => $scheduledPurgeDestination,
+  "quarantineRoot" => $scheduledPurgeQuarantineRoot,
+  "quarantinedAt" => "2026-03-30T12:10:00+00:00",
+  "purgeAt" => "2000-01-01T00:00:00+00:00",
+  "sourceSummary" => "scheduled-purge",
+  "targetSummary" => "/config"
+));
+$scheduledPurgeExecution = sweepExpiredAppdataCleanupPlusQuarantineEntries();
+behaviorSmokeAssertSame("scheduled-purge", $scheduledPurgeExecution["action"], "Scheduled purge sweeps should report their action label.");
+behaviorSmokeAssertTrue(! is_dir($scheduledPurgeDestination), "Expired scheduled purge entries should be auto-purged when the quarantine payload is loaded.");
+$latestAuditEntry = getLatestAppdataCleanupPlusAuditEntry();
+behaviorSmokeAssertSame("scheduled-purge", isset($latestAuditEntry["operation"]) ? $latestAuditEntry["operation"] : "", "Scheduled purge sweeps should append an audit entry.");
+behaviorSmokeAssertSame(1, isset($latestAuditEntry["summary"]["purged"]) ? (int)$latestAuditEntry["summary"]["purged"] : 0, "Scheduled purge sweeps should report purged entries in the audit summary.");
 
 $dockerRuntimeFixture = $stateRoot . "/docker-runtime";
 $dockerClientFixture = $stateRoot . "/DockerClient.php";

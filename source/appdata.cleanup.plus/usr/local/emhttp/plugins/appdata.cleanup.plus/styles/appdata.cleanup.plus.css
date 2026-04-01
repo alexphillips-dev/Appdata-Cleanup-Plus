@@ -1466,11 +1466,30 @@ body[data-acp-host-theme="light"] #acp-app,
   min-height: 18px;
 }
 
+.acp-quarantine-schedule-field {
+  display: grid;
+  gap: 4px;
+  min-width: 110px;
+}
+
+.acp-quarantine-schedule-input {
+  min-height: 30px;
+  padding-right: 6px;
+  width: 112px;
+}
+
 .acp-modal-inline-title {
   color: var(--acp-heading);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
+}
+
+.acp-quarantine-meta-badges {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .acp-modal-lead {
@@ -1515,6 +1534,11 @@ body[data-acp-host-theme="light"] #acp-app,
 .acp-modal-stat.is-review {
   background: var(--acp-review-soft);
   color: var(--acp-review-text);
+}
+
+.acp-modal-stat.is-blocked {
+  background: var(--acp-locked-soft);
+  color: var(--acp-locked-text);
 }
 
 .acp-modal-warning-box,
@@ -1644,6 +1668,10 @@ body[data-acp-host-theme="light"] #acp-app,
   display: grid;
   gap: 10px;
   grid-template-columns: auto minmax(0, 1fr);
+}
+
+.acp-quarantine-entry-main .acp-quarantine-title-wrap {
+  align-items: start;
 }
 
 .acp-quarantine-entry-check {
@@ -1833,6 +1861,14 @@ body[data-acp-host-theme="light"] #acp-app,
   .acp-quarantine-manager-toolbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .acp-quarantine-schedule-field {
+    width: 100%;
+  }
+
+  .acp-quarantine-schedule-input {
+    width: 100%;
   }
 
   .sweet-alert.acp-quarantine-manager-modal {

@@ -412,6 +412,8 @@ function buildAuditOperationLabel($operation) {
       return "Restore";
     case "purge":
       return "Purge";
+    case "scheduled-purge":
+      return "Scheduled purge";
     case "delete":
     case "cleanup":
       return "Cleanup";
