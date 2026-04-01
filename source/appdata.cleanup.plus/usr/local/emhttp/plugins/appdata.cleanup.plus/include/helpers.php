@@ -106,12 +106,28 @@ function getAppdataShareCachePath() {
   return "/mnt/cache/" . $shareName;
 }
 
+function appdataCleanupPlusCanonicalizePath($path) {
+  $normalized = trim(str_replace("\\", "/", (string)$path));
+
+  if ( $normalized === "" ) {
+    return "";
+  }
+
+  $normalized = preg_replace('#/+#', '/', $normalized);
+
+  if ( $normalized !== "/" ) {
+    $normalized = rtrim($normalized, "/");
+  }
+
+  return $normalized === "" ? "/" : $normalized;
+}
+
 function normalizeUserPath($path) {
-  return str_replace("/mnt/cache/","/mnt/user/",$path);
+  return appdataCleanupPlusCanonicalizePath(str_replace("/mnt/cache/","/mnt/user/",$path));
 }
 
 function normalizeCachePath($path) {
-  return str_replace("/mnt/user/","/mnt/cache/",$path);
+  return appdataCleanupPlusCanonicalizePath(str_replace("/mnt/user/","/mnt/cache/",$path));
 }
 
 function appdataPathSegments($path) {
@@ -543,7 +559,7 @@ function validateAppdataCleanupPlusCsrfToken($token) {
 }
 
 function appdataCleanupPlusCandidateKey($path) {
-  return normalizeUserPath(rtrim($path, "/"));
+  return normalizeUserPath($path);
 }
 
 function getIgnoredAppdataCleanupPlusCandidates() {
