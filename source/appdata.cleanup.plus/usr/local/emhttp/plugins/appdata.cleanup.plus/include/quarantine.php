@@ -753,6 +753,18 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
+  $vmManagerLockReason = appdataCleanupPlusBuildVmManagerLockReason($displayPath);
+
+  if ( $vmManagerLockReason !== "" ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "blocked",
+      "message" => $vmManagerLockReason
+    );
+  }
+
   if ( $snapshotRealPath && ! hash_equals($snapshotRealPath, $currentRealPath) ) {
     return array(
       "ok" => false,

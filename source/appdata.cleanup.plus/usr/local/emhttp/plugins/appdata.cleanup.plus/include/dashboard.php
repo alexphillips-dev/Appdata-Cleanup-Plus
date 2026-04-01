@@ -665,6 +665,10 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
       continue;
     }
 
+    if ( appdataCleanupPlusBuildVmManagerLockReason($candidatePath) !== "" ) {
+      continue;
+    }
+
     $skipCandidate = false;
 
     foreach ( $templatePaths as $referencePath ) {
@@ -693,6 +697,22 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
   }
 
   return $availableVolumes;
+}
+
+function removeVmManagerManagedCandidates($availableVolumes) {
+  $filtered = $availableVolumes;
+
+  foreach ( $availableVolumes as $volume ) {
+    if ( empty($volume["HostDir"]) ) {
+      continue;
+    }
+
+    if ( appdataCleanupPlusBuildVmManagerLockReason($volume["HostDir"]) !== "" ) {
+      unset($filtered[$volume["HostDir"]]);
+    }
+  }
+
+  return $filtered;
 }
 
 function removeInstalledVolumeMatches($availableVolumes, $containers) {
@@ -757,6 +777,12 @@ function removeParentsUsedByInstalledContainers($availableVolumes, $containers) 
 function buildPathSecurityLockReason($resolvedPath) {
   if ( ! is_dir($resolvedPath) ) {
     return "Path no longer exists.";
+  }
+
+  $vmManagerLockReason = appdataCleanupPlusBuildVmManagerLockReason($resolvedPath);
+
+  if ( $vmManagerLockReason !== "" ) {
+    return $vmManagerLockReason;
   }
 
   if ( @is_link($resolvedPath) ) {

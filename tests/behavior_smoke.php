@@ -7,6 +7,7 @@ $stateRoot = $repoRoot . DIRECTORY_SEPARATOR . "tests" . DIRECTORY_SEPARATOR . "
 $stateRoot = str_replace("\\", "/", $stateRoot);
 $sessionRoot = $stateRoot . "/sessions";
 $dockerConfigFixture = $stateRoot . "/boot/config/docker.cfg";
+$vmConfigFixture = $stateRoot . "/boot/config/domain.cfg";
 $shareConfigFixtureDir = $stateRoot . "/boot/config/shares";
 $templateFixtureDir = $stateRoot . "/boot/config/plugins/dockerMan/templates-user";
 $appdataShareName = "acp-smoke-share-" . getmypid();
@@ -14,6 +15,7 @@ $appdataShareRoot = "/mnt/user/" . $appdataShareName;
 
 putenv("APPDATA_CLEANUP_PLUS_STATE_ROOT=" . $stateRoot);
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_CONFIG_PATH=" . $dockerConfigFixture);
+putenv("APPDATA_CLEANUP_PLUS_VM_CONFIG_PATH=" . $vmConfigFixture);
 putenv("APPDATA_CLEANUP_PLUS_SHARE_CONFIG_DIR=" . $shareConfigFixtureDir);
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_TEMPLATE_DIR=" . $templateFixtureDir);
 
@@ -244,6 +246,12 @@ $nestedTemplatePath = $nestedAppRoot . "/config";
 $slashLiveRoot = $appdataShareRoot . "/adguard";
 $slashLivePath = $slashLiveRoot . "/workingdir";
 $slashTemplatePath = $slashLivePath . "/";
+$vmDomainsPath = $appdataShareRoot . "/vm-domains";
+$vmDomainTemplatePath = $vmDomainsPath . "/template-candidate";
+$vmIsosPath = $appdataShareRoot . "/vm-isos";
+$libvirtRoot = $appdataShareRoot . "/system/libvirt";
+$libvirtImagePath = $libvirtRoot . "/libvirt.img";
+$libvirtParentPath = $appdataShareRoot . "/system";
 $quarantinePath = $appdataShareRoot . "/.appdata-cleanup-plus-quarantine";
 mkdir($dockerRuntimeFixture, 0777, true);
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($dockerConfigFixture)), "Docker config fixture directory should be created.");
@@ -255,12 +263,18 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($filesystemOrphanPath)
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($liveAppPath), "Live app fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($nestedTemplatePath), "Nested template fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($slashLivePath), "Trailing-slash live path fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmDomainTemplatePath), "VM domains fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmIsosPath), "VM ISO fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($libvirtRoot), "Libvirt fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($quarantinePath), "Quarantine fixture should be created.");
+file_put_contents($vmConfigFixture, "DOMAINDIR=\"" . $vmDomainsPath . "/\"\nMEDIADIR=\"" . $vmIsosPath . "/\"\nIMAGE_FILE=\"" . $libvirtImagePath . "\"\n");
 file_put_contents($dockerConfigFixture, "DOCKER_APP_CONFIG_PATH=\"" . $appdataShareRoot . "\"\n");
 file_put_contents($shareConfigFixtureDir . "/" . $appdataShareName . ".cfg", "shareUseCache=\"yes\"\n");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/templated-orphan.xml", "templated-orphan", $templatedOrphanPath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/nested-app.xml", "nested-app", $nestedTemplatePath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/adguard-workingdir.xml", "AdGuard", $slashTemplatePath, "/opt/adguardhome/work");
+behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/vm-template-managed.xml", "vm-template-managed", $vmDomainTemplatePath, "/config");
+file_put_contents($libvirtImagePath, "libvirt-image");
 file_put_contents($dockerClientFixture, "<?php\ntrigger_error('docker client fixture include warning', E_USER_WARNING);\nclass DockerClient {\n  public function getDockerContainers() {\n    trigger_error('docker client fixture query warning', E_USER_WARNING);\n    echo \"docker-fixture-noise\";\n    return array((object)array(\n      'Volumes' => array(\n        (object)array('Source' => '" . addslashes($liveAppPath) . "', 'Destination' => '/config'),\n        (object)array('Source' => '" . addslashes($slashLivePath) . "', 'Destination' => '/opt/adguardhome/work')\n      )\n    ));\n  }\n}\n");
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_RUNTIME_PATH=" . str_replace("\\", "/", $dockerRuntimeFixture));
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_CLIENT_PATH=" . str_replace("\\", "/", $dockerClientFixture));
@@ -285,6 +299,10 @@ $liveRow = behaviorSmokeFindRowByPath($dashboardRows, $liveAppPath);
 $nestedRootRow = behaviorSmokeFindRowByPath($dashboardRows, $nestedAppRoot);
 $nestedTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $nestedTemplatePath);
 $slashLiveRow = behaviorSmokeFindRowByPath($dashboardRows, $slashLivePath);
+$vmDomainsRow = behaviorSmokeFindRowByPath($dashboardRows, $vmDomainsPath);
+$vmTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $vmDomainTemplatePath);
+$vmIsosRow = behaviorSmokeFindRowByPath($dashboardRows, $vmIsosPath);
+$libvirtParentRow = behaviorSmokeFindRowByPath($dashboardRows, $libvirtParentPath);
 $quarantineRow = behaviorSmokeFindRowByPath($dashboardRows, $quarantinePath);
 behaviorSmokeAssertTrue(is_array($templatedRow), "Template-backed orphan should be detected.");
 behaviorSmokeAssertTrue(is_array($filesystemRow), "Filesystem-only orphan should be detected.");
@@ -292,6 +310,10 @@ behaviorSmokeAssertSame(null, $liveRow, "Installed appdata paths should not be s
 behaviorSmokeAssertSame(null, $nestedRootRow, "Top-level share folders containing a nested tracked path should not be duplicated as filesystem orphans.");
 behaviorSmokeAssertTrue(is_array($nestedTemplateRow), "Nested template-backed orphan should still be surfaced.");
 behaviorSmokeAssertSame(null, $slashLiveRow, "A trailing slash difference between a saved template path and a live mount should not create a false orphan.");
+behaviorSmokeAssertSame(null, $vmDomainsRow, "VM Manager vdisk storage paths should be excluded from orphaned results.");
+behaviorSmokeAssertSame(null, $vmTemplateRow, "Template-backed paths inside VM Manager storage should be excluded from orphaned results.");
+behaviorSmokeAssertSame(null, $vmIsosRow, "VM Manager ISO storage paths should be excluded from orphaned results.");
+behaviorSmokeAssertSame(null, $libvirtParentRow, "Parents containing the configured libvirt path should be excluded from orphaned results.");
 behaviorSmokeAssertSame(null, $quarantineRow, "The plugin quarantine root should not be surfaced as a filesystem orphan.");
 behaviorSmokeAssertSame("template", $templatedRow["sourceKind"], "Template-backed rows should preserve their source kind.");
 behaviorSmokeAssertSame("filesystem", $filesystemRow["sourceKind"], "Filesystem-only rows should be marked as discovery candidates.");
@@ -306,6 +328,19 @@ $hydratedStatsRow = buildHydratedCandidateStatRow($hydratedCandidate["candidates
 behaviorSmokeAssertSame($templatedRow["id"], $hydratedStatsRow["id"], "Hydrated stats should map back to the original row id.");
 behaviorSmokeAssertSame(false, ! empty($hydratedStatsRow["statsPending"]), "Hydrated rows should clear the pending-stats marker.");
 behaviorSmokeAssertTrue($hydratedStatsRow["sizeLabel"] !== "Unknown", "Hydrated rows should populate a real size label.");
+
+$vmManagerPaths = getAppdataCleanupPlusVmManagerManagedPaths();
+behaviorSmokeAssertSame(3, count($vmManagerPaths), "VM Manager config should expose the configured vdisk, ISO, and libvirt paths.");
+behaviorSmokeAssertContains("VM Manager vdisk storage path", buildPathSecurityLockReason($vmDomainsPath), "VM Manager vdisk storage should be safety-locked.");
+behaviorSmokeAssertContains("VM Manager libvirt storage path", buildPathSecurityLockReason($libvirtParentPath), "Parents containing the configured libvirt path should be safety-locked.");
+$vmActionResolution = resolveCandidateForAction(array(
+  "path" => $vmDomainsPath,
+  "displayPath" => $vmDomainsPath,
+  "realPath" => (string)@realpath($vmDomainsPath)
+), getAppdataCleanupPlusSafetySettings(), "quarantine");
+behaviorSmokeAssertSame(false, $vmActionResolution["ok"], "VM Manager paths should be blocked at action time.");
+behaviorSmokeAssertSame("blocked", $vmActionResolution["status"], "VM Manager action blocks should be reported as blocked.");
+behaviorSmokeAssertContains("VM Manager vdisk storage path", $vmActionResolution["message"], "VM Manager action blocks should explain why the path is excluded.");
 
 $symlinkTargetPath = $appdataShareRoot . "/symlink-target";
 $symlinkLinkPath = $appdataShareRoot . "/symlink-link";

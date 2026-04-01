@@ -67,6 +67,144 @@ function appdataCleanupPlusDockerTemplateDir() {
   return "/boot/config/plugins/dockerMan/templates-user";
 }
 
+function appdataCleanupPlusVmConfigPath() {
+  $override = trim(str_replace("\\", "/", (string)getenv("APPDATA_CLEANUP_PLUS_VM_CONFIG_PATH")));
+
+  if ( $override ) {
+    return $override;
+  }
+
+  return "/boot/config/domain.cfg";
+}
+
+function getAppdataCleanupPlusVmManagerConfig() {
+  static $vmConfig = null;
+
+  if ( $vmConfig !== null ) {
+    return $vmConfig;
+  }
+
+  $vmConfig = @appdataCleanupPlusParseIniFile(appdataCleanupPlusVmConfigPath());
+  return is_array($vmConfig) ? $vmConfig : array();
+}
+
+function appdataCleanupPlusNormalizeVmManagerStoragePath($path, $mode="dir") {
+  $normalized = appdataCleanupPlusCanonicalizePath($path);
+
+  if ( ! $normalized || $normalized[0] !== "/" ) {
+    return "";
+  }
+
+  if ( $mode === "file_parent" ) {
+    $normalized = appdataCleanupPlusCanonicalizePath(dirname($normalized));
+  }
+
+  if ( ! $normalized || $normalized[0] !== "/" ) {
+    return "";
+  }
+
+  return $normalized;
+}
+
+function getAppdataCleanupPlusVmManagerManagedPaths() {
+  static $managedPaths = null;
+  $vmConfig = array();
+  $pathSpecs = array();
+
+  if ( $managedPaths !== null ) {
+    return $managedPaths;
+  }
+
+  $vmConfig = getAppdataCleanupPlusVmManagerConfig();
+  $pathSpecs = array(
+    array(
+      "key" => "DOMAINDIR",
+      "label" => "VM Manager vdisk storage path",
+      "mode" => "dir"
+    ),
+    array(
+      "key" => "MEDIADIR",
+      "label" => "VM Manager ISO storage path",
+      "mode" => "dir"
+    ),
+    array(
+      "key" => "IMAGE_FILE",
+      "label" => "VM Manager libvirt storage path",
+      "mode" => "file_parent"
+    )
+  );
+  $managedPaths = array();
+
+  foreach ( $pathSpecs as $pathSpec ) {
+    $configuredPath = isset($vmConfig[$pathSpec["key"]]) ? trim((string)$vmConfig[$pathSpec["key"]]) : "";
+    $normalizedPath = appdataCleanupPlusNormalizeVmManagerStoragePath($configuredPath, $pathSpec["mode"]);
+
+    if ( ! $normalizedPath ) {
+      continue;
+    }
+
+    $managedPaths[$normalizedPath] = array(
+      "key" => $pathSpec["key"],
+      "label" => $pathSpec["label"],
+      "path" => $normalizedPath
+    );
+  }
+
+  return array_values($managedPaths);
+}
+
+function appdataCleanupPlusFindVmManagerPathMatch($path) {
+  $normalizedPath = normalizeUserPath($path);
+
+  if ( ! $normalizedPath ) {
+    return null;
+  }
+
+  foreach ( getAppdataCleanupPlusVmManagerManagedPaths() as $managedPath ) {
+    $managedRoot = normalizeUserPath(isset($managedPath["path"]) ? (string)$managedPath["path"] : "");
+
+    if ( ! $managedRoot ) {
+      continue;
+    }
+
+    if ( $normalizedPath === $managedRoot ) {
+      $managedPath["relation"] = "exact";
+      return $managedPath;
+    }
+
+    if ( startsWith($normalizedPath . "/", $managedRoot . "/") ) {
+      $managedPath["relation"] = "inside";
+      return $managedPath;
+    }
+
+    if ( startsWith($managedRoot . "/", $normalizedPath . "/") ) {
+      $managedPath["relation"] = "contains";
+      return $managedPath;
+    }
+  }
+
+  return null;
+}
+
+function appdataCleanupPlusBuildVmManagerLockReason($path) {
+  $managedMatch = appdataCleanupPlusFindVmManagerPathMatch($path);
+  $managedRoot = "";
+  $managedLabel = "";
+
+  if ( ! is_array($managedMatch) ) {
+    return "";
+  }
+
+  $managedRoot = isset($managedMatch["path"]) ? (string)$managedMatch["path"] : "";
+  $managedLabel = isset($managedMatch["label"]) ? (string)$managedMatch["label"] : "VM Manager path";
+
+  if ( isset($managedMatch["relation"]) && $managedMatch["relation"] === "contains" ) {
+    return $managedLabel . " '" . $managedRoot . "' sits inside this folder and is excluded for safety.";
+  }
+
+  return $managedLabel . " '" . $managedRoot . "' is excluded for safety.";
+}
+
 function getAppdataShareName() {
   static $shareName = null;
 

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.31.16">
-<!ENTITY md5 "e87e18083575e9df73f724ea512ceed3">
+<!ENTITY version "2026.03.31.17">
+<!ENTITY md5 "c2d727a329df98a82de11e22ed3956e8">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.17
+- Fix: Read VM Manager default storage paths from `domain.cfg` and automatically exclude configured vdisk, ISO, and libvirt locations from orphan detection
+- Safety: Block cleanup actions for VM-managed paths even if a stale snapshot or unusual candidate path reaches the execution layer
+- Test: Cover VM domains, VM ISOs, libvirt-under-appdata parents, and template-backed paths inside VM storage in the behavior smoke regression
+
 ###2026.03.31.16
 - Tweak: Give `Locked` badges a stronger stop color and `Discovery` badges a distinct blue source color while keeping `Template` neutral
 

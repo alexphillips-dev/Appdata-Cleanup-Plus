@@ -95,6 +95,7 @@ function buildDashboardPayload() {
   $availableVolumes = filterToExistingCandidates($availableVolumes);
   $availableVolumes = removeParentCandidates($availableVolumes);
   $availableVolumes = removeParentsUsedByInstalledContainers($availableVolumes, $containers);
+  $availableVolumes = removeVmManagerManagedCandidates($availableVolumes);
 
   $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings, false);
   $summary = buildSummary($rows);
