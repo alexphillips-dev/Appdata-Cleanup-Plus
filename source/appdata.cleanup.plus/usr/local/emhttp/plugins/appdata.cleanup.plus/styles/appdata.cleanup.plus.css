@@ -1263,7 +1263,8 @@ body[data-acp-host-theme="light"] #acp-app,
 .sweet-alert.acp-quarantine-manager-modal {
   max-height: calc(100vh - 24px) !important;
   overflow-y: auto !important;
-  width: min(760px, calc(100vw - 28px)) !important;
+  padding: 18px 16px 16px !important;
+  width: min(920px, calc(100vw - 10px)) !important;
 }
 
 .sweet-alert.acp-quarantine-manager-modal h2,
@@ -1372,7 +1373,7 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .sweet-alert.acp-quarantine-manager-modal .acp-modal-panel {
-  padding: 12px 14px;
+  padding: 10px 12px;
 }
 
 .acp-quarantine-selected-summary {
@@ -1721,7 +1722,7 @@ body[data-acp-host-theme="light"] #acp-app,
 
   .sweet-alert.acp-quarantine-manager-modal {
     max-height: calc(100vh - 18px) !important;
-    width: calc(100vw - 18px) !important;
+    width: calc(100vw - 10px) !important;
   }
 
   .acp-mode-card,
