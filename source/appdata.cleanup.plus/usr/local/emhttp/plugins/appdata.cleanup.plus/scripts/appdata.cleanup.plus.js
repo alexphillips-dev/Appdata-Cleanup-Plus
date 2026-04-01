@@ -1896,7 +1896,6 @@
     els.$selectAll.prop("disabled", state.busy || totalSelectableCount === 0 || selectedRows.length >= totalSelectableCount);
     els.$selectVisible.prop("disabled", state.busy || visibleSelectableCount === 0);
     els.$clearSelection.prop("disabled", state.busy || selectedRows.length === 0);
-    els.$doneBottom.prop("disabled", state.busy);
   }
 
   function getSelectedRows() {

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.06">
-<!ENTITY md5 "d18a19c72f2e174310d11dbe27a29b72">
+<!ENTITY version "2026.04.01.07">
+<!ENTITY md5 "b3e119ba5fdd2b18b50652ecbb101588">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.07
+- Fix: Remove the last stale `els.$doneBottom` reference from the dashboard action-bar refresh logic so the page no longer crashes during initial scan load after the bottom `Done` button removal
+
 ###2026.04.01.06
 - UI: Remove the unused `Done` button from the bottom action bar so only meaningful selection and cleanup actions remain
 - Cleanup: Drop the now-unused close-page button wiring from the dashboard script
