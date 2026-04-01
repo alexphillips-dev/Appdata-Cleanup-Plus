@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.17">
-<!ENTITY md5 "717755be10818bfa350eb7f09e5a442d">
+<!ENTITY version "2026.04.01.18">
+<!ENTITY md5 "5bf86c26a9720ef7e7078b57a23a6cfb">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.18
+- UI: Apply the thin black button outline and forced button chrome to inline action buttons inside the SweetAlert-based plugin modals so quarantine-manager controls render with the same outlined button style
+
 ###2026.04.01.17
 - UI: Fix the thin black button outline so it actually renders on normal plugin buttons by overriding the earlier box-shadow reset, and strengthen the outline slightly for clearer contrast
 

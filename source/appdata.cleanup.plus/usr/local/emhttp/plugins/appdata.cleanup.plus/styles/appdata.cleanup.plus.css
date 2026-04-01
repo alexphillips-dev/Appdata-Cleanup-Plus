@@ -1391,6 +1391,28 @@ body[data-acp-host-theme="light"] #acp-app,
   text-transform: uppercase !important;
 }
 
+.sweet-alert.acp-delete-modal .acp-button {
+  background: var(--acp-button-bg) !important;
+  border: 1px solid var(--acp-button-border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65) !important;
+  color: var(--acp-button-text) !important;
+}
+
+.sweet-alert.acp-delete-modal .acp-button:hover:not(:disabled),
+.sweet-alert.acp-delete-modal .acp-button:focus-visible:not(:disabled) {
+  background: var(--acp-button-hover-bg) !important;
+  border-color: var(--acp-button-hover-border) !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65) !important;
+  color: var(--acp-button-hover-text) !important;
+}
+
+.sweet-alert.acp-delete-modal .acp-button-primary {
+  background: var(--acp-button-primary-bg) !important;
+  border-color: var(--acp-button-primary-border) !important;
+  color: var(--acp-button-primary-text) !important;
+}
+
 .sweet-alert.acp-delete-modal button.confirm {
   background: var(--acp-button-primary-bg) !important;
   border-color: var(--acp-button-primary-border) !important;
