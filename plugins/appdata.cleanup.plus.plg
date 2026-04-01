@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.21">
-<!ENTITY md5 "2ab2eb9a4caba7f2c3bbd98546d0ff9a">
+<!ENTITY version "2026.04.01.22">
+<!ENTITY md5 "893c7597b29446bc48150dc9e8f7e674">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
