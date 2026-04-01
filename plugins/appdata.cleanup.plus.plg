@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.22">
-<!ENTITY md5 "893c7597b29446bc48150dc9e8f7e674">
+<!ENTITY version "2026.04.01.23">
+<!ENTITY md5 "c41f9c47866798376e125061faca73db">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,14 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.23
+- Quarantine: Recover tracked quarantine entries from folders already on disk when `quarantine-records.json` is missing after reinstalling the plugin or switching between `dev` and `main`
+- Quarantine: Rebuild the registry from known quarantine roots before the manager payload is loaded so recovered entries can be viewed, restored, purged, and included in the summary count again
+- Quarantine: Write an on-disk entry marker inside newly quarantined folders so future recovery preserves the exact original source path and metadata even if plugin state is lost
+- Quarantine: Fall back to conservative layout-based recovery for older quarantine folders that predate the new marker file
+- Restore: Remove the on-disk recovery marker after a quarantined folder is restored so it does not leak back into the restored appdata folder
+- Test: Cover exact marker-backed recovery after deleting the registry/settings files, legacy path-based recovery for older quarantine folders, deduped repeated manager loads, and restore/purge behavior on recovered entries
+
 ###2026.04.01.22
 - Release: Promote the full `2026.04.01.10` through `2026.04.01.21` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
 - Quarantine UI: Render the exact scheduled purge timestamp as its own colored, outlined badge beside the relative purge timer badge so pending permanent deletion is more obvious at a glance

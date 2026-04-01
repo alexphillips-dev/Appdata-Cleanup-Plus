@@ -546,11 +546,76 @@ foreach ( $defaultPurgeRegistry as $record ) {
 behaviorSmokeAssertTrue(is_array($defaultPurgeRecord), "Newly quarantined entries should be written to the quarantine registry.");
 behaviorSmokeAssertTrue($defaultPurgeRecord["purgeAt"] !== "", "Newly quarantined entries should inherit the configured default purge timer.");
 behaviorSmokeAssertTrue(strtotime($defaultPurgeRecord["purgeAt"]) > time(), "Default quarantine purge timers should be scheduled in the future.");
+behaviorSmokeAssertSame("purged", purgeTrackedQuarantineEntry($defaultPurgeRecord)["status"], "Default purge fixture should be cleaned up after quarantine testing.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "allowOutsideShareCleanup" => false,
   "enablePermanentDelete" => false,
   "defaultQuarantinePurgeDays" => 0
 )), "Default purge timer settings should reset after quarantine testing.");
+
+$recoveredMarkerSourcePath = $appdataShareRoot . "/recovered marker source";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($recoveredMarkerSourcePath), "Marker-backed recovery source fixture should be created.");
+$recoveredMarkerQuarantineResult = quarantineCandidatePath(array(
+  "name" => "recovered marker source",
+  "sourceKind" => "filesystem",
+  "sourceLabel" => "Discovery",
+  "sourceDisplay" => "Appdata share scan",
+  "reason" => "Marker-backed quarantine recovery fixture."
+), $recoveredMarkerSourcePath, getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame(true, ! empty($recoveredMarkerQuarantineResult["ok"]), "Marker-backed quarantine recovery fixture should be quarantined.");
+$recoveredMarkerDestination = $recoveredMarkerQuarantineResult["destination"];
+behaviorSmokeAssertTrue(is_file(appdataCleanupPlusQuarantineEntryMarkerFile($recoveredMarkerDestination)), "New quarantined folders should write an on-disk recovery marker.");
+@unlink(appdataCleanupPlusQuarantineRegistryFile());
+@unlink(appdataCleanupPlusSafetySettingsFile());
+$recoveredMarkerPayload = buildQuarantineManagerPayload(true);
+$recoveredMarkerEntry = null;
+foreach ( $recoveredMarkerPayload["entries"] as $entry ) {
+  if ( isset($entry["destination"]) && $entry["destination"] === $recoveredMarkerDestination ) {
+    $recoveredMarkerEntry = $entry;
+    break;
+  }
+}
+behaviorSmokeAssertTrue(is_array($recoveredMarkerEntry), "The quarantine manager should recover marker-backed entries from disk when plugin state is reset.");
+behaviorSmokeAssertSame($recoveredMarkerSourcePath, $recoveredMarkerEntry["sourcePath"], "Marker-backed recovery should preserve the exact original source path.");
+behaviorSmokeAssertSame(1, (int)$recoveredMarkerPayload["summary"]["count"], "Recovered marker-backed entries should repopulate the quarantine summary.");
+$recoveredMarkerPayloadAgain = buildQuarantineManagerPayload(true);
+behaviorSmokeAssertSame(1, (int)$recoveredMarkerPayloadAgain["summary"]["count"], "Recovered marker-backed entries should not be duplicated on repeated manager loads.");
+behaviorSmokeAssertSame(1, count(getAppdataCleanupPlusQuarantineRegistry()), "Recovered marker-backed entries should be written back into the quarantine registry.");
+$recoveredMarkerRestoreResult = restoreTrackedQuarantineEntry($recoveredMarkerEntry);
+behaviorSmokeAssertSame("restored", $recoveredMarkerRestoreResult["status"], "Recovered marker-backed entries should remain restorable.");
+behaviorSmokeAssertTrue(is_dir($recoveredMarkerSourcePath), "Recovered marker-backed restores should return the folder to its original path.");
+behaviorSmokeAssertSame(false, file_exists(appdataCleanupPlusQuarantineEntryMarkerFile($recoveredMarkerSourcePath)), "Restore should remove the on-disk recovery marker from the restored folder.");
+
+$legacyRecoveredSourcePath = $appdataShareRoot . "/legacy-recovery";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($legacyRecoveredSourcePath), "Legacy recovery source fixture should be created.");
+$legacyRecoveredQuarantineResult = quarantineCandidatePath(array(
+  "name" => "legacy-recovery",
+  "sourceKind" => "filesystem",
+  "sourceLabel" => "Discovery",
+  "sourceDisplay" => "Appdata share scan",
+  "reason" => "Legacy quarantine recovery fixture."
+), $legacyRecoveredSourcePath, getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame(true, ! empty($legacyRecoveredQuarantineResult["ok"]), "Legacy recovery fixture should be quarantined.");
+$legacyRecoveredDestination = $legacyRecoveredQuarantineResult["destination"];
+@unlink(appdataCleanupPlusQuarantineEntryMarkerFile($legacyRecoveredDestination));
+@unlink(appdataCleanupPlusQuarantineRegistryFile());
+@unlink(appdataCleanupPlusSafetySettingsFile());
+$legacyRecoveredPayload = buildQuarantineManagerPayload(true);
+$legacyRecoveredEntry = null;
+foreach ( $legacyRecoveredPayload["entries"] as $entry ) {
+  if ( isset($entry["destination"]) && $entry["destination"] === $legacyRecoveredDestination ) {
+    $legacyRecoveredEntry = $entry;
+    break;
+  }
+}
+behaviorSmokeAssertTrue(is_array($legacyRecoveredEntry), "The quarantine manager should recover legacy quarantine folders from their on-disk layout when the registry is missing.");
+behaviorSmokeAssertSame($legacyRecoveredSourcePath, $legacyRecoveredEntry["sourcePath"], "Legacy recovery should reconstruct the original source path from the quarantine layout.");
+behaviorSmokeAssertSame("Recovered", $legacyRecoveredEntry["sourceLabel"], "Legacy recovery should identify entries recovered from quarantine storage.");
+behaviorSmokeAssertSame(1, (int)$legacyRecoveredPayload["summary"]["count"], "Legacy recovery should repopulate the quarantine summary.");
+$legacyRecoveredPurgeResult = purgeTrackedQuarantineEntry($legacyRecoveredEntry);
+behaviorSmokeAssertSame("purged", $legacyRecoveredPurgeResult["status"], "Recovered legacy entries should remain purgeable.");
+behaviorSmokeAssertSame(false, is_dir($legacyRecoveredDestination), "Purging a recovered legacy entry should remove the quarantined folder.");
+
 if ( $appdataShareUsesSymlink ) {
   behaviorSmokeAssertSame("", buildPathSecurityLockReason($templatedOrphanPath), "Configured appdata share root symlinks should not lock inside-share candidates.");
   behaviorSmokeAssertSame(false, ! empty($templatedRow["policyLocked"]), "Configured appdata share root symlinks should leave inside-share template rows actionable.");
