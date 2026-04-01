@@ -458,7 +458,10 @@
       confirmButtonText: ACP.t(strings, "doneLabel", "Done"),
       closeOnConfirm: true
     }, function() {
-      renderPanels();
+      window.setTimeout(function() {
+        ACP.releaseModalScrollLock(false);
+        renderPanels();
+      }, 180);
     });
   }
 
@@ -478,7 +481,10 @@
       closeOnConfirm: true
     }, function() {
       state.auditOpen = false;
-      renderPanels();
+      window.setTimeout(function() {
+        ACP.releaseModalScrollLock(false);
+        renderPanels();
+      }, 180);
     });
   }
 
@@ -799,8 +805,9 @@
 
   function reopenQuarantineManagerModal(forceRefresh) {
     window.setTimeout(function() {
+      ACP.releaseModalScrollLock(true);
       openQuarantineManagerModal(!!forceRefresh);
-    }, 0);
+    }, 180);
   }
 
   function buildRowMetaHtml(row) {

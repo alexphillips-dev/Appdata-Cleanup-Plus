@@ -176,7 +176,7 @@
     $baseText = $modal.children("p").first();
     $existingHost = $modal.children(".acp-modal-host");
 
-    $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-quarantine-manager-modal");
+    $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-quarantine-manager-modal acp-audit-history-modal");
     if (className) {
       $modal.addClass(className);
     }
@@ -193,6 +193,32 @@
     }
 
     ACP.syncDeleteModalThemeTokens($modal);
+  };
+
+  ACP.releaseModalScrollLock = function(forceUnlock) {
+    var hasVisibleModal = $(".sweet-alert:visible, .sweet-alert.showSweetAlert").length > 0;
+    var nodes;
+
+    if (!forceUnlock && hasVisibleModal) {
+      return;
+    }
+
+    $(".sweet-overlay").hide().removeClass("showSweetOverlay");
+    $("body, html").removeClass("stop-scrolling swal2-shown");
+
+    nodes = [document.body, document.documentElement];
+    $.each(nodes, function(_, node) {
+      if (!node || !node.style) {
+        return;
+      }
+
+      node.style.removeProperty("overflow");
+      node.style.removeProperty("padding-right");
+      node.style.removeProperty("height");
+      node.style.removeProperty("position");
+      node.style.removeProperty("top");
+      node.style.removeProperty("width");
+    });
   };
 
   ACP.syncDeleteModalThemeTokens = function($modal) {

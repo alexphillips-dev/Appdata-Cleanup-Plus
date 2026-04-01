@@ -1260,6 +1260,12 @@ body[data-acp-host-theme="light"] #acp-app,
   display: none !important;
 }
 
+.sweet-alert.acp-quarantine-manager-modal {
+  max-height: calc(100vh - 24px) !important;
+  overflow-y: auto !important;
+  width: min(980px, calc(100vw - 28px)) !important;
+}
+
 .sweet-alert.acp-quarantine-manager-modal h2,
 .sweet-alert.acp-audit-history-modal h2 {
   margin-top: 0 !important;
@@ -1359,6 +1365,14 @@ body[data-acp-host-theme="light"] #acp-app,
 .acp-quarantine-manager-toolbar {
   align-items: center;
   justify-content: space-between;
+}
+
+.sweet-alert.acp-quarantine-manager-modal .acp-modal-host {
+  max-height: none !important;
+}
+
+.sweet-alert.acp-quarantine-manager-modal .acp-modal-panel {
+  padding: 12px 14px;
 }
 
 .acp-quarantine-selected-summary {
@@ -1516,6 +1530,10 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-quarantine-manager-modal .acp-modal-result-head {
   grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.sweet-alert.acp-quarantine-manager-modal .acp-modal-list {
+  max-height: min(58vh, 620px);
 }
 
 .acp-quarantine-entry {
@@ -1698,6 +1716,11 @@ body[data-acp-host-theme="light"] #acp-app,
   .acp-quarantine-manager-toolbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .sweet-alert.acp-quarantine-manager-modal {
+    max-height: calc(100vh - 18px) !important;
+    width: calc(100vw - 18px) !important;
   }
 
   .acp-mode-card,

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.31.04">
-<!ENTITY md5 "731d8d9a843de877c68fd2999858f69f">
+<!ENTITY version "2026.03.31.05">
+<!ENTITY md5 "6561f791c9292dafa7ce24e52a7cfd88">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.05
+- Fix: Restore page scrolling correctly after quarantine restore and purge modal flows close
+- Improvement: Expand the quarantine manager width and internal list height so more quarantined path details stay visible without cramped wrapping
+- Fix: Clear modal-specific SweetAlert classes cleanly when switching between quarantine, audit, and other modal views
+
 ###2026.03.31.04
 - Fix: Reopen the quarantine manager reliably after restore and purge actions instead of getting stuck until a full page refresh
 - Feature: Add quarantine entry checkboxes with bulk restore and bulk purge actions
