@@ -169,6 +169,8 @@
 
     els.$results.on("click", ".acp-badge-filter", handleBadgeFilterClick);
     els.$resultsMeta.on("click", ".acp-badge-filter", handleBadgeFilterClick);
+    els.$results.on("keydown", ".acp-badge-filter", handleBadgeFilterKeydown);
+    els.$resultsMeta.on("keydown", ".acp-badge-filter", handleBadgeFilterKeydown);
 
     els.$results.on("click", ".acp-row-action", function(event) {
       var action = $(this).data("row-action");
@@ -346,6 +348,17 @@
     renderResults();
     renderResultsMeta();
     updateActionBar();
+  }
+
+  function handleBadgeFilterKeydown(event) {
+    var key = String(event.key || "");
+
+    if (key !== "Enter" && key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    $(this).trigger("click");
   }
 
   function buildContext() {
@@ -1195,13 +1208,15 @@
       title = $.trim((title ? title + " " : "") + ACP.t(strings, "badgeFilterHint", "Click to filter rows by this badge."));
 
       return (
-        '<button type="button" class="' + classes.join(" ") + '"' +
+        '<span class="' + classes.join(" ") + '"' +
           ' data-badge-kind="' + ACP.escapeHtml(String(badge.kind)) + '"' +
           ' data-badge-value="' + ACP.escapeHtml(String(badge.value)) + '"' +
           ' data-badge-label="' + ACP.escapeHtml(String(badge.label || badge.value)) + '"' +
+          ' role="button"' +
+          ' tabindex="0"' +
           ' aria-pressed="' + (active ? "true" : "false") + '"' +
           (title ? ' title="' + ACP.escapeHtml(title) + '"' : "") +
-        ">" + ACP.escapeHtml(String(badge.label || "")) + "</button>"
+        ">" + ACP.escapeHtml(String(badge.label || "")) + "</span>"
       );
     }
 

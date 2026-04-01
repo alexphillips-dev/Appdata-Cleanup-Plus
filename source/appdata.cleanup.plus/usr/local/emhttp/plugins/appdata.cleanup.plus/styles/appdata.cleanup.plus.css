@@ -1098,20 +1098,8 @@ body[data-acp-host-theme="light"] #acp-app,
   white-space: nowrap;
 }
 
-button.acp-badge {
-  appearance: none;
-  background-image: none;
-  border: 0;
-  box-shadow: none;
-  cursor: pointer;
-  font: inherit;
-  line-height: 1;
-  margin: 0;
-  outline: none;
-  padding: 0 7px;
-}
-
 .acp-badge-filter {
+  cursor: pointer;
   transition: filter 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
 }
 
