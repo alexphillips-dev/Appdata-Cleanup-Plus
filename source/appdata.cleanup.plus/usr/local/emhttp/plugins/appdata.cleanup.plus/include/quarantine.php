@@ -39,6 +39,16 @@ function normalizeAppdataCleanupPlusQuarantinePurgeAt($purgeAt) {
   return date("c", $timestamp);
 }
 
+function buildDefaultAppdataCleanupPlusQuarantinePurgeAt($settings) {
+  $defaultPurgeDays = isset($settings["defaultQuarantinePurgeDays"]) ? (int)$settings["defaultQuarantinePurgeDays"] : 0;
+
+  if ( $defaultPurgeDays <= 0 ) {
+    return "";
+  }
+
+  return date("c", time() + ($defaultPurgeDays * 86400));
+}
+
 function formatAppdataCleanupPlusFutureIntervalLabel($secondsRemaining) {
   $seconds = max(0, (int)$secondsRemaining);
   $units = array(
@@ -295,13 +305,19 @@ function buildQuarantinePurgeScheduleSummary($results) {
   return $summary;
 }
 
-function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0) {
+function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0, $purgeAt="") {
   $registry = getAppdataCleanupPlusQuarantineRegistry();
   $results = array();
   $normalizedMode = strtolower(trim((string)$mode));
   $effectiveDays = max(0, (int)$purgeAfterDays);
-  $purgeAt = $normalizedMode === "set" ? date("c", time() + ($effectiveDays * 86400)) : "";
+  $scheduledPurgeAt = "";
   $registryDirty = false;
+
+  if ( $normalizedMode === "set" ) {
+    $scheduledPurgeAt = $purgeAt !== ""
+      ? normalizeAppdataCleanupPlusQuarantinePurgeAt($purgeAt)
+      : date("c", time() + ($effectiveDays * 86400));
+  }
 
   foreach ( $entries as $entry ) {
     $entryId = isset($entry["id"]) ? trim((string)$entry["id"]) : "";
@@ -327,11 +343,13 @@ function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0
     }
 
     if ( $normalizedMode === "set" ) {
-      $normalized["purgeAt"] = $purgeAt;
+      $normalized["purgeAt"] = $scheduledPurgeAt;
       $results[] = array_merge($result, array(
         "status" => "scheduled",
-        "message" => "Scheduled to purge in " . $effectiveDays . " day" . ($effectiveDays === 1 ? "" : "s") . ".",
-        "purgeAt" => $purgeAt
+        "message" => $scheduledPurgeAt !== ""
+          ? "Scheduled to purge on " . formatDateTimeLabel(strtotime($scheduledPurgeAt)) . "."
+          : "Scheduled to purge in " . $effectiveDays . " day" . ($effectiveDays === 1 ? "" : "s") . ".",
+        "purgeAt" => $scheduledPurgeAt
       ));
     } else {
       $hadSchedule = $normalized["purgeAt"] !== "";
@@ -1135,6 +1153,7 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
 function quarantineCandidatePath($candidate, $displayPath, $settings) {
   $destination = buildQuarantineDestination($displayPath, $settings);
   $quarantineRoot = buildCandidateQuarantineRoot($displayPath, $settings);
+  $defaultPurgeAt = buildDefaultAppdataCleanupPlusQuarantinePurgeAt($settings);
 
   if ( ! $destination ) {
     return array(
@@ -1160,6 +1179,7 @@ function quarantineCandidatePath($candidate, $displayPath, $settings) {
       "destination" => $destination,
       "quarantineRoot" => $quarantineRoot,
       "quarantinedAt" => date("c"),
+      "purgeAt" => $defaultPurgeAt,
       "sourceKind" => isset($candidate["sourceKind"]) ? (string)$candidate["sourceKind"] : "template",
       "sourceLabel" => isset($candidate["sourceLabel"]) ? (string)$candidate["sourceLabel"] : "Template",
       "sourceDisplay" => isset($candidate["sourceDisplay"]) ? (string)$candidate["sourceDisplay"] : "",

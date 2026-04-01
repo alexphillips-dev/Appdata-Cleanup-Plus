@@ -713,16 +713,28 @@ function getDefaultAppdataCleanupPlusSafetySettings() {
   return array(
     "allowOutsideShareCleanup" => false,
     "enablePermanentDelete" => false,
-    "quarantineRoot" => getDefaultAppdataCleanupPlusQuarantineRoot()
+    "quarantineRoot" => getDefaultAppdataCleanupPlusQuarantineRoot(),
+    "defaultQuarantinePurgeDays" => 0
   );
 }
 
 function normalizeAppdataCleanupPlusSafetySettings($settings) {
   $defaults = getDefaultAppdataCleanupPlusSafetySettings();
+  $defaultQuarantinePurgeDays = isset($settings["defaultQuarantinePurgeDays"])
+    ? (int)$settings["defaultQuarantinePurgeDays"]
+    : (int)$defaults["defaultQuarantinePurgeDays"];
+
+  if ( $defaultQuarantinePurgeDays < 0 ) {
+    $defaultQuarantinePurgeDays = 0;
+  } elseif ( $defaultQuarantinePurgeDays > 3650 ) {
+    $defaultQuarantinePurgeDays = 3650;
+  }
+
   $normalized = array(
     "allowOutsideShareCleanup" => ! empty($settings["allowOutsideShareCleanup"]),
     "enablePermanentDelete" => ! empty($settings["enablePermanentDelete"]),
-    "quarantineRoot" => isset($settings["quarantineRoot"]) ? trim((string)$settings["quarantineRoot"]) : $defaults["quarantineRoot"]
+    "quarantineRoot" => isset($settings["quarantineRoot"]) ? trim((string)$settings["quarantineRoot"]) : $defaults["quarantineRoot"],
+    "defaultQuarantinePurgeDays" => $defaultQuarantinePurgeDays
   );
 
   if ( ! $normalized["quarantineRoot"] ) {

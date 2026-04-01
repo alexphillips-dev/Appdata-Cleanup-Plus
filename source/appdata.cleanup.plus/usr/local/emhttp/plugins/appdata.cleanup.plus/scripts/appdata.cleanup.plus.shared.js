@@ -48,7 +48,8 @@
     return {
       allowOutsideShareCleanup: false,
       enablePermanentDelete: false,
-      quarantineRoot: ""
+      quarantineRoot: "",
+      defaultQuarantinePurgeDays: 0
     };
   };
 

@@ -20,7 +20,7 @@
       entries: [],
       selected: {},
       summary: { count: 0, sizeLabel: "0 B" },
-      purgeDays: 30,
+      purgeAtInput: "",
       restoreConflict: null
     },
     scanHydration: {
@@ -298,12 +298,39 @@
       setRestoreConflictFeedback("");
     });
 
-    $(document).on("input.acpQuarantine change.acpQuarantine", ".sweet-alert .acp-quarantine-schedule-input", function() {
-      var nextDays = parseInt($.trim(String($(this).val() || "")), 10);
+    $(document).on("change.acpQuarantine", ".sweet-alert .acp-quarantine-default-purge-input", function(event) {
+      var nextDays = normalizeDefaultQuarantinePurgeDaysValue($(this).val());
 
-      if (!isNaN(nextDays) && nextDays > 0) {
-        state.quarantine.purgeDays = nextDays;
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (nextDays === null) {
+        $(this).val(String(state.settings.defaultQuarantinePurgeDays || 0));
+        swal(
+          ACP.t(strings, "quarantineDefaultPurgeDaysFailedTitle", "Default purge setting failed"),
+          ACP.t(strings, "quarantineDefaultPurgeDaysInvalidMessage", "Enter a whole number of days from 0 to 3650."),
+          "warning"
+        );
+        return;
       }
+
+      if (nextDays === Number(state.settings.defaultQuarantinePurgeDays || 0)) {
+        return;
+      }
+
+      saveSafetySettings({
+        defaultQuarantinePurgeDays: nextDays
+      }, {
+        syncQuarantineModal: true,
+        resetQuarantineScheduleInput: true,
+        reopenQuarantineModalOnFailure: true,
+        failureTitle: ACP.t(strings, "quarantineDefaultPurgeDaysFailedTitle", "Default purge setting failed"),
+        failureMessage: ACP.t(strings, "quarantineDefaultPurgeDaysFailedMessage", "The default quarantine purge timer could not be updated right now.")
+      });
+    });
+
+    $(document).on("input.acpQuarantine change.acpQuarantine", ".sweet-alert .acp-quarantine-schedule-at-input", function() {
+      state.quarantine.purgeAtInput = $.trim(String($(this).val() || ""));
     });
 
     $(document).on("click.acpQuarantine", ".sweet-alert .acp-quarantine-entry", function(event) {
@@ -462,7 +489,7 @@
     state.quarantine.loaded = false;
     state.quarantine.selected = {};
     state.quarantine.summary = { count: 0, sizeLabel: "0 B" };
-    state.quarantine.purgeDays = 30;
+    state.quarantine.purgeAtInput = "";
     state.quarantine.restoreConflict = null;
     state.scanHydration.active = false;
     state.scanHydration.queue = [];
@@ -487,6 +514,7 @@
       state.scanWarningMessage = String(response.scanWarningMessage || "");
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || {});
       state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary || {});
+      syncQuarantinePurgeInputDefaults(true);
       syncSafetyControls();
       applyLocalSafetyState();
       reconcileSelection();
@@ -987,6 +1015,7 @@
     state.quarantine.entries = $.isArray(entries) ? entries : [];
     state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, summary || {});
     state.quarantine.restoreConflict = null;
+    syncQuarantinePurgeInputDefaults(false);
     reconcileQuarantineSelection();
   }
 
@@ -1040,18 +1069,75 @@
       : ACP.t(strings, "selectedPlural", "folders selected"));
   }
 
-  function getQuarantineScheduleDays() {
-    var $modal = getActiveSweetAlertModal();
-    var $input = $modal.find(".acp-quarantine-schedule-input").first();
-    var rawValue = $input.length ? $.trim(String($input.val() || "")) : String(state.quarantine.purgeDays || 30);
-    var days = parseInt(rawValue, 10);
+  function normalizeDefaultQuarantinePurgeDaysValue(value) {
+    var rawValue = $.trim(String(value === null || value === undefined ? "" : value));
+    var days = rawValue === "" ? 0 : parseInt(rawValue, 10);
 
-    if (isNaN(days) || days <= 0) {
+    if (isNaN(days) || days < 0 || days > 3650) {
       return null;
     }
 
-    state.quarantine.purgeDays = days;
     return days;
+  }
+
+  function padDateTimeLocalSegment(value) {
+    return value < 10 ? "0" + String(value) : String(value);
+  }
+
+  function formatDateTimeLocalValue(date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      return "";
+    }
+
+    return [
+      date.getFullYear(),
+      "-",
+      padDateTimeLocalSegment(date.getMonth() + 1),
+      "-",
+      padDateTimeLocalSegment(date.getDate()),
+      "T",
+      padDateTimeLocalSegment(date.getHours()),
+      ":",
+      padDateTimeLocalSegment(date.getMinutes())
+    ].join("");
+  }
+
+  function buildDefaultQuarantinePurgeAtInputValue(defaultPurgeDays) {
+    var days = Number(defaultPurgeDays || 0);
+
+    if (isNaN(days) || days < 0) {
+      days = 0;
+    }
+
+    if (days <= 0) {
+      return "";
+    }
+
+    var nextDate = new Date();
+    nextDate.setSeconds(0, 0);
+    nextDate.setMinutes(nextDate.getMinutes() + 1);
+    nextDate.setDate(nextDate.getDate() + days);
+    return formatDateTimeLocalValue(nextDate);
+  }
+
+  function syncQuarantinePurgeInputDefaults(forceReset) {
+    if (forceReset || !$.trim(String(state.quarantine.purgeAtInput || ""))) {
+      state.quarantine.purgeAtInput = buildDefaultQuarantinePurgeAtInputValue(state.settings.defaultQuarantinePurgeDays);
+    }
+  }
+
+  function getQuarantineScheduleAtValue() {
+    var $modal = getActiveSweetAlertModal();
+    var $input = $modal.find(".acp-quarantine-schedule-at-input").first();
+    var nextValue = $.trim(String($input.length ? $input.val() : state.quarantine.purgeAtInput || ""));
+    var nextTime = nextValue ? new Date(nextValue) : null;
+
+    if (!nextValue || !(nextTime instanceof Date) || isNaN(nextTime.getTime()) || nextTime.getTime() <= Date.now()) {
+      return "";
+    }
+
+    state.quarantine.purgeAtInput = nextValue;
+    return nextValue;
   }
 
   function syncQuarantineManagerSelectionUi() {
@@ -1064,9 +1150,12 @@
     }
 
     $modal.find(".acp-quarantine-selected-summary").text(buildQuarantineSelectionSummaryText(selectedIds.length));
-    $modal.find(".acp-quarantine-schedule-input")
+    $modal.find(".acp-quarantine-default-purge-input")
       .prop("disabled", state.busy || state.quarantine.loading)
-      .val(String(state.quarantine.purgeDays || 30));
+      .val(String(Number(state.settings.defaultQuarantinePurgeDays || 0)));
+    $modal.find(".acp-quarantine-schedule-at-input")
+      .prop("disabled", state.busy || state.quarantine.loading)
+      .val(String(state.quarantine.purgeAtInput || ""));
     $modal.find("[data-action='select-all-quarantine']")
       .prop("disabled", state.busy || state.quarantine.loading || totalEntries === 0 || selectedIds.length >= totalEntries);
     $modal.find("[data-action='restore-selected-quarantine'], [data-action='purge-selected-quarantine'], [data-action='clear-quarantine-selection'], [data-action='set-quarantine-purge-schedule'], [data-action='clear-quarantine-purge-schedule']")
@@ -1110,7 +1199,7 @@
       var entryKey = String(entryId || "");
       return entryKey ? entryKey : null;
     });
-    var purgeDays = 0;
+    var purgeAt = "";
 
     if (!requestedEntryIds.length) {
       swal(
@@ -1122,22 +1211,22 @@
     }
 
     if (mode === "set") {
-      purgeDays = getQuarantineScheduleDays();
+      purgeAt = getQuarantineScheduleAtValue();
 
-      if (!purgeDays) {
+      if (!purgeAt) {
         swal(
           ACP.t(strings, "quarantinePurgeScheduleFailedTitle", "Purge timer update failed"),
-          ACP.t(strings, "quarantinePurgeScheduleInvalidMessage", "Enter a whole number of days greater than 0."),
+          ACP.t(strings, "quarantinePurgeScheduleInvalidMessage", "Enter a future purge date and time."),
           "warning"
         );
         return;
       }
     }
 
-    runQuarantinePurgeScheduleUpdate(mode, requestedEntryIds, purgeDays);
+    runQuarantinePurgeScheduleUpdate(mode, requestedEntryIds, purgeAt);
   }
 
-  function runQuarantinePurgeScheduleUpdate(mode, entryIds, purgeDays) {
+  function runQuarantinePurgeScheduleUpdate(mode, entryIds, purgeAt) {
     state.quarantine.loading = true;
     setBusy(true);
     renderOpenQuarantineManagerModal();
@@ -1146,7 +1235,8 @@
       action: "updateQuarantinePurgeSchedule",
       entryIds: JSON.stringify(entryIds),
       purgeScheduleMode: mode,
-      purgeAfterDays: purgeDays || 0
+      purgeAfterDays: 0,
+      purgeAt: purgeAt || ""
     }).done(function(response) {
       var quarantine = response.quarantine || {};
 
@@ -1916,18 +2006,34 @@
     updateActionBar();
   }
 
-  function saveSafetySettings() {
+  function saveSafetySettings(overrides, options) {
+    var normalizedOverrides = $.isPlainObject(overrides) ? overrides : {};
+    var normalizedOptions = $.isPlainObject(options) ? options : {};
     var previousSettings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
     var previousRows = state.rows.slice(0);
     var previousSummary = $.extend({}, state.summary || {});
+    var wasQuarantineManagerVisible = isQuarantineManagerModalVisible();
     var nextSettings = $.extend({}, previousSettings, {
       allowOutsideShareCleanup: !!els.$allowExternal.prop("checked"),
       enablePermanentDelete: !!els.$enableDelete.prop("checked")
-    });
+    }, normalizedOverrides);
+    var nextDefaultPurgeDays = normalizeDefaultQuarantinePurgeDaysValue(nextSettings.defaultQuarantinePurgeDays);
+
+    if (nextDefaultPurgeDays === null) {
+      nextDefaultPurgeDays = previousSettings.defaultQuarantinePurgeDays;
+    }
+
+    nextSettings.defaultQuarantinePurgeDays = nextDefaultPurgeDays;
 
     state.settings = nextSettings;
     syncSafetyControls();
     renderPanels();
+    if (normalizedOptions.resetQuarantineScheduleInput) {
+      syncQuarantinePurgeInputDefaults(true);
+    }
+    if (wasQuarantineManagerVisible || normalizedOptions.syncQuarantineModal) {
+      renderOpenQuarantineManagerModal();
+    }
     updateActionBar();
 
     setBusy(true);
@@ -1935,7 +2041,8 @@
     var requestData = {
       action: "saveSafetySettings",
       allowOutsideShareCleanup: nextSettings.allowOutsideShareCleanup ? "1" : "0",
-      enablePermanentDelete: nextSettings.enablePermanentDelete ? "1" : "0"
+      enablePermanentDelete: nextSettings.enablePermanentDelete ? "1" : "0",
+      defaultQuarantinePurgeDays: String(Number(nextSettings.defaultQuarantinePurgeDays || 0))
     };
 
     if (state.scanToken) {
@@ -1944,18 +2051,37 @@
 
     apiPost(requestData).done(function(response) {
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || nextSettings);
+      if (normalizedOptions.resetQuarantineScheduleInput) {
+        syncQuarantinePurgeInputDefaults(true);
+      }
       syncSafetyControls();
       applyLocalSafetyState();
       reconcileSelection();
       setBusy(false);
       renderAll();
+      if (wasQuarantineManagerVisible || normalizedOptions.syncQuarantineModal) {
+        renderOpenQuarantineManagerModal();
+      }
     }).fail(function(xhr) {
       state.settings = previousSettings;
       state.rows = previousRows;
       state.summary = previousSummary;
+      if (normalizedOptions.resetQuarantineScheduleInput) {
+        syncQuarantinePurgeInputDefaults(true);
+      }
       syncSafetyControls();
       setBusy(false);
-      swal(ACP.t(strings, "settingsSaveFailedTitle", "Safety settings failed"), ACP.extractErrorMessage(xhr, ACP.t(strings, "settingsSaveFailedMessage", "The new safety settings could not be saved right now.")), "error");
+      if (wasQuarantineManagerVisible && normalizedOptions.reopenQuarantineModalOnFailure) {
+        swal({
+          title: normalizedOptions.failureTitle || ACP.t(strings, "settingsSaveFailedTitle", "Safety settings failed"),
+          text: ACP.extractErrorMessage(xhr, normalizedOptions.failureMessage || ACP.t(strings, "settingsSaveFailedMessage", "The new safety settings could not be saved right now.")),
+          type: "error"
+        }, function() {
+          reopenQuarantineManagerModal(false);
+        });
+      } else {
+        swal(normalizedOptions.failureTitle || ACP.t(strings, "settingsSaveFailedTitle", "Safety settings failed"), ACP.extractErrorMessage(xhr, normalizedOptions.failureMessage || ACP.t(strings, "settingsSaveFailedMessage", "The new safety settings could not be saved right now.")), "error");
+      }
       if (xhr && xhr.status === 409) {
         loadScan();
       } else {

@@ -165,9 +165,13 @@ function handleHydrateCandidateStats() {
 }
 
 function handleSaveSafetySettings() {
+  $currentSettings = getAppdataCleanupPlusSafetySettings();
   $settings = array(
     "allowOutsideShareCleanup" => getPostedBoolean("allowOutsideShareCleanup"),
-    "enablePermanentDelete" => getPostedBoolean("enablePermanentDelete")
+    "enablePermanentDelete" => getPostedBoolean("enablePermanentDelete"),
+    "defaultQuarantinePurgeDays" => isset($_POST["defaultQuarantinePurgeDays"])
+      ? (int)getPostedString("defaultQuarantinePurgeDays")
+      : (int)(isset($currentSettings["defaultQuarantinePurgeDays"]) ? $currentSettings["defaultQuarantinePurgeDays"] : 0)
   );
 
   if ( ! setAppdataCleanupPlusSafetySettings($settings) ) {
@@ -282,6 +286,8 @@ function handleUpdateQuarantinePurgeSchedule() {
   $entryIds = parseCandidateIds(getPostedString("entryIds"));
   $mode = strtolower(getPostedString("purgeScheduleMode"));
   $purgeAfterDays = (int)getPostedString("purgeAfterDays");
+  $purgeAt = getPostedString("purgeAt");
+  $normalizedPurgeAt = $purgeAt !== "" ? normalizeAppdataCleanupPlusQuarantinePurgeAt($purgeAt) : "";
 
   if ( $mode === "" ) {
     $mode = strtolower(getPostedString("mode"));
@@ -301,11 +307,20 @@ function handleUpdateQuarantinePurgeSchedule() {
     ), 400);
   }
 
-  if ( $mode === "set" && ($purgeAfterDays < 1 || $purgeAfterDays > 3650) ) {
-    jsonResponse(array(
-      "ok" => false,
-      "message" => "Purge delay must be between 1 and 3650 days."
-    ), 400);
+  if ( $mode === "set" ) {
+    if ( $normalizedPurgeAt !== "" ) {
+      if ( strtotime($normalizedPurgeAt) <= time() ) {
+        jsonResponse(array(
+          "ok" => false,
+          "message" => "Purge time must be in the future."
+        ), 400);
+      }
+    } elseif ( $purgeAfterDays < 1 || $purgeAfterDays > 3650 ) {
+      jsonResponse(array(
+        "ok" => false,
+        "message" => "Purge delay must be between 1 and 3650 days."
+      ), 400);
+    }
   }
 
   $resolvedEntries = resolveTrackedQuarantineEntries($entryIds);
@@ -317,7 +332,7 @@ function handleUpdateQuarantinePurgeSchedule() {
     ), $resolvedEntries["statusCode"]);
   }
 
-  $execution = updateTrackedQuarantinePurgeSchedule($resolvedEntries["entries"], $mode, $purgeAfterDays);
+  $execution = updateTrackedQuarantinePurgeSchedule($resolvedEntries["entries"], $mode, $purgeAfterDays, $normalizedPurgeAt);
   jsonResponse(array(
     "ok" => empty($execution["summary"]["errors"]) && empty($execution["summary"]["missing"]),
     "action" => $execution["action"],

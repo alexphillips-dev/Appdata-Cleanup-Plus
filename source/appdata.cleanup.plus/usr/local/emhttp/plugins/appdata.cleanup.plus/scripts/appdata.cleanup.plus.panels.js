@@ -77,7 +77,9 @@
     var strings = context.strings || {};
     var quarantine = state.quarantine || {};
     var entries = $.isArray(quarantine.entries) ? quarantine.entries : [];
-    var purgeDays = Number(quarantine.purgeDays || 30);
+    var settings = state.settings || {};
+    var defaultPurgeDays = Number(settings.defaultQuarantinePurgeDays || 0);
+    var purgeAtInput = String(quarantine.purgeAtInput || "");
     var selected = quarantine.selected || {};
     var allSelected = false;
     var selectedCount = 0;
@@ -103,7 +105,11 @@
       '<div class="acp-modal-inline-actions">',
       '<label class="acp-quarantine-schedule-field">',
       '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleDaysLabel", "Purge in days")) + "</span>",
-      '<input type="number" min="1" step="1" class="acp-input acp-quarantine-schedule-input" value="' + ACP.escapeHtml(String(purgeDays > 0 ? purgeDays : 30)) + '"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>',
+      '<input type="number" min="0" step="1" class="acp-input acp-quarantine-default-purge-input" value="' + ACP.escapeHtml(String(defaultPurgeDays >= 0 ? defaultPurgeDays : 0)) + '"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>',
+      "</label>",
+      '<label class="acp-quarantine-schedule-field acp-quarantine-schedule-at-field">',
+      '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleAtLabel", "Set purge at")) + "</span>",
+      '<input type="datetime-local" class="acp-input acp-quarantine-schedule-at-input" value="' + ACP.escapeHtml(purgeAtInput) + '"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>',
       "</label>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="set-quarantine-purge-schedule"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleSetLabel", "Set purge")) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="clear-quarantine-purge-schedule"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleClearLabel", "Clear purge timer")) + "</button>",

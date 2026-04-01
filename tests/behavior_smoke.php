@@ -108,6 +108,20 @@ behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);
 behaviorSmokeRemoveTree($appdataSharePhysicalRoot);
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusConfigDir(), "State root should be created.");
+$defaultSafetySettings = getAppdataCleanupPlusSafetySettings();
+behaviorSmokeAssertSame(0, (int)$defaultSafetySettings["defaultQuarantinePurgeDays"], "Default safety settings should start with no quarantine purge timer.");
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => false,
+  "defaultQuarantinePurgeDays" => 21
+)), "Safety settings persistence should succeed.");
+$persistedSafetySettings = getAppdataCleanupPlusSafetySettings();
+behaviorSmokeAssertSame(21, (int)$persistedSafetySettings["defaultQuarantinePurgeDays"], "Safety settings should persist the default quarantine purge days value.");
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => false,
+  "defaultQuarantinePurgeDays" => 0
+)), "Safety settings reset should succeed.");
 
 $snapshot = writeAppdataCleanupPlusSnapshot(array(
   "alpha" => array(
@@ -170,11 +184,13 @@ behaviorSmokeAssertSame(1, count($activeEntries), "Quarantine registry should re
 behaviorSmokeAssertSame("entry-one", $activeEntries[0]["id"], "Quarantine entry id should round-trip.");
 $quarantineSummary = buildQuarantineSummary($activeEntries);
 behaviorSmokeAssertSame(1, $quarantineSummary["count"], "Quarantine summary should count active entries.");
-$scheduleSetResult = updateTrackedQuarantinePurgeSchedule($activeEntries, "set", 14);
+$scheduleSetResult = updateTrackedQuarantinePurgeSchedule($activeEntries, "set", 0, "2030-01-01T12:00:00+00:00");
 behaviorSmokeAssertSame("scheduled", $scheduleSetResult["results"][0]["status"], "Purge scheduling should mark selected quarantine entries as scheduled.");
+behaviorSmokeAssertSame("2030-01-01T12:00:00+00:00", $scheduleSetResult["results"][0]["purgeAt"], "Exact purge scheduling should preserve the selected purge timestamp.");
+behaviorSmokeAssertContains("Scheduled to purge on", $scheduleSetResult["results"][0]["message"], "Exact purge scheduling should report the scheduled purge time.");
 $scheduledEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
 behaviorSmokeAssertSame(true, ! empty($scheduledEntries[0]["purgeScheduled"]), "Scheduled purge entries should expose their scheduled state in the manager payload.");
-behaviorSmokeAssertTrue($scheduledEntries[0]["purgeAt"] !== "", "Scheduled purge entries should expose a purge timestamp.");
+behaviorSmokeAssertSame("2030-01-01T12:00:00+00:00", $scheduledEntries[0]["purgeAt"], "Scheduled purge entries should expose the exact purge timestamp.");
 behaviorSmokeAssertTrue($scheduledEntries[0]["purgeBadgeLabel"] !== "", "Scheduled purge entries should expose a purge badge label.");
 $scheduleClearResult = updateTrackedQuarantinePurgeSchedule($scheduledEntries, "clear", 0);
 behaviorSmokeAssertSame("cleared", $scheduleClearResult["results"][0]["status"], "Clearing a scheduled purge should update the entry status.");
@@ -433,6 +449,37 @@ behaviorSmokeAssertContains("Saved templates", $templatedRow["reason"], "Templat
 behaviorSmokeAssertContains("no saved Docker template or installed container currently references it", $filesystemRow["reason"], "Filesystem-only rows should explain that they are unreferenced.");
 behaviorSmokeAssertSame($slashLivePath, normalizeUserPath($slashTemplatePath), "Path normalization should collapse trailing slashes on saved template paths.");
 behaviorSmokeAssertTrue(! empty($templatedRow["statsPending"]), "Initial dashboard rows should mark heavy stats as pending for progressive hydration.");
+$defaultPurgeCandidatePath = $appdataShareRoot . "/default-purge-candidate";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($defaultPurgeCandidatePath), "Default purge candidate fixture should be created.");
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => false,
+  "defaultQuarantinePurgeDays" => 30
+)), "Default purge timer settings should be saved before quarantine.");
+$defaultPurgeResult = quarantineCandidatePath(array(
+  "name" => "default-purge-candidate",
+  "sourceKind" => "filesystem",
+  "sourceLabel" => "Discovery",
+  "sourceDisplay" => "Appdata share scan",
+  "reason" => "Default purge timer fixture."
+), $defaultPurgeCandidatePath, getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame(true, ! empty($defaultPurgeResult["ok"]), "Quarantine moves should succeed when testing the default purge timer.");
+$defaultPurgeRegistry = getAppdataCleanupPlusQuarantineRegistry();
+$defaultPurgeRecord = null;
+foreach ( $defaultPurgeRegistry as $record ) {
+  if ( isset($record["sourcePath"]) && $record["sourcePath"] === $defaultPurgeCandidatePath ) {
+    $defaultPurgeRecord = normalizeAppdataCleanupPlusQuarantineRecord($record);
+    break;
+  }
+}
+behaviorSmokeAssertTrue(is_array($defaultPurgeRecord), "Newly quarantined entries should be written to the quarantine registry.");
+behaviorSmokeAssertTrue($defaultPurgeRecord["purgeAt"] !== "", "Newly quarantined entries should inherit the configured default purge timer.");
+behaviorSmokeAssertTrue(strtotime($defaultPurgeRecord["purgeAt"]) > time(), "Default quarantine purge timers should be scheduled in the future.");
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => false,
+  "defaultQuarantinePurgeDays" => 0
+)), "Default purge timer settings should reset after quarantine testing.");
 if ( $appdataShareUsesSymlink ) {
   behaviorSmokeAssertSame("", buildPathSecurityLockReason($templatedOrphanPath), "Configured appdata share root symlinks should not lock inside-share candidates.");
   behaviorSmokeAssertSame(false, ! empty($templatedRow["policyLocked"]), "Configured appdata share root symlinks should leave inside-share template rows actionable.");

@@ -1481,10 +1481,19 @@ body[data-acp-host-theme="light"] #acp-app,
   min-width: 110px;
 }
 
-.acp-quarantine-schedule-input {
+.acp-quarantine-default-purge-input {
   min-height: 30px;
   padding-right: 6px;
   width: 112px;
+}
+
+.acp-quarantine-schedule-at-field {
+  min-width: 214px;
+}
+
+.acp-quarantine-schedule-at-input {
+  min-height: 30px;
+  width: 214px;
 }
 
 .acp-modal-inline-title {
@@ -1879,7 +1888,8 @@ body[data-acp-host-theme="light"] #acp-app,
     width: 100%;
   }
 
-  .acp-quarantine-schedule-input {
+  .acp-quarantine-default-purge-input,
+  .acp-quarantine-schedule-at-input {
     width: 100%;
   }
 
