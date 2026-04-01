@@ -1683,6 +1683,27 @@ body[data-acp-host-theme="light"] #acp-app,
   gap: 4px;
 }
 
+.acp-restore-conflict-name {
+  width: 100%;
+}
+
+.acp-restore-conflict-name.is-error {
+  border-color: var(--acp-danger);
+}
+
+.acp-restore-conflict-hint {
+  margin-top: -2px;
+}
+
+.acp-restore-conflict-feedback {
+  color: var(--acp-danger);
+  min-height: 18px;
+}
+
+.acp-restore-conflict-feedback:not(.is-visible) {
+  visibility: hidden;
+}
+
 .acp-modal-result-label {
   color: var(--acp-muted);
   font-size: 10px;

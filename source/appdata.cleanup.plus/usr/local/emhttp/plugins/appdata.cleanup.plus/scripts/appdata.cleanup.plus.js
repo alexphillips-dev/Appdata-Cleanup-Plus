@@ -258,6 +258,7 @@
       var conflictMode = String($(this).data("conflict-mode") || "");
       var restoreConflict = state.quarantine.restoreConflict || {};
       var entryIds = $.isArray(restoreConflict.entryIds) ? restoreConflict.entryIds : [];
+      var customRestoreNames = {};
 
       event.preventDefault();
       event.stopPropagation();
@@ -266,10 +267,23 @@
         return;
       }
 
+      if (conflictMode === "custom") {
+        customRestoreNames = collectRestoreConflictNames();
+        if (!customRestoreNames) {
+          return;
+        }
+      }
+
       state.quarantine.restoreConflict = null;
       runQuarantineManagerAction(entryIds, "restore", {
-        restoreConflictMode: conflictMode
+        restoreConflictMode: conflictMode,
+        restoreConflictNames: customRestoreNames
       });
+    });
+
+    $(document).on("input.acpQuarantine", ".sweet-alert .acp-restore-conflict-name", function() {
+      updateRestoreConflictPreview($(this));
+      setRestoreConflictFeedback("");
     });
 
     $(document).on("click.acpQuarantine", ".sweet-alert .acp-quarantine-entry", function(event) {
@@ -2373,8 +2387,16 @@
     ];
 
     $.each(conflicts, function(_, conflict) {
+      var suggestedName = conflict.suggestedName || "";
+      var parentPath = conflict.parentPath || "";
+      var previewPath = parentPath && suggestedName ? parentPath + "/" + suggestedName : "";
+
       html.push('<li class="acp-modal-result">');
       html.push('<div class="acp-modal-result-head"><span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "resultConflictLabel", "Conflict")) + '</span><code class="acp-modal-path">' + ACP.escapeHtml(conflict.sourcePath || "") + "</code></div>");
+      html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictParentLabel", "Restore parent")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(parentPath) + "</code></div>");
+      html.push('<div class="acp-modal-result-destination"><label class="acp-modal-result-label" for="acp-restore-conflict-' + ACP.escapeHtml(conflict.id || String(_)) + '">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictNameLabel", "Edited restore name")) + '</label><input id="acp-restore-conflict-' + ACP.escapeHtml(conflict.id || String(_)) + '" class="acp-input acp-restore-conflict-name" type="text" value="' + ACP.escapeHtml(suggestedName) + '" data-entry-id="' + ACP.escapeHtml(conflict.id || "") + '" data-parent-path="' + ACP.escapeHtml(parentPath) + '" autocomplete="off" spellcheck="false" /></div>');
+      html.push('<div class="acp-modal-subcopy acp-restore-conflict-hint">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictNameHint", "Edit only the restored folder name. The parent path stays fixed.")) + "</div>");
+      html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictEditedLabel", "Edited restore path")) + '</span><code class="acp-modal-path acp-modal-path-secondary" data-role="restore-conflict-preview">' + ACP.escapeHtml(previewPath) + "</code></div>");
       if (conflict.suggestedPath) {
         html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSuggestedLabel", "Suggested suffix restore")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(conflict.suggestedPath) + "</code></div>");
       }
@@ -2387,15 +2409,88 @@
     html.push("</ul></div>");
     html.push('<div class="acp-modal-copy">');
     html.push('<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSkipMessage", "Conflicting folders will stay in quarantine and the other selected folders will restore normally.")) + "</div>");
-    html.push('<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSuffixMessage", "Conflicting folders will restore beside the existing folders with a generated -restored suffix.")) + "</div>");
+    html.push('<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSuffixMessage", "Conflicting folders will restore beside the existing folders using the edited names below.")) + "</div>");
+    html.push('<div class="acp-modal-subcopy acp-restore-conflict-feedback" data-role="restore-conflict-feedback"></div>');
     html.push("</div>");
     html.push('<div class="acp-modal-inline-actions acp-restore-conflict-actions">');
     html.push('<button type="button" class="acp-button acp-button-secondary" data-action="resolve-restore-conflicts" data-conflict-mode="skip">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSkipLabel", "Skip conflicts")) + "</button>");
-    html.push('<button type="button" class="acp-button acp-button-primary" data-action="resolve-restore-conflicts" data-conflict-mode="suffix">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSuffixLabel", "Restore with suffix")) + "</button>");
+    html.push('<button type="button" class="acp-button acp-button-primary" data-action="resolve-restore-conflicts" data-conflict-mode="custom">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSuffixLabel", "Restore edited names")) + "</button>");
     html.push("</div>");
     html.push("</div>");
 
     return html.join("");
+  }
+
+  function setRestoreConflictFeedback(message) {
+    var $feedback = $(".sweet-alert [data-role='restore-conflict-feedback']");
+
+    if (!$feedback.length) {
+      return;
+    }
+
+    $feedback.text(String(message || ""));
+    $feedback.toggleClass("is-visible", !!$.trim(String(message || "")));
+  }
+
+  function updateRestoreConflictPreview($input) {
+    var inputValue;
+    var parentPath;
+    var previewPath;
+    var $preview;
+
+    if (!$input || !$input.length) {
+      return;
+    }
+
+    inputValue = $.trim(String($input.val() || ""));
+    parentPath = String($input.data("parent-path") || "");
+    previewPath = parentPath && inputValue ? parentPath + "/" + inputValue : "";
+    $preview = $input.closest(".acp-modal-result").find("[data-role='restore-conflict-preview']").first();
+
+    if ($preview.length) {
+      $preview.text(previewPath);
+    }
+  }
+
+  function collectRestoreConflictNames() {
+    var names = {};
+    var invalidMessage = ACP.t(strings, "quarantineRestoreConflictInvalidMessage", "Enter a restore name for every conflicting folder. Names cannot contain slashes.");
+    var isInvalid = false;
+    var $firstInvalid = $();
+
+    setRestoreConflictFeedback("");
+    $(".sweet-alert .acp-restore-conflict-name").removeClass("is-error");
+
+    $(".sweet-alert .acp-restore-conflict-name").each(function() {
+      var $input = $(this);
+      var entryId = String($input.data("entry-id") || "");
+      var restoreName = $.trim(String($input.val() || ""));
+
+      if (!entryId) {
+        return;
+      }
+
+      if (!restoreName || restoreName === "." || restoreName === ".." || /[\\/]/.test(restoreName)) {
+        if (!isInvalid) {
+          isInvalid = true;
+          $firstInvalid = $input;
+        }
+        $input.addClass("is-error");
+        return;
+      }
+
+      names[entryId] = restoreName;
+    });
+
+    if (isInvalid) {
+      setRestoreConflictFeedback(invalidMessage);
+      if ($firstInvalid.length) {
+        $firstInvalid.trigger("focus");
+      }
+      return null;
+    }
+
+    return names;
   }
 
   function openRestoreConflictDialog(entryIds, preview) {
@@ -2447,6 +2542,9 @@
       html.push('<div class="acp-modal-result-head"><span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + "</span><code class=\"acp-modal-path\">" + ACP.escapeHtml(result.sourcePath || result.destination || "") + "</code></div>");
       if (showPrimaryDestination) {
         html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "destinationLabel", "Destination")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.destination) + "</code></div>");
+      }
+      if (result.requestedRestorePath) {
+        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictEditedLabel", "Edited restore path")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.requestedRestorePath) + "</code></div>");
       }
       if (result.suggestedPath) {
         html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSuggestedLabel", "Suggested suffix restore")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.suggestedPath) + "</code></div>");
@@ -2546,7 +2644,8 @@
   function runQuarantineManagerAction(entryIds, action, options) {
     var isRestore = action === "restore";
     var requestOptions = $.extend({
-      restoreConflictMode: ""
+      restoreConflictMode: "",
+      restoreConflictNames: {}
     }, options || {});
     var loadingTitle = isRestore
       ? ACP.t(strings, "quarantineRestoreLoadingTitle", "Restoring quarantined folders")
@@ -2577,7 +2676,8 @@
       managerAction: action,
       entryIds: JSON.stringify(entryIds),
       scanToken: state.scanToken,
-      restoreConflictMode: requestOptions.restoreConflictMode
+      restoreConflictMode: requestOptions.restoreConflictMode,
+      restoreConflictNames: JSON.stringify(requestOptions.restoreConflictNames || {})
     }).done(function(response) {
       var quarantine = response.quarantine || {};
       var summary = response.summary || { restored: 0, purged: 0, skipped: 0, conflicts: 0, missing: 0, blocked: 0, errors: 0 };

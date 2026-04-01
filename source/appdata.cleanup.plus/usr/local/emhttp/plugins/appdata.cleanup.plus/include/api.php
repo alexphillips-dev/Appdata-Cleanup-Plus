@@ -339,8 +339,25 @@ function handleQuarantineManagerAction() {
   $entryIds = parseCandidateIds(getPostedString("entryIds"));
   $scanToken = getRequestedToken();
   $updatedScanToken = "";
+  $customRestoreNames = json_decode(getPostedString("restoreConflictNames"), true);
+
+  if ( ! is_array($customRestoreNames) ) {
+    $customRestoreNames = array();
+  }
+
+  $cleanCustomRestoreNames = array();
+  foreach ( $customRestoreNames as $entryId => $restoreName ) {
+    $entryKey = trim((string)$entryId);
+    if ( ! $entryKey ) {
+      continue;
+    }
+
+    $cleanCustomRestoreNames[$entryKey] = trim((string)$restoreName);
+  }
+
   $options = array(
-    "conflictMode" => getPostedString("restoreConflictMode")
+    "conflictMode" => getPostedString("restoreConflictMode"),
+    "customRestoreNames" => $cleanCustomRestoreNames
   );
 
   if ( ! in_array($action, array("restore", "purge"), true) ) {

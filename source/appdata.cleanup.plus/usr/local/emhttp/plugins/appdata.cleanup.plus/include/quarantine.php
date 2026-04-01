@@ -386,6 +386,30 @@ function buildRestoreSuffixDestination($sourcePath) {
   return "";
 }
 
+function buildRestoreCustomDestination($sourcePath, $restoreName) {
+  $normalizedSourcePath = appdataCleanupPlusCanonicalizePath($sourcePath);
+  $parentPath = dirname($normalizedSourcePath);
+  $cleanRestoreName = trim((string)$restoreName);
+
+  if ( ! $normalizedSourcePath || ! $parentPath || $parentPath === "." || ! $cleanRestoreName ) {
+    return "";
+  }
+
+  if ( $cleanRestoreName === "." || $cleanRestoreName === ".." ) {
+    return "";
+  }
+
+  if ( strpos($cleanRestoreName, "/") !== false || strpos($cleanRestoreName, "\\") !== false ) {
+    return "";
+  }
+
+  if ( preg_match('/[\x00-\x1F]/', $cleanRestoreName) ) {
+    return "";
+  }
+
+  return $parentPath . "/" . $cleanRestoreName;
+}
+
 function inspectTrackedQuarantineRestoreConflicts($entries) {
   $conflicts = array();
   $summary = array(
@@ -397,16 +421,22 @@ function inspectTrackedQuarantineRestoreConflicts($entries) {
   foreach ( $entries as $entry ) {
     $sourcePath = isset($entry["sourcePath"]) ? trim((string)$entry["sourcePath"]) : "";
     $destination = isset($entry["destination"]) ? trim((string)$entry["destination"]) : "";
+    $suggestedPath = buildRestoreSuffixDestination($sourcePath);
+    $sourceName = basename(rtrim($sourcePath, "/"));
+    $parentPath = dirname(rtrim($sourcePath, "/"));
 
     $summary["selected"]++;
 
     if ( $sourcePath && file_exists($sourcePath) ) {
       $conflicts[] = array(
         "id" => isset($entry["id"]) ? (string)$entry["id"] : "",
-        "name" => isset($entry["name"]) ? (string)$entry["name"] : basename(rtrim($sourcePath, "/")),
+        "name" => isset($entry["name"]) ? (string)$entry["name"] : $sourceName,
         "sourcePath" => $sourcePath,
         "destination" => $destination,
-        "suggestedPath" => buildRestoreSuffixDestination($sourcePath)
+        "parentPath" => $parentPath,
+        "sourceName" => $sourceName,
+        "suggestedName" => $suggestedPath ? basename($suggestedPath) : ($sourceName ? ($sourceName . "-restored") : ""),
+        "suggestedPath" => $suggestedPath
       );
       $summary["conflicts"]++;
       continue;
@@ -462,14 +492,17 @@ function buildQuarantineManagerActionSummary($results) {
 }
 
 function restoreTrackedQuarantineEntry($entry, $options=array()) {
+  $entryId = isset($entry["id"]) ? trim((string)$entry["id"]) : "";
   $sourcePath = isset($entry["sourcePath"]) ? trim((string)$entry["sourcePath"]) : "";
   $destination = isset($entry["destination"]) ? trim((string)$entry["destination"]) : "";
   $quarantineRoot = isset($entry["quarantineRoot"]) ? trim((string)$entry["quarantineRoot"]) : "";
   $securityReason = buildRestorePathSecurityReason($sourcePath);
   $conflictMode = isset($options["conflictMode"]) ? trim((string)$options["conflictMode"]) : "block";
+  $customRestoreNames = isset($options["customRestoreNames"]) && is_array($options["customRestoreNames"]) ? $options["customRestoreNames"] : array();
+  $customRestoreName = $entryId && isset($customRestoreNames[$entryId]) ? trim((string)$customRestoreNames[$entryId]) : "";
   $restorePath = $sourcePath;
 
-  if ( ! in_array($conflictMode, array("block", "skip", "suffix"), true) ) {
+  if ( ! in_array($conflictMode, array("block", "skip", "suffix", "custom"), true) ) {
     $conflictMode = "block";
   }
 
@@ -509,6 +542,28 @@ function restoreTrackedQuarantineEntry($entry, $options=array()) {
       }
 
       $restorePath = $suggestedPath;
+    } elseif ( $conflictMode === "custom" ) {
+      $restorePath = buildRestoreCustomDestination($sourcePath, $customRestoreName);
+
+      if ( ! $restorePath ) {
+        return array(
+          "status" => "error",
+          "message" => "The edited restore name was invalid. Use a folder name without slashes.",
+          "requestedRestorePath" => $customRestoreName ? dirname(rtrim($sourcePath, "/")) . "/" . $customRestoreName : "",
+          "suggestedPath" => $suggestedPath,
+          "quarantinePath" => $destination
+        );
+      }
+
+      if ( file_exists($restorePath) ) {
+        return array(
+          "status" => "conflict",
+          "message" => "The edited restore destination already exists. Choose a different name or skip this folder.",
+          "requestedRestorePath" => $restorePath,
+          "suggestedPath" => $suggestedPath,
+          "quarantinePath" => $destination
+        );
+      }
     } else {
       return array(
         "status" => "conflict",
@@ -570,7 +625,9 @@ function restoreTrackedQuarantineEntry($entry, $options=array()) {
     "status" => "restored",
     "message" => $restorePath === $sourcePath
       ? "Restored to the original location."
-      : "Original path already existed, so the folder was restored with a suffix.",
+      : ($conflictMode === "custom"
+        ? "Original path already existed, so the folder was restored to the edited destination."
+        : "Original path already existed, so the folder was restored with a suffix."),
     "destination" => $restorePath,
     "restoredPath" => $restorePath
   );
@@ -753,15 +810,15 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
-  $vmManagerLockReason = appdataCleanupPlusBuildVmManagerLockReason($displayPath);
+  $managedSystemLockReason = appdataCleanupPlusBuildManagedSystemLockReason($displayPath);
 
-  if ( $vmManagerLockReason !== "" ) {
+  if ( $managedSystemLockReason !== "" ) {
     return array(
       "ok" => false,
       "path" => $candidatePath,
       "displayPath" => $displayPath,
       "status" => "blocked",
-      "message" => $vmManagerLockReason
+      "message" => $managedSystemLockReason
     );
   }
 

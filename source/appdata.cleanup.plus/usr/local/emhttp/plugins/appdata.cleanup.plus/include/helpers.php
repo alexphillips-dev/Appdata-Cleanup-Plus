@@ -153,14 +153,70 @@ function getAppdataCleanupPlusVmManagerManagedPaths() {
   return array_values($managedPaths);
 }
 
-function appdataCleanupPlusFindVmManagerPathMatch($path) {
+function appdataCleanupPlusNormalizeDockerManagedPath($path) {
+  $normalized = appdataCleanupPlusCanonicalizePath($path);
+  $baseName = basename($normalized);
+  $extension = pathinfo($baseName, PATHINFO_EXTENSION);
+
+  if ( ! $normalized || $normalized[0] !== "/" ) {
+    return "";
+  }
+
+  if ( $extension !== "" ) {
+    $normalized = appdataCleanupPlusCanonicalizePath(dirname($normalized));
+  }
+
+  if ( ! $normalized || $normalized[0] !== "/" ) {
+    return "";
+  }
+
+  return $normalized;
+}
+
+function getAppdataCleanupPlusDockerManagedPaths() {
+  static $managedPaths = null;
+  $dockerConfig = array();
+  $pathSpecs = array();
+
+  if ( $managedPaths !== null ) {
+    return $managedPaths;
+  }
+
+  $dockerConfig = @appdataCleanupPlusParseIniFile(appdataCleanupPlusDockerConfigPath());
+  $pathSpecs = array(
+    array(
+      "key" => "DOCKER_IMAGE_FILE",
+      "label" => "Docker image storage path"
+    )
+  );
+  $managedPaths = array();
+
+  foreach ( $pathSpecs as $pathSpec ) {
+    $configuredPath = isset($dockerConfig[$pathSpec["key"]]) ? trim((string)$dockerConfig[$pathSpec["key"]]) : "";
+    $normalizedPath = appdataCleanupPlusNormalizeDockerManagedPath($configuredPath);
+
+    if ( ! $normalizedPath ) {
+      continue;
+    }
+
+    $managedPaths[$normalizedPath] = array(
+      "key" => $pathSpec["key"],
+      "label" => $pathSpec["label"],
+      "path" => $normalizedPath
+    );
+  }
+
+  return array_values($managedPaths);
+}
+
+function appdataCleanupPlusFindManagedPathMatch($path, $managedPaths) {
   $normalizedPath = normalizeUserPath($path);
 
   if ( ! $normalizedPath ) {
     return null;
   }
 
-  foreach ( getAppdataCleanupPlusVmManagerManagedPaths() as $managedPath ) {
+  foreach ( $managedPaths as $managedPath ) {
     $managedRoot = normalizeUserPath(isset($managedPath["path"]) ? (string)$managedPath["path"] : "");
 
     if ( ! $managedRoot ) {
@@ -186,6 +242,10 @@ function appdataCleanupPlusFindVmManagerPathMatch($path) {
   return null;
 }
 
+function appdataCleanupPlusFindVmManagerPathMatch($path) {
+  return appdataCleanupPlusFindManagedPathMatch($path, getAppdataCleanupPlusVmManagerManagedPaths());
+}
+
 function appdataCleanupPlusBuildVmManagerLockReason($path) {
   $managedMatch = appdataCleanupPlusFindVmManagerPathMatch($path);
   $managedRoot = "";
@@ -203,6 +263,39 @@ function appdataCleanupPlusBuildVmManagerLockReason($path) {
   }
 
   return $managedLabel . " '" . $managedRoot . "' is excluded for safety.";
+}
+
+function appdataCleanupPlusFindDockerManagedPathMatch($path) {
+  return appdataCleanupPlusFindManagedPathMatch($path, getAppdataCleanupPlusDockerManagedPaths());
+}
+
+function appdataCleanupPlusBuildDockerManagedLockReason($path) {
+  $managedMatch = appdataCleanupPlusFindDockerManagedPathMatch($path);
+  $managedRoot = "";
+  $managedLabel = "";
+
+  if ( ! is_array($managedMatch) ) {
+    return "";
+  }
+
+  $managedRoot = isset($managedMatch["path"]) ? (string)$managedMatch["path"] : "";
+  $managedLabel = isset($managedMatch["label"]) ? (string)$managedMatch["label"] : "Docker managed path";
+
+  if ( isset($managedMatch["relation"]) && $managedMatch["relation"] === "contains" ) {
+    return $managedLabel . " '" . $managedRoot . "' sits inside this folder and is excluded for safety.";
+  }
+
+  return $managedLabel . " '" . $managedRoot . "' is excluded for safety.";
+}
+
+function appdataCleanupPlusBuildManagedSystemLockReason($path) {
+  $vmManagerLockReason = appdataCleanupPlusBuildVmManagerLockReason($path);
+
+  if ( $vmManagerLockReason !== "" ) {
+    return $vmManagerLockReason;
+  }
+
+  return appdataCleanupPlusBuildDockerManagedLockReason($path);
 }
 
 function getAppdataShareName() {

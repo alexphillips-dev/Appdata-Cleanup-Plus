@@ -619,7 +619,10 @@ function appdataCleanupPlusShouldExcludeFilesystemDiscoveryEntry($entryName) {
     return false;
   }
 
-  return strcasecmp($normalizedEntryName, ".Recycle.Bin") === 0;
+  return in_array(strtolower($normalizedEntryName), array(
+    ".recycle.bin",
+    "lost+found"
+  ), true);
 }
 
 function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning) {
@@ -679,7 +682,7 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
       continue;
     }
 
-    if ( appdataCleanupPlusBuildVmManagerLockReason($candidatePath) !== "" ) {
+    if ( appdataCleanupPlusBuildManagedSystemLockReason($candidatePath) !== "" ) {
       continue;
     }
 
@@ -721,7 +724,7 @@ function removeVmManagerManagedCandidates($availableVolumes) {
       continue;
     }
 
-    if ( appdataCleanupPlusBuildVmManagerLockReason($volume["HostDir"]) !== "" ) {
+    if ( appdataCleanupPlusBuildManagedSystemLockReason($volume["HostDir"]) !== "" ) {
       unset($filtered[$volume["HostDir"]]);
     }
   }
@@ -793,10 +796,10 @@ function buildPathSecurityLockReason($resolvedPath) {
     return "Path no longer exists.";
   }
 
-  $vmManagerLockReason = appdataCleanupPlusBuildVmManagerLockReason($resolvedPath);
+  $managedSystemLockReason = appdataCleanupPlusBuildManagedSystemLockReason($resolvedPath);
 
-  if ( $vmManagerLockReason !== "" ) {
-    return $vmManagerLockReason;
+  if ( $managedSystemLockReason !== "" ) {
+    return $managedSystemLockReason;
   }
 
   if ( @is_link($resolvedPath) ) {

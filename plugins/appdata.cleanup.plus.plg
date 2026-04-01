@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.02">
-<!ENTITY md5 "953fac7f57fb0febe57ee910563cd28f">
+<!ENTITY version "2026.04.01.03">
+<!ENTITY md5 "67b4033295d816ace7151deb7bcad652">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,14 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.03
+- Restore: Let the quarantine restore-conflict dialog accept per-folder edited restore names instead of only offering a generated suffix
+- Safety: Validate edited restore names server-side, reject invalid names cleanly, and report edited restore destinations back in the restore results summary
+- UX: Show the fixed parent path, editable restore name, and live edited restore-path preview in the quarantine conflict dialog before restore runs
+- Scan: Read the configured Docker image storage path from `docker.cfg` and exclude Docker-managed storage roots from orphan detection and action execution
+- Scan: Exclude `lost+found` alongside `.Recycle.Bin` from direct-child appdata discovery so obvious system metadata folders do not surface as orphaned appdata candidates
+- Test: Cover edited restore-name restores, invalid edited names, Docker-managed path exclusion, and `lost+found` exclusion in the behavior smoke regression
+
 ###2026.04.01.02
 - Release: Promote the `2026.04.01.01` development build to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
 - Fix: Allow inside-share appdata rows to remain actionable when the configured appdata root itself is intentionally symlinked

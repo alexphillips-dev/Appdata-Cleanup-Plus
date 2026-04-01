@@ -205,6 +205,59 @@ behaviorSmokeAssertTrue(is_dir($restoreCollisionSource), "Suffix restore mode sh
 behaviorSmokeAssertTrue(is_dir($restoreSuffixResult["destination"]), "Suffix restore mode should create the generated restore destination.");
 behaviorSmokeAssertTrue(! is_dir($restoreCollisionDestination), "Suffix restore mode should move the quarantined folder out of quarantine.");
 
+$restoreCustomSource = $appdataShareRoot . "/restore-custom";
+$restoreCustomQuarantineRoot = $stateRoot . "/restore-custom-quarantine";
+$restoreCustomDestination = $restoreCustomQuarantineRoot . "/20260331-120600/mnt/user/appdata/restore-custom";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($restoreCustomSource), "Restore custom source fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($restoreCustomDestination), "Restore custom quarantine fixture should be created.");
+$restoreCustomEntry = array(
+  "id" => "restore-custom",
+  "name" => "restore-custom",
+  "sourcePath" => $restoreCustomSource,
+  "destination" => $restoreCustomDestination,
+  "quarantineRoot" => $restoreCustomQuarantineRoot,
+  "quarantinedAt" => "2026-03-30T12:06:00+00:00",
+  "sourceSummary" => "restore-custom",
+  "targetSummary" => "/config"
+);
+$restoreCustomPreview = inspectTrackedQuarantineRestoreConflicts(array($restoreCustomEntry));
+behaviorSmokeAssertSame("restore-custom-restored", $restoreCustomPreview["conflicts"][0]["suggestedName"], "Restore preview should expose the editable suggested restore name.");
+$restoreCustomResult = restoreTrackedQuarantineEntry($restoreCustomEntry, array(
+  "conflictMode" => "custom",
+  "customRestoreNames" => array(
+    "restore-custom" => "restore-custom-reviewed"
+  )
+));
+behaviorSmokeAssertSame("restored", $restoreCustomResult["status"], "Custom restore mode should restore to the edited destination name.");
+behaviorSmokeAssertSame($appdataShareRoot . "/restore-custom-reviewed", $restoreCustomResult["destination"], "Custom restore mode should use the edited restore name inside the original parent.");
+behaviorSmokeAssertTrue(is_dir($restoreCustomSource), "Custom restore mode should leave the original conflicting folder untouched.");
+behaviorSmokeAssertTrue(is_dir($restoreCustomResult["destination"]), "Custom restore mode should create the edited restore destination.");
+behaviorSmokeAssertTrue(! is_dir($restoreCustomDestination), "Custom restore mode should move the quarantined folder out of quarantine.");
+
+$restoreCustomInvalidSource = $appdataShareRoot . "/restore-custom-invalid";
+$restoreCustomInvalidQuarantineRoot = $stateRoot . "/restore-custom-invalid-quarantine";
+$restoreCustomInvalidDestination = $restoreCustomInvalidQuarantineRoot . "/20260331-120700/mnt/user/appdata/restore-custom-invalid";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($restoreCustomInvalidSource), "Restore custom invalid source fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($restoreCustomInvalidDestination), "Restore custom invalid quarantine fixture should be created.");
+$restoreCustomInvalidEntry = array(
+  "id" => "restore-custom-invalid",
+  "name" => "restore-custom-invalid",
+  "sourcePath" => $restoreCustomInvalidSource,
+  "destination" => $restoreCustomInvalidDestination,
+  "quarantineRoot" => $restoreCustomInvalidQuarantineRoot,
+  "quarantinedAt" => "2026-03-30T12:07:00+00:00",
+  "sourceSummary" => "restore-custom-invalid",
+  "targetSummary" => "/config"
+);
+$restoreCustomInvalidResult = restoreTrackedQuarantineEntry($restoreCustomInvalidEntry, array(
+  "conflictMode" => "custom",
+  "customRestoreNames" => array(
+    "restore-custom-invalid" => "bad/name"
+  )
+));
+behaviorSmokeAssertSame("error", $restoreCustomInvalidResult["status"], "Custom restore mode should reject invalid edited restore names.");
+behaviorSmokeAssertTrue(is_dir($restoreCustomInvalidDestination), "Invalid custom restore names should leave the quarantine folder in place.");
+
 appendAppdataCleanupPlusAuditEntry(array(
   "timestamp" => "2026-03-30T12:00:00+00:00",
   "operation" => "quarantine",
@@ -252,10 +305,14 @@ $slashTemplatePath = $slashLivePath . "/";
 $vmDomainsPath = $appdataShareRoot . "/vm-domains";
 $vmDomainTemplatePath = $vmDomainsPath . "/template-candidate";
 $vmIsosPath = $appdataShareRoot . "/vm-isos";
+$dockerManagedRoot = $appdataShareRoot . "/docker-system";
+$dockerManagedImagePath = $dockerManagedRoot . "/docker.img";
+$dockerManagedTemplatePath = $dockerManagedRoot . "/template-candidate";
 $libvirtRoot = $appdataShareRoot . "/system/libvirt";
 $libvirtImagePath = $libvirtRoot . "/libvirt.img";
 $libvirtParentPath = $appdataShareRoot . "/system";
 $recycleBinPath = $appdataShareRoot . "/.Recycle.Bin";
+$lostFoundPath = $appdataShareRoot . "/lost+found";
 $quarantinePath = $appdataShareRoot . "/.appdata-cleanup-plus-quarantine";
 mkdir($dockerRuntimeFixture, 0777, true);
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($dockerConfigFixture)), "Docker config fixture directory should be created.");
@@ -275,17 +332,21 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($nestedTemplatePath), 
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($slashLivePath), "Trailing-slash live path fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmDomainTemplatePath), "VM domains fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmIsosPath), "VM ISO fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($dockerManagedTemplatePath), "Docker managed path fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($libvirtRoot), "Libvirt fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($recycleBinPath), "Recycle Bin fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($lostFoundPath), "lost+found fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($quarantinePath), "Quarantine fixture should be created.");
 file_put_contents($vmConfigFixture, "DOMAINDIR=\"" . $vmDomainsPath . "/\"\nMEDIADIR=\"" . $vmIsosPath . "/\"\nIMAGE_FILE=\"" . $libvirtImagePath . "\"\n");
-file_put_contents($dockerConfigFixture, "DOCKER_APP_CONFIG_PATH=\"" . $appdataShareRoot . "\"\n");
+file_put_contents($dockerConfigFixture, "DOCKER_APP_CONFIG_PATH=\"" . $appdataShareRoot . "\"\nDOCKER_IMAGE_FILE=\"" . $dockerManagedImagePath . "\"\n");
 file_put_contents($shareConfigFixtureDir . "/" . $appdataShareName . ".cfg", "shareUseCache=\"yes\"\n");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/templated-orphan.xml", "templated-orphan", $templatedOrphanPath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/nested-app.xml", "nested-app", $nestedTemplatePath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/adguard-workingdir.xml", "AdGuard", $slashTemplatePath, "/opt/adguardhome/work");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/vm-template-managed.xml", "vm-template-managed", $vmDomainTemplatePath, "/config");
+behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/docker-template-managed.xml", "docker-template-managed", $dockerManagedTemplatePath, "/config");
 file_put_contents($libvirtImagePath, "libvirt-image");
+file_put_contents($dockerManagedImagePath, "docker-image");
 file_put_contents($dockerClientFixture, "<?php\ntrigger_error('docker client fixture include warning', E_USER_WARNING);\nclass DockerClient {\n  public function getDockerContainers() {\n    trigger_error('docker client fixture query warning', E_USER_WARNING);\n    echo \"docker-fixture-noise\";\n    return array((object)array(\n      'Volumes' => array(\n        (object)array('Source' => '" . addslashes($liveAppPath) . "', 'Destination' => '/config'),\n        (object)array('Source' => '" . addslashes($slashLivePath) . "', 'Destination' => '/opt/adguardhome/work')\n      )\n    ));\n  }\n}\n");
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_RUNTIME_PATH=" . str_replace("\\", "/", $dockerRuntimeFixture));
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_CLIENT_PATH=" . str_replace("\\", "/", $dockerClientFixture));
@@ -313,8 +374,11 @@ $slashLiveRow = behaviorSmokeFindRowByPath($dashboardRows, $slashLivePath);
 $vmDomainsRow = behaviorSmokeFindRowByPath($dashboardRows, $vmDomainsPath);
 $vmTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $vmDomainTemplatePath);
 $vmIsosRow = behaviorSmokeFindRowByPath($dashboardRows, $vmIsosPath);
+$dockerManagedRow = behaviorSmokeFindRowByPath($dashboardRows, $dockerManagedRoot);
+$dockerManagedTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $dockerManagedTemplatePath);
 $libvirtParentRow = behaviorSmokeFindRowByPath($dashboardRows, $libvirtParentPath);
 $recycleBinRow = behaviorSmokeFindRowByPath($dashboardRows, $recycleBinPath);
+$lostFoundRow = behaviorSmokeFindRowByPath($dashboardRows, $lostFoundPath);
 $quarantineRow = behaviorSmokeFindRowByPath($dashboardRows, $quarantinePath);
 behaviorSmokeAssertTrue(is_array($templatedRow), "Template-backed orphan should be detected.");
 behaviorSmokeAssertTrue(is_array($filesystemRow), "Filesystem-only orphan should be detected.");
@@ -325,8 +389,11 @@ behaviorSmokeAssertSame(null, $slashLiveRow, "A trailing slash difference betwee
 behaviorSmokeAssertSame(null, $vmDomainsRow, "VM Manager vdisk storage paths should be excluded from orphaned results.");
 behaviorSmokeAssertSame(null, $vmTemplateRow, "Template-backed paths inside VM Manager storage should be excluded from orphaned results.");
 behaviorSmokeAssertSame(null, $vmIsosRow, "VM Manager ISO storage paths should be excluded from orphaned results.");
+behaviorSmokeAssertSame(null, $dockerManagedRow, "Docker managed storage paths should be excluded from orphaned results.");
+behaviorSmokeAssertSame(null, $dockerManagedTemplateRow, "Template-backed paths inside Docker managed storage should be excluded from orphaned results.");
 behaviorSmokeAssertSame(null, $libvirtParentRow, "Parents containing the configured libvirt path should be excluded from orphaned results.");
 behaviorSmokeAssertSame(null, $recycleBinRow, ".Recycle.Bin should be excluded from filesystem orphan discovery.");
+behaviorSmokeAssertSame(null, $lostFoundRow, "lost+found should be excluded from filesystem orphan discovery.");
 behaviorSmokeAssertSame(null, $quarantineRow, "The plugin quarantine root should not be surfaced as a filesystem orphan.");
 behaviorSmokeAssertSame("template", $templatedRow["sourceKind"], "Template-backed rows should preserve their source kind.");
 behaviorSmokeAssertSame("filesystem", $filesystemRow["sourceKind"], "Filesystem-only rows should be marked as discovery candidates.");
@@ -349,8 +416,11 @@ behaviorSmokeAssertTrue($hydratedStatsRow["sizeLabel"] !== "Unknown", "Hydrated 
 
 $vmManagerPaths = getAppdataCleanupPlusVmManagerManagedPaths();
 behaviorSmokeAssertSame(3, count($vmManagerPaths), "VM Manager config should expose the configured vdisk, ISO, and libvirt paths.");
+$dockerManagedPaths = getAppdataCleanupPlusDockerManagedPaths();
+behaviorSmokeAssertSame(1, count($dockerManagedPaths), "Docker config should expose the configured Docker image storage path.");
 behaviorSmokeAssertContains("VM Manager vdisk storage path", buildPathSecurityLockReason($vmDomainsPath), "VM Manager vdisk storage should be safety-locked.");
 behaviorSmokeAssertContains("VM Manager libvirt storage path", buildPathSecurityLockReason($libvirtParentPath), "Parents containing the configured libvirt path should be safety-locked.");
+behaviorSmokeAssertContains("Docker image storage path", buildPathSecurityLockReason($dockerManagedRoot), "Docker image storage should be safety-locked.");
 $vmActionResolution = resolveCandidateForAction(array(
   "path" => $vmDomainsPath,
   "displayPath" => $vmDomainsPath,
@@ -359,6 +429,14 @@ $vmActionResolution = resolveCandidateForAction(array(
 behaviorSmokeAssertSame(false, $vmActionResolution["ok"], "VM Manager paths should be blocked at action time.");
 behaviorSmokeAssertSame("blocked", $vmActionResolution["status"], "VM Manager action blocks should be reported as blocked.");
 behaviorSmokeAssertContains("VM Manager vdisk storage path", $vmActionResolution["message"], "VM Manager action blocks should explain why the path is excluded.");
+$dockerActionResolution = resolveCandidateForAction(array(
+  "path" => $dockerManagedRoot,
+  "displayPath" => $dockerManagedRoot,
+  "realPath" => (string)@realpath($dockerManagedRoot)
+), getAppdataCleanupPlusSafetySettings(), "quarantine");
+behaviorSmokeAssertSame(false, $dockerActionResolution["ok"], "Docker managed paths should be blocked at action time.");
+behaviorSmokeAssertSame("blocked", $dockerActionResolution["status"], "Docker managed action blocks should be reported as blocked.");
+behaviorSmokeAssertContains("Docker image storage path", $dockerActionResolution["message"], "Docker managed action blocks should explain why the path is excluded.");
 
 $symlinkTargetPath = $appdataShareRoot . "/symlink-target";
 $symlinkLinkPath = $appdataShareRoot . "/symlink-link";
