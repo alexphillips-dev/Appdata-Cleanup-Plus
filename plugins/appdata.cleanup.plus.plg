@@ -13,6 +13,14 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.02
+- Release: Promote the `2026.04.01.01` development build to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
+- Fix: Allow inside-share appdata rows to remain actionable when the configured appdata root itself is intentionally symlinked
+- Safety: Keep direct folder symlinks and deeper nested symlink segments locked, so the symlink exemption only applies to the configured appdata share root
+- Scan: Exclude `.Recycle.Bin` from direct-child appdata share discovery so recycle metadata does not surface as an orphaned appdata folder
+- Docs: Refresh the README with current install, update, safety, quarantine, development, and support guidance, plus repo badges and issue-form support flow
+- Maintainer: Carry the GitHub issue forms and the explicit branch-ref release verification improvements into the stable branch metadata
+
 ###2026.04.01.01
 - Fix: Treat the configured appdata share root symlink as an allowed path segment so inside-share rows do not get hard-locked when the appdata root itself is intentionally symlinked
 - Safety: Keep direct folder symlinks and deeper nested symlink segments locked, so only the configured appdata root symlink exemption is allowed
