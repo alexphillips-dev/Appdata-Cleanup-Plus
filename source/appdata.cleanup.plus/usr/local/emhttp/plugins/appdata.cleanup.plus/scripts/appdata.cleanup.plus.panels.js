@@ -73,17 +73,32 @@
     var strings = context.strings || {};
     var quarantine = state.quarantine || {};
     var entries = $.isArray(quarantine.entries) ? quarantine.entries : [];
+    var selected = quarantine.selected || {};
+    var selectedCount = 0;
+    var selectionDisabled = !!quarantine.loading || selectedCount === 0;
     var summary = quarantine.summary || { count: 0, sizeLabel: "0 B" };
     var subtitle = summary.count
       ? (summary.count + " " + (summary.count === 1 ? ACP.t(strings, "quarantineCountSingular", "quarantined folder") : ACP.t(strings, "quarantineCountPlural", "quarantined folders")) + " tracked" + (summary.sizeLabel ? " | " + summary.sizeLabel : ""))
       : ACP.t(strings, "quarantineSummaryEmpty", "No quarantined folders are tracked right now.");
+    $.each(entries, function(_, entry) {
+      if (selected[String(entry.id || "")]) {
+        selectedCount += 1;
+      }
+    });
+    selectionDisabled = !!quarantine.loading || selectedCount === 0;
     var html = [
       '<div class="acp-modal-summary">',
       '<div class="acp-modal-copy">',
       '<div class="acp-modal-subcopy">' + ACP.escapeHtml(subtitle) + "</div>",
       "</div>",
-      '<div class="acp-modal-actions-row">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="refresh-quarantine">' + ACP.escapeHtml(ACP.t(strings, "quarantineRefreshLabel", "Refresh")) + "</button>",
+      '<div class="acp-modal-actions-row acp-quarantine-manager-toolbar">',
+      '<div class="acp-modal-subcopy acp-quarantine-selected-summary">' + ACP.escapeHtml(selectedCount + " " + (selectedCount === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"))) + "</div>",
+      '<div class="acp-modal-inline-actions">',
+      '<button type="button" class="acp-button acp-button-secondary" data-action="refresh-quarantine"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantineRefreshLabel", "Refresh")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="clear-quarantine-selection"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "clearLabel", "Clear")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="restore-selected-quarantine"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "restoreSelectedLabel", "Restore selected")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="purge-selected-quarantine"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "purgeSelectedLabel", "Purge selected")) + "</button>",
+      "</div>",
       "</div>",
       '<div class="acp-modal-panel">',
       '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "quarantineTrackedTitle", "Tracked folders")) + "</div>"
@@ -96,12 +111,19 @@
     } else {
       html.push('<ul class="acp-modal-list acp-modal-result-list">');
       $.each(entries, function(_, entry) {
-        html.push('<li class="acp-modal-result">');
+        var entryId = String(entry.id || "");
+        var isSelected = !!selected[entryId];
+        html.push('<li class="acp-modal-result acp-quarantine-entry' + (isSelected ? ' is-selected' : "") + '" data-entry-id="' + ACP.escapeHtml(entryId) + '">');
         html.push('<div class="acp-modal-result-head">');
+        html.push('<div class="acp-quarantine-entry-main">');
+        html.push('<label class="acp-quarantine-entry-check">');
+        html.push('<input type="checkbox" class="acp-quarantine-checkbox" data-entry-id="' + ACP.escapeHtml(entryId) + '"' + (isSelected ? ' checked="checked"' : "") + ">");
+        html.push("</label>");
         html.push('<div class="acp-modal-inline-title">' + ACP.escapeHtml(entry.name || entry.sourcePath || "") + "</div>");
+        html.push("</div>");
         html.push('<div class="acp-modal-inline-actions">');
-        html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="restore" data-entry-id="' + ACP.escapeHtml(entry.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreActionLabel", "Restore")) + "</button>");
-        html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="purge" data-entry-id="' + ACP.escapeHtml(entry.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeActionLabel", "Purge")) + "</button>");
+        html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="restore" data-entry-id="' + ACP.escapeHtml(entryId) + '">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreActionLabel", "Restore")) + "</button>");
+        html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="purge" data-entry-id="' + ACP.escapeHtml(entryId) + '">' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeActionLabel", "Purge")) + "</button>");
         html.push("</div>");
         html.push("</div>");
         html.push('<div class="acp-modal-result-message">' + ACP.escapeHtml((entry.quarantinedAtLabel || "") + (entry.quarantinedAgeLabel ? " | " + entry.quarantinedAgeLabel : "") + (entry.sizeLabel ? " | " + entry.sizeLabel : "")) + "</div>");

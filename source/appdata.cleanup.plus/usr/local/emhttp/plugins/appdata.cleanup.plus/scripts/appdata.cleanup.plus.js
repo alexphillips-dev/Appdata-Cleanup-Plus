@@ -15,10 +15,10 @@
     scanWarningMessage: "",
     settings: ACP.defaultSafetySettings(),
     quarantine: {
-      open: false,
       loading: false,
       loaded: false,
       entries: [],
+      selected: {},
       summary: { count: 0, sizeLabel: "0 B" }
     },
     riskFilter: "all",
@@ -195,9 +195,68 @@
       event.preventDefault();
       event.stopPropagation();
 
-      if (!state.busy) {
+      if (!state.busy && !state.quarantine.loading) {
         openQuarantineManagerModal(true);
       }
+    });
+
+    $(document).on("click.acpQuarantine", ".sweet-alert [data-action='clear-quarantine-selection']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (state.busy || state.quarantine.loading) {
+        return;
+      }
+
+      clearQuarantineSelection();
+    });
+
+    $(document).on("click.acpQuarantine", ".sweet-alert [data-action='restore-selected-quarantine'], .sweet-alert [data-action='purge-selected-quarantine']", function(event) {
+      var action = $(this).data("action") === "restore-selected-quarantine" ? "restore" : "purge";
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (state.busy || state.quarantine.loading) {
+        return;
+      }
+
+      startQuarantineManagerActionFlow(action, getSelectedQuarantineEntryIds());
+    });
+
+    $(document).on("click.acpQuarantine", ".sweet-alert .acp-quarantine-entry", function(event) {
+      var $checkbox;
+
+      if (state.busy || state.quarantine.loading) {
+        return;
+      }
+
+      if ($(event.target).closest(".acp-quarantine-checkbox, .acp-button, button, input, label, code, a").length) {
+        return;
+      }
+
+      $checkbox = $(this).find(".acp-quarantine-checkbox:not(:disabled)").first();
+      if (!$checkbox.length) {
+        return;
+      }
+
+      $checkbox.prop("checked", !$checkbox.prop("checked")).trigger("change");
+    });
+
+    $(document).on("change.acpQuarantine", ".sweet-alert .acp-quarantine-checkbox", function() {
+      var entryId = String($(this).data("entry-id") || "");
+
+      if (!entryId || state.busy || state.quarantine.loading) {
+        return;
+      }
+
+      if (this.checked) {
+        state.quarantine.selected[entryId] = true;
+      } else {
+        delete state.quarantine.selected[entryId];
+      }
+
+      syncQuarantineManagerSelectionUi();
     });
 
     $(document).on("click.acpQuarantine", ".sweet-alert [data-entry-action]", function(event) {
@@ -207,11 +266,11 @@
       event.preventDefault();
       event.stopPropagation();
 
-      if (!action || !entryId || state.busy) {
+      if (!action || !entryId || state.busy || state.quarantine.loading) {
         return;
       }
 
-      startQuarantineManagerActionFlow(action, entryId);
+      startQuarantineManagerActionFlow(action, [entryId]);
     });
   }
 
@@ -284,6 +343,9 @@
     state.auditHistory = [];
     state.scanWarningMessage = "";
     state.settings = ACP.defaultSafetySettings();
+    state.quarantine.entries = [];
+    state.quarantine.loaded = false;
+    state.quarantine.selected = {};
     state.quarantine.summary = { count: 0, sizeLabel: "0 B" };
   }
 
@@ -340,8 +402,7 @@
       action: "getQuarantineEntries"
     }).done(function(response) {
       var quarantine = response.quarantine || {};
-      state.quarantine.entries = $.isArray(quarantine.entries) ? quarantine.entries : [];
-      state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, quarantine.summary || {});
+      setQuarantineEntries(quarantine.entries, quarantine.summary);
       state.quarantine.loaded = true;
       state.quarantine.loading = false;
       renderPanels();
@@ -384,11 +445,10 @@
   }
 
   function ensureQuarantineManagerModal() {
-    if (state.quarantine.open) {
+    if (isQuarantineManagerModalVisible()) {
       return;
     }
 
-    state.quarantine.open = true;
     swal({
       title: ACP.t(strings, "quarantineManagerTitle", "Quarantine manager"),
       text: "",
@@ -398,7 +458,6 @@
       confirmButtonText: ACP.t(strings, "doneLabel", "Done"),
       closeOnConfirm: true
     }, function() {
-      state.quarantine.open = false;
       renderPanels();
     });
   }
@@ -650,6 +709,98 @@
       null,
       true
     );
+  }
+
+  function getActiveSweetAlertModal() {
+    var $modal = $(".sweet-alert:visible").last();
+
+    if (!$modal.length) {
+      $modal = $(".sweet-alert.showSweetAlert").last();
+    }
+
+    return $modal;
+  }
+
+  function isQuarantineManagerModalVisible() {
+    var $modal = getActiveSweetAlertModal();
+    return !!($modal.length && $modal.hasClass("acp-quarantine-manager-modal"));
+  }
+
+  function setQuarantineEntries(entries, summary) {
+    state.quarantine.entries = $.isArray(entries) ? entries : [];
+    state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, summary || {});
+    reconcileQuarantineSelection();
+  }
+
+  function reconcileQuarantineSelection() {
+    var allowed = {};
+
+    $.each(state.quarantine.entries || [], function(_, entry) {
+      var entryId = String(entry.id || "");
+
+      if (entryId) {
+        allowed[entryId] = true;
+      }
+    });
+
+    $.each(Object.keys(state.quarantine.selected || {}), function(_, entryId) {
+      if (!allowed[entryId]) {
+        delete state.quarantine.selected[entryId];
+      }
+    });
+  }
+
+  function getSelectedQuarantineEntryIds() {
+    var selectedIds = [];
+
+    $.each(state.quarantine.entries || [], function(_, entry) {
+      var entryId = String(entry.id || "");
+
+      if (entryId && state.quarantine.selected[entryId]) {
+        selectedIds.push(entryId);
+      }
+    });
+
+    return selectedIds;
+  }
+
+  function buildQuarantineSelectionSummaryText(selectedCount) {
+    return selectedCount + " " + (selectedCount === 1
+      ? ACP.t(strings, "selectedSingular", "folder selected")
+      : ACP.t(strings, "selectedPlural", "folders selected"));
+  }
+
+  function syncQuarantineManagerSelectionUi() {
+    var selectedIds = getSelectedQuarantineEntryIds();
+    var $modal = getActiveSweetAlertModal();
+
+    if (!$modal.length || !$modal.hasClass("acp-quarantine-manager-modal")) {
+      return;
+    }
+
+    $modal.find(".acp-quarantine-selected-summary").text(buildQuarantineSelectionSummaryText(selectedIds.length));
+    $modal.find("[data-action='restore-selected-quarantine'], [data-action='purge-selected-quarantine'], [data-action='clear-quarantine-selection']")
+      .prop("disabled", state.busy || state.quarantine.loading || selectedIds.length === 0);
+
+    $modal.find(".acp-quarantine-entry").each(function() {
+      var $entry = $(this);
+      var entryId = String($entry.data("entry-id") || "");
+      var isSelected = !!(entryId && state.quarantine.selected[entryId]);
+
+      $entry.toggleClass("is-selected", isSelected);
+      $entry.find(".acp-quarantine-checkbox").prop("checked", isSelected);
+    });
+  }
+
+  function clearQuarantineSelection() {
+    state.quarantine.selected = {};
+    syncQuarantineManagerSelectionUi();
+  }
+
+  function reopenQuarantineManagerModal(forceRefresh) {
+    window.setTimeout(function() {
+      openQuarantineManagerModal(!!forceRefresh);
+    }, 0);
   }
 
   function buildRowMetaHtml(row) {
@@ -1038,19 +1189,19 @@
     renderPanels();
     updateActionBar();
 
-    if (!state.scanToken) {
-      loadScan();
-      return;
-    }
-
     setBusy(true);
 
-    apiPost({
+    var requestData = {
       action: "saveSafetySettings",
-      scanToken: state.scanToken,
       allowOutsideShareCleanup: nextSettings.allowOutsideShareCleanup ? "1" : "0",
       enablePermanentDelete: nextSettings.enablePermanentDelete ? "1" : "0"
-    }).done(function(response) {
+    };
+
+    if (state.scanToken) {
+      requestData.scanToken = state.scanToken;
+    }
+
+    apiPost(requestData).done(function(response) {
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || nextSettings);
       syncSafetyControls();
       applyLocalSafetyState();
@@ -1501,34 +1652,53 @@
     });
   }
 
-  function findQuarantineEntry(entryId) {
-    var matches = $.grep(state.quarantine.entries || [], function(entry) {
-      return String(entry.id || "") === String(entryId || "");
+  function findQuarantineEntries(entryIds) {
+    var idsByKey = {};
+
+    $.each($.isArray(entryIds) ? entryIds : [entryIds], function(_, entryId) {
+      var entryKey = String(entryId || "");
+
+      if (entryKey) {
+        idsByKey[entryKey] = true;
+      }
     });
 
-    return matches.length ? matches[0] : null;
+    return $.grep(state.quarantine.entries || [], function(entry) {
+      return !!idsByKey[String(entry.id || "")];
+    });
   }
 
-  function buildQuarantineActionConfirmHtml(entry, action) {
-    var title = action === "restore"
-      ? ACP.t(strings, "quarantineRestoreConfirmMessage", "Restore this quarantined folder back to its original location.")
-      : ACP.t(strings, "quarantinePurgeConfirmMessage", "Permanently delete this quarantined folder.");
-    var listTitle = action === "restore"
-      ? ACP.t(strings, "quarantineRestoreListTitle", "Folder to restore")
-      : ACP.t(strings, "quarantinePurgeListTitle", "Folder to purge");
-
-    return [
+  function buildQuarantineActionConfirmHtml(entries, action) {
+    var selectedEntries = $.isArray(entries) ? entries : [];
+    var isRestore = action === "restore";
+    var isBulk = selectedEntries.length !== 1;
+    var title = isRestore
+      ? ACP.t(strings, isBulk ? "quarantineRestoreConfirmManyMessage" : "quarantineRestoreConfirmMessage", isBulk ? "Restore the selected quarantined folders back to their original locations." : "Restore this quarantined folder back to its original location.")
+      : ACP.t(strings, isBulk ? "quarantinePurgeConfirmManyMessage" : "quarantinePurgeConfirmMessage", isBulk ? "Permanently delete the selected quarantined folders." : "Permanently delete this quarantined folder.");
+    var listTitle = isRestore
+      ? ACP.t(strings, isBulk ? "quarantineRestoreListManyTitle" : "quarantineRestoreListTitle", isBulk ? "Folders to restore" : "Folder to restore")
+      : ACP.t(strings, isBulk ? "quarantinePurgeListManyTitle" : "quarantinePurgeListTitle", isBulk ? "Folders to purge" : "Folder to purge");
+    var html = [
       '<div class="acp-modal-summary">',
       '<div class="acp-modal-flag">' + ACP.escapeHtml(action === "restore" ? ACP.t(strings, "quarantineRestoreActionLabel", "Restore") : ACP.t(strings, "quarantinePurgeActionLabel", "Purge")) + "</div>",
       '<div class="acp-modal-copy">',
       '<div class="acp-modal-lead">' + ACP.escapeHtml(title) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(buildQuarantineSelectionSummaryText(selectedEntries.length)) + "</div>",
       "</div>",
       '<div class="acp-modal-panel">',
       '<div class="acp-modal-panel-title">' + ACP.escapeHtml(listTitle) + "</div>",
-      '<code class="acp-modal-path">' + ACP.escapeHtml((entry && entry.sourcePath) || "") + "</code>",
-      "</div>",
-      "</div>"
-    ].join("");
+      '<ul class="acp-modal-list">'
+    ];
+
+    $.each(selectedEntries, function(_, entry) {
+      html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml((entry && entry.sourcePath) || "") + "</code></li>");
+    });
+
+    html.push("</ul>");
+    html.push("</div>");
+    html.push("</div>");
+
+    return html.join("");
   }
 
   function buildQuarantineManagerResultsHtml(action, summary, results) {
@@ -1567,17 +1737,31 @@
     return html.join("");
   }
 
-  function startQuarantineManagerActionFlow(action, entryId) {
-    var entry = findQuarantineEntry(entryId);
+  function startQuarantineManagerActionFlow(action, entryIds) {
+    var requestedEntryIds = $.map($.isArray(entryIds) ? entryIds : [entryIds], function(entryId) {
+      var entryKey = String(entryId || "");
+      return entryKey ? entryKey : null;
+    });
+    var entries = findQuarantineEntries(requestedEntryIds);
     var isRestore = action === "restore";
+    var isBulk = requestedEntryIds.length !== 1;
     var confirmTitle = isRestore
-      ? ACP.t(strings, "quarantineRestoreConfirmTitle", "Restore quarantined folder?")
-      : ACP.t(strings, "quarantinePurgeConfirmTitle", "Purge quarantined folder?");
+      ? ACP.t(strings, isBulk ? "quarantineRestoreConfirmManyTitle" : "quarantineRestoreConfirmTitle", isBulk ? "Restore selected quarantined folders?" : "Restore quarantined folder?")
+      : ACP.t(strings, isBulk ? "quarantinePurgeConfirmManyTitle" : "quarantinePurgeConfirmTitle", isBulk ? "Purge selected quarantined folders?" : "Purge quarantined folder?");
     var confirmButton = isRestore
       ? ACP.t(strings, "quarantineRestoreActionLabel", "Restore")
       : ACP.t(strings, "quarantinePurgeActionLabel", "Purge");
 
-    if (!entry) {
+    if (!requestedEntryIds.length) {
+      swal(
+        ACP.t(strings, "deleteEmptyTitle", "Nothing selected"),
+        ACP.t(strings, "quarantineManagerSelectionEmptyMessage", "Select at least one quarantined folder before continuing."),
+        "warning"
+      );
+      return;
+    }
+
+    if (!entries.length) {
       openQuarantineManagerModal(true);
       return;
     }
@@ -1602,10 +1786,10 @@
           return false;
         }
 
-        runQuarantineManagerAction([entryId], action);
+        runQuarantineManagerAction(requestedEntryIds, action);
         return true;
       });
-      ACP.applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildQuarantineActionConfirmHtml(entry, action));
+      ACP.applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildQuarantineActionConfirmHtml(entries, action));
       return;
     }
 
@@ -1618,9 +1802,9 @@
       closeOnConfirm: false,
       confirmButtonText: confirmButton
     }, function() {
-      runQuarantineManagerAction([entryId], action);
+      runQuarantineManagerAction(requestedEntryIds, action);
     });
-    ACP.applyDeleteModalClass("acp-delete-modal", buildQuarantineActionConfirmHtml(entry, action));
+    ACP.applyDeleteModalClass("acp-delete-modal", buildQuarantineActionConfirmHtml(entries, action));
   }
 
   function runQuarantineManagerAction(entryIds, action) {
@@ -1665,12 +1849,11 @@
         ? ACP.t(strings, "quarantineRestoreWarningTitle", "Restore finished with warnings")
         : ACP.t(strings, "quarantinePurgeWarningTitle", "Purge finished with warnings");
 
-      state.quarantine.entries = $.isArray(quarantine.entries) ? quarantine.entries : [];
-      state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, quarantine.summary || {});
+      setQuarantineEntries(quarantine.entries, quarantine.summary);
       state.quarantine.loaded = true;
       state.quarantine.loading = false;
-      if (response.scanToken) {
-        state.scanToken = String(response.scanToken);
+      if (Object.prototype.hasOwnProperty.call(response, "scanToken")) {
+        state.scanToken = String(response.scanToken || "");
       }
       if (isRestore) {
         applyRestoredRows(results);
@@ -1684,9 +1867,7 @@
         type: hasWarnings ? "warning" : "success",
         html: true
       }, function() {
-        if (state.quarantine.open) {
-          openQuarantineManagerModal(false);
-        }
+        reopenQuarantineManagerModal(false);
       });
       ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildQuarantineManagerResultsHtml(action, summary, results));
     }).fail(function(xhr) {
@@ -1695,7 +1876,14 @@
       renderPanels();
 
       if (xhr && xhr.status === 409) {
-        openQuarantineManagerModal(true);
+        swal({
+          title: failureTitle,
+          text: ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineManagerActionFailedMessage", "The quarantine manager action could not be completed right now.")),
+          type: "error"
+        }, function() {
+          reopenQuarantineManagerModal(true);
+        });
+        return;
       }
 
       swal(failureTitle, ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineManagerActionFailedMessage", "The quarantine manager action could not be completed right now.")), "error");

@@ -130,16 +130,6 @@ function handleGetOrphanAppdata() {
 }
 
 function handleSaveSafetySettings() {
-  $token = getRequestedToken();
-  $snapshot = getValidatedAppdataCleanupPlusSnapshot($token);
-
-  if ( ! $snapshot ) {
-    jsonResponse(array(
-      "ok" => false,
-      "message" => "This scan expired or is no longer valid. Rescan and try again."
-    ), 409);
-  }
-
   $settings = array(
     "allowOutsideShareCleanup" => getPostedBoolean("allowOutsideShareCleanup"),
     "enablePermanentDelete" => getPostedBoolean("enablePermanentDelete")

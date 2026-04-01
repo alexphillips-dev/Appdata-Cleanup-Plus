@@ -1356,6 +1356,15 @@ body[data-acp-host-theme="light"] #acp-app,
   justify-content: flex-end;
 }
 
+.acp-quarantine-manager-toolbar {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.acp-quarantine-selected-summary {
+  min-height: 18px;
+}
+
 .acp-modal-inline-title {
   color: var(--acp-heading);
   font-size: 13px;
@@ -1509,6 +1518,42 @@ body[data-acp-host-theme="light"] #acp-app,
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.acp-quarantine-entry {
+  background: var(--acp-path-bg);
+  border: 1px solid var(--acp-path-border);
+  border-radius: 12px;
+  cursor: pointer;
+  padding: 10px;
+  transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.acp-quarantine-entry.is-selected {
+  background: var(--acp-accent-soft);
+  border-color: var(--acp-accent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+.acp-quarantine-entry-main {
+  align-items: start;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.acp-quarantine-entry-check {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  padding-top: 2px;
+}
+
+.acp-quarantine-checkbox {
+  cursor: pointer;
+  height: 16px;
+  margin: 0;
+  width: 16px;
+}
+
 .acp-modal-result-message {
   color: var(--acp-muted);
   font-size: 12px;
@@ -1648,6 +1693,11 @@ body[data-acp-host-theme="light"] #acp-app,
   .acp-modal-actions-row,
   .acp-modal-inline-actions {
     justify-content: flex-start;
+  }
+
+  .acp-quarantine-manager-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .acp-mode-card,

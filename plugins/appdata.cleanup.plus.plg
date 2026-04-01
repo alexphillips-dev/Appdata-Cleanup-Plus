@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.31.03">
-<!ENTITY md5 "513a63fb8c83ab03925ed800ad483266">
+<!ENTITY version "2026.03.31.04">
+<!ENTITY md5 "731d8d9a843de877c68fd2999858f69f">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.04
+- Fix: Reopen the quarantine manager reliably after restore and purge actions instead of getting stuck until a full page refresh
+- Feature: Add quarantine entry checkboxes with bulk restore and bulk purge actions
+- Fix: Allow permanent-delete and outside-share safety toggles to save even when the current scan is empty
+
 ###2026.03.31.03
 - Fix: Canonicalize host paths before matching saved template references against live container mounts so trailing slashes cannot create false orphan rows
 - Test: Cover saved-template trailing slash mismatches against live Docker mount paths in the behavior smoke regression
