@@ -355,7 +355,6 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
       <span id="acp-selection-detail"><?php echo _("Click rows to select. Locked paths stay visible but cannot be selected."); ?></span>
     </div>
     <div class="acp-bottom-actions">
-      <button type="button" class="acp-button acp-button-secondary" id="acp-done-bottom"><?php echo _("Done"); ?></button>
       <button type="button" class="acp-button acp-button-secondary" id="acp-select-all" disabled><?php echo _("Select all"); ?></button>
       <button type="button" class="acp-button acp-button-secondary" id="acp-dry-run" disabled><?php echo _("Dry run"); ?></button>
       <button type="button" class="acp-button acp-button-primary" id="acp-primary-action" disabled><?php echo _("Quarantine selected"); ?></button>

@@ -67,7 +67,6 @@
     els.$rescan = $("#acp-rescan");
     els.$selectVisible = $("#acp-select-visible");
     els.$clearSelection = $("#acp-clear-selection");
-    els.$doneBottom = $("#acp-done-bottom");
     els.$selectAll = $("#acp-select-all");
     els.$dryRun = $("#acp-dry-run");
     els.$primaryAction = $("#acp-primary-action");
@@ -125,7 +124,6 @@
       updateActionBar();
     });
 
-    els.$doneBottom.on("click", closePage);
     els.$selectAll.on("click", function() {
       if (!state.busy) {
         selectAllRows();
@@ -403,12 +401,6 @@
       els: els,
       strings: strings
     };
-  }
-
-  function closePage() {
-    if (typeof window.done === "function") {
-      window.done();
-    }
   }
 
   function apiPost(data) {

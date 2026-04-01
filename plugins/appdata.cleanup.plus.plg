@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.05">
-<!ENTITY md5 "7428099b4be19ee388d9435afd6dcfcb">
+<!ENTITY version "2026.04.01.06">
+<!ENTITY md5 "d18a19c72f2e174310d11dbe27a29b72">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.06
+- UI: Remove the unused `Done` button from the bottom action bar so only meaningful selection and cleanup actions remain
+- Cleanup: Drop the now-unused close-page button wiring from the dashboard script
+
 ###2026.04.01.05
 - Fix: Send the scheduled-purge action using the correct API field name so `Set purge` no longer fails immediately in the quarantine manager
 - Compatibility: Let the backend accept both the old temporary `mode` key and the final `purgeScheduleMode` key for quarantine purge schedule updates
