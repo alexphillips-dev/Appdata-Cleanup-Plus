@@ -181,9 +181,16 @@ function handleSaveSafetySettings() {
     ), 500);
   }
 
+  $nextSettings = getAppdataCleanupPlusSafetySettings();
+
+  if ( (int)$currentSettings["defaultQuarantinePurgeDays"] !== (int)$nextSettings["defaultQuarantinePurgeDays"] ) {
+    syncTrackedQuarantineEntriesToDefaultPurgeSchedule($nextSettings);
+  }
+
   jsonResponse(array(
     "ok" => true,
-    "settings" => getAppdataCleanupPlusSafetySettings()
+    "settings" => $nextSettings,
+    "quarantine" => buildQuarantineManagerPayload(true)
   ));
 }
 

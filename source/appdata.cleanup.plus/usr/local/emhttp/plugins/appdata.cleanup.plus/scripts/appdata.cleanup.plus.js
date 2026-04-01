@@ -2050,7 +2050,13 @@
     }
 
     apiPost(requestData).done(function(response) {
+      var quarantine = response.quarantine || null;
+
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || nextSettings);
+      if (quarantine) {
+        setQuarantineEntries(quarantine.entries, quarantine.summary);
+        state.quarantine.loaded = true;
+      }
       if (normalizedOptions.resetQuarantineScheduleInput) {
         syncQuarantinePurgeInputDefaults(true);
       }

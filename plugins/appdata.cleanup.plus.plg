@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.12">
-<!ENTITY md5 "8125b3abb37b2b7537d21e798e8902fc">
+<!ENTITY version "2026.04.01.13">
+<!ENTITY md5 "d764213f9d65976f06e8f8347ce162ed">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.13
+- Quarantine: Changing `Default purge in days` now reschedules existing tracked quarantine entries immediately instead of only affecting newly quarantined folders
+- Quarantine UI: Keep the modal state in sync after default purge changes so badges and scheduled purge timestamps refresh without a manual reload
+- UI: Regroup the quarantine toolbar into left-side schedule controls and right-side bulk action buttons, and bottom-align the action buttons with the schedule inputs for cleaner alignment
+
 ###2026.04.01.12
 - Quarantine: Persist a configurable `Default purge in days` safety setting and automatically apply that timer when new folders are moved into quarantine
 - Quarantine UI: Split the old day-based toolbar control into a saved default purge-days input plus a separate `Set purge at` date/time override for selected quarantined items

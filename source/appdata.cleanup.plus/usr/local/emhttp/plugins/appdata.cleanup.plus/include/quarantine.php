@@ -49,6 +49,35 @@ function buildDefaultAppdataCleanupPlusQuarantinePurgeAt($settings) {
   return date("c", time() + ($defaultPurgeDays * 86400));
 }
 
+function syncTrackedQuarantineEntriesToDefaultPurgeSchedule($settings) {
+  $registry = pruneMissingAppdataCleanupPlusQuarantineRecords(getAppdataCleanupPlusQuarantineRegistry());
+  $defaultPurgeAt = buildDefaultAppdataCleanupPlusQuarantinePurgeAt($settings);
+  $updatedCount = 0;
+  $registryDirty = false;
+
+  foreach ( $registry as $recordId => $record ) {
+    $normalized = normalizeAppdataCleanupPlusQuarantineRecord($record);
+
+    if ( $normalized["purgeAt"] === $defaultPurgeAt ) {
+      continue;
+    }
+
+    $normalized["purgeAt"] = $defaultPurgeAt;
+    $registry[$recordId] = $normalized;
+    $updatedCount++;
+    $registryDirty = true;
+  }
+
+  if ( $registryDirty ) {
+    setAppdataCleanupPlusQuarantineRegistry($registry);
+  }
+
+  return array(
+    "purgeAt" => $defaultPurgeAt,
+    "updatedCount" => $updatedCount
+  );
+}
+
 function formatAppdataCleanupPlusFutureIntervalLabel($secondsRemaining) {
   $seconds = max(0, (int)$secondsRemaining);
   $units = array(

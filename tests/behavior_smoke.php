@@ -196,6 +196,25 @@ $scheduleClearResult = updateTrackedQuarantinePurgeSchedule($scheduledEntries, "
 behaviorSmokeAssertSame("cleared", $scheduleClearResult["results"][0]["status"], "Clearing a scheduled purge should update the entry status.");
 $clearedEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
 behaviorSmokeAssertSame(false, ! empty($clearedEntries[0]["purgeScheduled"]), "Cleared purge schedules should disappear from the manager payload.");
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => false,
+  "defaultQuarantinePurgeDays" => 5
+)), "Default purge settings should save before syncing tracked quarantine entries.");
+$defaultSyncResult = syncTrackedQuarantineEntriesToDefaultPurgeSchedule(getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame(1, (int)$defaultSyncResult["updatedCount"], "Changing the default purge timer should update existing tracked quarantine entries.");
+$defaultSyncedEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
+behaviorSmokeAssertTrue(! empty($defaultSyncedEntries[0]["purgeScheduled"]), "Existing tracked quarantine entries should show a scheduled purge after default-timer sync.");
+behaviorSmokeAssertTrue($defaultSyncedEntries[0]["purgeAt"] !== "", "Default-timer sync should stamp a purge time on existing quarantine entries.");
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => false,
+  "defaultQuarantinePurgeDays" => 0
+)), "Default purge settings should save before clearing tracked quarantine entries.");
+$defaultSyncClearResult = syncTrackedQuarantineEntriesToDefaultPurgeSchedule(getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame(1, (int)$defaultSyncClearResult["updatedCount"], "Clearing the default purge timer should also clear existing tracked quarantine entries.");
+$defaultClearedEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
+behaviorSmokeAssertSame(false, ! empty($defaultClearedEntries[0]["purgeScheduled"]), "Tracked quarantine entries should clear their purge schedule when the default is cleared.");
 
 $restoreCollisionSource = $appdataShareRoot . "/restore-collision";
 $restoreCollisionQuarantineRoot = $stateRoot . "/restore-collision-quarantine";
