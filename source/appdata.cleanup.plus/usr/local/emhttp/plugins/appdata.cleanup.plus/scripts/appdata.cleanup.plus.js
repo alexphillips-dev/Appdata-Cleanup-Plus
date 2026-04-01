@@ -19,7 +19,14 @@
       loaded: false,
       entries: [],
       selected: {},
-      summary: { count: 0, sizeLabel: "0 B" }
+      summary: { count: 0, sizeLabel: "0 B" },
+      restoreConflict: null
+    },
+    scanHydration: {
+      active: false,
+      queue: [],
+      batchSize: 8,
+      requestToken: ""
     },
     riskFilter: "all",
     sortMode: "risk",
@@ -241,6 +248,24 @@
       startQuarantineManagerActionFlow(action, getSelectedQuarantineEntryIds());
     });
 
+    $(document).on("click.acpQuarantine", ".sweet-alert [data-action='resolve-restore-conflicts']", function(event) {
+      var conflictMode = String($(this).data("conflict-mode") || "");
+      var restoreConflict = state.quarantine.restoreConflict || {};
+      var entryIds = $.isArray(restoreConflict.entryIds) ? restoreConflict.entryIds : [];
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (state.busy || !entryIds.length || !conflictMode) {
+        return;
+      }
+
+      state.quarantine.restoreConflict = null;
+      runQuarantineManagerAction(entryIds, "restore", {
+        restoreConflictMode: conflictMode
+      });
+    });
+
     $(document).on("click.acpQuarantine", ".sweet-alert .acp-quarantine-entry", function(event) {
       var $checkbox;
 
@@ -364,9 +389,16 @@
     state.quarantine.loaded = false;
     state.quarantine.selected = {};
     state.quarantine.summary = { count: 0, sizeLabel: "0 B" };
+    state.quarantine.restoreConflict = null;
+    state.scanHydration.active = false;
+    state.scanHydration.queue = [];
+    state.scanHydration.requestToken = "";
   }
 
   function loadScan() {
+    var shouldHydrate = false;
+
+    stopScanStatHydration();
     setBusy(true);
     renderLoadingState();
 
@@ -384,6 +416,7 @@
       syncSafetyControls();
       applyLocalSafetyState();
       reconcileSelection();
+      shouldHydrate = hasPendingRowStats();
       renderAll();
     }).fail(function(xhr) {
       resetDashboardState();
@@ -401,6 +434,10 @@
       updateActionBar();
     }).always(function() {
       setBusy(false);
+
+      if (shouldHydrate) {
+        startScanStatHydration();
+      }
     });
   }
 
@@ -653,6 +690,129 @@
     state.summary = buildLocalSummary(state.rows);
   }
 
+  function hasPendingRowStats() {
+    return $.grep(state.rows || [], function(row) {
+      return !!row.statsPending;
+    }).length > 0;
+  }
+
+  function getPendingRowStatIds() {
+    return $.map(state.rows || [], function(row) {
+      return row && row.statsPending && row.id ? row.id : null;
+    });
+  }
+
+  function clearPendingRowStats(rowIds) {
+    var idsByKey = {};
+
+    $.each($.isArray(rowIds) ? rowIds : [rowIds], function(_, rowId) {
+      var rowKey = String(rowId || "");
+      if (rowKey) {
+        idsByKey[rowKey] = true;
+      }
+    });
+
+    state.rows = $.map(state.rows || [], function(row) {
+      if (!row || !idsByKey[String(row.id || "")]) {
+        return row;
+      }
+
+      return $.extend({}, row, {
+        statsPending: false
+      });
+    });
+  }
+
+  function applyHydratedCandidateStats(rows) {
+    var statsById = {};
+
+    $.each($.isArray(rows) ? rows : [], function(_, row) {
+      var rowId = String((row && row.id) || "");
+      if (rowId) {
+        statsById[rowId] = row;
+      }
+    });
+
+    state.rows = $.map(state.rows || [], function(row) {
+      var nextStats = statsById[String((row && row.id) || "")];
+
+      if (!nextStats) {
+        return row;
+      }
+
+      return $.extend({}, row, nextStats, {
+        statsPending: false
+      });
+    });
+  }
+
+  function stopScanStatHydration() {
+    state.scanHydration.active = false;
+    state.scanHydration.queue = [];
+    state.scanHydration.requestToken = "";
+  }
+
+  function requestNextScanStatBatch(requestToken) {
+    var batchIds;
+
+    if (!state.scanHydration.active || state.scanHydration.requestToken !== requestToken || !state.scanToken) {
+      return;
+    }
+
+    if (!state.scanHydration.queue.length) {
+      stopScanStatHydration();
+      return;
+    }
+
+    batchIds = state.scanHydration.queue.splice(0, state.scanHydration.batchSize);
+
+    apiPost({
+      action: "hydrateCandidateStats",
+      scanToken: state.scanToken,
+      candidateIds: JSON.stringify(batchIds)
+    }).done(function(response) {
+      if (!state.scanHydration.active || state.scanHydration.requestToken !== requestToken) {
+        return;
+      }
+
+      applyHydratedCandidateStats(response.rows);
+      renderResults();
+
+      if (!state.scanHydration.queue.length) {
+        stopScanStatHydration();
+        return;
+      }
+
+      window.setTimeout(function() {
+        requestNextScanStatBatch(requestToken);
+      }, 0);
+    }).fail(function() {
+      if (!state.scanHydration.active || state.scanHydration.requestToken !== requestToken) {
+        return;
+      }
+
+      clearPendingRowStats(batchIds.concat(state.scanHydration.queue));
+      stopScanStatHydration();
+      renderResults();
+    });
+  }
+
+  function startScanStatHydration() {
+    var pendingRowIds = getPendingRowStatIds();
+    var requestToken;
+
+    if (!state.scanToken || !pendingRowIds.length) {
+      stopScanStatHydration();
+      return;
+    }
+
+    requestToken = String(state.scanToken) + ":" + String(Date.now());
+    state.scanHydration.active = true;
+    state.scanHydration.queue = pendingRowIds;
+    state.scanHydration.requestToken = requestToken;
+    requestNextScanStatBatch(requestToken);
+  }
+
   function reconcileSelection() {
     var allowed = {};
 
@@ -752,6 +912,7 @@
   function setQuarantineEntries(entries, summary) {
     state.quarantine.entries = $.isArray(entries) ? entries : [];
     state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, summary || {});
+    state.quarantine.restoreConflict = null;
     reconcileQuarantineSelection();
   }
 
@@ -853,7 +1014,7 @@
       facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "targetLabel", "Target")) + "</strong> " + ACP.escapeHtml(row.targetSummary) + "</span>");
     }
 
-    facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + "</strong> " + ACP.escapeHtml(row.sizeLabel || "Unknown") + "</span>");
+    facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + "</strong> " + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || "Unknown")) + "</span>");
     facts.push(
       '<span class="acp-row-meta-item"' + (row.lastModifiedExact ? ' title="' + ACP.escapeHtml(row.lastModifiedExact) + '"' : "") + '><strong>' +
       ACP.escapeHtml(ACP.t(strings, "updatedLabel", "Updated")) +
@@ -1756,6 +1917,107 @@
     return html.join("");
   }
 
+  function inspectQuarantineRestoreConflicts(entryIds, onComplete) {
+    swal({
+      title: ACP.t(strings, "quarantineRestoreCheckingTitle", "Checking restore paths"),
+      text: ACP.t(strings, "quarantineRestoreCheckingMessage", "Checking whether the original restore paths are still available."),
+      type: "info",
+      showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false
+    });
+
+    apiPost({
+      action: "inspectQuarantineRestore",
+      entryIds: JSON.stringify(entryIds)
+    }).done(function(response) {
+      if (typeof onComplete === "function") {
+        onComplete(response.preview || {});
+      }
+    }).fail(function(xhr) {
+      var failureMessage = ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineManagerActionFailedMessage", "The quarantine manager action could not be completed right now."));
+
+      if (xhr && xhr.status === 409) {
+        swal({
+          title: ACP.t(strings, "quarantineRestoreFailedTitle", "Restore failed"),
+          text: failureMessage,
+          type: "error"
+        }, function() {
+          reopenQuarantineManagerModal(true);
+        });
+        return;
+      }
+
+      swal(ACP.t(strings, "quarantineRestoreFailedTitle", "Restore failed"), failureMessage, "error");
+    });
+  }
+
+  function buildRestoreConflictDialogHtml(preview) {
+    var summary = preview && preview.summary ? preview.summary : {};
+    var conflicts = $.isArray(preview && preview.conflicts) ? preview.conflicts : [];
+    var readyCount = Number(summary.ready || 0);
+    var conflictCount = Number(summary.conflicts || conflicts.length || 0);
+    var html = [
+      '<div class="acp-modal-summary">',
+      '<div class="acp-modal-flag">' + ACP.escapeHtml(ACP.t(strings, "resultConflictLabel", "Conflict")) + "</div>",
+      '<div class="acp-modal-copy">',
+      '<div class="acp-modal-lead">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictLead", "One or more original restore paths already exist. Choose how to handle the conflicts.")) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(conflictCount + " conflict" + (conflictCount === 1 ? "" : "s") + " found" + (readyCount > 0 ? ". " + readyCount + " selected folder" + (readyCount === 1 ? " can" : "s can") + " still restore normally." : ".")) + "</div>",
+      "</div>",
+      '<div class="acp-modal-panel">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictListTitle", "Conflicting restore paths")) + "</div>",
+      '<ul class="acp-modal-list acp-modal-result-list">'
+    ];
+
+    $.each(conflicts, function(_, conflict) {
+      html.push('<li class="acp-modal-result">');
+      html.push('<div class="acp-modal-result-head"><span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "resultConflictLabel", "Conflict")) + '</span><code class="acp-modal-path">' + ACP.escapeHtml(conflict.sourcePath || "") + "</code></div>");
+      if (conflict.suggestedPath) {
+        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSuggestedLabel", "Suggested suffix restore")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(conflict.suggestedPath) + "</code></div>");
+      }
+      if (conflict.destination) {
+        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineLocationLabel", "Quarantine path")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(conflict.destination) + "</code></div>");
+      }
+      html.push("</li>");
+    });
+
+    html.push("</ul></div>");
+    html.push('<div class="acp-modal-copy">');
+    html.push('<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSkipMessage", "Conflicting folders will stay in quarantine and the other selected folders will restore normally.")) + "</div>");
+    html.push('<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSuffixMessage", "Conflicting folders will restore beside the existing folders with a generated -restored suffix.")) + "</div>");
+    html.push("</div>");
+    html.push('<div class="acp-modal-inline-actions acp-restore-conflict-actions">');
+    html.push('<button type="button" class="acp-button acp-button-secondary" data-action="resolve-restore-conflicts" data-conflict-mode="skip">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSkipLabel", "Skip conflicts")) + "</button>");
+    html.push('<button type="button" class="acp-button acp-button-primary" data-action="resolve-restore-conflicts" data-conflict-mode="suffix">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSuffixLabel", "Restore with suffix")) + "</button>");
+    html.push("</div>");
+    html.push("</div>");
+
+    return html.join("");
+  }
+
+  function openRestoreConflictDialog(entryIds, preview) {
+    state.quarantine.restoreConflict = {
+      entryIds: $.map(entryIds || [], function(entryId) {
+        return String(entryId || "");
+      }),
+      preview: preview || {}
+    };
+
+    swal({
+      title: ACP.t(strings, "quarantineRestoreConflictTitle", "Restore conflicts found"),
+      text: "",
+      type: "warning",
+      html: true,
+      showCancelButton: false,
+      closeOnConfirm: true,
+      confirmButtonText: ACP.t(strings, "quarantineRestoreConflictReviewLabel", "Review conflict")
+    }, function() {
+      state.quarantine.restoreConflict = null;
+      reopenQuarantineManagerModal(false);
+    });
+    ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildRestoreConflictDialogHtml(preview));
+  }
+
   function buildQuarantineManagerResultsHtml(action, summary, results) {
     var html = ['<div class="acp-modal-summary">'];
     var actionLabel = action === "restore" ? ACP.t(strings, "quarantineRestoreActionLabel", "Restore") : ACP.t(strings, "quarantinePurgeActionLabel", "Purge");
@@ -1777,10 +2039,17 @@
 
     $.each(results || [], function(_, result) {
       var statusMeta = ACP.formatOperationResultStatus(strings, result.status);
+      var showPrimaryDestination = !!result.destination && !(result.quarantinePath && (result.status === "conflict" || result.status === "skipped"));
       html.push('<li class="acp-modal-result">');
       html.push('<div class="acp-modal-result-head"><span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + "</span><code class=\"acp-modal-path\">" + ACP.escapeHtml(result.sourcePath || result.destination || "") + "</code></div>");
-      if (result.destination) {
+      if (showPrimaryDestination) {
         html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "destinationLabel", "Destination")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.destination) + "</code></div>");
+      }
+      if (result.suggestedPath) {
+        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictSuggestedLabel", "Suggested suffix restore")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.suggestedPath) + "</code></div>");
+      }
+      if (result.quarantinePath) {
+        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineLocationLabel", "Quarantine path")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.quarantinePath) + "</code></div>");
       }
       if (result.message) {
         html.push('<div class="acp-modal-result-message">' + ACP.escapeHtml(result.message) + "</div>");
@@ -1848,22 +2117,34 @@
       return;
     }
 
-    swal({
-      title: confirmTitle,
-      text: "",
-      type: "warning",
-      html: true,
-      showCancelButton: true,
-      closeOnConfirm: false,
-      confirmButtonText: confirmButton
-    }, function() {
-      runQuarantineManagerAction(requestedEntryIds, action);
+    inspectQuarantineRestoreConflicts(requestedEntryIds, function(preview) {
+      var conflictCount = Number((preview && preview.summary && preview.summary.conflicts) || 0);
+
+      if (conflictCount > 0) {
+        openRestoreConflictDialog(requestedEntryIds, preview);
+        return;
+      }
+
+      swal({
+        title: confirmTitle,
+        text: "",
+        type: "warning",
+        html: true,
+        showCancelButton: true,
+        closeOnConfirm: false,
+        confirmButtonText: confirmButton
+      }, function() {
+        runQuarantineManagerAction(requestedEntryIds, action);
+      });
+      ACP.applyDeleteModalClass("acp-delete-modal", buildQuarantineActionConfirmHtml(entries, action));
     });
-    ACP.applyDeleteModalClass("acp-delete-modal", buildQuarantineActionConfirmHtml(entries, action));
   }
 
-  function runQuarantineManagerAction(entryIds, action) {
+  function runQuarantineManagerAction(entryIds, action, options) {
     var isRestore = action === "restore";
+    var requestOptions = $.extend({
+      restoreConflictMode: ""
+    }, options || {});
     var loadingTitle = isRestore
       ? ACP.t(strings, "quarantineRestoreLoadingTitle", "Restoring quarantined folders")
       : ACP.t(strings, "quarantinePurgeLoadingTitle", "Purging quarantined folders");
@@ -1874,6 +2155,7 @@
       ? ACP.t(strings, "quarantineRestoreFailedTitle", "Restore failed")
       : ACP.t(strings, "quarantinePurgeFailedTitle", "Purge failed");
 
+    state.quarantine.restoreConflict = null;
     setBusy(true);
     state.quarantine.loading = true;
     renderPanels();
@@ -1891,12 +2173,13 @@
       action: "quarantineManagerAction",
       managerAction: action,
       entryIds: JSON.stringify(entryIds),
-      scanToken: state.scanToken
+      scanToken: state.scanToken,
+      restoreConflictMode: requestOptions.restoreConflictMode
     }).done(function(response) {
       var quarantine = response.quarantine || {};
-      var summary = response.summary || { restored: 0, purged: 0, missing: 0, blocked: 0, errors: 0 };
+      var summary = response.summary || { restored: 0, purged: 0, skipped: 0, conflicts: 0, missing: 0, blocked: 0, errors: 0 };
       var results = $.isArray(response.results) ? response.results : [];
-      var hasWarnings = Number(summary.blocked || 0) > 0 || Number(summary.missing || 0) > 0 || Number(summary.errors || 0) > 0;
+      var hasWarnings = Number(summary.skipped || 0) > 0 || Number(summary.conflicts || 0) > 0 || Number(summary.blocked || 0) > 0 || Number(summary.missing || 0) > 0 || Number(summary.errors || 0) > 0;
       var successTitle = isRestore
         ? ACP.t(strings, "quarantineRestoreSuccessTitle", "Restore complete")
         : ACP.t(strings, "quarantinePurgeSuccessTitle", "Purge complete");

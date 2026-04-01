@@ -15,6 +15,10 @@
         return { label: ACP.t(strings, "resultRestoredLabel", "Restored"), tone: "is-safe" };
       case "purged":
         return { label: ACP.t(strings, "resultPurgedLabel", "Purged"), tone: "is-review" };
+      case "skipped":
+        return { label: ACP.t(strings, "resultSkippedLabel", "Skipped"), tone: "is-blocked" };
+      case "conflict":
+        return { label: ACP.t(strings, "resultConflictLabel", "Conflict"), tone: "is-review" };
       case "missing":
         return { label: ACP.t(strings, "resultMissingLabel", "Missing"), tone: "is-blocked" };
       case "blocked":

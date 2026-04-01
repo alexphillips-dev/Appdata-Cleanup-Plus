@@ -166,6 +166,40 @@ behaviorSmokeAssertSame("entry-one", $activeEntries[0]["id"], "Quarantine entry 
 $quarantineSummary = buildQuarantineSummary($activeEntries);
 behaviorSmokeAssertSame(1, $quarantineSummary["count"], "Quarantine summary should count active entries.");
 
+$restoreCollisionSource = $appdataShareRoot . "/restore-collision";
+$restoreCollisionQuarantineRoot = $stateRoot . "/restore-collision-quarantine";
+$restoreCollisionDestination = $restoreCollisionQuarantineRoot . "/20260331-120500/mnt/user/appdata/restore-collision";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($restoreCollisionSource), "Restore collision source fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($restoreCollisionDestination), "Restore collision quarantine fixture should be created.");
+$restoreCollisionEntry = array(
+  "id" => "restore-collision",
+  "name" => "restore-collision",
+  "sourcePath" => $restoreCollisionSource,
+  "destination" => $restoreCollisionDestination,
+  "quarantineRoot" => $restoreCollisionQuarantineRoot,
+  "quarantinedAt" => "2026-03-30T12:05:00+00:00",
+  "sourceSummary" => "restore-collision",
+  "targetSummary" => "/config"
+);
+$restoreConflictPreview = inspectTrackedQuarantineRestoreConflicts(array($restoreCollisionEntry));
+behaviorSmokeAssertSame(1, $restoreConflictPreview["summary"]["conflicts"], "Restore preview should report restore path collisions.");
+behaviorSmokeAssertContains("-restored", $restoreConflictPreview["conflicts"][0]["suggestedPath"], "Restore preview should suggest a suffix restore path.");
+$restoreConflictResult = restoreTrackedQuarantineEntry($restoreCollisionEntry);
+behaviorSmokeAssertSame("conflict", $restoreConflictResult["status"], "Default restore mode should stop on an existing original path.");
+$restoreSkippedResult = restoreTrackedQuarantineEntry($restoreCollisionEntry, array(
+  "conflictMode" => "skip"
+));
+behaviorSmokeAssertSame("skipped", $restoreSkippedResult["status"], "Skip restore mode should leave conflicting entries in quarantine.");
+behaviorSmokeAssertTrue(is_dir($restoreCollisionDestination), "Skipped restore conflicts should leave the quarantine folder in place.");
+$restoreSuffixResult = restoreTrackedQuarantineEntry($restoreCollisionEntry, array(
+  "conflictMode" => "suffix"
+));
+behaviorSmokeAssertSame("restored", $restoreSuffixResult["status"], "Suffix restore mode should restore conflicting entries beside the existing folder.");
+behaviorSmokeAssertContains("-restored", $restoreSuffixResult["destination"], "Suffix restore mode should report the generated restore path.");
+behaviorSmokeAssertTrue(is_dir($restoreCollisionSource), "Suffix restore mode should leave the original conflicting folder untouched.");
+behaviorSmokeAssertTrue(is_dir($restoreSuffixResult["destination"]), "Suffix restore mode should create the generated restore destination.");
+behaviorSmokeAssertTrue(! is_dir($restoreCollisionDestination), "Suffix restore mode should move the quarantined folder out of quarantine.");
+
 appendAppdataCleanupPlusAuditEntry(array(
   "timestamp" => "2026-03-30T12:00:00+00:00",
   "operation" => "quarantine",
@@ -265,6 +299,13 @@ behaviorSmokeAssertSame("Appdata share scan", $filesystemRow["sourceDisplay"], "
 behaviorSmokeAssertContains("Saved templates", $templatedRow["reason"], "Template-backed rows should explain their saved-template reference.");
 behaviorSmokeAssertContains("no saved Docker template or installed container currently references it", $filesystemRow["reason"], "Filesystem-only rows should explain that they are unreferenced.");
 behaviorSmokeAssertSame($slashLivePath, normalizeUserPath($slashTemplatePath), "Path normalization should collapse trailing slashes on saved template paths.");
+behaviorSmokeAssertTrue(! empty($templatedRow["statsPending"]), "Initial dashboard rows should mark heavy stats as pending for progressive hydration.");
+$hydratedCandidate = resolveSnapshotCandidates($dashboard["payload"]["scanToken"], array($templatedRow["id"]));
+behaviorSmokeAssertTrue(! empty($hydratedCandidate["ok"]), "Hydration should be able to resolve the initial snapshot candidate.");
+$hydratedStatsRow = buildHydratedCandidateStatRow($hydratedCandidate["candidates"][0]);
+behaviorSmokeAssertSame($templatedRow["id"], $hydratedStatsRow["id"], "Hydrated stats should map back to the original row id.");
+behaviorSmokeAssertSame(false, ! empty($hydratedStatsRow["statsPending"]), "Hydrated rows should clear the pending-stats marker.");
+behaviorSmokeAssertTrue($hydratedStatsRow["sizeLabel"] !== "Unknown", "Hydrated rows should populate a real size label.");
 
 $symlinkTargetPath = $appdataShareRoot . "/symlink-target";
 $symlinkLinkPath = $appdataShareRoot . "/symlink-link";

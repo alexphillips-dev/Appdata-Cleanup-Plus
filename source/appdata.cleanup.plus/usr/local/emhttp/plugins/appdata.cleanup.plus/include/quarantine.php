@@ -196,8 +196,10 @@ function buildQuarantineManagerPayload($includeEntries=true) {
   );
 }
 
-function buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings) {
-  $sourcePath = isset($entry["sourcePath"]) ? trim((string)$entry["sourcePath"]) : "";
+function buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings, $restoredPath="") {
+  $sourcePath = $restoredPath !== ""
+    ? trim((string)$restoredPath)
+    : (isset($entry["sourcePath"]) ? trim((string)$entry["sourcePath"]) : "");
   $sourceNames = isset($entry["sourceNames"]) && is_array($entry["sourceNames"]) ? array_values($entry["sourceNames"]) : array();
   $targetPaths = isset($entry["targetPaths"]) && is_array($entry["targetPaths"]) ? array_values($entry["targetPaths"]) : array();
   $templateRefs = isset($entry["templateRefs"]) && is_array($entry["templateRefs"]) ? array_values($entry["templateRefs"]) : array();
@@ -357,10 +359,74 @@ function buildRestorePathSecurityReason($path) {
   return "";
 }
 
+function buildRestoreSuffixDestination($sourcePath) {
+  $normalizedPath = rtrim(trim((string)$sourcePath), "/");
+  $parentPath = dirname($normalizedPath);
+  $folderName = basename($normalizedPath);
+  $candidatePath = "";
+  $attempt = 1;
+
+  if ( ! $normalizedPath || ! $parentPath || $parentPath === "." || ! $folderName ) {
+    return "";
+  }
+
+  do {
+    $candidatePath = $parentPath . "/" . $folderName . "-restored";
+    if ( $attempt > 1 ) {
+      $candidatePath .= "-" . $attempt;
+    }
+
+    if ( ! file_exists($candidatePath) ) {
+      return $candidatePath;
+    }
+
+    $attempt++;
+  } while ( $attempt <= 1000 );
+
+  return "";
+}
+
+function inspectTrackedQuarantineRestoreConflicts($entries) {
+  $conflicts = array();
+  $summary = array(
+    "selected" => 0,
+    "ready" => 0,
+    "conflicts" => 0
+  );
+
+  foreach ( $entries as $entry ) {
+    $sourcePath = isset($entry["sourcePath"]) ? trim((string)$entry["sourcePath"]) : "";
+    $destination = isset($entry["destination"]) ? trim((string)$entry["destination"]) : "";
+
+    $summary["selected"]++;
+
+    if ( $sourcePath && file_exists($sourcePath) ) {
+      $conflicts[] = array(
+        "id" => isset($entry["id"]) ? (string)$entry["id"] : "",
+        "name" => isset($entry["name"]) ? (string)$entry["name"] : basename(rtrim($sourcePath, "/")),
+        "sourcePath" => $sourcePath,
+        "destination" => $destination,
+        "suggestedPath" => buildRestoreSuffixDestination($sourcePath)
+      );
+      $summary["conflicts"]++;
+      continue;
+    }
+
+    $summary["ready"]++;
+  }
+
+  return array(
+    "summary" => $summary,
+    "conflicts" => $conflicts
+  );
+}
+
 function buildQuarantineManagerActionSummary($results) {
   $summary = array(
     "restored" => 0,
     "purged" => 0,
+    "skipped" => 0,
+    "conflicts" => 0,
     "missing" => 0,
     "blocked" => 0,
     "errors" => 0
@@ -373,6 +439,12 @@ function buildQuarantineManagerActionSummary($results) {
         break;
       case "purged":
         $summary["purged"]++;
+        break;
+      case "skipped":
+        $summary["skipped"]++;
+        break;
+      case "conflict":
+        $summary["conflicts"]++;
         break;
       case "missing":
         $summary["missing"]++;
@@ -389,11 +461,17 @@ function buildQuarantineManagerActionSummary($results) {
   return $summary;
 }
 
-function restoreTrackedQuarantineEntry($entry) {
+function restoreTrackedQuarantineEntry($entry, $options=array()) {
   $sourcePath = isset($entry["sourcePath"]) ? trim((string)$entry["sourcePath"]) : "";
   $destination = isset($entry["destination"]) ? trim((string)$entry["destination"]) : "";
   $quarantineRoot = isset($entry["quarantineRoot"]) ? trim((string)$entry["quarantineRoot"]) : "";
   $securityReason = buildRestorePathSecurityReason($sourcePath);
+  $conflictMode = isset($options["conflictMode"]) ? trim((string)$options["conflictMode"]) : "block";
+  $restorePath = $sourcePath;
+
+  if ( ! in_array($conflictMode, array("block", "skip", "suffix"), true) ) {
+    $conflictMode = "block";
+  }
 
   if ( $securityReason ) {
     return array(
@@ -411,9 +489,40 @@ function restoreTrackedQuarantineEntry($entry) {
   }
 
   if ( file_exists($sourcePath) ) {
+    $suggestedPath = buildRestoreSuffixDestination($sourcePath);
+
+    if ( $conflictMode === "skip" ) {
+      return array(
+        "status" => "skipped",
+        "message" => "Skipped because the original path already exists. The folder remains in quarantine.",
+        "suggestedPath" => $suggestedPath,
+        "quarantinePath" => $destination
+      );
+    }
+
+    if ( $conflictMode === "suffix" ) {
+      if ( ! $suggestedPath ) {
+        return array(
+          "status" => "error",
+          "message" => "A suffix restore path could not be prepared safely."
+        );
+      }
+
+      $restorePath = $suggestedPath;
+    } else {
+      return array(
+        "status" => "conflict",
+        "message" => "The original path already exists. Choose skip or restore with suffix to continue.",
+        "suggestedPath" => $suggestedPath,
+        "quarantinePath" => $destination
+      );
+    }
+  }
+
+  if ( $restorePath && buildRestorePathSecurityReason($restorePath) ) {
     return array(
       "status" => "blocked",
-      "message" => "The original path already exists. Move it first before restoring."
+      "message" => buildRestorePathSecurityReason($restorePath)
     );
   }
 
@@ -438,14 +547,14 @@ function restoreTrackedQuarantineEntry($entry) {
     );
   }
 
-  if ( ! ensureDirectoryExists(dirname($sourcePath)) ) {
+  if ( ! ensureDirectoryExists(dirname($restorePath)) ) {
     return array(
       "status" => "error",
       "message" => "The original parent folder could not be prepared."
     );
   }
 
-  if ( ! @rename($destination, $sourcePath) ) {
+  if ( ! @rename($destination, $restorePath) ) {
     return array(
       "status" => "error",
       "message" => "Restore failed. The quarantined folder was left in place."
@@ -453,14 +562,17 @@ function restoreTrackedQuarantineEntry($entry) {
   }
 
   clearCachedAppdataCleanupPlusPathStats($destination);
-  clearCachedAppdataCleanupPlusPathStats($sourcePath);
+  clearCachedAppdataCleanupPlusPathStats($restorePath);
   removeAppdataCleanupPlusQuarantineRecord($entry["id"]);
   cleanupEmptyQuarantineParents($destination, $quarantineRoot);
 
   return array(
     "status" => "restored",
-    "message" => "Restored to the original location.",
-    "destination" => $sourcePath
+    "message" => $restorePath === $sourcePath
+      ? "Restored to the original location."
+      : "Original path already existed, so the folder was restored with a suffix.",
+    "destination" => $restorePath,
+    "restoredPath" => $restorePath
   );
 }
 
@@ -551,7 +663,7 @@ function purgeTrackedQuarantineEntry($entry) {
   );
 }
 
-function executeQuarantineManagerAction($entries, $action) {
+function executeQuarantineManagerAction($entries, $action, $options=array()) {
   $results = array();
   $settings = getAppdataCleanupPlusSafetySettings();
   $dockerRunning = is_dir(appdataCleanupPlusDockerRuntimePath());
@@ -565,9 +677,14 @@ function executeQuarantineManagerAction($entries, $action) {
     );
 
     if ( $action === "restore" ) {
-      $restoreResult = restoreTrackedQuarantineEntry($entry);
+      $restoreResult = restoreTrackedQuarantineEntry($entry, $options);
       if ( isset($restoreResult["status"]) && $restoreResult["status"] === "restored" ) {
-        $restoredRow = buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings);
+        $restoredRow = buildCandidateRowFromQuarantineEntry(
+          $entry,
+          $dockerRunning,
+          $settings,
+          isset($restoreResult["restoredPath"]) ? (string)$restoreResult["restoredPath"] : ""
+        );
         if ( $restoredRow ) {
           $restoreResult["row"] = $restoredRow;
         }

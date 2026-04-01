@@ -96,13 +96,15 @@ function buildDashboardPayload() {
   $availableVolumes = removeParentCandidates($availableVolumes);
   $availableVolumes = removeParentsUsedByInstalledContainers($availableVolumes, $containers);
 
-  $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings);
+  $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings, false);
   $summary = buildSummary($rows);
   $snapshot = writeAppdataCleanupPlusSnapshot(buildSnapshotCandidateMap($rows));
   $scanWarningMessage = "";
 
   if ( ! $snapshot ) {
     error_log("Appdata Cleanup Plus could not persist a scan snapshot. Returning read-only dashboard payload.");
+    $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings, true);
+    $summary = buildSummary($rows);
     $scanWarningMessage = "Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.";
   }
 
@@ -127,6 +129,38 @@ function handleGetOrphanAppdata() {
   }
 
   jsonResponse($dashboard["payload"]);
+}
+
+function handleHydrateCandidateStats() {
+  $token = getRequestedToken();
+  $candidateIds = parseCandidateIds(getPostedString("candidateIds"));
+  $resolvedCandidates = array();
+  $rows = array();
+
+  if ( empty($candidateIds) ) {
+    jsonResponse(array(
+      "ok" => false,
+      "message" => "No candidates were selected."
+    ), 400);
+  }
+
+  $resolvedCandidates = resolveSnapshotCandidates($token, $candidateIds);
+
+  if ( ! $resolvedCandidates["ok"] ) {
+    jsonResponse(array(
+      "ok" => false,
+      "message" => $resolvedCandidates["message"]
+    ), $resolvedCandidates["statusCode"]);
+  }
+
+  foreach ( $resolvedCandidates["candidates"] as $candidate ) {
+    $rows[] = buildHydratedCandidateStatRow($candidate);
+  }
+
+  jsonResponse(array(
+    "ok" => true,
+    "rows" => $rows
+  ));
 }
 
 function handleSaveSafetySettings() {
@@ -243,6 +277,32 @@ function handleGetQuarantineEntries() {
   ));
 }
 
+function handleInspectQuarantineRestore() {
+  $entryIds = parseCandidateIds(getPostedString("entryIds"));
+  $resolvedEntries = array();
+
+  if ( empty($entryIds) ) {
+    jsonResponse(array(
+      "ok" => false,
+      "message" => "No quarantine entries were selected."
+    ), 400);
+  }
+
+  $resolvedEntries = resolveTrackedQuarantineEntries($entryIds);
+
+  if ( ! $resolvedEntries["ok"] ) {
+    jsonResponse(array(
+      "ok" => false,
+      "message" => $resolvedEntries["message"]
+    ), $resolvedEntries["statusCode"]);
+  }
+
+  jsonResponse(array(
+    "ok" => true,
+    "preview" => inspectTrackedQuarantineRestoreConflicts($resolvedEntries["entries"])
+  ));
+}
+
 function buildUpdatedSnapshotTokenFromRestoredResults($token, $results) {
   $snapshot = getValidatedAppdataCleanupPlusSnapshot($token);
   $restoredRows = array();
@@ -278,6 +338,9 @@ function handleQuarantineManagerAction() {
   $entryIds = parseCandidateIds(getPostedString("entryIds"));
   $scanToken = getRequestedToken();
   $updatedScanToken = "";
+  $options = array(
+    "conflictMode" => getPostedString("restoreConflictMode")
+  );
 
   if ( ! in_array($action, array("restore", "purge"), true) ) {
     jsonResponse(array(
@@ -302,7 +365,7 @@ function handleQuarantineManagerAction() {
     ), $resolvedEntries["statusCode"]);
   }
 
-  $execution = executeQuarantineManagerAction($resolvedEntries["entries"], $action);
+  $execution = executeQuarantineManagerAction($resolvedEntries["entries"], $action, $options);
   if ( $action === "restore" ) {
     $updatedScanToken = buildUpdatedSnapshotTokenFromRestoredResults($scanToken, $execution["results"]);
   }

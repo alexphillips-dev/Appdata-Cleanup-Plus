@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.31.11">
-<!ENTITY md5 "375a2af838fcbca5bd72a2267c6ad952">
+<!ENTITY version "2026.03.31.12">
+<!ENTITY md5 "ca2593434c2096b5d0443115ec1298c3">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.12
+- Feature: Add restore collision handling in the quarantine manager so existing original paths trigger a conflict flow instead of a dead-end restore failure
+- UX: Show a restore conflict dialog with `Skip conflicts`, `Restore with suffix`, and `Review conflict` options, plus explicit conflict and skipped result states in restore results and audit history
+- Scan: Load orphan rows first with lightweight stats, then hydrate size metadata progressively from the secure scan snapshot in background batches so large appdata scans feel faster
+- Maintainer: Add `bash scripts/release_main.sh` on `dev` to merge `dev` into `main`, build the release, tag it, publish GitHub release notes, verify the live raw manifest and CA XML, sync `dev`, and print the exact cache-busting install command
+
 ###2026.03.31.11
 - Feature: Add a `Select all` button to the main bottom action bar for selecting every deletable scan result
 - Feature: Add a `Select all` button to the quarantine manager toolbar for bulk restore and purge workflows

@@ -45,6 +45,10 @@ try {
       handleGetOrphanAppdata();
       break;
 
+    case "hydrateCandidateStats":
+      handleHydrateCandidateStats();
+      break;
+
     case "saveSafetySettings":
       handleSaveSafetySettings();
       break;
@@ -59,6 +63,10 @@ try {
 
     case "getQuarantineEntries":
       handleGetQuarantineEntries();
+      break;
+
+    case "inspectQuarantineRestore":
+      handleInspectQuarantineRestore();
       break;
 
     case "quarantineManagerAction":

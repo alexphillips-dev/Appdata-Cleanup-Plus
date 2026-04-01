@@ -121,6 +121,12 @@ Build package and refresh manifest/XML metadata:
 bash pkg_build.sh
 ```
 
+Promote `dev` into `main`, build the stable package, tag the release, publish the GitHub release, verify the live raw manifest/XML, and print the cache-busting install command:
+
+```bash
+bash scripts/release_main.sh
+```
+
 Preview the next computed package version without writing release files:
 
 ```bash

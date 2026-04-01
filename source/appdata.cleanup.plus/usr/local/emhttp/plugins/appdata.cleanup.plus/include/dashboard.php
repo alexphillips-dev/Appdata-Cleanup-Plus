@@ -364,6 +364,20 @@ function collectLightweightPathStats($path) {
   );
 }
 
+function candidateSupportsHeavyPathStats($classification, $securityLockReason) {
+  return empty($securityLockReason) && ! empty($classification["insideDefaultShare"]);
+}
+
+function buildCandidatePathStats($resolvedPath, $classification, $securityLockReason, $includeHeavyStats=true) {
+  $canHydrate = candidateSupportsHeavyPathStats($classification, $securityLockReason);
+  $pathStats = ($includeHeavyStats && $canHydrate)
+    ? collectPathStats($resolvedPath)
+    : collectLightweightPathStats($resolvedPath);
+
+  $pathStats["statsPending"] = ! $includeHeavyStats && $canHydrate;
+  return $pathStats;
+}
+
 function buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning) {
   if ( $sourceKind === "filesystem" ) {
     if ( ! $dockerRunning ) {
@@ -413,6 +427,8 @@ function normalizeAuditSummary($summary) {
     "deleted" => 0,
     "restored" => 0,
     "purged" => 0,
+    "skipped" => 0,
+    "conflicts" => 0,
     "missing" => 0,
     "blocked" => 0,
     "errors" => 0
@@ -449,6 +465,14 @@ function buildLatestAuditMessage($entry) {
 
   if ( ! empty($summary["purged"]) ) {
     $parts[] = $summary["purged"] . " purged";
+  }
+
+  if ( ! empty($summary["skipped"]) ) {
+    $parts[] = $summary["skipped"] . " skipped";
+  }
+
+  if ( ! empty($summary["conflicts"]) ) {
+    $parts[] = $summary["conflicts"] . " conflict" . ($summary["conflicts"] === 1 ? "" : "s");
   }
 
   if ( ! empty($summary["missing"]) ) {
@@ -777,7 +801,7 @@ function applySafetyPolicyToRow($row, $settings) {
   return $row;
 }
 
-function buildCandidateRows($availableVolumes, $dockerRunning, $settings) {
+function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $includeHeavyStats=true) {
   $rows = array();
   $ignoredCandidates = getIgnoredAppdataCleanupPlusCandidates();
 
@@ -805,9 +829,7 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings) {
       $ignoredEntry = isset($ignoredCandidates[$candidateKey]) && is_array($ignoredCandidates[$candidateKey]) ? $ignoredCandidates[$candidateKey] : null;
       $ignoredAt = $ignoredEntry && ! empty($ignoredEntry["ignoredAt"]) ? strtotime((string)$ignoredEntry["ignoredAt"]) : 0;
       $securityLockReason = buildPathSecurityLockReason($resolvedPath);
-      $pathStats = ($securityLockReason || ! $classification["insideDefaultShare"])
-        ? collectLightweightPathStats($resolvedPath)
-        : collectPathStats($resolvedPath);
+      $pathStats = buildCandidatePathStats($resolvedPath, $classification, $securityLockReason, $includeHeavyStats);
       $realPath = @realpath($resolvedPath);
 
       if ( ! $sourceDisplay ) {
@@ -856,6 +878,7 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings) {
         "lastModifiedIso" => $pathStats["lastModifiedIso"],
         "lastModifiedLabel" => $pathStats["lastModifiedLabel"],
         "lastModifiedExact" => $pathStats["lastModifiedExact"],
+        "statsPending" => ! empty($pathStats["statsPending"]),
         "securityLockReason" => $securityLockReason,
         "policyLocked" => false,
         "policyReason" => "",
@@ -945,4 +968,25 @@ function buildSnapshotCandidateMap($rows) {
   }
 
   return $candidateMap;
+}
+
+function buildHydratedCandidateStatRow($candidate) {
+  $candidateId = isset($candidate["id"]) ? (string)$candidate["id"] : "";
+  $candidatePath = isset($candidate["path"]) ? (string)$candidate["path"] : (isset($candidate["displayPath"]) ? (string)$candidate["displayPath"] : "");
+  $classification = classifyAppdataCandidate($candidatePath);
+  $resolvedPath = resolveExistingPath($classification);
+  $securityLockReason = buildPathSecurityLockReason($resolvedPath);
+  $pathStats = buildCandidatePathStats($resolvedPath, $classification, $securityLockReason, true);
+
+  return array(
+    "id" => $candidateId ? $candidateId : md5(appdataCleanupPlusCandidateKey($resolvedPath)),
+    "displayPath" => $resolvedPath,
+    "sizeBytes" => $pathStats["sizeBytes"],
+    "sizeLabel" => $pathStats["sizeLabel"],
+    "lastModified" => $pathStats["lastModified"],
+    "lastModifiedIso" => $pathStats["lastModifiedIso"],
+    "lastModifiedLabel" => $pathStats["lastModifiedLabel"],
+    "lastModifiedExact" => $pathStats["lastModifiedExact"],
+    "statsPending" => false
+  );
 }
