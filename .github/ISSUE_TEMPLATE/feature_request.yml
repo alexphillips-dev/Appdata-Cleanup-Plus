@@ -1,0 +1,91 @@
+name: Feature request
+description: Suggest a new capability, workflow improvement, safety enhancement, or UI/UX improvement.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for net-new features or workflow improvements.
+
+        Good requests explain the real problem first, then the proposed solution.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I checked existing issues and did not find the same request already open.
+          required: true
+        - label: This is a new feature or workflow improvement, not a bug report.
+          required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Scan / detection
+        - Safety / path protection
+        - Quarantine / restore / purge
+        - Bulk actions / filtering / sorting
+        - Audit / history / reporting
+        - Release / maintainership tooling
+        - UI / UX
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or workflow gap
+      description: What is hard, missing, confusing, or unsafe today?
+      placeholder: |
+        When I clean up a large appdata share, I can...
+        The current workflow makes it hard to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      placeholder: |
+        Add...
+        Change...
+        Show...
+    validations:
+      required: true
+
+  - type: textarea
+    id: user_flow
+    attributes:
+      label: What this would look like
+      description: Describe the user flow or UI shape you expect.
+      placeholder: |
+        A new button appears in...
+        The row would show...
+        The action would open...
+
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety or risk considerations
+      description: Especially important for delete, quarantine, restore, and path-protection features.
+      placeholder: |
+        This should stay read-only unless...
+        It should be blocked when...
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What are you doing today instead?
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Extra context, screenshots, or mockups
+

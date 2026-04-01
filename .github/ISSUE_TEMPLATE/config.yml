@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Unraid forum support thread
+    url: https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/
+    about: Use the forum thread for general support, usage questions, screenshots, and testing feedback.
+  - name: Latest stable release
+    url: https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/releases/latest
+    about: Check the latest stable release notes before opening a release or update issue.
+  - name: Repository README
+    url: https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/blob/main/README.md
+    about: Review install, update, build, and release details.

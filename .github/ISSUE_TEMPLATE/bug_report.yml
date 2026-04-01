@@ -1,0 +1,123 @@
+name: Bug report
+description: Report a reproducible problem in scanning, cleanup actions, quarantine, safety checks, or the UI.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for actual plugin bugs.
+
+        If the problem is specifically about installs, updates, branch tracking, or Unraid not seeing a new version, use the `Release / update problem` form instead.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I checked existing issues and did not find the same report already open.
+          required: true
+        - label: I tested on the latest stable or latest dev build for the channel I am using.
+          required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the plugin is failing?
+      options:
+        - Scan / detection
+        - Cleanup / delete action
+        - Quarantine / restore / purge
+        - Safety checks / locking / path protection
+        - Filters / sorting / selection
+        - UI / layout / badges / modal behavior
+        - Performance
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: plugin_version
+    attributes:
+      label: Plugin version
+      description: Example `2026.03.31.18`
+      placeholder: 2026.03.31.18
+    validations:
+      required: true
+
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Channel
+      options:
+        - Stable / main
+        - Dev / testing
+        - Commit-pinned raw install
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: unraid_version
+    attributes:
+      label: Unraid version
+      placeholder: 7.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      description: Include browser name and version if the issue is UI-related.
+      placeholder: Firefox 138 / Chrome 136 / Safari 18
+
+  - type: textarea
+    id: paths
+    attributes:
+      label: Paths or folders involved
+      description: Include the exact host paths if the bug depends on specific folders or mappings.
+      placeholder: |
+        /mnt/user/appdata/example
+        /mnt/user/appdata/example/subdir
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the plugin page
+        2. Click Rescan
+        3. Select ...
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, screenshots, or console errors
+      description: Paste exact error text. Screenshots are useful for layout, modal, and safety-state issues.
+      render: shell
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Recent changes, reverse proxy usage, Docker state, VM Manager setup, or anything else relevant.

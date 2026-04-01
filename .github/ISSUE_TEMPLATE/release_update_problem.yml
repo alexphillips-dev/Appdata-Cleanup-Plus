@@ -1,0 +1,106 @@
+name: Release / update problem
+description: Report install, update, branch tracking, manifest, or version-detection problems.
+title: "[Release]: "
+labels:
+  - release
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form when the problem is about getting the plugin installed or updated, including:
+        - Unraid not seeing the latest version
+        - `plugin install` failures
+        - main vs dev branch confusion
+        - stale manifest or CA feed behavior
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I checked existing issues and did not find the same release/update report already open.
+          required: true
+        - label: I included the exact URL or install command I used.
+          required: true
+
+  - type: input
+    id: installed_version
+    attributes:
+      label: Installed plugin version
+      description: What version does Unraid currently show?
+      placeholder: 2026.03.31.18
+
+  - type: input
+    id: expected_version
+    attributes:
+      label: Expected version
+      description: What version were you trying to install or update to?
+      placeholder: 2026.03.31.18
+    validations:
+      required: true
+
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Channel you intended to use
+      options:
+        - Stable / main
+        - Dev / testing
+        - Commit-pinned raw install
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: method
+    attributes:
+      label: How you attempted the update
+      options:
+        - Unraid plugin update check
+        - Community Applications
+        - `plugin install` command
+        - Manual raw URL in Plugins page
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: exact_url
+    attributes:
+      label: Exact URL or install command used
+      placeholder: plugin install https://raw.githubusercontent.com/...
+    validations:
+      required: true
+
+  - type: input
+    id: unraid_version
+    attributes:
+      label: Unraid version
+      placeholder: 7.1.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: observed
+    attributes:
+      label: What happened
+      placeholder: |
+        Unraid still shows...
+        The install failed with...
+        The Plugins page says...
+    validations:
+      required: true
+
+  - type: textarea
+    id: errors
+    attributes:
+      label: Exact error text or screenshots
+      description: Paste the full terminal output or the exact UI error if possible.
+      render: shell
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Include whether the plugin was originally installed from `main`, `dev`, or a commit-pinned URL if you know it.
+
