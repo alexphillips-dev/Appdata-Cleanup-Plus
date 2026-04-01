@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.16">
-<!ENTITY md5 "8ba4656bcc73a6bc2d6c47d048a37edb">
+<!ENTITY version "2026.04.01.17">
+<!ENTITY md5 "717755be10818bfa350eb7f09e5a442d">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.17
+- UI: Fix the thin black button outline so it actually renders on normal plugin buttons by overriding the earlier box-shadow reset, and strengthen the outline slightly for clearer contrast
+
 ###2026.04.01.16
 - UI: Add a thin black outer outline to the plugin button style so normal actions and modal confirm/cancel buttons read more clearly against the panel backgrounds
 

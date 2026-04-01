@@ -534,7 +534,7 @@ body[data-acp-host-theme="light"] #acp-app,
   background: var(--acp-button-bg);
   border: 1px solid var(--acp-button-border);
   border-radius: 10px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65) !important;
   color: var(--acp-button-text);
   cursor: pointer;
   display: inline-flex;
@@ -555,6 +555,7 @@ body[data-acp-host-theme="light"] #acp-app,
 .acp-button:focus-visible:not(:disabled) {
   background: var(--acp-button-hover-bg);
   border-color: var(--acp-button-hover-border);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65) !important;
   color: var(--acp-button-hover-text);
 }
 
@@ -1380,7 +1381,7 @@ body[data-acp-host-theme="light"] #acp-app,
   background: var(--acp-button-bg) !important;
   border: 1px solid var(--acp-button-border) !important;
   border-radius: 10px !important;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.65) !important;
   color: var(--acp-button-text) !important;
   font-size: 11px !important;
   font-weight: 700 !important;
