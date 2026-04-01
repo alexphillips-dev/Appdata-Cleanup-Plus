@@ -13,6 +13,14 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.18
+- Release: Promote the full `2026.03.31.12` through `2026.03.31.17` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
+- Feature: Add quarantine restore collision handling with `Skip conflicts`, `Restore with suffix`, and `Review conflict`, plus explicit conflict and skipped restore results
+- Scan: Render orphan rows first with lightweight metadata, then hydrate size data progressively in background batches so larger appdata scans become interactive faster
+- UX: Rework result badges into ordered actionability, state, source, and reason pills with filtering, then restore the previous filled-pill look while tuning `Locked` and `Discovery` colors for clearer visual meaning
+- Safety: Read VM Manager storage paths from `domain.cfg`, automatically exclude configured vdisk, ISO, and libvirt locations from orphan detection, and block cleanup actions that target VM-managed paths
+- Maintainer: Strengthen the release flow with raw manifest/XML verification, exact cache-busting install output, and a fixed `main` to `dev` back-merge so future stable releases keep the required branch ancestry intact
+
 ###2026.03.31.17
 - Fix: Read VM Manager default storage paths from `domain.cfg` and automatically exclude configured vdisk, ISO, and libvirt locations from orphan detection
 - Safety: Block cleanup actions for VM-managed paths even if a stale snapshot or unusual candidate path reaches the execution layer
