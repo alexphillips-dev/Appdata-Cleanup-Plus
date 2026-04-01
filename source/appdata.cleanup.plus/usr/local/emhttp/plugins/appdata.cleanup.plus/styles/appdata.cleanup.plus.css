@@ -1523,6 +1523,7 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-modal-stat {
   background: var(--acp-filter-bg);
+  border: 1px solid transparent;
   border-radius: 999px;
   color: var(--acp-text);
   font-size: 11px;
@@ -1532,26 +1533,31 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-modal-stat.is-selected {
   background: var(--acp-accent-soft);
+  border-color: var(--acp-accent);
   color: var(--acp-accent-text);
 }
 
 .acp-modal-stat.is-safe {
   background: var(--acp-safe-soft);
+  border-color: var(--acp-safe-text);
   color: var(--acp-safe-text);
 }
 
 .acp-modal-stat.is-review {
   background: var(--acp-review-soft);
+  border-color: var(--acp-review-text);
   color: var(--acp-review-text);
 }
 
 .acp-modal-stat.is-scheduled {
   background: var(--acp-discovery-soft);
+  border-color: var(--acp-discovery-text);
   color: var(--acp-discovery-text);
 }
 
 .acp-modal-stat.is-blocked {
   background: var(--acp-locked-soft);
+  border-color: var(--acp-locked-text);
   color: var(--acp-locked-text);
 }
 
