@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.09">
-<!ENTITY md5 "f65d3b08f3ddd3b78e16724e6444fe61">
+<!ENTITY version "2026.04.01.10">
+<!ENTITY md5 "b29ff5a13dbdd4fa94779fa35586777c">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.10
+- Quarantine UI: Move the exact scheduled purge timestamp out of the plain meta line and render it as its own colored badge beside the relative purge timer badge for better visual visibility
+
 ###2026.04.01.09
 - Release: Promote the full `2026.04.01.03` through `2026.04.01.08` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
 - Restore: Let quarantine restore conflicts use per-folder edited restore names instead of only generated suffix paths, validate edited names server-side, and report edited restore destinations back in the restore results summary

@@ -1545,6 +1545,11 @@ body[data-acp-host-theme="light"] #acp-app,
   color: var(--acp-review-text);
 }
 
+.acp-modal-stat.is-scheduled {
+  background: var(--acp-discovery-soft);
+  color: var(--acp-discovery-text);
+}
+
 .acp-modal-stat.is-blocked {
   background: var(--acp-locked-soft);
   color: var(--acp-locked-text);
