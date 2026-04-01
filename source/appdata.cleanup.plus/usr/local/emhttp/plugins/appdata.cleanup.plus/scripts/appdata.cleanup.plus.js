@@ -1153,7 +1153,7 @@
     apiPost({
       action: "updateQuarantinePurgeSchedule",
       entryIds: JSON.stringify(entryIds),
-      mode: mode,
+      purgeScheduleMode: mode,
       purgeAfterDays: purgeDays || 0
     }).done(function(response) {
       var quarantine = response.quarantine || {};

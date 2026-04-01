@@ -283,6 +283,10 @@ function handleUpdateQuarantinePurgeSchedule() {
   $mode = strtolower(getPostedString("purgeScheduleMode"));
   $purgeAfterDays = (int)getPostedString("purgeAfterDays");
 
+  if ( $mode === "" ) {
+    $mode = strtolower(getPostedString("mode"));
+  }
+
   if ( empty($entryIds) ) {
     jsonResponse(array(
       "ok" => false,
