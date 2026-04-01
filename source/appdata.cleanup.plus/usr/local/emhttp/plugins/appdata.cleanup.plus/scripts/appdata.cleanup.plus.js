@@ -1874,7 +1874,10 @@
         type: hasWarnings ? "warning" : "success",
         html: true
       }, function() {
-        reopenQuarantineManagerModal(false);
+        window.setTimeout(function() {
+          ACP.releaseModalScrollLock(false);
+          renderPanels();
+        }, 180);
       });
       ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildQuarantineManagerResultsHtml(action, summary, results));
     }).fail(function(xhr) {

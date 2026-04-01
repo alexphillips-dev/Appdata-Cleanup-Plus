@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.31.07">
-<!ENTITY md5 "18d27d3068894ec81788704265a22391">
+<!ENTITY version "2026.03.31.08">
+<!ENTITY md5 "2801112601409c5dc3162e7092301363">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.08
+- Fix: Stop reopening the quarantine manager after a successful restore or purge result dialog is dismissed
+
 ###2026.03.31.07
 - Tweak: Expand the quarantine manager horizontally to use more of the available viewport width
 - Tweak: Trim modal and panel side padding so quarantined path cards get more usable horizontal space
