@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.07">
-<!ENTITY md5 "b3e119ba5fdd2b18b50652ecbb101588">
+<!ENTITY version "2026.04.01.08">
+<!ENTITY md5 "bdd49fdfc3f95af131c5ff819f3bc7b0">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.08
+- UI: Make the audit history popup use the same wide modal sizing as the quarantine manager so both review windows have matching width and height
+
 ###2026.04.01.07
 - Fix: Remove the last stale `els.$doneBottom` reference from the dashboard action-bar refresh logic so the page no longer crashes during initial scan load after the bottom `Done` button removal
 
