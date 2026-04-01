@@ -168,6 +168,7 @@ behaviorSmokeAssertSame($measuredStats["sizeBytes"], $measuredCache["sizeBytes"]
 
 $quarantineRoot = $stateRoot . "/quarantine";
 $quarantineDestination = $quarantineRoot . "/20260330-120000/mnt/user/appdata/sample";
+$entryOneQuarantinedAt = date("c", time() - 7200);
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($quarantineDestination), "Quarantine destination should be created.");
 registerAppdataCleanupPlusQuarantineRecord(array(
   "id" => "entry-one",
@@ -175,7 +176,7 @@ registerAppdataCleanupPlusQuarantineRecord(array(
   "sourcePath" => "/mnt/user/appdata/sample",
   "destination" => $quarantineDestination,
   "quarantineRoot" => $quarantineRoot,
-  "quarantinedAt" => "2026-03-30T12:00:00+00:00",
+  "quarantinedAt" => $entryOneQuarantinedAt,
   "sourceSummary" => "sample",
   "targetSummary" => "/config"
 ));
@@ -204,8 +205,9 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
 $defaultSyncResult = syncTrackedQuarantineEntriesToDefaultPurgeSchedule(getAppdataCleanupPlusSafetySettings());
 behaviorSmokeAssertSame(1, (int)$defaultSyncResult["updatedCount"], "Changing the default purge timer should update existing tracked quarantine entries.");
 $defaultSyncedEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
+$expectedDefaultSyncedPurgeAt = buildAppdataCleanupPlusDefaultPurgeAtForTimestamp(getAppdataCleanupPlusSafetySettings(), strtotime($entryOneQuarantinedAt));
 behaviorSmokeAssertTrue(! empty($defaultSyncedEntries[0]["purgeScheduled"]), "Existing tracked quarantine entries should show a scheduled purge after default-timer sync.");
-behaviorSmokeAssertTrue($defaultSyncedEntries[0]["purgeAt"] !== "", "Default-timer sync should stamp a purge time on existing quarantine entries.");
+behaviorSmokeAssertSame($expectedDefaultSyncedPurgeAt, $defaultSyncedEntries[0]["purgeAt"], "Default-timer sync should be based on each entry's quarantine time.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "allowOutsideShareCleanup" => false,
   "enablePermanentDelete" => false,
@@ -215,6 +217,56 @@ $defaultSyncClearResult = syncTrackedQuarantineEntriesToDefaultPurgeSchedule(get
 behaviorSmokeAssertSame(1, (int)$defaultSyncClearResult["updatedCount"], "Clearing the default purge timer should also clear existing tracked quarantine entries.");
 $defaultClearedEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
 behaviorSmokeAssertSame(false, ! empty($defaultClearedEntries[0]["purgeScheduled"]), "Tracked quarantine entries should clear their purge schedule when the default is cleared.");
+$manualOverridePurgeAt = date("c", time() + (9 * 86400));
+$manualOverrideResult = updateTrackedQuarantinePurgeSchedule($defaultClearedEntries, "set", 0, $manualOverridePurgeAt);
+behaviorSmokeAssertSame("scheduled", $manualOverrideResult["results"][0]["status"], "Manual exact-time scheduling should still work after default-timer sync.");
+behaviorSmokeAssertSame($manualOverridePurgeAt, $manualOverrideResult["results"][0]["purgeAt"], "Manual exact-time scheduling should preserve the selected purge time.");
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => false,
+  "defaultQuarantinePurgeDays" => 7
+)), "Default purge settings should save before verifying manual override preservation.");
+$manualPreservationResult = syncTrackedQuarantineEntriesToDefaultPurgeSchedule(getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame(0, (int)$manualPreservationResult["updatedCount"], "Changing the default purge timer should not overwrite manual per-entry purge overrides.");
+$manualPreservedEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
+behaviorSmokeAssertSame($manualOverridePurgeAt, $manualPreservedEntries[0]["purgeAt"], "Manual per-entry purge overrides should remain unchanged when the global default changes.");
+$manualClearResult = updateTrackedQuarantinePurgeSchedule($manualPreservedEntries, "clear", 0);
+behaviorSmokeAssertSame("cleared", $manualClearResult["results"][0]["status"], "Clearing a manual purge override should still work.");
+setAppdataCleanupPlusQuarantineRegistry(array());
+$legacyManualDestination = $stateRoot . "/quarantine/legacy-manual";
+$legacyManualQuarantinedAt = date("c", time() - 1800);
+$legacyManualPurgeAt = date("c", time() + (11 * 86400));
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($legacyManualDestination), "Legacy manual quarantine destination should be created.");
+behaviorSmokeAssertTrue(setAppdataCleanupPlusQuarantineRegistry(array(
+  "legacy-manual" => array(
+    "id" => "legacy-manual",
+    "name" => "legacy-manual",
+    "sourcePath" => "/mnt/user/appdata/legacy-manual",
+    "destination" => $legacyManualDestination,
+    "quarantineRoot" => $quarantineRoot,
+    "quarantinedAt" => $legacyManualQuarantinedAt,
+    "purgeAt" => $legacyManualPurgeAt,
+    "sourceSummary" => "legacy-manual",
+    "targetSummary" => "/config"
+  )
+)), "Legacy manual quarantine entry should be written without source metadata.");
+$legacyPreviousSettings = array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => false,
+  "defaultQuarantinePurgeDays" => 5,
+  "quarantineRoot" => getDefaultAppdataCleanupPlusQuarantineRoot()
+);
+$legacyNextSettings = array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => false,
+  "defaultQuarantinePurgeDays" => 8,
+  "quarantineRoot" => getDefaultAppdataCleanupPlusQuarantineRoot()
+);
+$legacySyncResult = syncTrackedQuarantineEntriesToDefaultPurgeSchedule($legacyNextSettings, $legacyPreviousSettings);
+behaviorSmokeAssertSame(0, (int)$legacySyncResult["updatedCount"], "Legacy scheduled entries that do not match the previous default should be preserved as manual overrides.");
+$legacyEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
+behaviorSmokeAssertSame($legacyManualPurgeAt, $legacyEntries[0]["purgeAt"], "Legacy manual overrides should keep their exact scheduled purge time when the default changes.");
+setAppdataCleanupPlusQuarantineRegistry(array());
 
 $restoreCollisionSource = $appdataShareRoot . "/restore-collision";
 $restoreCollisionQuarantineRoot = $stateRoot . "/restore-collision-quarantine";

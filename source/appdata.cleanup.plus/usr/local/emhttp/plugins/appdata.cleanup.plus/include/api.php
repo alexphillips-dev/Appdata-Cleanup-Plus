@@ -184,7 +184,7 @@ function handleSaveSafetySettings() {
   $nextSettings = getAppdataCleanupPlusSafetySettings();
 
   if ( (int)$currentSettings["defaultQuarantinePurgeDays"] !== (int)$nextSettings["defaultQuarantinePurgeDays"] ) {
-    syncTrackedQuarantineEntriesToDefaultPurgeSchedule($nextSettings);
+    syncTrackedQuarantineEntriesToDefaultPurgeSchedule($nextSettings, $currentSettings);
   }
 
   jsonResponse(array(

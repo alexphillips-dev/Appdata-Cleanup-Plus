@@ -39,30 +39,68 @@ function normalizeAppdataCleanupPlusQuarantinePurgeAt($purgeAt) {
   return date("c", $timestamp);
 }
 
-function buildDefaultAppdataCleanupPlusQuarantinePurgeAt($settings) {
+function buildAppdataCleanupPlusDefaultPurgeAtForTimestamp($settings, $baseTimestamp=0) {
   $defaultPurgeDays = isset($settings["defaultQuarantinePurgeDays"]) ? (int)$settings["defaultQuarantinePurgeDays"] : 0;
+  $anchorTimestamp = (int)$baseTimestamp;
 
   if ( $defaultPurgeDays <= 0 ) {
     return "";
   }
 
-  return date("c", time() + ($defaultPurgeDays * 86400));
+  if ( $anchorTimestamp <= 0 ) {
+    $anchorTimestamp = time();
+  }
+
+  return date("c", $anchorTimestamp + ($defaultPurgeDays * 86400));
 }
 
-function syncTrackedQuarantineEntriesToDefaultPurgeSchedule($settings) {
+function normalizeAppdataCleanupPlusQuarantinePurgeScheduleSource($source, $purgeAt="") {
+  $normalizedSource = strtolower(trim((string)$source));
+  $normalizedPurgeAt = normalizeAppdataCleanupPlusQuarantinePurgeAt($purgeAt);
+
+  if ( in_array($normalizedSource, array("default", "manual"), true) ) {
+    return $normalizedSource;
+  }
+
+  return $normalizedPurgeAt !== "" ? "default" : "";
+}
+
+function syncTrackedQuarantineEntriesToDefaultPurgeSchedule($settings, $previousSettings=null) {
   $registry = pruneMissingAppdataCleanupPlusQuarantineRecords(getAppdataCleanupPlusQuarantineRegistry());
-  $defaultPurgeAt = buildDefaultAppdataCleanupPlusQuarantinePurgeAt($settings);
   $updatedCount = 0;
   $registryDirty = false;
 
   foreach ( $registry as $recordId => $record ) {
     $normalized = normalizeAppdataCleanupPlusQuarantineRecord($record);
+    $quarantinedTimestamp = strtotime($normalized["quarantinedAt"]);
+    $defaultPurgeAt = buildAppdataCleanupPlusDefaultPurgeAtForTimestamp($settings, $quarantinedTimestamp);
+
+    if ( $normalized["purgeScheduleSource"] === "manual" ) {
+      continue;
+    }
+
+    if (
+      $previousSettings !== null &&
+      $normalized["purgeAt"] !== ""
+    ) {
+      $previousDefaultPurgeAt = buildAppdataCleanupPlusDefaultPurgeAtForTimestamp($previousSettings, $quarantinedTimestamp);
+
+      if ( $previousDefaultPurgeAt === "" || $normalized["purgeAt"] !== $previousDefaultPurgeAt ) {
+        if ( $normalized["purgeScheduleSource"] !== "manual" ) {
+          $normalized["purgeScheduleSource"] = "manual";
+          $registry[$recordId] = $normalized;
+          $registryDirty = true;
+        }
+        continue;
+      }
+    }
 
     if ( $normalized["purgeAt"] === $defaultPurgeAt ) {
       continue;
     }
 
     $normalized["purgeAt"] = $defaultPurgeAt;
+    $normalized["purgeScheduleSource"] = $defaultPurgeAt !== "" ? "default" : "";
     $registry[$recordId] = $normalized;
     $updatedCount++;
     $registryDirty = true;
@@ -73,7 +111,6 @@ function syncTrackedQuarantineEntriesToDefaultPurgeSchedule($settings) {
   }
 
   return array(
-    "purgeAt" => $defaultPurgeAt,
     "updatedCount" => $updatedCount
   );
 }
@@ -157,6 +194,10 @@ function normalizeAppdataCleanupPlusQuarantineRecord($record) {
     "quarantineRoot" => isset($record["quarantineRoot"]) ? rtrim((string)$record["quarantineRoot"], "/") : "",
     "quarantinedAt" => isset($record["quarantinedAt"]) ? trim((string)$record["quarantinedAt"]) : "",
     "purgeAt" => normalizeAppdataCleanupPlusQuarantinePurgeAt(isset($record["purgeAt"]) ? $record["purgeAt"] : ""),
+    "purgeScheduleSource" => normalizeAppdataCleanupPlusQuarantinePurgeScheduleSource(
+      isset($record["purgeScheduleSource"]) ? $record["purgeScheduleSource"] : "",
+      isset($record["purgeAt"]) ? $record["purgeAt"] : ""
+    ),
     "sourceKind" => isset($record["sourceKind"]) ? trim((string)$record["sourceKind"]) : "template",
     "sourceLabel" => isset($record["sourceLabel"]) ? trim((string)$record["sourceLabel"]) : "",
     "sourceDisplay" => isset($record["sourceDisplay"]) ? trim((string)$record["sourceDisplay"]) : "",
@@ -373,6 +414,7 @@ function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0
 
     if ( $normalizedMode === "set" ) {
       $normalized["purgeAt"] = $scheduledPurgeAt;
+      $normalized["purgeScheduleSource"] = $scheduledPurgeAt !== "" ? "manual" : "";
       $results[] = array_merge($result, array(
         "status" => "scheduled",
         "message" => $scheduledPurgeAt !== ""
@@ -383,6 +425,7 @@ function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0
     } else {
       $hadSchedule = $normalized["purgeAt"] !== "";
       $normalized["purgeAt"] = "";
+      $normalized["purgeScheduleSource"] = "";
       $results[] = array_merge($result, array(
         "status" => "cleared",
         "message" => $hadSchedule ? "Scheduled purge cleared." : "No scheduled purge was set."
@@ -1182,7 +1225,8 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
 function quarantineCandidatePath($candidate, $displayPath, $settings) {
   $destination = buildQuarantineDestination($displayPath, $settings);
   $quarantineRoot = buildCandidateQuarantineRoot($displayPath, $settings);
-  $defaultPurgeAt = buildDefaultAppdataCleanupPlusQuarantinePurgeAt($settings);
+  $quarantinedAt = date("c");
+  $defaultPurgeAt = buildAppdataCleanupPlusDefaultPurgeAtForTimestamp($settings, strtotime($quarantinedAt));
 
   if ( ! $destination ) {
     return array(
@@ -1207,8 +1251,9 @@ function quarantineCandidatePath($candidate, $displayPath, $settings) {
       "sourcePath" => $displayPath,
       "destination" => $destination,
       "quarantineRoot" => $quarantineRoot,
-      "quarantinedAt" => date("c"),
+      "quarantinedAt" => $quarantinedAt,
       "purgeAt" => $defaultPurgeAt,
+      "purgeScheduleSource" => $defaultPurgeAt !== "" ? "default" : "",
       "sourceKind" => isset($candidate["sourceKind"]) ? (string)$candidate["sourceKind"] : "template",
       "sourceLabel" => isset($candidate["sourceLabel"]) ? (string)$candidate["sourceLabel"] : "Template",
       "sourceDisplay" => isset($candidate["sourceDisplay"]) ? (string)$candidate["sourceDisplay"] : "",

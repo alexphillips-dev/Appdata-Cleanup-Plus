@@ -83,7 +83,7 @@
     var selected = quarantine.selected || {};
     var allSelected = false;
     var selectedCount = 0;
-    var selectionDisabled = !!quarantine.loading || selectedCount === 0;
+    var selectionDisabled = false;
     var summary = quarantine.summary || { count: 0, sizeLabel: "0 B" };
     var subtitle = summary.count
       ? (summary.count + " " + (summary.count === 1 ? ACP.t(strings, "quarantineCountSingular", "quarantined folder") : ACP.t(strings, "quarantineCountPlural", "quarantined folders")) + " tracked" + (summary.sizeLabel ? " | " + summary.sizeLabel : ""))

@@ -1235,7 +1235,6 @@
       action: "updateQuarantinePurgeSchedule",
       entryIds: JSON.stringify(entryIds),
       purgeScheduleMode: mode,
-      purgeAfterDays: 0,
       purgeAt: purgeAt || ""
     }).done(function(response) {
       var quarantine = response.quarantine || {};
