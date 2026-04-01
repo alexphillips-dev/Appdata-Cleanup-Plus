@@ -79,7 +79,7 @@ function resolveSnapshotCandidates($token, $candidateIds) {
 
 function buildDashboardPayload() {
   $settings = getAppdataCleanupPlusSafetySettings();
-  $allFiles = glob("/boot/config/plugins/dockerMan/templates-user/*.xml");
+  $allFiles = glob(appdataCleanupPlusDockerTemplateDir() . "/*.xml");
   $dockerRunning = is_dir(appdataCleanupPlusDockerRuntimePath());
   $containers = getDockerContainersSafe();
 
@@ -87,7 +87,9 @@ function buildDashboardPayload() {
     $allFiles = array();
   }
 
-  $availableVolumes = buildCandidateMap($allFiles);
+  $templateVolumes = buildCandidateMap($allFiles);
+  $filesystemVolumes = buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning);
+  $availableVolumes = $templateVolumes + $filesystemVolumes;
 
   $availableVolumes = removeInstalledVolumeMatches($availableVolumes, $containers);
   $availableVolumes = filterToExistingCandidates($availableVolumes);
@@ -128,16 +130,6 @@ function handleGetOrphanAppdata() {
 }
 
 function handleSaveSafetySettings() {
-  $token = getRequestedToken();
-  $snapshot = getValidatedAppdataCleanupPlusSnapshot($token);
-
-  if ( ! $snapshot ) {
-    jsonResponse(array(
-      "ok" => false,
-      "message" => "This scan expired or is no longer valid. Rescan and try again."
-    ), 409);
-  }
-
   $settings = array(
     "allowOutsideShareCleanup" => getPostedBoolean("allowOutsideShareCleanup"),
     "enablePermanentDelete" => getPostedBoolean("enablePermanentDelete")

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.30.48">
-<!ENTITY md5 "f895a93e660992f21c00fcdd61e374da">
+<!ENTITY version "2026.03.31.12">
+<!ENTITY md5 "05055e28146423931fd16ad980290628">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,58 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.12
+- Release: Promote the full `2026.03.31.01` through `2026.03.31.11` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
+- Scan: Detect direct-child orphan appdata folders from filesystem discovery, explain the exact symlink segment behind locked candidates, and normalize host path matching so trailing slashes cannot create false orphan rows
+- UX: Group one scan into separate saved-template, appdata-discovery, and ignored sections while keeping filtering, sorting, and selection global across the page
+- Feature: Add `Select all` controls to the main action bar and quarantine manager, plus bulk quarantine restore and purge with entry checkboxes
+- Fix: Allow safety toggles to save without an active scan and resolve quarantine modal regressions around reopen behavior, page scroll locking, width, alignment, and centered positioning
+
+###2026.03.31.11
+- Feature: Add a `Select all` button to the main bottom action bar for selecting every deletable scan result
+- Feature: Add a `Select all` button to the quarantine manager toolbar for bulk restore and purge workflows
+
+###2026.03.31.10
+- Fix: Restore true centered positioning for SweetAlert confirmation and utility dialogs after the wider modal overrides
+- Fix: Reset modal `margin-top` and use full `translate(-50%, -50%)` centering so tall confirm dialogs do not open cut off near the bottom of the screen
+
+###2026.03.31.09
+- Fix: Replace fragile `min(...)` modal sizing with explicit width/max-width overrides so the quarantine manager can actually expand horizontally
+- Fix: Force SweetAlert modal centering with explicit left/right/margin handling when wider widths are applied
+
+###2026.03.31.08
+- Fix: Stop reopening the quarantine manager after a successful restore or purge result dialog is dismissed
+
+###2026.03.31.07
+- Tweak: Expand the quarantine manager horizontally to use more of the available viewport width
+- Tweak: Trim modal and panel side padding so quarantined path cards get more usable horizontal space
+
+###2026.03.31.06
+- Tweak: Reduce the quarantine manager width from the oversized layout while keeping the taller review area
+- Fix: Vertically align quarantine entry names with their checkboxes and action row
+
+###2026.03.31.05
+- Fix: Restore page scrolling correctly after quarantine restore and purge modal flows close
+- Improvement: Expand the quarantine manager width and internal list height so more quarantined path details stay visible without cramped wrapping
+- Fix: Clear modal-specific SweetAlert classes cleanly when switching between quarantine, audit, and other modal views
+
+###2026.03.31.04
+- Fix: Reopen the quarantine manager reliably after restore and purge actions instead of getting stuck until a full page refresh
+- Feature: Add quarantine entry checkboxes with bulk restore and bulk purge actions
+- Fix: Allow permanent-delete and outside-share safety toggles to save even when the current scan is empty
+
+###2026.03.31.03
+- Fix: Canonicalize host paths before matching saved template references against live container mounts so trailing slashes cannot create false orphan rows
+- Test: Cover saved-template trailing slash mismatches against live Docker mount paths in the behavior smoke regression
+
+###2026.03.31.02
+- UX: Split one scan into grouped result sections for saved template references, appdata share discovery, and ignored paths
+- UX: Keep filtering, sorting, and selection global while sorting rows within each visible result section
+
+###2026.03.31.01
+- UX: Explain locked symlink candidates with the exact offending path segment instead of a generic safety warning
+- Scan: Detect direct child orphan folders in the configured appdata share even when no saved Docker template still references them
+
 ###2026.03.30.48
 - Fix: Republish the stable channel from the same `45ae105` codebase that was verified to appear in Unraid Settings / User Utilities on the dev feed
 - Maintenance: Keep the stable manifest and CA metadata pointed at `main` so Community Applications continues following the stable URL

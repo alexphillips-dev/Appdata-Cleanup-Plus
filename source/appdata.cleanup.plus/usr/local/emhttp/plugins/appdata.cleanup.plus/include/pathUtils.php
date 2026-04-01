@@ -11,6 +11,17 @@ function pathIsDescendant($parentPath, $childPath) {
   return startsWith($normalizedChild . "/", $normalizedParent . "/");
 }
 
+function pathMatchesOrIsDescendant($parentPath, $childPath) {
+  $normalizedParent = rtrim(normalizeUserPath($parentPath), "/");
+  $normalizedChild = rtrim(normalizeUserPath($childPath), "/");
+
+  if ( ! $normalizedParent || ! $normalizedChild ) {
+    return false;
+  }
+
+  return $normalizedParent === $normalizedChild || startsWith($normalizedChild . "/", $normalizedParent . "/");
+}
+
 function resolveExistingPath($classification) {
   if ( is_dir($classification["userPath"]) ) {
     return $classification["userPath"];
@@ -45,11 +56,28 @@ function pathIsMountPoint($path) {
   return isset($pathStat["dev"], $parentStat["dev"]) && $pathStat["dev"] !== $parentStat["dev"];
 }
 
-function pathHasSymlinkSegment($path) {
+function buildSymlinkLockReason($path, $prefix="Path") {
+  $normalizedPath = trim((string)$path);
+
+  if ( ! $normalizedPath ) {
+    return "Symlinked paths are locked for safety.";
+  }
+
+  $target = @readlink($normalizedPath);
+  $message = $prefix . " '" . $normalizedPath . "' is a symlink";
+
+  if ( is_string($target) && $target !== "" ) {
+    $message .= " to '" . $target . "'";
+  }
+
+  return $message . " and is locked for safety.";
+}
+
+function getPathSymlinkSegment($path) {
   $trimmed = trim((string)$path);
 
   if ( ! $trimmed || $trimmed[0] !== "/" ) {
-    return false;
+    return "";
   }
 
   $segments = array_values(array_filter(explode("/", trim($trimmed, "/")), "strlen"));
@@ -59,16 +87,30 @@ function pathHasSymlinkSegment($path) {
     $currentPath .= "/" . $segment;
 
     if ( @is_link($currentPath) ) {
-      return true;
+      return $currentPath;
     }
   }
 
-  return false;
+  return "";
+}
+
+function buildPathSymlinkSegmentLockReason($path) {
+  $segmentPath = getPathSymlinkSegment($path);
+
+  if ( ! $segmentPath ) {
+    return "";
+  }
+
+  return buildSymlinkLockReason($segmentPath, "Path segment");
+}
+
+function pathHasSymlinkSegment($path) {
+  return getPathSymlinkSegment($path) !== "";
 }
 
 function inspectDirectoryTreeForUnsafeEntries($path) {
   if ( @is_link($path) ) {
-    return "Symlinked folders cannot be acted on here.";
+    return buildSymlinkLockReason($path, "Folder");
   }
 
   if ( ! is_dir($path) ) {
@@ -85,7 +127,7 @@ function inspectDirectoryTreeForUnsafeEntries($path) {
       $itemPath = $item->getPathname();
 
       if ( $item->isLink() ) {
-        return "Folders containing symlinks are locked for safety.";
+        return buildSymlinkLockReason($itemPath, "Folder entry");
       }
 
       if ( $item->isDir() && pathIsMountPoint($itemPath) ) {

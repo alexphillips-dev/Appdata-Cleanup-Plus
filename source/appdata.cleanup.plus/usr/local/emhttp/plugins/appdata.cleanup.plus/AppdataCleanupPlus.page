@@ -41,10 +41,10 @@ $config = array(
   "spinnerUrl" => "/plugins/appdata.cleanup.plus/images/spinner2.gif",
   "logoUrl" => "/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png",
   "strings" => array(
-    "loadingTitle" => _("Scanning saved Docker templates"),
+    "loadingTitle" => _("Scanning appdata share and saved Docker templates"),
     "loadingMessage" => _("Reviewing orphaned appdata folders and active container mappings."),
     "emptyTitle" => _("No orphaned appdata found"),
-    "emptyMessage" => _("Nothing currently looks safe to clean up from the saved Docker templates."),
+    "emptyMessage" => _("Nothing currently looks safe to clean up from the appdata share or saved Docker templates."),
     "noMatchesTitle" => _("No folders match the current filters"),
     "noMatchesMessage" => _("Clear the search or risk filters to see the full scan again."),
     "ignoredOnlyTitle" => _("Only ignored paths remain"),
@@ -55,7 +55,9 @@ $config = array(
     "scanReadOnlyMessage" => _("Scan results loaded, but actions are disabled because a secure snapshot could not be created right now."),
     "scanExpiredMessage" => _("This scan expired or is no longer valid. Rescan and try again."),
     "rescanLabel" => _("Rescan"),
+    "selectAllLabel" => _("Select all"),
     "clearFiltersLabel" => _("Clear filters"),
+    "clearLabel" => _("Clear"),
     "deleteEmptyTitle" => _("Nothing selected"),
     "deleteEmptyMessage" => _("Select at least one deletable folder before continuing."),
     "deleteConfirmTitle" => _("Delete selected folders?"),
@@ -105,6 +107,13 @@ $config = array(
     "showIgnoredLabel" => _("Show ignored"),
     "showExternalLabel" => _("Allow outside-share cleanup"),
     "enablePermanentDeleteLabel" => _("Enable permanent delete"),
+    "sourceLabel" => _("Source"),
+    "templateSectionTitle" => _("Saved template references"),
+    "templateSectionMessage" => _("Paths still referenced by saved Docker templates but not by installed containers."),
+    "discoverySectionTitle" => _("Appdata share discovery"),
+    "discoverySectionMessage" => _("Folders found directly in the configured appdata share with no saved template or live container reference."),
+    "ignoredSectionTitle" => _("Ignored"),
+    "ignoredSectionMessage" => _("Hidden by your ignore list. Restore them to include them in cleanup results again."),
     "templateLabel" => _("Template"),
     "targetLabel" => _("Target"),
     "destinationLabel" => _("Destination"),
@@ -159,24 +168,33 @@ $config = array(
     "quarantineSourceLabel" => _("Original"),
     "quarantineLocationLabel" => _("Quarantine path"),
     "quarantineRestoreActionLabel" => _("Restore"),
+    "restoreSelectedLabel" => _("Restore selected"),
     "quarantineRestoreConfirmTitle" => _("Restore quarantined folder?"),
+    "quarantineRestoreConfirmManyTitle" => _("Restore selected quarantined folders?"),
     "quarantineRestoreConfirmMessage" => _("Restore this quarantined folder back to its original location."),
+    "quarantineRestoreConfirmManyMessage" => _("Restore the selected quarantined folders back to their original locations."),
     "quarantineRestoreListTitle" => _("Folder to restore"),
+    "quarantineRestoreListManyTitle" => _("Folders to restore"),
     "quarantineRestoreLoadingTitle" => _("Restoring quarantined folders"),
     "quarantineRestoreLoadingMessage" => _("Moving selected folders back to their original locations."),
     "quarantineRestoreSuccessTitle" => _("Restore complete"),
     "quarantineRestoreWarningTitle" => _("Restore finished with warnings"),
     "quarantineRestoreFailedTitle" => _("Restore failed"),
     "quarantinePurgeActionLabel" => _("Purge"),
+    "purgeSelectedLabel" => _("Purge selected"),
     "quarantinePurgeConfirmTitle" => _("Purge quarantined folder?"),
+    "quarantinePurgeConfirmManyTitle" => _("Purge selected quarantined folders?"),
     "quarantinePurgeConfirmMessage" => _("Permanently delete this quarantined folder."),
+    "quarantinePurgeConfirmManyMessage" => _("Permanently delete the selected quarantined folders."),
     "quarantinePurgeTypedTitle" => _("Type DELETE to purge"),
     "quarantinePurgeListTitle" => _("Folder to purge"),
+    "quarantinePurgeListManyTitle" => _("Folders to purge"),
     "quarantinePurgeLoadingTitle" => _("Purging quarantined folders"),
     "quarantinePurgeLoadingMessage" => _("Permanently deleting selected quarantined folders."),
     "quarantinePurgeSuccessTitle" => _("Purge complete"),
     "quarantinePurgeWarningTitle" => _("Purge finished with warnings"),
     "quarantinePurgeFailedTitle" => _("Purge failed"),
+    "quarantineManagerSelectionEmptyMessage" => _("Select at least one quarantined folder before continuing."),
     "quarantineManagerActionFailedMessage" => _("The quarantine manager action could not be completed right now."),
     "quarantineActionLabel" => _("Quarantine selected"),
     "deleteActionLabel" => _("Delete selected"),
@@ -220,7 +238,7 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
     <div class="acp-hero-copy">
       <p class="acp-eyebrow"><?php echo _("Cleanup Dashboard"); ?></p>
       <h2 class="acp-title"><?php echo _("Review orphaned appdata before delete"); ?></h2>
-      <p class="acp-subtitle"><?php echo _("Candidates come from saved Docker templates that no longer match active container mappings."); ?></p>
+      <p class="acp-subtitle"><?php echo _("Candidates come from orphaned saved template paths plus unused folders discovered in the configured appdata share."); ?></p>
     </div>
   </section>
 
@@ -303,6 +321,7 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
     </div>
     <div class="acp-bottom-actions">
       <button type="button" class="acp-button acp-button-secondary" id="acp-done-bottom"><?php echo _("Done"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary" id="acp-select-all" disabled><?php echo _("Select all"); ?></button>
       <button type="button" class="acp-button acp-button-secondary" id="acp-dry-run" disabled><?php echo _("Dry run"); ?></button>
       <button type="button" class="acp-button acp-button-primary" id="acp-primary-action" disabled><?php echo _("Quarantine selected"); ?></button>
     </div>

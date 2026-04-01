@@ -45,6 +45,9 @@ function normalizeAppdataCleanupPlusQuarantineRecord($record) {
     "destination" => isset($record["destination"]) ? trim((string)$record["destination"]) : "",
     "quarantineRoot" => isset($record["quarantineRoot"]) ? rtrim((string)$record["quarantineRoot"], "/") : "",
     "quarantinedAt" => isset($record["quarantinedAt"]) ? trim((string)$record["quarantinedAt"]) : "",
+    "sourceKind" => isset($record["sourceKind"]) ? trim((string)$record["sourceKind"]) : "template",
+    "sourceLabel" => isset($record["sourceLabel"]) ? trim((string)$record["sourceLabel"]) : "",
+    "sourceDisplay" => isset($record["sourceDisplay"]) ? trim((string)$record["sourceDisplay"]) : "",
     "sourceSummary" => isset($record["sourceSummary"]) ? trim((string)$record["sourceSummary"]) : "",
     "targetSummary" => isset($record["targetSummary"]) ? trim((string)$record["targetSummary"]) : "",
     "sourceNames" => $sourceNames,
@@ -145,8 +148,15 @@ function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false) {
       "quarantinedAt" => $normalized["quarantinedAt"],
       "quarantinedAtLabel" => $timestamp ? formatDateTimeLabel($timestamp) : "",
       "quarantinedAgeLabel" => $timestamp ? formatRelativeAgeLabel($timestamp) : "",
+      "sourceKind" => $normalized["sourceKind"],
+      "sourceLabel" => $normalized["sourceLabel"],
+      "sourceDisplay" => $normalized["sourceDisplay"],
       "sourceSummary" => $normalized["sourceSummary"],
       "targetSummary" => $normalized["targetSummary"],
+      "sourceNames" => $normalized["sourceNames"],
+      "targetPaths" => $normalized["targetPaths"],
+      "templateRefs" => $normalized["templateRefs"],
+      "reason" => $normalized["reason"],
       "sizeBytes" => $normalized["sizeBytes"],
       "sizeLabel" => $normalized["sizeBytes"] !== null ? formatBytesLabel($normalized["sizeBytes"]) : "Unknown"
     );
@@ -191,6 +201,11 @@ function buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings)
   $sourceNames = isset($entry["sourceNames"]) && is_array($entry["sourceNames"]) ? array_values($entry["sourceNames"]) : array();
   $targetPaths = isset($entry["targetPaths"]) && is_array($entry["targetPaths"]) ? array_values($entry["targetPaths"]) : array();
   $templateRefs = isset($entry["templateRefs"]) && is_array($entry["templateRefs"]) ? array_values($entry["templateRefs"]) : array();
+  $sourceKind = isset($entry["sourceKind"]) ? trim((string)$entry["sourceKind"]) : "template";
+  $sourceLabel = isset($entry["sourceLabel"]) && trim((string)$entry["sourceLabel"]) !== ""
+    ? trim((string)$entry["sourceLabel"])
+    : ($sourceKind === "filesystem" ? "Discovery" : "Template");
+  $sourceDisplay = isset($entry["sourceDisplay"]) ? trim((string)$entry["sourceDisplay"]) : "";
   $sourceSummary = isset($entry["sourceSummary"]) ? trim((string)$entry["sourceSummary"]) : "";
   $targetSummary = isset($entry["targetSummary"]) ? trim((string)$entry["targetSummary"]) : "";
   $reason = isset($entry["reason"]) ? trim((string)$entry["reason"]) : "";
@@ -218,17 +233,34 @@ function buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings)
     $sourceSummary = summarizeCandidateValues($sourceNames);
   }
 
+  if ( ! $sourceDisplay ) {
+    if ( $sourceSummary ) {
+      $sourceDisplay = $sourceSummary;
+    } elseif ( $sourceKind === "filesystem" ) {
+      $sourceDisplay = "Appdata share scan";
+    } else {
+      $sourceDisplay = "Saved Docker templates";
+    }
+  }
+
+  if ( ! $sourceSummary ) {
+    $sourceSummary = $sourceDisplay;
+  }
+
   if ( ! $targetSummary ) {
     $targetSummary = summarizeCandidateValues($targetPaths);
   }
 
   if ( ! $reason ) {
-    $reason = buildCandidateReason($sourceNames, $targetPaths, $dockerRunning);
+    $reason = buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning);
   }
 
   return applySafetyPolicyToRow(array(
     "id" => md5($candidateKey),
     "name" => $folderName ? $folderName : $resolvedPath,
+    "sourceKind" => $sourceKind,
+    "sourceLabel" => $sourceLabel,
+    "sourceDisplay" => $sourceDisplay,
     "sourceNames" => $sourceNames,
     "sourceSummary" => $sourceSummary,
     "sourceCount" => count($sourceNames),
@@ -319,7 +351,7 @@ function buildRestorePathSecurityReason($path) {
   }
 
   if ( pathHasSymlinkSegment(dirname($normalized)) ) {
-    return "Restore targets containing symlink segments are locked for safety.";
+    return buildPathSymlinkSegmentLockReason(dirname($normalized));
   }
 
   return "";
@@ -385,7 +417,21 @@ function restoreTrackedQuarantineEntry($entry) {
     );
   }
 
-  if ( @is_link($destination) || pathHasSymlinkSegment($destination) || pathIsMountPoint($destination) ) {
+  if ( @is_link($destination) ) {
+    return array(
+      "status" => "blocked",
+      "message" => buildSymlinkLockReason($destination, "Quarantine path")
+    );
+  }
+
+  if ( pathHasSymlinkSegment($destination) ) {
+    return array(
+      "status" => "blocked",
+      "message" => buildPathSymlinkSegmentLockReason($destination)
+    );
+  }
+
+  if ( pathIsMountPoint($destination) ) {
     return array(
       "status" => "blocked",
       "message" => "This quarantine entry could not be restored safely."
@@ -600,13 +646,23 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
-  if ( @is_link($displayPath) || pathHasSymlinkSegment($displayPath) ) {
+  if ( @is_link($displayPath) ) {
     return array(
       "ok" => false,
       "path" => $candidatePath,
       "displayPath" => $displayPath,
       "status" => "blocked",
-      "message" => "Symlinked paths cannot be acted on here."
+      "message" => buildSymlinkLockReason($displayPath, "Folder")
+    );
+  }
+
+  if ( pathHasSymlinkSegment($displayPath) ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "blocked",
+      "message" => buildPathSymlinkSegmentLockReason($displayPath)
     );
   }
 
@@ -700,6 +756,9 @@ function quarantineCandidatePath($candidate, $displayPath, $settings) {
       "destination" => $destination,
       "quarantineRoot" => $quarantineRoot,
       "quarantinedAt" => date("c"),
+      "sourceKind" => isset($candidate["sourceKind"]) ? (string)$candidate["sourceKind"] : "template",
+      "sourceLabel" => isset($candidate["sourceLabel"]) ? (string)$candidate["sourceLabel"] : "Template",
+      "sourceDisplay" => isset($candidate["sourceDisplay"]) ? (string)$candidate["sourceDisplay"] : "",
       "sourceSummary" => isset($candidate["sourceSummary"]) ? (string)$candidate["sourceSummary"] : "",
       "targetSummary" => isset($candidate["targetSummary"]) ? (string)$candidate["targetSummary"] : "",
       "sourceNames" => isset($candidate["sourceNames"]) && is_array($candidate["sourceNames"]) ? array_values($candidate["sourceNames"]) : array(),

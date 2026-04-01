@@ -10,7 +10,7 @@
 <Description>
 Appdata Cleanup Plus finds orphaned appdata folders from removed Docker containers so you can review and delete them.
 </Description>
-<Date>2026-03-30</Date>
+<Date>2026-03-31</Date>
 <MinVer>7.0.0</MinVer>
 <ExtraSearchTerms>appdata cleanup orphan docker folders remove delete review templates</ExtraSearchTerms>
 <Support>https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/</Support>

@@ -14,6 +14,7 @@ Appdata Cleanup Plus is an Unraid plugin that finds orphaned appdata folders lef
 
 - Saved Docker template paths
 - Installed container volume mappings when Docker is online
+- Direct child folders in the configured appdata share when Docker is online
 - Existing candidate folders only
 
 If Docker is offline, the plugin still shows candidates from saved templates, but those results should be reviewed more carefully because active container mappings cannot be verified.
@@ -40,7 +41,7 @@ If Docker is offline, the plugin still shows candidates from saved templates, bu
 - Permanent delete is locked until `Enable permanent delete` is enabled
 - Actions run from a server-side scan snapshot using candidate ids, not client-posted paths
 - CSRF validation is required for plugin actions
-- Share roots, mount points, symlinked paths, and unsafe filesystem targets are blocked
+- Share roots, mount points, exact symlink segments, and unsafe filesystem targets are blocked
 - Native recursive delete checks folder contents before removal instead of shelling straight to `rm -rf`
 
 ## Install
