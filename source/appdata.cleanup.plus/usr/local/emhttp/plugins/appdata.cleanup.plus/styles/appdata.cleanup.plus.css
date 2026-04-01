@@ -1486,6 +1486,7 @@ body[data-acp-host-theme="light"] #acp-app,
 .acp-quarantine-toolbar-primary > .acp-button,
 .acp-quarantine-toolbar-secondary > .acp-button {
   align-self: flex-end;
+  transform: translateY(5px) !important;
 }
 
 .sweet-alert.acp-quarantine-manager-modal .acp-modal-host {
@@ -1926,6 +1927,11 @@ body[data-acp-host-theme="light"] #acp-app,
   .acp-quarantine-toolbar-secondary {
     justify-content: flex-start;
     width: 100%;
+  }
+
+  .acp-quarantine-toolbar-primary > .acp-button,
+  .acp-quarantine-toolbar-secondary > .acp-button {
+    transform: none !important;
   }
 
   .acp-quarantine-schedule-field {

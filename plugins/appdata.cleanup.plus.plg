@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.13">
-<!ENTITY md5 "d764213f9d65976f06e8f8347ce162ed">
+<!ENTITY version "2026.04.01.14">
+<!ENTITY md5 "03c83d2d51c76201f149f5ec7d3c1cbf">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.14
+- UI: Nudge the quarantine toolbar action buttons down slightly on desktop so they sit centered against the purge input boxes without affecting the stacked mobile layout
+
 ###2026.04.01.13
 - Quarantine: Changing `Default purge in days` now reschedules existing tracked quarantine entries immediately instead of only affecting newly quarantined folders
 - Quarantine UI: Keep the modal state in sync after default purge changes so badges and scheduled purge timestamps refresh without a manual reload
