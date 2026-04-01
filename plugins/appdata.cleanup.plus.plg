@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.20">
-<!ENTITY md5 "e02a1683d541a6e5095575f8e729a8e0">
+<!ENTITY version "2026.04.01.21">
+<!ENTITY md5 "2ab2eb9a4caba7f2c3bbd98546d0ff9a">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.21
+- UI: Strengthen the shared button stroke so dashboard and quarantine-manager buttons show a clearly visible thin black outline at rest instead of only reading as outlined once hover changes the fill
+
 ###2026.04.01.20
 - UI: Remove the modal-only `.acp-button` styling override so quarantine-manager action buttons inherit the exact same button styling path as the dashboard buttons, while SweetAlert confirm/cancel buttons keep their dedicated modal styling
 
