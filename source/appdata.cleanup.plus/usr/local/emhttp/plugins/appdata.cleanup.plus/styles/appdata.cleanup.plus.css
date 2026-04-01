@@ -1224,10 +1224,16 @@ body[data-acp-host-theme="light"] #acp-app,
 .sweet-alert.acp-delete-modal {
   background: var(--acp-panel) !important;
   border: 1px solid var(--acp-border) !important;
+  box-sizing: border-box !important;
   border-radius: 16px !important;
   box-shadow: var(--acp-shadow) !important;
+  left: 50% !important;
+  margin-left: 0 !important;
   padding: 20px 24px 18px !important;
-  width: min(560px, calc(100vw - 28px)) !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  width: calc(100vw - 28px) !important;
+  max-width: 560px !important;
 }
 
 .sweet-alert.acp-delete-modal h2 {
@@ -1261,10 +1267,16 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .sweet-alert.acp-quarantine-manager-modal {
+  box-sizing: border-box !important;
+  left: 50% !important;
+  margin-left: 0 !important;
   max-height: calc(100vh - 24px) !important;
   overflow-y: auto !important;
   padding: 18px 16px 16px !important;
-  width: min(920px, calc(100vw - 10px)) !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  width: calc(100vw - 10px) !important;
+  max-width: 1100px !important;
 }
 
 .sweet-alert.acp-quarantine-manager-modal h2,
@@ -1581,7 +1593,13 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .sweet-alert.acp-audit-history-modal {
-  width: min(760px, calc(100vw - 28px)) !important;
+  box-sizing: border-box !important;
+  left: 50% !important;
+  margin-left: 0 !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  width: calc(100vw - 28px) !important;
+  max-width: 760px !important;
 }
 
 .acp-modal-result-destination {
