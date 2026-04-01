@@ -13,6 +13,20 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.09
+- Release: Promote the full `2026.04.01.03` through `2026.04.01.08` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
+- Restore: Let quarantine restore conflicts use per-folder edited restore names instead of only generated suffix paths, validate edited names server-side, and report edited restore destinations back in the restore results summary
+- UX: Show the fixed restore parent path, editable restore name, and a live edited restore-path preview in the quarantine restore-conflict dialog before restore runs
+- Scan: Read the configured Docker image storage path from `docker.cfg` and exclude Docker-managed storage roots from orphan detection and action execution, and exclude `lost+found` alongside `.Recycle.Bin` from direct-child appdata discovery
+- Quarantine: Add per-entry scheduled purge timers so selected quarantine entries can be set to purge after a chosen number of days
+- Quarantine: Sweep expired scheduled purge timers automatically when quarantine state is loaded, using the normal purge path and recording scheduled purges in audit history
+- Quarantine UI: Add bulk `Purge in days`, `Set purge`, and `Clear purge timer` controls to the quarantine manager toolbar, plus visible scheduled-purge badges and exact scheduled purge timestamps on quarantined entries
+- Fix: Send the scheduled-purge action with the correct API field name and accept both the temporary `mode` key and the final `purgeScheduleMode` key for compatibility
+- UI: Remove the unused bottom action-bar `Done` button and the now-unused close-page wiring from the dashboard script
+- Fix: Remove the last stale `els.$doneBottom` action-bar reference so the dashboard no longer crashes during initial scan load after the bottom `Done` button removal
+- UI: Make the audit history popup use the same wide modal sizing as the quarantine manager so both review windows have matching width and height
+- Test: Extend the behavior smoke coverage for edited restore names, invalid edited names, Docker-managed path exclusion, `lost+found` exclusion, scheduled purge set/clear/expire flows, and the audit label path for scheduled purge actions
+
 ###2026.04.01.08
 - UI: Make the audit history popup use the same wide modal sizing as the quarantine manager so both review windows have matching width and height
 
