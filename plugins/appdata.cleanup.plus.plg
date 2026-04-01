@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.15">
-<!ENTITY md5 "42ff8d96d3203aa3a01962e5de616ed4">
+<!ENTITY version "2026.04.01.16">
+<!ENTITY md5 "8ba4656bcc73a6bc2d6c47d048a37edb">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.16
+- UI: Add a thin black outer outline to the plugin button style so normal actions and modal confirm/cancel buttons read more clearly against the panel backgrounds
+
 ###2026.04.01.15
 - Quarantine: Recalculate default purge schedules from each entry's original quarantine timestamp instead of restarting every existing entry from the moment the global default changes
 - Quarantine: Preserve manual per-entry `Set purge at` overrides when the global default purge timer changes, and keep legacy scheduled entries that do not match the previous default from being overwritten
