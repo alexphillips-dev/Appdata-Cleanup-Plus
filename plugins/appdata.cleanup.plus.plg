@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.31.05">
-<!ENTITY md5 "6561f791c9292dafa7ce24e52a7cfd88">
+<!ENTITY version "2026.03.31.06">
+<!ENTITY md5 "fdbbe4e965dca067df399b30b30f85d5">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.06
+- Tweak: Reduce the quarantine manager width from the oversized layout while keeping the taller review area
+- Fix: Vertically align quarantine entry names with their checkboxes and action row
+
 ###2026.03.31.05
 - Fix: Restore page scrolling correctly after quarantine restore and purge modal flows close
 - Improvement: Expand the quarantine manager width and internal list height so more quarantined path details stay visible without cramped wrapping

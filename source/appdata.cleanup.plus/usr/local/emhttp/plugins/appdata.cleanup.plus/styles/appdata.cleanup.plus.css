@@ -1263,7 +1263,7 @@ body[data-acp-host-theme="light"] #acp-app,
 .sweet-alert.acp-quarantine-manager-modal {
   max-height: calc(100vh - 24px) !important;
   overflow-y: auto !important;
-  width: min(980px, calc(100vw - 28px)) !important;
+  width: min(760px, calc(100vw - 28px)) !important;
 }
 
 .sweet-alert.acp-quarantine-manager-modal h2,
@@ -1529,6 +1529,7 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-quarantine-manager-modal .acp-modal-result-head {
+  align-items: center;
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
@@ -1552,7 +1553,7 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-quarantine-entry-main {
-  align-items: start;
+  align-items: center;
   display: grid;
   gap: 10px;
   grid-template-columns: auto minmax(0, 1fr);
@@ -1562,7 +1563,7 @@ body[data-acp-host-theme="light"] #acp-app,
   align-items: center;
   cursor: pointer;
   display: flex;
-  padding-top: 2px;
+  padding-top: 0;
 }
 
 .acp-quarantine-checkbox {
