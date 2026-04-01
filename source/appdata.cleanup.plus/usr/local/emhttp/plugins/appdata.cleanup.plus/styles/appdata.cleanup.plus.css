@@ -1229,9 +1229,11 @@ body[data-acp-host-theme="light"] #acp-app,
   box-shadow: var(--acp-shadow) !important;
   left: 50% !important;
   margin-left: 0 !important;
+  margin-top: 0 !important;
   padding: 20px 24px 18px !important;
   right: auto !important;
-  transform: translateX(-50%) !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
   width: calc(100vw - 28px) !important;
   max-width: 560px !important;
 }
@@ -1270,11 +1272,13 @@ body[data-acp-host-theme="light"] #acp-app,
   box-sizing: border-box !important;
   left: 50% !important;
   margin-left: 0 !important;
+  margin-top: 0 !important;
   max-height: calc(100vh - 24px) !important;
   overflow-y: auto !important;
   padding: 18px 16px 16px !important;
   right: auto !important;
-  transform: translateX(-50%) !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
   width: calc(100vw - 10px) !important;
   max-width: 1100px !important;
 }
@@ -1596,8 +1600,10 @@ body[data-acp-host-theme="light"] #acp-app,
   box-sizing: border-box !important;
   left: 50% !important;
   margin-left: 0 !important;
+  margin-top: 0 !important;
   right: auto !important;
-  transform: translateX(-50%) !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
   width: calc(100vw - 28px) !important;
   max-width: 760px !important;
 }

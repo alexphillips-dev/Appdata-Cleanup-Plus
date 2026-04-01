@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.03.31.09">
-<!ENTITY md5 "2fc3d5672e0073414780bdfbe36cd923">
+<!ENTITY version "2026.03.31.10">
+<!ENTITY md5 "3e1dcd3d124d4052c8d21cb146fae595">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.03.31.10
+- Fix: Restore true centered positioning for SweetAlert confirmation and utility dialogs after the wider modal overrides
+- Fix: Reset modal `margin-top` and use full `translate(-50%, -50%)` centering so tall confirm dialogs do not open cut off near the bottom of the screen
+
 ###2026.03.31.09
 - Fix: Replace fragile `min(...)` modal sizing with explicit width/max-width overrides so the quarantine manager can actually expand horizontally
 - Fix: Force SweetAlert modal centering with explicit left/right/margin handling when wider widths are applied
