@@ -13,6 +13,15 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.01.24
+- Release: Promote the `2026.04.01.23` development build to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
+- Quarantine: Recover tracked quarantine entries from folders already on disk when `quarantine-records.json` is missing after reinstalling the plugin or switching between `dev` and `main`
+- Quarantine: Rebuild the registry from known quarantine roots before the manager payload is loaded so recovered entries can be viewed, restored, purged, and counted again
+- Quarantine: Write an on-disk entry marker inside newly quarantined folders so recovery preserves the exact original source path and metadata even if plugin state is lost later
+- Quarantine: Fall back to conservative layout-based recovery for older quarantine folders that predate the new on-disk marker file
+- Restore: Remove the on-disk recovery marker after restore so it does not leak back into the restored appdata folder
+- Test: Cover marker-backed recovery, legacy layout recovery, deduped repeated manager loads, and restore/purge behavior on recovered entries
+
 ###2026.04.01.23
 - Quarantine: Recover tracked quarantine entries from folders already on disk when `quarantine-records.json` is missing after reinstalling the plugin or switching between `dev` and `main`
 - Quarantine: Rebuild the registry from known quarantine roots before the manager payload is loaded so recovered entries can be viewed, restored, purged, and included in the summary count again
