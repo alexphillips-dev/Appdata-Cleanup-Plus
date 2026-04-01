@@ -22,20 +22,6 @@ release_only_path() {
     esac
 }
 
-main_differs_from_dev_only_by_release_artifacts() {
-    local path=""
-    mapfile -t DIFF_PATHS < <(git diff --name-only "${DEV_REF}..${MAIN_REF}" || true)
-    if [ "${#DIFF_PATHS[@]}" -eq 0 ]; then
-        return 1
-    fi
-    for path in "${DIFF_PATHS[@]}"; do
-        if ! release_only_path "${path}"; then
-            return 1
-        fi
-    done
-    return 0
-}
-
 if git show-ref --verify --quiet "refs/heads/${DEV_BRANCH}"; then
     git checkout "${DEV_BRANCH}"
 else
@@ -44,11 +30,6 @@ fi
 
 if git merge-base --is-ancestor "${MAIN_REF}" "${DEV_BRANCH}"; then
     echo "Dev already includes main. Nothing to sync."
-    exit 0
-fi
-
-if main_differs_from_dev_only_by_release_artifacts; then
-    echo "Main differs from dev only by release artifacts. Skipping back-merge."
     exit 0
 fi
 
