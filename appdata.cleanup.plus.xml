@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Containers>
 <Plugin>True</Plugin>
-<PluginURL>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/dev/plugins/appdata.cleanup.plus.plg</PluginURL>
+<PluginURL>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/main/plugins/appdata.cleanup.plus.plg</PluginURL>
 <PluginAuthor>alexphillips-dev</PluginAuthor>
 <Beta>False</Beta>
 <Category>Tools:System</Category>
 <Name>Appdata Cleanup Plus</Name>
 <CA>AddOn</CA>
 <Description>
-Appdata Cleanup Plus finds orphaned appdata folders from removed Docker containers so you can review and delete them. Dev build: testing channel. Expect preview changes before main.
+Appdata Cleanup Plus finds orphaned appdata folders from removed Docker containers so you can review and delete them.
 </Description>
 <Date>2026-04-07</Date>
 <MinVer>7.0.0</MinVer>
 <ExtraSearchTerms>appdata cleanup orphan docker folders remove delete review templates</ExtraSearchTerms>
 <Support>https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/</Support>
-<Icon>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/dev/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png</Icon>
+<Icon>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/main/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png</Icon>
 <Project>https://github.com/alexphillips-dev/Appdata-Cleanup-Plus</Project>
 </Containers>
