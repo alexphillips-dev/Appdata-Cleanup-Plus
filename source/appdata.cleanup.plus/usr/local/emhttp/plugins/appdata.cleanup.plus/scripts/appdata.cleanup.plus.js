@@ -14,6 +14,10 @@
     auditOpen: false,
     scanWarningMessage: "",
     settings: ACP.defaultSafetySettings(),
+    appdataSources: {
+      detected: [],
+      effective: []
+    },
     quarantine: {
       loading: false,
       loaded: false,
@@ -203,6 +207,12 @@
       }
     });
 
+    els.$modeStrip.on("click", "[data-action='open-appdata-sources']", function() {
+      if (!state.busy) {
+        openAppdataSourcesModal();
+      }
+    });
+
     els.$modeStrip.on("click", "[data-action='open-audit-history']", function() {
       if (!state.busy) {
         openAuditHistoryModal();
@@ -368,6 +378,19 @@
       syncQuarantineManagerSelectionUi();
     });
 
+    $(document).on("input.acpSources", ".sweet-alert [data-role='manual-appdata-sources']", function() {
+      setAppdataSourcesFeedback("");
+    });
+
+    $(document).on("click.acpSources", ".sweet-alert [data-action='save-appdata-sources']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy) {
+        saveAppdataSourcesFromModal();
+      }
+    });
+
     $(document).on("click.acpQuarantine", ".sweet-alert [data-entry-action]", function(event) {
       var action = $(this).data("entry-action");
       var entryId = $(this).data("entry-id");
@@ -485,6 +508,7 @@
     state.auditHistory = [];
     state.scanWarningMessage = "";
     state.settings = ACP.defaultSafetySettings();
+    state.appdataSources = { detected: [], effective: [] };
     state.quarantine.entries = [];
     state.quarantine.loaded = false;
     state.quarantine.selected = {};
@@ -502,6 +526,9 @@
     stopScanStatHydration();
     setBusy(true);
     renderLoadingState();
+    if (isAppdataSourcesModalVisible()) {
+      renderAppdataSourcesModal();
+    }
 
     apiPost({
       action: "getOrphanAppdata"
@@ -513,6 +540,7 @@
       state.auditHistory = $.isArray(response.auditHistory) ? response.auditHistory : [];
       state.scanWarningMessage = String(response.scanWarningMessage || "");
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || {});
+      setAppdataSourceInfo(response.appdataSourceInfo || {});
       state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary || {});
       syncQuarantinePurgeInputDefaults(true);
       syncSafetyControls();
@@ -520,6 +548,9 @@
       reconcileSelection();
       shouldHydrate = hasPendingRowStats();
       renderAll();
+      if (isAppdataSourcesModalVisible()) {
+        renderAppdataSourcesModal();
+      }
     }).fail(function(xhr) {
       resetDashboardState();
       syncSafetyControls();
@@ -534,6 +565,9 @@
         ACP.t(strings, "rescanLabel", "Rescan")
       );
       updateActionBar();
+      if (isAppdataSourcesModalVisible()) {
+        renderAppdataSourcesModal();
+      }
     }).always(function() {
       setBusy(false);
 
@@ -600,6 +634,13 @@
     );
   }
 
+  function renderAppdataSourcesModal() {
+    ACP.applyDeleteModalClass(
+      "acp-delete-modal acp-delete-results-modal acp-appdata-sources-modal",
+      ACP.buildAppdataSourcesModalHtml(buildContext())
+    );
+  }
+
   function ensureQuarantineManagerModal() {
     if (isQuarantineManagerModalVisible()) {
       return;
@@ -644,6 +685,27 @@
     });
   }
 
+  function ensureAppdataSourcesModal() {
+    if (isAppdataSourcesModalVisible()) {
+      return;
+    }
+
+    swal({
+      title: ACP.t(strings, "appdataSourcesTitle", "Appdata sources"),
+      text: "",
+      type: "info",
+      html: true,
+      showCancelButton: false,
+      confirmButtonText: ACP.t(strings, "doneLabel", "Done"),
+      closeOnConfirm: true
+    }, function() {
+      window.setTimeout(function() {
+        ACP.releaseModalScrollLock(false);
+        renderPanels();
+      }, 180);
+    });
+  }
+
   function openQuarantineManagerModal(forceRefresh) {
     if (state.busy) {
       return;
@@ -671,6 +733,74 @@
     ensureAuditHistoryModal();
     renderPanels();
     renderAuditHistoryModal();
+  }
+
+  function openAppdataSourcesModal() {
+    ensureAppdataSourcesModal();
+    renderPanels();
+    renderAppdataSourcesModal();
+  }
+
+  function isAppdataSourcesModalVisible() {
+    return getActiveSweetAlertModal().hasClass("acp-appdata-sources-modal");
+  }
+
+  function setAppdataSourceInfo(info) {
+    var nextInfo = $.isPlainObject(info) ? info : {};
+
+    state.appdataSources = {
+      detected: $.isArray(nextInfo.detected) ? nextInfo.detected : [],
+      effective: $.isArray(nextInfo.effective) ? nextInfo.effective : []
+    };
+  }
+
+  function setAppdataSourcesFeedback(message) {
+    var $feedback = $(".sweet-alert [data-role='appdata-sources-feedback']");
+
+    if (!$feedback.length) {
+      return;
+    }
+
+    $feedback.text(String(message || ""));
+  }
+
+  function normalizeManualAppdataSourcesInput(rawValue) {
+    var seen = {};
+
+    return $.grep($.map(String(rawValue || "").split(/\r?\n/), function(line) {
+      var trimmed = $.trim(String(line || ""));
+
+      if (!trimmed || seen[trimmed]) {
+        return null;
+      }
+
+      seen[trimmed] = true;
+      return trimmed;
+    }), function(value) {
+      return !!value;
+    });
+  }
+
+  function getManualAppdataSourcesFromModal() {
+    return normalizeManualAppdataSourcesInput($(".sweet-alert [data-role='manual-appdata-sources']").val());
+  }
+
+  function saveAppdataSourcesFromModal() {
+    setAppdataSourcesFeedback(ACP.t(strings, "appdataSourcesSavingMessage", "Saving appdata sources and rescanning."));
+    saveSafetySettings({
+      manualAppdataSources: getManualAppdataSourcesFromModal()
+    }, {
+      reloadScanOnSuccess: true,
+      skipRenderAll: true,
+      failureTitle: ACP.t(strings, "appdataSourcesSaveFailedTitle", "Appdata sources failed"),
+      failureMessage: ACP.t(strings, "appdataSourcesSaveFailedMessage", "The appdata source list could not be saved right now."),
+      onSuccess: function() {
+        setAppdataSourcesFeedback(ACP.t(strings, "appdataSourcesSavingMessage", "Saving appdata sources and rescanning."));
+      },
+      onFailure: function(xhr) {
+        setAppdataSourcesFeedback(ACP.extractErrorMessage(xhr, ACP.t(strings, "appdataSourcesSaveFailedMessage", "The appdata source list could not be saved right now.")));
+      }
+    });
   }
 
   function applyLocalSafetyStateToRow(row) {
@@ -769,7 +899,7 @@
         notices.push({
           type: "warning",
           title: ACP.t(strings, "noticeOutsideShareEnabledTitle", "Outside-share cleanup is enabled"),
-          message: ACP.t(strings, "noticeOutsideShareEnabledMessage", "Review paths sit outside the configured appdata share. Confirm each one carefully before acting.")
+          message: ACP.t(strings, "noticeOutsideShareEnabledMessage", "Review paths sit outside the configured appdata sources. Confirm each one carefully before acting.")
         });
       }
     }
@@ -988,7 +1118,7 @@
     renderNotices([]);
     renderResultsMeta("");
     renderStateMessage(
-      ACP.t(strings, "loadingTitle", "Scanning appdata share and saved Docker templates"),
+      ACP.t(strings, "loadingTitle", "Scanning appdata sources and saved Docker templates"),
       ACP.t(strings, "loadingMessage", "Reviewing orphaned appdata folders and active container mappings."),
       null,
       null,
@@ -1323,7 +1453,7 @@
       {
         key: "filesystem",
         title: ACP.t(strings, "discoverySectionTitle", "Appdata share discovery"),
-        message: ACP.t(strings, "discoverySectionMessage", "Folders found directly in the configured appdata share with no saved template or live container reference.")
+        message: ACP.t(strings, "discoverySectionMessage", "Folders found directly in the configured appdata sources with no saved template or live container reference.")
       },
       {
         key: "ignored",
@@ -1774,7 +1904,7 @@
     if (!state.rows.length) {
       renderStateMessage(
         ACP.t(strings, "emptyTitle", "No orphaned appdata found"),
-        ACP.t(strings, "emptyMessage", "Nothing currently looks safe to clean up from the appdata share or saved Docker templates."),
+        ACP.t(strings, "emptyMessage", "Nothing currently looks safe to clean up from the configured appdata sources or saved Docker templates."),
         "rescan",
         ACP.t(strings, "rescanLabel", "Rescan")
       );
@@ -2011,6 +2141,7 @@
     var previousSettings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
     var previousRows = state.rows.slice(0);
     var previousSummary = $.extend({}, state.summary || {});
+    var previousAppdataSources = $.extend(true, { detected: [], effective: [] }, state.appdataSources || {});
     var wasQuarantineManagerVisible = isQuarantineManagerModalVisible();
     var nextSettings = $.extend({}, previousSettings, {
       allowOutsideShareCleanup: !!els.$allowExternal.prop("checked"),
@@ -2041,7 +2172,8 @@
       action: "saveSafetySettings",
       allowOutsideShareCleanup: nextSettings.allowOutsideShareCleanup ? "1" : "0",
       enablePermanentDelete: nextSettings.enablePermanentDelete ? "1" : "0",
-      defaultQuarantinePurgeDays: String(Number(nextSettings.defaultQuarantinePurgeDays || 0))
+      defaultQuarantinePurgeDays: String(Number(nextSettings.defaultQuarantinePurgeDays || 0)),
+      manualAppdataSources: ($.isArray(nextSettings.manualAppdataSources) ? nextSettings.manualAppdataSources : []).join("\n")
     };
 
     if (state.scanToken) {
@@ -2052,6 +2184,7 @@
       var quarantine = response.quarantine || null;
 
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || nextSettings);
+      setAppdataSourceInfo(response.appdataSourceInfo || {});
       if (quarantine) {
         setQuarantineEntries(quarantine.entries, quarantine.summary);
         state.quarantine.loaded = true;
@@ -2063,20 +2196,31 @@
       applyLocalSafetyState();
       reconcileSelection();
       setBusy(false);
-      renderAll();
+      if (!normalizedOptions.skipRenderAll) {
+        renderAll();
+      }
       if (wasQuarantineManagerVisible || normalizedOptions.syncQuarantineModal) {
         renderOpenQuarantineManagerModal();
+      }
+      if (typeof normalizedOptions.onSuccess === "function") {
+        normalizedOptions.onSuccess(response);
+      }
+      if (normalizedOptions.reloadScanOnSuccess) {
+        loadScan();
       }
     }).fail(function(xhr) {
       state.settings = previousSettings;
       state.rows = previousRows;
       state.summary = previousSummary;
+      state.appdataSources = previousAppdataSources;
       if (normalizedOptions.resetQuarantineScheduleInput) {
         syncQuarantinePurgeInputDefaults(true);
       }
       syncSafetyControls();
       setBusy(false);
-      if (wasQuarantineManagerVisible && normalizedOptions.reopenQuarantineModalOnFailure) {
+      if (typeof normalizedOptions.onFailure === "function") {
+        normalizedOptions.onFailure(xhr);
+      } else if (wasQuarantineManagerVisible && normalizedOptions.reopenQuarantineModalOnFailure) {
         swal({
           title: normalizedOptions.failureTitle || ACP.t(strings, "settingsSaveFailedTitle", "Safety settings failed"),
           text: ACP.extractErrorMessage(xhr, normalizedOptions.failureMessage || ACP.t(strings, "settingsSaveFailedMessage", "The new safety settings could not be saved right now.")),
@@ -2306,7 +2450,7 @@
       html.push(
         '<div class="acp-modal-warning-box">' +
           '<strong>' + ACP.escapeHtml(ACP.t(strings, "deleteReviewLabel", "Review required")) + ".</strong> " +
-          ACP.escapeHtml(ACP.t(strings, "deleteTypedMessage", "One or more selected folders sit outside the configured appdata share.")) +
+          ACP.escapeHtml(ACP.t(strings, "deleteTypedMessage", "One or more selected folders sit outside the configured appdata sources.")) +
         "</div>"
       );
     }

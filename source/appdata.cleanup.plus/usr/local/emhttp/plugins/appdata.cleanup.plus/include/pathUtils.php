@@ -1,25 +1,11 @@
 <?php
 
 function pathIsDescendant($parentPath, $childPath) {
-  $normalizedParent = rtrim(normalizeUserPath($parentPath), "/");
-  $normalizedChild = rtrim(normalizeUserPath($childPath), "/");
-
-  if ( ! $normalizedParent || ! $normalizedChild || $normalizedParent === $normalizedChild ) {
-    return false;
-  }
-
-  return startsWith($normalizedChild . "/", $normalizedParent . "/");
+  return appdataCleanupPlusPathMatchesOrIsDescendantByVariants($parentPath, $childPath, false);
 }
 
 function pathMatchesOrIsDescendant($parentPath, $childPath) {
-  $normalizedParent = rtrim(normalizeUserPath($parentPath), "/");
-  $normalizedChild = rtrim(normalizeUserPath($childPath), "/");
-
-  if ( ! $normalizedParent || ! $normalizedChild ) {
-    return false;
-  }
-
-  return $normalizedParent === $normalizedChild || startsWith($normalizedChild . "/", $normalizedParent . "/");
+  return appdataCleanupPlusPathMatchesOrIsDescendantByVariants($parentPath, $childPath, true);
 }
 
 function resolveExistingPath($classification) {
@@ -81,8 +67,8 @@ function appdataCleanupPlusAllowedSymlinkSegmentRoots() {
     return $allowedRoots;
   }
 
-  foreach ( array(getAppdataShareUserPath(), getAppdataShareCachePath()) as $rootPath ) {
-    $normalizedRoot = normalizeUserPath($rootPath);
+  foreach ( getAppdataCleanupPlusConfiguredSourceRoots() as $rootPath ) {
+    $normalizedRoot = appdataCleanupPlusCanonicalizePath($rootPath);
 
     if ( ! $normalizedRoot || isset($roots[$normalizedRoot]) ) {
       continue;

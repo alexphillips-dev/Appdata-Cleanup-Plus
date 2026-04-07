@@ -1336,12 +1336,14 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .sweet-alert.acp-quarantine-manager-modal .sa-icon,
-.sweet-alert.acp-audit-history-modal .sa-icon {
+.sweet-alert.acp-audit-history-modal .sa-icon,
+.sweet-alert.acp-appdata-sources-modal .sa-icon {
   display: none !important;
 }
 
 .sweet-alert.acp-quarantine-manager-modal,
-.sweet-alert.acp-audit-history-modal {
+.sweet-alert.acp-audit-history-modal,
+.sweet-alert.acp-appdata-sources-modal {
   box-sizing: border-box !important;
   left: 50% !important;
   margin-left: 0 !important;
@@ -1353,12 +1355,21 @@ body[data-acp-host-theme="light"] #acp-app,
   top: 50% !important;
   transform: translate(-50%, -50%) !important;
   width: calc(100vw - 10px) !important;
+}
+
+.sweet-alert.acp-quarantine-manager-modal,
+.sweet-alert.acp-audit-history-modal {
   max-width: 1100px !important;
 }
 
 .sweet-alert.acp-quarantine-manager-modal h2,
-.sweet-alert.acp-audit-history-modal h2 {
+.sweet-alert.acp-audit-history-modal h2,
+.sweet-alert.acp-appdata-sources-modal h2 {
   margin-top: 0 !important;
+}
+
+.sweet-alert.acp-appdata-sources-modal {
+  max-width: 900px !important;
 }
 
 .sweet-alert.acp-delete-modal input {
@@ -1499,12 +1510,38 @@ body[data-acp-host-theme="light"] #acp-app,
   max-height: none !important;
 }
 
+.sweet-alert.acp-appdata-sources-modal .acp-modal-host {
+  max-height: none !important;
+}
+
 .sweet-alert.acp-quarantine-manager-modal .acp-modal-panel {
   padding: 10px 12px;
 }
 
 .sweet-alert.acp-audit-history-modal .acp-modal-panel {
   padding: 10px 12px;
+}
+
+.sweet-alert.acp-appdata-sources-modal .acp-modal-panel {
+  padding: 10px 12px;
+}
+
+.acp-appdata-sources-textarea {
+  min-height: 140px;
+  resize: vertical;
+  width: 100%;
+}
+
+.acp-appdata-source-list {
+  display: grid;
+  gap: 6px;
+}
+
+.acp-modal-feedback {
+  color: var(--acp-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  min-height: 18px;
 }
 
 .acp-quarantine-selected-summary {
@@ -1946,7 +1983,8 @@ body[data-acp-host-theme="light"] #acp-app,
   }
 
   .sweet-alert.acp-quarantine-manager-modal,
-  .sweet-alert.acp-audit-history-modal {
+  .sweet-alert.acp-audit-history-modal,
+  .sweet-alert.acp-appdata-sources-modal {
     max-height: calc(100vh - 18px) !important;
     width: calc(100vw - 10px) !important;
   }

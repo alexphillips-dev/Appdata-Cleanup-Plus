@@ -1,10 +1,10 @@
 <?php
 
 function buildCandidateQuarantineRoot($path, $settings) {
-  $classification = classifyAppdataCandidate($path);
+  $classification = classifyAppdataCandidate($path, $settings);
 
-  if ( ! empty($classification["shareName"]) ) {
-    return "/mnt/user/" . $classification["shareName"] . "/.appdata-cleanup-plus-quarantine";
+  if ( ! empty($classification["matchedSourceRoot"]) ) {
+    return rtrim((string)$classification["matchedSourceRoot"], "/") . "/.appdata-cleanup-plus-quarantine";
   }
 
   return isset($settings["quarantineRoot"]) ? rtrim((string)$settings["quarantineRoot"], "/") : getDefaultAppdataCleanupPlusQuarantineRoot();
@@ -12,7 +12,7 @@ function buildCandidateQuarantineRoot($path, $settings) {
 
 function buildQuarantineDestination($sourcePath, $settings) {
   $rootPath = rtrim(buildCandidateQuarantineRoot($sourcePath, $settings), "/");
-  $relativePath = trim(normalizeUserPath($sourcePath), "/");
+  $relativePath = trim(appdataCleanupPlusCanonicalizePath($sourcePath), "/");
 
   if ( ! $rootPath || ! $relativePath ) {
     return "";
@@ -201,6 +201,7 @@ function normalizeAppdataCleanupPlusQuarantineRecord($record) {
     "sourceKind" => isset($record["sourceKind"]) ? trim((string)$record["sourceKind"]) : "template",
     "sourceLabel" => isset($record["sourceLabel"]) ? trim((string)$record["sourceLabel"]) : "",
     "sourceDisplay" => isset($record["sourceDisplay"]) ? trim((string)$record["sourceDisplay"]) : "",
+    "sourceRoot" => isset($record["sourceRoot"]) ? trim((string)$record["sourceRoot"]) : "",
     "sourceSummary" => isset($record["sourceSummary"]) ? trim((string)$record["sourceSummary"]) : "",
     "targetSummary" => isset($record["targetSummary"]) ? trim((string)$record["targetSummary"]) : "",
     "sourceNames" => $sourceNames,
@@ -623,6 +624,7 @@ function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false) {
       "sourceKind" => $normalized["sourceKind"],
       "sourceLabel" => $normalized["sourceLabel"],
       "sourceDisplay" => $normalized["sourceDisplay"],
+      "sourceRoot" => $normalized["sourceRoot"],
       "sourceSummary" => $normalized["sourceSummary"],
       "targetSummary" => $normalized["targetSummary"],
       "sourceNames" => $normalized["sourceNames"],
@@ -786,6 +788,7 @@ function buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings,
   $sourceSummary = isset($entry["sourceSummary"]) ? trim((string)$entry["sourceSummary"]) : "";
   $targetSummary = isset($entry["targetSummary"]) ? trim((string)$entry["targetSummary"]) : "";
   $reason = isset($entry["reason"]) ? trim((string)$entry["reason"]) : "";
+  $sourceRoot = isset($entry["sourceRoot"]) ? trim((string)$entry["sourceRoot"]) : "";
 
   if ( ! $sourcePath || ! is_dir($sourcePath) ) {
     return null;
@@ -796,10 +799,10 @@ function buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings,
   $sourceNames = array_values($sourceNames);
   $targetPaths = array_values($targetPaths);
 
-  $classification = classifyAppdataCandidate($sourcePath);
+  $classification = classifyAppdataCandidate($sourcePath, $settings);
   $resolvedPath = resolveExistingPath($classification);
   $securityLockReason = buildPathSecurityLockReason($resolvedPath);
-  $pathStats = ($securityLockReason || ! $classification["insideDefaultShare"])
+  $pathStats = ($securityLockReason || empty($classification["insideConfiguredSource"]))
     ? collectLightweightPathStats($resolvedPath)
     : collectPathStats($resolvedPath);
   $candidateKey = appdataCleanupPlusCandidateKey($resolvedPath);
@@ -814,7 +817,7 @@ function buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings,
     if ( $sourceSummary ) {
       $sourceDisplay = $sourceSummary;
     } elseif ( $sourceKind === "filesystem" ) {
-      $sourceDisplay = "Appdata share scan";
+      $sourceDisplay = $sourceRoot !== "" ? $sourceRoot : "Configured appdata source";
     } else {
       $sourceDisplay = "Saved Docker templates";
     }
@@ -829,7 +832,7 @@ function buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings,
   }
 
   if ( ! $reason ) {
-    $reason = buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning);
+    $reason = buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning, $sourceRoot);
   }
 
   return applySafetyPolicyToRow(array(
@@ -838,6 +841,7 @@ function buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings,
     "sourceKind" => $sourceKind,
     "sourceLabel" => $sourceLabel,
     "sourceDisplay" => $sourceDisplay,
+    "sourceRoot" => $sourceRoot,
     "sourceNames" => $sourceNames,
     "sourceSummary" => $sourceSummary,
     "sourceCount" => count($sourceNames),
@@ -856,6 +860,7 @@ function buildCandidateRowFromQuarantineEntry($entry, $dockerRunning, $settings,
     "statusLabel" => $dockerRunning ? "Orphaned" : "Docker offline",
     "canDelete" => $classification["canDelete"],
     "insideDefaultShare" => $classification["insideDefaultShare"],
+    "insideConfiguredSource" => ! empty($classification["insideConfiguredSource"]),
     "shareName" => $classification["shareName"],
     "depth" => $classification["depth"],
     "sizeBytes" => $pathStats["sizeBytes"],
@@ -1570,6 +1575,7 @@ function quarantineCandidatePath($candidate, $displayPath, $settings) {
       "sourceKind" => isset($candidate["sourceKind"]) ? (string)$candidate["sourceKind"] : "template",
       "sourceLabel" => isset($candidate["sourceLabel"]) ? (string)$candidate["sourceLabel"] : "Template",
       "sourceDisplay" => isset($candidate["sourceDisplay"]) ? (string)$candidate["sourceDisplay"] : "",
+      "sourceRoot" => isset($candidate["sourceRoot"]) ? (string)$candidate["sourceRoot"] : "",
       "sourceSummary" => isset($candidate["sourceSummary"]) ? (string)$candidate["sourceSummary"] : "",
       "targetSummary" => isset($candidate["targetSummary"]) ? (string)$candidate["targetSummary"] : "",
       "sourceNames" => isset($candidate["sourceNames"]) && is_array($candidate["sourceNames"]) ? array_values($candidate["sourceNames"]) : array(),

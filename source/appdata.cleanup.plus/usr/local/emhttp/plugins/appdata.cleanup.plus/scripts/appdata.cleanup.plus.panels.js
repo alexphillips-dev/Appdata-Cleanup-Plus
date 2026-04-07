@@ -47,6 +47,7 @@
     var quarantineButtonLabel = state.quarantine && state.quarantine.loading
       ? ACP.t(strings, "quarantineLoadingLabel", "Loading quarantine")
       : ACP.t(strings, "quarantineManagerOpenLabel", "Show quarantine");
+    var appdataSourcesButtonLabel = ACP.t(strings, "appdataSourcesOpenLabel", "Appdata sources");
     var auditButtonLabel = ACP.t(strings, "auditHistoryOpenLabel", "Show history");
     var html = [
       '<div class="acp-mode-strip-grid">',
@@ -62,6 +63,7 @@
       '<div class="acp-mode-card-message">' + ACP.escapeHtml(managerMessage + managerMeta) + "</div>",
       "</div>",
       '<div class="acp-mode-card-actions">',
+      '<button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources">' + ACP.escapeHtml(appdataSourcesButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(quarantineButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history">' + ACP.escapeHtml(auditButtonLabel) + "</button>",
       "</div>",
@@ -240,6 +242,65 @@
     }
 
     html.push("</div></div>");
+    return html.join("");
+  };
+
+  ACP.buildAppdataSourcesModalHtml = function(context) {
+    var state = context.state || {};
+    var strings = context.strings || {};
+    var settings = state.settings || {};
+    var sourceInfo = state.appdataSources || {};
+    var detected = $.isArray(sourceInfo.detected) ? sourceInfo.detected : [];
+    var effective = $.isArray(sourceInfo.effective) ? sourceInfo.effective : [];
+    var manual = $.isArray(settings.manualAppdataSources) ? settings.manualAppdataSources : [];
+    var disabledAttr = state.busy ? ' disabled="disabled"' : "";
+    var html = [
+      '<div class="acp-modal-summary">',
+      '<div class="acp-modal-copy">',
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesLead", "The Docker appdata root is auto-detected when available. Add one extra absolute path per line for non-standard appdata locations.")) + "</div>",
+      '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesHint", "Only add dedicated appdata roots. Direct child folders under each root are treated as discovery candidates.")) + "</div>",
+      "</div>",
+      '<div class="acp-modal-actions-row">',
+      '<button type="button" class="acp-button acp-button-secondary" data-action="save-appdata-sources"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesSaveLabel", "Save sources")) + "</button>",
+      "</div>",
+      "</div>",
+      '<div class="acp-modal-panel">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesDetectedTitle", "Detected source")) + "</div>"
+    ];
+
+    if (!detected.length) {
+      html.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesDetectedEmpty", "No Docker appdata source is auto-detected right now.")) + "</div>");
+    } else {
+      html.push('<div class="acp-appdata-source-list">');
+      $.each(detected, function(_, path) {
+        html.push('<code class="acp-modal-path">' + ACP.escapeHtml(path || "") + "</code>");
+      });
+      html.push("</div>");
+    }
+
+    html.push(
+      "</div>",
+      '<div class="acp-modal-panel">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualTitle", "Manual source paths")) + "</div>",
+      '<textarea class="acp-input acp-appdata-sources-textarea" data-role="manual-appdata-sources"' + disabledAttr + ">" + ACP.escapeHtml(manual.join("\n")) + "</textarea>",
+      '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualHint", "Enter one absolute path per line, for example /mnt/fcache/appdata.")) + "</div>",
+      '<div class="acp-modal-feedback" data-role="appdata-sources-feedback"></div>',
+      "</div>",
+      '<div class="acp-modal-panel">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesEffectiveTitle", "Effective scan roots")) + "</div>"
+    );
+
+    if (!effective.length) {
+      html.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesEffectiveEmpty", "No appdata sources are currently available.")) + "</div>");
+    } else {
+      html.push('<div class="acp-appdata-source-list">');
+      $.each(effective, function(_, path) {
+        html.push('<code class="acp-modal-path">' + ACP.escapeHtml(path || "") + "</code>");
+      });
+      html.push("</div>");
+    }
+
+    html.push("</div>");
     return html.join("");
   };
 })(window, document, jQuery);

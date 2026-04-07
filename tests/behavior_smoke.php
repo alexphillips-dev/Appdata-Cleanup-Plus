@@ -12,6 +12,8 @@ $shareConfigFixtureDir = $stateRoot . "/boot/config/shares";
 $templateFixtureDir = $stateRoot . "/boot/config/plugins/dockerMan/templates-user";
 $appdataShareName = "acp-smoke-share-" . getmypid();
 $appdataShareRoot = "/mnt/user/" . $appdataShareName;
+$manualAliasSourceRoot = "/mnt/fcache/" . $appdataShareName;
+$manualCustomSourceRoot = "/mnt/fcache/acp-extra-source-" . getmypid();
 $appdataSharePhysicalRoot = $stateRoot . "/appdata-share-root";
 $appdataShareUsesSymlink = false;
 
@@ -106,6 +108,8 @@ function behaviorSmokeFindRowByPath($rows, $path) {
 
 behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);
+behaviorSmokeRemoveTree($manualAliasSourceRoot);
+behaviorSmokeRemoveTree($manualCustomSourceRoot);
 behaviorSmokeRemoveTree($appdataSharePhysicalRoot);
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusConfigDir(), "State root should be created.");
 $defaultSafetySettings = getAppdataCleanupPlusSafetySettings();
@@ -113,13 +117,24 @@ behaviorSmokeAssertSame(0, (int)$defaultSafetySettings["defaultQuarantinePurgeDa
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "allowOutsideShareCleanup" => false,
   "enablePermanentDelete" => false,
+  "manualAppdataSources" => array(
+    "/mnt/fcache/test-appdata/",
+    "",
+    "/mnt/fcache/test-appdata",
+    "/mnt/fcache/second-appdata"
+  ),
   "defaultQuarantinePurgeDays" => 21
 )), "Safety settings persistence should succeed.");
 $persistedSafetySettings = getAppdataCleanupPlusSafetySettings();
 behaviorSmokeAssertSame(21, (int)$persistedSafetySettings["defaultQuarantinePurgeDays"], "Safety settings should persist the default quarantine purge days value.");
+behaviorSmokeAssertSame(array(
+  "/mnt/fcache/test-appdata",
+  "/mnt/fcache/second-appdata"
+), $persistedSafetySettings["manualAppdataSources"], "Safety settings should normalize and persist manual appdata sources.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "allowOutsideShareCleanup" => false,
   "enablePermanentDelete" => false,
+  "manualAppdataSources" => array(),
   "defaultQuarantinePurgeDays" => 0
 )), "Safety settings reset should succeed.");
 
@@ -420,6 +435,10 @@ $nestedTemplatePath = $nestedAppRoot . "/config";
 $slashLiveRoot = $appdataShareRoot . "/adguard";
 $slashLivePath = $slashLiveRoot . "/workingdir";
 $slashTemplatePath = $slashLivePath . "/";
+$manualAliasTemplatePath = $manualAliasSourceRoot . "/manual-template-only";
+$manualAliasLivePath = $manualAliasSourceRoot . "/alias-live";
+$manualUserAliasTemplatePath = $appdataShareRoot . "/alias-live";
+$manualCustomOrphanPath = $manualCustomSourceRoot . "/manual-root-only";
 $vmDomainsPath = $appdataShareRoot . "/vm-domains";
 $vmDomainTemplatePath = $vmDomainsPath . "/template-candidate";
 $vmIsosPath = $appdataShareRoot . "/vm-isos";
@@ -437,17 +456,23 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($dockerConfigF
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($shareConfigFixtureDir), "Share config fixture directory should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templateFixtureDir), "Template fixture directory should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($appdataShareRoot)), "Appdata share parent fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($manualAliasSourceRoot)), "Manual appdata source parent fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($appdataSharePhysicalRoot), "Appdata share physical fixture root should be created.");
 if ( function_exists("symlink") && @symlink($appdataSharePhysicalRoot, $appdataShareRoot) ) {
   $appdataShareUsesSymlink = true;
 } else {
   behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($appdataShareRoot), "Appdata share fixture root should be created.");
 }
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualAliasSourceRoot), "Manual alias appdata source fixture root should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualCustomSourceRoot), "Manual custom appdata source fixture root should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templatedOrphanPath), "Templated orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($filesystemOrphanPath), "Filesystem orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($liveAppPath), "Live app fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($nestedTemplatePath), "Nested template fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($slashLivePath), "Trailing-slash live path fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualAliasTemplatePath), "Manual source template fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualAliasLivePath), "Alias-mounted live path fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualCustomOrphanPath), "Manual source filesystem orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmDomainTemplatePath), "VM domains fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmIsosPath), "VM ISO fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($dockerManagedTemplatePath), "Docker managed path fixture should be created.");
@@ -458,14 +483,28 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($quarantinePath), "Qua
 file_put_contents($vmConfigFixture, "DOMAINDIR=\"" . $vmDomainsPath . "/\"\nMEDIADIR=\"" . $vmIsosPath . "/\"\nIMAGE_FILE=\"" . $libvirtImagePath . "\"\n");
 file_put_contents($dockerConfigFixture, "DOCKER_APP_CONFIG_PATH=\"" . $appdataShareRoot . "\"\nDOCKER_IMAGE_FILE=\"" . $dockerManagedImagePath . "\"\n");
 file_put_contents($shareConfigFixtureDir . "/" . $appdataShareName . ".cfg", "shareUseCache=\"yes\"\n");
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => false,
+  "manualAppdataSources" => array(
+    $manualAliasSourceRoot,
+    $manualCustomSourceRoot
+  ),
+  "defaultQuarantinePurgeDays" => 0
+)), "Manual appdata sources should save before dashboard testing.");
+$appdataSourceInfo = buildAppdataCleanupPlusSourceInfo(getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame(1, count($appdataSourceInfo["detected"]), "Source info should expose the detected Docker appdata root.");
+behaviorSmokeAssertSame(2, count($appdataSourceInfo["effective"]), "Source info should include the default root plus distinct manual appdata roots.");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/templated-orphan.xml", "templated-orphan", $templatedOrphanPath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/nested-app.xml", "nested-app", $nestedTemplatePath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/adguard-workingdir.xml", "AdGuard", $slashTemplatePath, "/opt/adguardhome/work");
+behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/manual-template-only.xml", "manual-template-only", $manualAliasTemplatePath, "/opt/manual");
+behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/alias-live.xml", "alias-live", $manualUserAliasTemplatePath, "/opt/alias");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/vm-template-managed.xml", "vm-template-managed", $vmDomainTemplatePath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/docker-template-managed.xml", "docker-template-managed", $dockerManagedTemplatePath, "/config");
 file_put_contents($libvirtImagePath, "libvirt-image");
 file_put_contents($dockerManagedImagePath, "docker-image");
-file_put_contents($dockerClientFixture, "<?php\ntrigger_error('docker client fixture include warning', E_USER_WARNING);\nclass DockerClient {\n  public function getDockerContainers() {\n    trigger_error('docker client fixture query warning', E_USER_WARNING);\n    echo \"docker-fixture-noise\";\n    return array((object)array(\n      'Volumes' => array(\n        (object)array('Source' => '" . addslashes($liveAppPath) . "', 'Destination' => '/config'),\n        (object)array('Source' => '" . addslashes($slashLivePath) . "', 'Destination' => '/opt/adguardhome/work')\n      )\n    ));\n  }\n}\n");
+file_put_contents($dockerClientFixture, "<?php\ntrigger_error('docker client fixture include warning', E_USER_WARNING);\nclass DockerClient {\n  public function getDockerContainers() {\n    trigger_error('docker client fixture query warning', E_USER_WARNING);\n    echo \"docker-fixture-noise\";\n    return array((object)array(\n      'Volumes' => array(\n        (object)array('Source' => '" . addslashes($liveAppPath) . "', 'Destination' => '/config'),\n        (object)array('Source' => '" . addslashes($slashLivePath) . "', 'Destination' => '/opt/adguardhome/work'),\n        (object)array('Source' => '" . addslashes($manualAliasLivePath) . "', 'Destination' => '/opt/alias')\n      )\n    ));\n  }\n}\n");
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_RUNTIME_PATH=" . str_replace("\\", "/", $dockerRuntimeFixture));
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_CLIENT_PATH=" . str_replace("\\", "/", $dockerClientFixture));
 $containers = getDockerContainersSafe();
@@ -489,6 +528,9 @@ $liveRow = behaviorSmokeFindRowByPath($dashboardRows, $liveAppPath);
 $nestedRootRow = behaviorSmokeFindRowByPath($dashboardRows, $nestedAppRoot);
 $nestedTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $nestedTemplatePath);
 $slashLiveRow = behaviorSmokeFindRowByPath($dashboardRows, $slashLivePath);
+$manualAliasTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $manualAliasTemplatePath);
+$manualCustomFilesystemRow = behaviorSmokeFindRowByPath($dashboardRows, $manualCustomOrphanPath);
+$manualUserAliasTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $manualUserAliasTemplatePath);
 $vmDomainsRow = behaviorSmokeFindRowByPath($dashboardRows, $vmDomainsPath);
 $vmTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $vmDomainTemplatePath);
 $vmIsosRow = behaviorSmokeFindRowByPath($dashboardRows, $vmIsosPath);
@@ -504,6 +546,9 @@ behaviorSmokeAssertSame(null, $liveRow, "Installed appdata paths should not be s
 behaviorSmokeAssertSame(null, $nestedRootRow, "Top-level share folders containing a nested tracked path should not be duplicated as filesystem orphans.");
 behaviorSmokeAssertTrue(is_array($nestedTemplateRow), "Nested template-backed orphan should still be surfaced.");
 behaviorSmokeAssertSame(null, $slashLiveRow, "A trailing slash difference between a saved template path and a live mount should not create a false orphan.");
+behaviorSmokeAssertTrue(is_array($manualAliasTemplateRow), "Template-backed paths under manual appdata sources should be detected.");
+behaviorSmokeAssertTrue(is_array($manualCustomFilesystemRow), "Manual appdata source roots should be scanned for filesystem orphans.");
+behaviorSmokeAssertSame(null, $manualUserAliasTemplateRow, "Share-like alias live mounts should suppress matching template candidates.");
 behaviorSmokeAssertSame(null, $vmDomainsRow, "VM Manager vdisk storage paths should be excluded from orphaned results.");
 behaviorSmokeAssertSame(null, $vmTemplateRow, "Template-backed paths inside VM Manager storage should be excluded from orphaned results.");
 behaviorSmokeAssertSame(null, $vmIsosRow, "VM Manager ISO storage paths should be excluded from orphaned results.");
@@ -515,11 +560,22 @@ behaviorSmokeAssertSame(null, $lostFoundRow, "lost+found should be excluded from
 behaviorSmokeAssertSame(null, $quarantineRow, "The plugin quarantine root should not be surfaced as a filesystem orphan.");
 behaviorSmokeAssertSame("template", $templatedRow["sourceKind"], "Template-backed rows should preserve their source kind.");
 behaviorSmokeAssertSame("filesystem", $filesystemRow["sourceKind"], "Filesystem-only rows should be marked as discovery candidates.");
-behaviorSmokeAssertSame("Appdata share scan", $filesystemRow["sourceDisplay"], "Filesystem-only rows should explain their discovery source.");
+behaviorSmokeAssertSame($appdataShareRoot, $filesystemRow["sourceDisplay"], "Filesystem-only rows should expose the configured source root.");
+behaviorSmokeAssertSame($manualCustomSourceRoot, $manualCustomFilesystemRow["sourceDisplay"], "Manual-source discovery rows should expose the manual source root.");
+behaviorSmokeAssertSame("safe", $manualCustomFilesystemRow["risk"], "Manual appdata source rows should be treated as inside-source candidates.");
+behaviorSmokeAssertSame(true, ! empty($manualCustomFilesystemRow["canDelete"]), "Manual appdata source rows should remain actionable without outside-share cleanup.");
+behaviorSmokeAssertSame("safe", $manualAliasTemplateRow["risk"], "Template-backed rows under manual appdata sources should be treated as inside-source candidates.");
 behaviorSmokeAssertContains("Saved templates", $templatedRow["reason"], "Template-backed rows should explain their saved-template reference.");
 behaviorSmokeAssertContains("no saved Docker template or installed container currently references it", $filesystemRow["reason"], "Filesystem-only rows should explain that they are unreferenced.");
+behaviorSmokeAssertContains($manualCustomSourceRoot, $manualCustomFilesystemRow["reason"], "Manual-source discovery rows should describe the source root that surfaced them.");
 behaviorSmokeAssertSame($slashLivePath, normalizeUserPath($slashTemplatePath), "Path normalization should collapse trailing slashes on saved template paths.");
 behaviorSmokeAssertTrue(! empty($templatedRow["statsPending"]), "Initial dashboard rows should mark heavy stats as pending for progressive hydration.");
+$manualSourceActionResolution = resolveCandidateForAction(array(
+  "path" => $manualCustomOrphanPath,
+  "displayPath" => $manualCustomOrphanPath,
+  "realPath" => (string)@realpath($manualCustomOrphanPath)
+), getAppdataCleanupPlusSafetySettings(), "quarantine");
+behaviorSmokeAssertSame(true, ! empty($manualSourceActionResolution["ok"]), "Paths inside manual appdata sources should stay actionable without enabling outside-share cleanup.");
 $defaultPurgeCandidatePath = $appdataShareRoot . "/default-purge-candidate";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($defaultPurgeCandidatePath), "Default purge candidate fixture should be created.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
@@ -662,5 +718,7 @@ if ( function_exists("symlink") && @symlink($symlinkTargetPath, $symlinkLinkPath
 
 behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);
+behaviorSmokeRemoveTree($manualAliasSourceRoot);
+behaviorSmokeRemoveTree($manualCustomSourceRoot);
 behaviorSmokeRemoveTree($appdataSharePhysicalRoot);
 echo "behavior_smoke: OK" . PHP_EOL;

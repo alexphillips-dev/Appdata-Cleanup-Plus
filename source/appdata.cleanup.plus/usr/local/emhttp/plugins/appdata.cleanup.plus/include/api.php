@@ -34,6 +34,7 @@ function appdataCleanupPlusBuildDashboardFallbackPayload($dockerRunning, $settin
       "scanToken" => $scanToken,
       "scanWarningMessage" => $scanWarningMessage,
       "settings" => $settings,
+      "appdataSourceInfo" => buildAppdataCleanupPlusSourceInfo($settings),
       "quarantineSummary" => $quarantineSummary
     )
   );
@@ -87,7 +88,7 @@ function buildDashboardPayload() {
     $allFiles = array();
   }
 
-  $templateVolumes = buildCandidateMap($allFiles);
+  $templateVolumes = buildCandidateMap($allFiles, $settings);
   $filesystemVolumes = buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning);
   $availableVolumes = $templateVolumes + $filesystemVolumes;
 
@@ -166,12 +167,32 @@ function handleHydrateCandidateStats() {
 
 function handleSaveSafetySettings() {
   $currentSettings = getAppdataCleanupPlusSafetySettings();
+  $manualAppdataSources = isset($_POST["manualAppdataSources"])
+    ? preg_split('/\r\n|\r|\n/', getPostedString("manualAppdataSources"))
+    : (isset($currentSettings["manualAppdataSources"]) ? $currentSettings["manualAppdataSources"] : array());
+
+  foreach ( $manualAppdataSources as $manualSourcePath ) {
+    $validationMessage = appdataCleanupPlusValidateManualAppdataSource($manualSourcePath);
+
+    if ( trim((string)$manualSourcePath) === "" ) {
+      continue;
+    }
+
+    if ( $validationMessage !== "" ) {
+      jsonResponse(array(
+        "ok" => false,
+        "message" => $validationMessage
+      ), 400);
+    }
+  }
+
   $settings = array(
     "allowOutsideShareCleanup" => getPostedBoolean("allowOutsideShareCleanup"),
     "enablePermanentDelete" => getPostedBoolean("enablePermanentDelete"),
     "defaultQuarantinePurgeDays" => isset($_POST["defaultQuarantinePurgeDays"])
       ? (int)getPostedString("defaultQuarantinePurgeDays")
-      : (int)(isset($currentSettings["defaultQuarantinePurgeDays"]) ? $currentSettings["defaultQuarantinePurgeDays"] : 0)
+      : (int)(isset($currentSettings["defaultQuarantinePurgeDays"]) ? $currentSettings["defaultQuarantinePurgeDays"] : 0),
+    "manualAppdataSources" => $manualAppdataSources
   );
 
   if ( ! setAppdataCleanupPlusSafetySettings($settings) ) {
@@ -190,6 +211,7 @@ function handleSaveSafetySettings() {
   jsonResponse(array(
     "ok" => true,
     "settings" => $nextSettings,
+    "appdataSourceInfo" => buildAppdataCleanupPlusSourceInfo($nextSettings),
     "quarantine" => buildQuarantineManagerPayload(true)
   ));
 }

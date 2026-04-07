@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.01.24">
-<!ENTITY md5 "422a31ccac995d754f6d8cb753ffb820">
+<!ENTITY version "2026.04.07.01">
+<!ENTITY md5 "acff5bd6e884c42ea77bd01bb408a671">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.07.01
+- Feature: Add an `Appdata sources` action-bar button with a modal for saving manual appdata source roots used by non-standard Docker mounts
+- Scan: Treat configured manual appdata roots as first-class discovery sources so direct-child orphan scans can run outside the single auto-detected Docker appdata share
+- Match: Normalize share-like mount aliases such as `/mnt/user/...` and pool or disk-backed paths when comparing template, discovery, and live-container host paths to suppress false orphan rows
+- Safety: Treat paths inside configured manual appdata sources as normal inside-source candidates for hydration, quarantine, and action validation instead of forcing them into outside-share review mode
+- Test: Extend the behavior smoke regression for manual source persistence, manual-root discovery, and alias-mount live-container matching
+
 ###2026.04.01.24
 - Release: Promote the `2026.04.01.23` development build to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
 - Quarantine: Recover tracked quarantine entries from folders already on disk when `quarantine-records.json` is missing after reinstalling the plugin or switching between `dev` and `main`

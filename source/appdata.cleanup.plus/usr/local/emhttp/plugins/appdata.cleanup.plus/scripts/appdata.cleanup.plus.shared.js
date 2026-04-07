@@ -49,7 +49,8 @@
       allowOutsideShareCleanup: false,
       enablePermanentDelete: false,
       quarantineRoot: "",
-      defaultQuarantinePurgeDays: 0
+      defaultQuarantinePurgeDays: 0,
+      manualAppdataSources: []
     };
   };
 
@@ -177,7 +178,7 @@
     $baseText = $modal.children("p").first();
     $existingHost = $modal.children(".acp-modal-host");
 
-    $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-quarantine-manager-modal acp-audit-history-modal");
+    $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-quarantine-manager-modal acp-audit-history-modal acp-appdata-sources-modal");
     if (className) {
       $modal.addClass(className);
     }

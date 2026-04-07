@@ -353,6 +353,253 @@ function appdataCleanupPlusCanonicalizePath($path) {
   return $normalized === "" ? "/" : $normalized;
 }
 
+function appdataCleanupPlusShareLikeComparisonPath($path) {
+  $normalized = appdataCleanupPlusCanonicalizePath($path);
+  $segments = array_values(array_filter(explode("/", trim($normalized, "/")), "strlen"));
+  $mountRoot = "";
+
+  if ( $normalized === "" ) {
+    return "";
+  }
+
+  if ( count($segments) < 3 || $segments[0] !== "mnt" ) {
+    return $normalized;
+  }
+
+  $mountRoot = strtolower((string)$segments[1]);
+
+  if ( in_array($mountRoot, array("disks", "remotes", "rootsharecache"), true) ) {
+    return $normalized;
+  }
+
+  $segments[1] = "user";
+  return "/" . implode("/", $segments);
+}
+
+function appdataCleanupPlusPathComparisonVariants($path) {
+  $variants = array();
+  $normalized = appdataCleanupPlusCanonicalizePath($path);
+  $realPath = "";
+
+  if ( $normalized === "" ) {
+    return array();
+  }
+
+  $variants[$normalized] = true;
+  $variants[appdataCleanupPlusShareLikeComparisonPath($normalized)] = true;
+
+  $realPath = @realpath($normalized);
+  if ( $realPath ) {
+    $realPath = appdataCleanupPlusCanonicalizePath($realPath);
+    $variants[$realPath] = true;
+    $variants[appdataCleanupPlusShareLikeComparisonPath($realPath)] = true;
+  }
+
+  return array_values(array_filter(array_keys($variants), "strlen"));
+}
+
+function appdataCleanupPlusPathComparisonKey($path) {
+  $normalized = appdataCleanupPlusCanonicalizePath($path);
+
+  if ( $normalized === "" ) {
+    return "";
+  }
+
+  return appdataCleanupPlusShareLikeComparisonPath($normalized);
+}
+
+function appdataCleanupPlusPathsEquivalent($leftPath, $rightPath) {
+  foreach ( appdataCleanupPlusPathComparisonVariants($leftPath) as $leftVariant ) {
+    foreach ( appdataCleanupPlusPathComparisonVariants($rightPath) as $rightVariant ) {
+      if ( $leftVariant !== "" && $leftVariant === $rightVariant ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function appdataCleanupPlusPathMatchesOrIsDescendantByVariants($parentPath, $childPath, $allowEqual=true) {
+  foreach ( appdataCleanupPlusPathComparisonVariants($parentPath) as $parentVariant ) {
+    foreach ( appdataCleanupPlusPathComparisonVariants($childPath) as $childVariant ) {
+      if ( $parentVariant === "" || $childVariant === "" ) {
+        continue;
+      }
+
+      if ( $allowEqual && $parentVariant === $childVariant ) {
+        return true;
+      }
+
+      if ( $parentVariant !== $childVariant && startsWith($childVariant . "/", rtrim($parentVariant, "/") . "/") ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function getDefaultAppdataCleanupPlusSourceRoot() {
+  $userRoot = getAppdataShareUserPath();
+
+  if ( $userRoot && is_dir($userRoot) ) {
+    return $userRoot;
+  }
+
+  $cacheRoot = getAppdataShareCachePath();
+
+  if ( $cacheRoot && is_dir($cacheRoot) ) {
+    return $cacheRoot;
+  }
+
+  if ( $userRoot ) {
+    return $userRoot;
+  }
+
+  return $cacheRoot;
+}
+
+function appdataCleanupPlusNormalizeManualAppdataSources($sources) {
+  $normalizedSources = array();
+  $seen = array();
+
+  if ( is_string($sources) ) {
+    $sources = preg_split('/\r\n|\r|\n/', $sources);
+  }
+
+  if ( ! is_array($sources) ) {
+    return array();
+  }
+
+  foreach ( $sources as $sourcePath ) {
+    $normalizedPath = appdataCleanupPlusCanonicalizePath($sourcePath);
+    $comparisonKey = "";
+
+    if ( $normalizedPath === "" || $normalizedPath[0] !== "/" ) {
+      continue;
+    }
+
+    if ( basename($normalizedPath) === ".appdata-cleanup-plus-quarantine" ) {
+      continue;
+    }
+
+    $comparisonKey = appdataCleanupPlusPathComparisonKey($normalizedPath);
+    if ( $comparisonKey === "" || isset($seen[$comparisonKey]) ) {
+      continue;
+    }
+
+    $seen[$comparisonKey] = true;
+    $normalizedSources[] = $normalizedPath;
+  }
+
+  return array_values($normalizedSources);
+}
+
+function appdataCleanupPlusValidateManualAppdataSource($path) {
+  $normalizedPath = appdataCleanupPlusCanonicalizePath($path);
+  $segments = array();
+
+  if ( $normalizedPath === "" || $normalizedPath[0] !== "/" ) {
+    return "Appdata source paths must be absolute paths.";
+  }
+
+  if ( basename($normalizedPath) === ".appdata-cleanup-plus-quarantine" ) {
+    return "Quarantine folders cannot be added as appdata sources.";
+  }
+
+  if ( in_array($normalizedPath, array("/", "/mnt", "/mnt/user", "/mnt/cache"), true) ) {
+    return "Mount roots cannot be added as appdata sources.";
+  }
+
+  $segments = array_values(array_filter(explode("/", trim($normalizedPath, "/")), "strlen"));
+  if ( count($segments) < 3 ) {
+    return "Appdata source paths must point to a dedicated folder, not a mount root.";
+  }
+
+  if ( appdataCleanupPlusBuildManagedSystemLockReason($normalizedPath) !== "" ) {
+    return "Managed system paths cannot be added as appdata sources.";
+  }
+
+  return "";
+}
+
+function getAppdataCleanupPlusConfiguredSourceRoots($settings=null) {
+  $roots = array();
+  $seen = array();
+  $defaultRoot = getDefaultAppdataCleanupPlusSourceRoot();
+  $manualRoots = array();
+
+  if ( $defaultRoot ) {
+    $comparisonKey = appdataCleanupPlusPathComparisonKey($defaultRoot);
+    if ( $comparisonKey !== "" ) {
+      $seen[$comparisonKey] = true;
+      $roots[] = appdataCleanupPlusCanonicalizePath($defaultRoot);
+    }
+  }
+
+  if ( ! is_array($settings) ) {
+    $settings = getAppdataCleanupPlusSafetySettings();
+  }
+
+  $manualRoots = isset($settings["manualAppdataSources"]) ? appdataCleanupPlusNormalizeManualAppdataSources($settings["manualAppdataSources"]) : array();
+
+  foreach ( $manualRoots as $manualRoot ) {
+    $comparisonKey = appdataCleanupPlusPathComparisonKey($manualRoot);
+
+    if ( $comparisonKey === "" || isset($seen[$comparisonKey]) ) {
+      continue;
+    }
+
+    $seen[$comparisonKey] = true;
+    $roots[] = $manualRoot;
+  }
+
+  return array_values($roots);
+}
+
+function buildAppdataCleanupPlusSourceInfo($settings=null) {
+  $detectedRoots = array();
+  $defaultRoot = getDefaultAppdataCleanupPlusSourceRoot();
+
+  if ( ! is_array($settings) ) {
+    $settings = getAppdataCleanupPlusSafetySettings();
+  }
+
+  if ( $defaultRoot ) {
+    $detectedRoots[] = appdataCleanupPlusCanonicalizePath($defaultRoot);
+  }
+
+  return array(
+    "detected" => array_values(array_filter($detectedRoots, "strlen")),
+    "manual" => isset($settings["manualAppdataSources"]) ? appdataCleanupPlusNormalizeManualAppdataSources($settings["manualAppdataSources"]) : array(),
+    "effective" => getAppdataCleanupPlusConfiguredSourceRoots($settings)
+  );
+}
+
+function appdataCleanupPlusFindConfiguredSourceRootForPath($path, $settings=null) {
+  $normalizedPath = appdataCleanupPlusCanonicalizePath($path);
+  $matchedRoot = "";
+  $matchedLength = -1;
+
+  if ( $normalizedPath === "" ) {
+    return "";
+  }
+
+  foreach ( getAppdataCleanupPlusConfiguredSourceRoots($settings) as $sourceRoot ) {
+    if ( ! appdataCleanupPlusPathMatchesOrIsDescendantByVariants($sourceRoot, $normalizedPath, true) ) {
+      continue;
+    }
+
+    if ( strlen($sourceRoot) > $matchedLength ) {
+      $matchedRoot = $sourceRoot;
+      $matchedLength = strlen($sourceRoot);
+    }
+  }
+
+  return $matchedRoot;
+}
+
 function normalizeUserPath($path) {
   return appdataCleanupPlusCanonicalizePath(str_replace("/mnt/cache/","/mnt/user/",$path));
 }
@@ -362,34 +609,36 @@ function normalizeCachePath($path) {
 }
 
 function appdataPathSegments($path) {
-  $userPath = normalizeUserPath($path);
-  $trimmedPath = preg_replace('#^/mnt/(?:user|cache)/#', '', $userPath);
-  $segments = array_values(array_filter(explode("/", trim($trimmedPath, "/")), "strlen"));
-  return $segments;
+  return array_values(array_filter(explode("/", trim(appdataCleanupPlusCanonicalizePath($path), "/")), "strlen"));
 }
 
-function classifyAppdataCandidate($path) {
+function classifyAppdataCandidate($path, $settings=null) {
+  $normalizedPath = appdataCleanupPlusCanonicalizePath($path);
   $userPath = normalizeUserPath($path);
   $cachePath = normalizeCachePath($path);
-  $segments = appdataPathSegments($path);
-  $shareName = isset($segments[0]) ? $segments[0] : "";
-  $defaultShareName = getAppdataShareName();
-  $insideDefaultShare = $defaultShareName && $shareName === $defaultShareName;
+  $segments = appdataPathSegments($normalizedPath);
+  $matchedSourceRoot = appdataCleanupPlusFindConfiguredSourceRootForPath($normalizedPath, $settings);
+  $insideConfiguredSource = $matchedSourceRoot !== "";
+  $shareName = $insideConfiguredSource
+    ? basename($matchedSourceRoot)
+    : ((count($segments) >= 3 && $segments[0] === "mnt") ? (string)$segments[2] : "");
 
   $classification = array(
-    "path" => $path,
+    "path" => $normalizedPath !== "" ? $normalizedPath : $path,
     "userPath" => $userPath,
     "cachePath" => $cachePath,
     "shareName" => $shareName,
     "depth" => count($segments),
-    "insideDefaultShare" => $insideDefaultShare ? true : false,
+    "insideDefaultShare" => $insideConfiguredSource ? true : false,
+    "insideConfiguredSource" => $insideConfiguredSource ? true : false,
+    "matchedSourceRoot" => $matchedSourceRoot,
     "risk" => "safe",
     "riskLabel" => "Ready",
-    "riskReason" => "Inside the configured appdata share and not used by installed containers.",
+    "riskReason" => "Inside a configured appdata source and not used by installed containers.",
     "canDelete" => true
   );
 
-  if ( ! $shareName || in_array($userPath, array("/", "/mnt", "/mnt/user", "/mnt/cache"), true) ) {
+  if ( $normalizedPath === "" || in_array($normalizedPath, array("/", "/mnt", "/mnt/user", "/mnt/cache"), true) ) {
     $classification["risk"] = "blocked";
     $classification["riskLabel"] = "Locked";
     $classification["riskReason"] = "This path looks like a mount root and cannot be deleted here.";
@@ -397,17 +646,25 @@ function classifyAppdataCandidate($path) {
     return $classification;
   }
 
-  if ( $insideDefaultShare ) {
-    if ( count($segments) <= 1 ) {
+  if ( $insideConfiguredSource ) {
+    if ( appdataCleanupPlusPathsEquivalent($matchedSourceRoot, $normalizedPath) ) {
       $classification["risk"] = "blocked";
       $classification["riskLabel"] = "Locked";
-      $classification["riskReason"] = "This is the configured appdata share root and cannot be deleted here.";
+      $classification["riskReason"] = "This is a configured appdata source root and cannot be deleted here.";
       $classification["canDelete"] = false;
     }
     return $classification;
   }
 
-  if ( count($segments) <= 1 ) {
+  if ( count($segments) <= 2 && isset($segments[0]) && $segments[0] === "mnt" ) {
+    $classification["risk"] = "blocked";
+    $classification["riskLabel"] = "Locked";
+    $classification["riskReason"] = "This path looks like a mount root and cannot be deleted here.";
+    $classification["canDelete"] = false;
+    return $classification;
+  }
+
+  if ( count($segments) <= 3 && isset($segments[0]) && $segments[0] === "mnt" ) {
     $classification["risk"] = "blocked";
     $classification["riskLabel"] = "Locked";
     $classification["riskReason"] = "This path looks like a share root and cannot be deleted here.";
@@ -417,26 +674,30 @@ function classifyAppdataCandidate($path) {
 
   $classification["risk"] = "review";
   $classification["riskLabel"] = "Review";
-  $classification["riskReason"] = "This path sits outside the configured appdata share. Review it carefully before deleting.";
+  $classification["riskReason"] = "This path sits outside the configured appdata sources. Review it carefully before deleting.";
   return $classification;
 }
 
-function findAppdata($volumes) {
+function findAppdata($volumes, $settings=null) {
   $path = false;
-  $shareName = getAppdataShareName();
-
-  if ( ! $shareName ) {
-    $shareName = "****";
-  }
+  $configuredRoots = getAppdataCleanupPlusConfiguredSourceRoots($settings);
 
   if ( is_array($volumes) ) {
     foreach ($volumes as $volume) {
-      $temp = explode(":",$volume);
-      $testPath = strtolower($temp[1]);
+      $temp = explode(":",$volume, 3);
+      $hostPath = isset($temp[0]) ? trim((string)$temp[0]) : "";
+      $testPath = isset($temp[1]) ? strtolower(trim((string)$temp[1])) : "";
 
-      if ( (startsWith($testPath,"/config")) || (startsWith($temp[0],"/mnt/user/$shareName")) || (startsWith($temp[0],"/mnt/cache/$shareName")) ) {
-        $path = $temp[0];
+      if ( startsWith($testPath,"/config") ) {
+        $path = $hostPath;
         break;
+      }
+
+      foreach ( $configuredRoots as $sourceRoot ) {
+        if ( appdataCleanupPlusPathMatchesOrIsDescendantByVariants($sourceRoot, $hostPath, true) ) {
+          $path = $hostPath;
+          break 2;
+        }
       }
     }
   }
@@ -714,7 +975,8 @@ function getDefaultAppdataCleanupPlusSafetySettings() {
     "allowOutsideShareCleanup" => false,
     "enablePermanentDelete" => false,
     "quarantineRoot" => getDefaultAppdataCleanupPlusQuarantineRoot(),
-    "defaultQuarantinePurgeDays" => 0
+    "defaultQuarantinePurgeDays" => 0,
+    "manualAppdataSources" => array()
   );
 }
 
@@ -734,7 +996,8 @@ function normalizeAppdataCleanupPlusSafetySettings($settings) {
     "allowOutsideShareCleanup" => ! empty($settings["allowOutsideShareCleanup"]),
     "enablePermanentDelete" => ! empty($settings["enablePermanentDelete"]),
     "quarantineRoot" => isset($settings["quarantineRoot"]) ? trim((string)$settings["quarantineRoot"]) : $defaults["quarantineRoot"],
-    "defaultQuarantinePurgeDays" => $defaultQuarantinePurgeDays
+    "defaultQuarantinePurgeDays" => $defaultQuarantinePurgeDays,
+    "manualAppdataSources" => appdataCleanupPlusNormalizeManualAppdataSources(isset($settings["manualAppdataSources"]) ? $settings["manualAppdataSources"] : $defaults["manualAppdataSources"])
   );
 
   if ( ! $normalized["quarantineRoot"] ) {

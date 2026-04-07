@@ -365,7 +365,7 @@ function collectLightweightPathStats($path) {
 }
 
 function candidateSupportsHeavyPathStats($classification, $securityLockReason) {
-  return empty($securityLockReason) && ! empty($classification["insideDefaultShare"]);
+  return empty($securityLockReason) && ! empty($classification["insideConfiguredSource"]);
 }
 
 function buildCandidatePathStats($resolvedPath, $classification, $securityLockReason, $includeHeavyStats=true) {
@@ -378,13 +378,15 @@ function buildCandidatePathStats($resolvedPath, $classification, $securityLockRe
   return $pathStats;
 }
 
-function buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning) {
+function buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning, $sourceRoot="") {
   if ( $sourceKind === "filesystem" ) {
+    $sourceLead = $sourceRoot ? "Configured appdata source '" . $sourceRoot . "'" : "Configured appdata source scan";
+
     if ( ! $dockerRunning ) {
-      return "Appdata share scan found this folder, but Docker is offline, so active container mappings could not be verified.";
+      return $sourceLead . " found this folder, but Docker is offline, so active container mappings could not be verified.";
     }
 
-    return "Appdata share scan found this folder, and no saved Docker template or installed container currently references it.";
+    return $sourceLead . " found this folder, and no saved Docker template or installed container currently references it.";
   }
 
   $sourceSummary = summarizeCandidateValues($sourceNames);
@@ -528,21 +530,23 @@ function buildAuditHistoryRows($limit=0) {
   return $rows;
 }
 
-function appdataCleanupPlusCreateCandidateVolume($hostDir, $sourceKind="template") {
-  $normalizedHostDir = normalizeUserPath($hostDir);
+function appdataCleanupPlusCreateCandidateVolume($hostDir, $sourceKind="template", $sourceDisplay="", $sourceRoot="") {
+  $normalizedHostDir = appdataCleanupPlusCanonicalizePath($hostDir);
 
   return array(
     "HostDir" => $normalizedHostDir,
+    "HostDirKey" => appdataCleanupPlusPathComparisonKey($normalizedHostDir),
     "Names" => array(),
     "Targets" => array(),
     "TemplateRefs" => array(),
     "SourceKind" => $sourceKind,
+    "SourceRoot" => $sourceRoot !== "" ? appdataCleanupPlusCanonicalizePath($sourceRoot) : "",
     "SourceLabel" => $sourceKind === "filesystem" ? "Discovery" : "Template",
-    "SourceDisplay" => $sourceKind === "filesystem" ? "Appdata share scan" : ""
+    "SourceDisplay" => $sourceDisplay
   );
 }
 
-function buildCandidateMap($allFiles) {
+function buildCandidateMap($allFiles, $settings=array()) {
   $availableVolumes = array();
 
   foreach ( $allFiles as $xmlfile ) {
@@ -568,19 +572,24 @@ function buildCandidateMap($allFiles) {
         $appName = isset($xml["Name"]) && $xml["Name"] ? trim((string)$xml["Name"]) : basename($hostDir);
         $volumeList = array($hostDir . ":" . $targetPath);
 
-        if ( ! $hostDir || ! $targetPath || ! findAppdata($volumeList) ) {
+        if ( ! $hostDir || ! $targetPath || ! findAppdata($volumeList, $settings) ) {
           continue;
         }
 
-        $candidatePath = normalizeUserPath($hostDir);
+        $candidatePath = appdataCleanupPlusCanonicalizePath($hostDir);
+        $candidateKey = appdataCleanupPlusPathComparisonKey($candidatePath);
 
-        if ( ! isset($availableVolumes[$candidatePath]) ) {
-          $availableVolumes[$candidatePath] = appdataCleanupPlusCreateCandidateVolume($candidatePath, "template");
+        if ( $candidateKey === "" ) {
+          continue;
         }
 
-        $availableVolumes[$candidatePath]["Names"][$appName] = true;
-        $availableVolumes[$candidatePath]["Targets"][$targetPath] = true;
-        $availableVolumes[$candidatePath]["TemplateRefs"][$appName . "|" . $targetPath] = array(
+        if ( ! isset($availableVolumes[$candidateKey]) ) {
+          $availableVolumes[$candidateKey] = appdataCleanupPlusCreateCandidateVolume($candidatePath, "template");
+        }
+
+        $availableVolumes[$candidateKey]["Names"][$appName] = true;
+        $availableVolumes[$candidateKey]["Targets"][$targetPath] = true;
+        $availableVolumes[$candidateKey]["TemplateRefs"][$appName . "|" . $targetPath] = array(
           "name" => $appName,
           "target" => $targetPath,
           "file" => basename($xmlfile)
@@ -595,23 +604,7 @@ function buildCandidateMap($allFiles) {
 }
 
 function resolveAppdataShareScanRoot() {
-  $userRoot = getAppdataShareUserPath();
-
-  if ( $userRoot && is_dir($userRoot) ) {
-    return $userRoot;
-  }
-
-  $cacheRoot = getAppdataShareCachePath();
-
-  if ( $cacheRoot && is_dir($cacheRoot) ) {
-    return $cacheRoot;
-  }
-
-  if ( $userRoot ) {
-    return $userRoot;
-  }
-
-  return $cacheRoot;
+  return getDefaultAppdataCleanupPlusSourceRoot();
 }
 
 function appdataCleanupPlusShouldExcludeFilesystemDiscoveryEntry($entryName) {
@@ -629,34 +622,23 @@ function appdataCleanupPlusShouldExcludeFilesystemDiscoveryEntry($entryName) {
 
 function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning) {
   $availableVolumes = array();
+  $templatePaths = array();
+  $installedHostPaths = appdataCleanupPlusExtractDockerVolumeHostPaths($containers);
+  $excludedRoots = array();
+  $configuredSourceRoots = getAppdataCleanupPlusConfiguredSourceRoots($settings);
 
   if ( ! $dockerRunning ) {
     return $availableVolumes;
   }
 
-  $shareRoot = resolveAppdataShareScanRoot();
-
-  if ( ! $shareRoot || ! is_dir($shareRoot) ) {
-    return $availableVolumes;
-  }
-
-  $entries = @scandir($shareRoot);
-
-  if ( ! is_array($entries) ) {
-    return $availableVolumes;
-  }
-
-  $templatePaths = array();
-  $installedHostPaths = appdataCleanupPlusExtractDockerVolumeHostPaths($containers);
-  $excludedRoots = array();
-  $defaultQuarantineRoot = normalizeUserPath(getDefaultAppdataCleanupPlusQuarantineRoot());
+  $defaultQuarantineRoot = appdataCleanupPlusCanonicalizePath(getDefaultAppdataCleanupPlusQuarantineRoot());
 
   if ( $defaultQuarantineRoot ) {
-    $excludedRoots[$defaultQuarantineRoot] = true;
+    $excludedRoots[appdataCleanupPlusPathComparisonKey($defaultQuarantineRoot)] = true;
   }
 
   if ( ! empty($settings["quarantineRoot"]) ) {
-    $excludedRoots[normalizeUserPath($settings["quarantineRoot"])] = true;
+    $excludedRoots[appdataCleanupPlusPathComparisonKey($settings["quarantineRoot"])] = true;
   }
 
   foreach ( $templateVolumes as $volume ) {
@@ -667,52 +649,69 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
     $templatePaths[] = (string)$volume["HostDir"];
   }
 
-  foreach ( array_diff($entries, array(".", "..")) as $entryName ) {
-    if ( appdataCleanupPlusShouldExcludeFilesystemDiscoveryEntry($entryName) ) {
+  foreach ( $configuredSourceRoots as $sourceRoot ) {
+    $entries = array();
+
+    if ( ! $sourceRoot || ! is_dir($sourceRoot) ) {
       continue;
     }
 
-    $candidatePath = rtrim($shareRoot, "/") . "/" . $entryName;
-
-    if ( ! is_dir($candidatePath) ) {
+    $entries = @scandir($sourceRoot);
+    if ( ! is_array($entries) ) {
       continue;
     }
 
-    $candidatePath = normalizeUserPath($candidatePath);
+    $excludedRoots[appdataCleanupPlusPathComparisonKey(rtrim($sourceRoot, "/") . "/.appdata-cleanup-plus-quarantine")] = true;
 
-    if ( isset($excludedRoots[$candidatePath]) ) {
-      continue;
-    }
+    foreach ( array_diff($entries, array(".", "..")) as $entryName ) {
+      $candidatePath = "";
+      $candidateKey = "";
+      $skipCandidate = false;
 
-    if ( appdataCleanupPlusBuildManagedSystemLockReason($candidatePath) !== "" ) {
-      continue;
-    }
-
-    $skipCandidate = false;
-
-    foreach ( $templatePaths as $referencePath ) {
-      if ( pathMatchesOrIsDescendant($candidatePath, $referencePath) ) {
-        $skipCandidate = true;
-        break;
+      if ( appdataCleanupPlusShouldExcludeFilesystemDiscoveryEntry($entryName) ) {
+        continue;
       }
-    }
 
-    if ( $skipCandidate ) {
-      continue;
-    }
+      $candidatePath = appdataCleanupPlusCanonicalizePath(rtrim($sourceRoot, "/") . "/" . $entryName);
 
-    foreach ( $installedHostPaths as $referencePath ) {
-      if ( pathMatchesOrIsDescendant($candidatePath, $referencePath) ) {
-        $skipCandidate = true;
-        break;
+      if ( ! is_dir($candidatePath) ) {
+        continue;
       }
-    }
 
-    if ( $skipCandidate ) {
-      continue;
-    }
+      $candidateKey = appdataCleanupPlusPathComparisonKey($candidatePath);
 
-    $availableVolumes[$candidatePath] = appdataCleanupPlusCreateCandidateVolume($candidatePath, "filesystem");
+      if ( $candidateKey === "" || isset($excludedRoots[$candidateKey]) ) {
+        continue;
+      }
+
+      if ( appdataCleanupPlusBuildManagedSystemLockReason($candidatePath) !== "" ) {
+        continue;
+      }
+
+      foreach ( $templatePaths as $referencePath ) {
+        if ( pathMatchesOrIsDescendant($candidatePath, $referencePath) ) {
+          $skipCandidate = true;
+          break;
+        }
+      }
+
+      if ( $skipCandidate ) {
+        continue;
+      }
+
+      foreach ( $installedHostPaths as $referencePath ) {
+        if ( pathMatchesOrIsDescendant($candidatePath, $referencePath) ) {
+          $skipCandidate = true;
+          break;
+        }
+      }
+
+      if ( $skipCandidate || isset($availableVolumes[$candidateKey]) ) {
+        continue;
+      }
+
+      $availableVolumes[$candidateKey] = appdataCleanupPlusCreateCandidateVolume($candidatePath, "filesystem", $sourceRoot, $sourceRoot);
+    }
   }
 
   return $availableVolumes;
@@ -721,13 +720,13 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
 function removeVmManagerManagedCandidates($availableVolumes) {
   $filtered = $availableVolumes;
 
-  foreach ( $availableVolumes as $volume ) {
+  foreach ( $availableVolumes as $volumeKey => $volume ) {
     if ( empty($volume["HostDir"]) ) {
       continue;
     }
 
     if ( appdataCleanupPlusBuildManagedSystemLockReason($volume["HostDir"]) !== "" ) {
-      unset($filtered[$volume["HostDir"]]);
+      unset($filtered[$volumeKey]);
     }
   }
 
@@ -736,8 +735,7 @@ function removeVmManagerManagedCandidates($availableVolumes) {
 
 function removeInstalledVolumeMatches($availableVolumes, $containers) {
   foreach ( appdataCleanupPlusExtractDockerVolumeHostPaths($containers) as $hostPath ) {
-    unset($availableVolumes[normalizeCachePath($hostPath)]);
-    unset($availableVolumes[normalizeUserPath($hostPath)]);
+    unset($availableVolumes[appdataCleanupPlusPathComparisonKey($hostPath)]);
   }
 
   return $availableVolumes;
@@ -746,12 +744,12 @@ function removeInstalledVolumeMatches($availableVolumes, $containers) {
 function filterToExistingCandidates($availableVolumes) {
   $filtered = $availableVolumes;
 
-  foreach ( $availableVolumes as $volume ) {
+  foreach ( $availableVolumes as $volumeKey => $volume ) {
     $classification = classifyAppdataCandidate($volume["HostDir"]);
     $existingPath = resolveExistingPath($classification);
 
     if ( ! is_dir($existingPath) ) {
-      unset($filtered[$volume["HostDir"]]);
+      unset($filtered[$volumeKey]);
     }
   }
 
@@ -761,14 +759,14 @@ function filterToExistingCandidates($availableVolumes) {
 function removeParentCandidates($availableVolumes) {
   $filtered = $availableVolumes;
 
-  foreach ( $availableVolumes as $volume ) {
-    foreach ( $availableVolumes as $testVolume ) {
+  foreach ( $availableVolumes as $volumeKey => $volume ) {
+    foreach ( $availableVolumes as $testVolumeKey => $testVolume ) {
       if ( $testVolume["HostDir"] === $volume["HostDir"] ) {
         continue;
       }
 
       if ( pathIsDescendant($volume["HostDir"], $testVolume["HostDir"]) ) {
-        unset($filtered[$volume["HostDir"]]);
+        unset($filtered[$volumeKey]);
         break;
       }
     }
@@ -781,10 +779,10 @@ function removeParentsUsedByInstalledContainers($availableVolumes, $containers) 
   $filtered = $availableVolumes;
   $installedHostPaths = appdataCleanupPlusExtractDockerVolumeHostPaths($containers);
 
-  foreach ( $availableVolumes as $candidate ) {
+  foreach ( $availableVolumes as $candidateKey => $candidate ) {
     foreach ( $installedHostPaths as $hostPath ) {
       if ( pathIsDescendant($candidate["HostDir"], $hostPath) ) {
-        unset($filtered[$candidate["HostDir"]]);
+        unset($filtered[$candidateKey]);
         break;
       }
     }
@@ -859,6 +857,7 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
       $sourceNames = array_values(array_keys($volume["Names"]));
       $targetPaths = isset($volume["Targets"]) ? array_values(array_keys($volume["Targets"])) : array();
       $templateRefs = isset($volume["TemplateRefs"]) ? array_values($volume["TemplateRefs"]) : array();
+      $sourceRoot = isset($volume["SourceRoot"]) ? trim((string)$volume["SourceRoot"]) : "";
       natcasesort($sourceNames);
       natcasesort($targetPaths);
       $sourceNames = array_values($sourceNames);
@@ -881,7 +880,7 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
         if ( $sourceSummary ) {
           $sourceDisplay = $sourceSummary;
         } elseif ( $sourceKind === "filesystem" ) {
-          $sourceDisplay = "Appdata share scan";
+          $sourceDisplay = $sourceRoot !== "" ? $sourceRoot : "Configured appdata source";
         } else {
           $sourceDisplay = "Saved Docker templates";
         }
@@ -897,6 +896,7 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
         "sourceKind" => $sourceKind,
         "sourceLabel" => $sourceLabel,
         "sourceDisplay" => $sourceDisplay,
+        "sourceRoot" => $sourceRoot,
         "sourceNames" => $sourceNames,
         "sourceSummary" => $sourceSummary,
         "sourceCount" => count($sourceNames),
@@ -910,11 +910,12 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
         "risk" => $classification["risk"],
         "riskLabel" => $classification["riskLabel"],
         "riskReason" => $classification["riskReason"],
-        "reason" => buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning),
+        "reason" => buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning, $sourceRoot),
         "status" => $dockerRunning ? "orphaned" : "docker_offline",
         "statusLabel" => $dockerRunning ? "Orphaned" : "Docker offline",
         "canDelete" => $classification["canDelete"],
         "insideDefaultShare" => $classification["insideDefaultShare"],
+        "insideConfiguredSource" => ! empty($classification["insideConfiguredSource"]),
         "shareName" => $classification["shareName"],
         "depth" => $classification["depth"],
         "sizeBytes" => $pathStats["sizeBytes"],
@@ -1001,6 +1002,7 @@ function buildSnapshotCandidateMap($rows) {
       "sourceKind" => isset($row["sourceKind"]) ? $row["sourceKind"] : "template",
       "sourceLabel" => isset($row["sourceLabel"]) ? $row["sourceLabel"] : "Template",
       "sourceDisplay" => isset($row["sourceDisplay"]) ? $row["sourceDisplay"] : $row["sourceSummary"],
+      "sourceRoot" => isset($row["sourceRoot"]) ? $row["sourceRoot"] : "",
       "sourceNames" => isset($row["sourceNames"]) ? $row["sourceNames"] : array(),
       "sourceSummary" => $row["sourceSummary"],
       "targetPaths" => isset($row["targetPaths"]) ? $row["targetPaths"] : array(),
