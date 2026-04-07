@@ -309,9 +309,10 @@
     var disabledAttr = (state.busy || browser.loading) ? ' disabled="disabled"' : "";
     var pathStatusMessage = "";
     var pathStatusClass = "acp-appdata-browser-status";
-    var breadcrumbHtml = [];
+    var trailHtml = [];
     var manualHtml = [];
     var entryHtml = [];
+    var browserListHtml = [];
     var html = [
       '<div class="acp-modal-summary">',
       '<div class="acp-modal-copy">',
@@ -371,10 +372,19 @@
     });
 
     $.each(breadcrumbs, function(_, crumb) {
-      breadcrumbHtml.push(
-        '<button type="button" class="acp-button acp-button-secondary acp-appdata-breadcrumb" data-action="browse-appdata-source" data-path="' + ACP.escapeHtml(String((crumb && crumb.path) || "")) + '"' + disabledAttr + '>' + ACP.escapeHtml(String((crumb && crumb.label) || "")) + "</button>"
+      trailHtml.push(
+        '<span class="acp-appdata-browser-trail-part">' + ACP.escapeHtml(String((crumb && crumb.label) || "")) + "</span>"
       );
     });
+
+    if (browser.parentPath) {
+      browserListHtml.push(
+        '<button type="button" class="acp-appdata-browser-entry acp-appdata-browser-entry-parent" data-action="browse-appdata-source-parent"' + disabledAttr + '>' +
+          '<span class="acp-appdata-browser-entry-name">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesBrowseParentLabel", "...")) + "</span>" +
+          '<span class="acp-appdata-browser-entry-path">' + ACP.escapeHtml(String(browser.parentPath || "")) + "</span>" +
+        "</button>"
+      );
+    }
 
     $.each(entries, function(_, entry) {
       entryHtml.push(
@@ -384,6 +394,7 @@
         "</button>"
       );
     });
+    browserListHtml = browserListHtml.concat(entryHtml);
 
     html.push(
       "</div>",
@@ -392,22 +403,23 @@
       manualHtml.length
         ? ('<div class="acp-appdata-source-manual-list">' + manualHtml.join("") + "</div>")
         : ('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualEmpty", "No manual appdata source paths have been added yet.")) + "</div>"),
-      '<div class="acp-appdata-browser-toolbar">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="browse-appdata-source-parent"' + ((!browser.parentPath || state.busy || browser.loading) ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesBrowseUpLabel", "Up")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="add-current-appdata-source"' + ((!canAddCurrentPath || state.busy || browser.loading) ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesAddCurrentLabel", "Add selected path")) + "</button>",
-      "</div>",
+      '<div class="acp-appdata-browser-shell">',
       '<div class="acp-appdata-browser-current">',
       '<div class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesCurrentPathLabel", "Current path")) + "</div>",
-      '<code class="acp-modal-path">' + ACP.escapeHtml(currentPath) + "</code>",
+      '<div class="acp-appdata-browser-current-path"><code class="acp-modal-path">' + ACP.escapeHtml(currentPath) + "</code></div>",
       "</div>",
-      breadcrumbHtml.length
-        ? ('<div class="acp-appdata-breadcrumbs">' + breadcrumbHtml.join("") + "</div>")
+      trailHtml.length
+        ? ('<div class="acp-appdata-browser-trail">' + trailHtml.join("") + "</div>")
         : "",
       '<div class="' + ACP.escapeHtml(pathStatusClass) + '">' + ACP.escapeHtml(pathStatusMessage || ACP.t(strings, "appdataSourcesManualHint", "Select a folder path and add it when you reach the full appdata root.")) + "</div>",
-      entryHtml.length
-        ? ('<div class="acp-appdata-browser-list">' + entryHtml.join("") + "</div>")
+      browserListHtml.length
+        ? ('<div class="acp-appdata-browser-list">' + browserListHtml.join("") + "</div>")
         : ('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesBrowseEmptyMessage", "No child folders are available under the current path.")) + "</div>"),
+      '<div class="acp-appdata-browser-actions">',
+      '<button type="button" class="acp-button acp-button-secondary" data-action="add-current-appdata-source"' + ((!canAddCurrentPath || state.busy || browser.loading) ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesAddCurrentLabel", "Add selected path")) + "</button>",
+      "</div>",
       '<div class="acp-modal-feedback" data-role="appdata-sources-feedback">' + ACP.escapeHtml(feedbackMessage) + "</div>",
+      "</div>",
       "</div>",
       '<div class="acp-modal-panel">',
       '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesEffectiveTitle", "Effective scan roots")) + "</div>"
