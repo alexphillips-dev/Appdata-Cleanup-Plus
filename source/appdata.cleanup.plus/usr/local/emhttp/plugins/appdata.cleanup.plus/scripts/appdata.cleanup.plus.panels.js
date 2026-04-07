@@ -307,6 +307,9 @@
     var alreadyAdded = $.inArray(currentPath, manual) !== -1;
     var canAddCurrentPath = !!browser.canAdd && !alreadyAdded;
     var disabledAttr = (state.busy || browser.loading) ? ' disabled="disabled"' : "";
+    var browserEntryAttr = (state.busy || browser.loading)
+      ? ' aria-disabled="true" tabindex="-1"'
+      : ' role="button" tabindex="0"';
     var pathStatusMessage = "";
     var pathStatusClass = "acp-appdata-browser-status";
     var trailHtml = [];
@@ -379,19 +382,19 @@
 
     if (browser.parentPath) {
       browserListHtml.push(
-        '<button type="button" class="acp-appdata-browser-entry acp-appdata-browser-entry-parent" data-action="browse-appdata-source-parent"' + disabledAttr + '>' +
+        '<div class="acp-appdata-browser-entry acp-appdata-browser-entry-parent" data-action="browse-appdata-source-parent"' + browserEntryAttr + '>' +
           '<span class="acp-appdata-browser-entry-name">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesBrowseParentLabel", "...")) + "</span>" +
           '<span class="acp-appdata-browser-entry-path">' + ACP.escapeHtml(String(browser.parentPath || "")) + "</span>" +
-        "</button>"
+        "</div>"
       );
     }
 
     $.each(entries, function(_, entry) {
       entryHtml.push(
-        '<button type="button" class="acp-appdata-browser-entry" data-action="browse-appdata-source" data-path="' + ACP.escapeHtml(String((entry && entry.path) || "")) + '"' + disabledAttr + '>' +
+        '<div class="acp-appdata-browser-entry" data-action="browse-appdata-source" data-path="' + ACP.escapeHtml(String((entry && entry.path) || "")) + '"' + browserEntryAttr + '>' +
           '<span class="acp-appdata-browser-entry-name">' + ACP.escapeHtml(String((entry && entry.name) || "")) + "</span>" +
           '<span class="acp-appdata-browser-entry-path">' + ACP.escapeHtml(String((entry && entry.path) || "")) + "</span>" +
-        "</button>"
+        "</div>"
       );
     });
     browserListHtml = browserListHtml.concat(entryHtml);

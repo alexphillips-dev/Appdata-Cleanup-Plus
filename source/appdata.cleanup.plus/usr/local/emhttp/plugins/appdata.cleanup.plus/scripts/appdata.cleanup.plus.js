@@ -431,6 +431,18 @@
       }
     });
 
+    $(document).on("keydown.acpSources", ".sweet-alert .acp-appdata-browser-entry[data-action]", function(event) {
+      var key = String(event.key || "");
+
+      if (key !== "Enter" && key !== " ") {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      $(this).trigger("click");
+    });
+
     $(document).on("click.acpSources", ".sweet-alert [data-action='add-current-appdata-source']", function(event) {
       event.preventDefault();
       event.stopPropagation();

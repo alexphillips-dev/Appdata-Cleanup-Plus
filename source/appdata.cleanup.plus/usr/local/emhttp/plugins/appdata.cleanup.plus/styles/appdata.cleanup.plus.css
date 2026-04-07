@@ -1612,35 +1612,39 @@ body[data-acp-host-theme="light"] #acp-app,
   align-items: center;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--acp-input-border);
   border-radius: 0;
+  box-shadow: none !important;
   color: var(--acp-text);
   cursor: pointer;
   display: grid;
   gap: 1px;
+  margin: 0 !important;
   min-height: 52px;
+  outline: none !important;
   padding: 7px 10px;
+  position: relative;
   text-align: center;
   transition: background 120ms ease;
   width: 100%;
 }
 
+.acp-appdata-browser-entry + .acp-appdata-browser-entry {
+  border-top: 1px solid var(--acp-input-border);
+}
+
 .acp-appdata-browser-entry:hover,
-.acp-appdata-browser-entry:focus {
+.acp-appdata-browser-entry:focus,
+.acp-appdata-browser-entry:focus-visible,
+.acp-appdata-browser-entry:active {
   background: var(--acp-panel-soft);
-  border-bottom-color: var(--acp-input-border);
   box-shadow: none;
   outline: none;
 }
 
-.acp-appdata-browser-entry:last-child {
-  border-bottom: 0;
-}
-
 .acp-appdata-browser-list {
-  background: var(--acp-input-bg);
-  border: 1px solid var(--acp-input-border);
-  border-radius: 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   gap: 0;
   max-height: min(38vh, 360px);
   overflow-y: auto;
