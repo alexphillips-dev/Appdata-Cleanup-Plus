@@ -53,6 +53,10 @@ try {
       handleSaveSafetySettings();
       break;
 
+    case "browseAppdataSourcePath":
+      handleBrowseAppdataSourcePath();
+      break;
+
     case "updateCandidateState":
       handleUpdateCandidateState();
       break;

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.07.02">
-<!ENTITY md5 "0ef0e7baf05c3821b493afb852f4f44f">
+<!ENTITY version "2026.04.07.03">
+<!ENTITY md5 "77c3cf907ee025ceb40515e5e75b679b">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.07.03
+- Maintenance: Refresh package metadata and build artifacts
+
 ###2026.04.07.02
 - Feature: Add an action-bar lock override control for outside-share review rows using scan-scoped unlock and relock state
 - Safety: Keep hard locks non-bypassable while allowing manually unlocked review rows to stay actionable for the active scan only

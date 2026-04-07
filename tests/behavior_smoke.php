@@ -496,6 +496,24 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   ),
   "defaultQuarantinePurgeDays" => 0
 )), "Manual appdata sources should save before dashboard testing.");
+$browseRootPayload = appdataCleanupPlusBuildManualSourceBrowsePayload("/mnt");
+behaviorSmokeAssertSame(true, ! empty($browseRootPayload["ok"]), "Manual source browser should load the /mnt root.");
+behaviorSmokeAssertSame("/mnt", $browseRootPayload["browser"]["currentPath"], "Manual source browser should report the browsed current path.");
+behaviorSmokeAssertSame(false, ! empty($browseRootPayload["browser"]["canAdd"]), "The /mnt browse root should not be addable as a manual appdata source.");
+behaviorSmokeAssertTrue(count($browseRootPayload["browser"]["entries"]) >= 2, "The /mnt browse root should expose child folders for navigation.");
+$browseFcachePayload = appdataCleanupPlusBuildManualSourceBrowsePayload("/mnt/fcache");
+behaviorSmokeAssertSame(true, ! empty($browseFcachePayload["ok"]), "Manual source browser should load nested paths under /mnt.");
+behaviorSmokeAssertContains("/mnt/fcache", $browseFcachePayload["browser"]["currentPath"], "Manual source browser should preserve the selected nested path.");
+behaviorSmokeAssertTrue(count(array_filter($browseFcachePayload["browser"]["entries"], function($entry) use ($manualCustomSourceRoot) {
+  return isset($entry["path"]) && $entry["path"] === $manualCustomSourceRoot;
+})) === 1, "Manual source browser should list child folders under the selected path.");
+$browseManualRootPayload = appdataCleanupPlusBuildManualSourceBrowsePayload($manualCustomSourceRoot);
+behaviorSmokeAssertSame(true, ! empty($browseManualRootPayload["ok"]), "Manual source browser should load candidate appdata roots.");
+behaviorSmokeAssertSame(true, ! empty($browseManualRootPayload["browser"]["canAdd"]), "Dedicated child folders should become addable manual appdata roots in the browser.");
+behaviorSmokeAssertSame("", $browseManualRootPayload["browser"]["validationMessage"], "Addable manual appdata roots should clear the browser validation message.");
+$browseInvalidPayload = appdataCleanupPlusBuildManualSourceBrowsePayload("/boot/config");
+behaviorSmokeAssertSame(false, ! empty($browseInvalidPayload["ok"]), "Manual source browser should reject paths outside /mnt.");
+behaviorSmokeAssertSame(400, (int)$browseInvalidPayload["statusCode"], "Manual source browser should reject outside-root paths with a bad request status.");
 $appdataSourceInfo = buildAppdataCleanupPlusSourceInfo(getAppdataCleanupPlusSafetySettings());
 behaviorSmokeAssertSame(1, count($appdataSourceInfo["detected"]), "Source info should expose the detected Docker appdata root.");
 behaviorSmokeAssertSame(2, count($appdataSourceInfo["effective"]), "Source info should include the default root plus distinct manual appdata roots.");

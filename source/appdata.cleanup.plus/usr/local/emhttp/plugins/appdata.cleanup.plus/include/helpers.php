@@ -721,6 +721,130 @@ function dirContents($path) {
   return array_diff($dirContents,array(".",".."));
 }
 
+function appdataCleanupPlusManualSourceBrowseRoot() {
+  return "/mnt";
+}
+
+function appdataCleanupPlusPathIsWithinRoot($rootPath, $path) {
+  $normalizedRoot = appdataCleanupPlusCanonicalizePath($rootPath);
+  $normalizedPath = appdataCleanupPlusCanonicalizePath($path);
+
+  if ( $normalizedRoot === "" || $normalizedPath === "" ) {
+    return false;
+  }
+
+  if ( $normalizedPath === $normalizedRoot ) {
+    return true;
+  }
+
+  return startsWith($normalizedPath . "/", $normalizedRoot . "/");
+}
+
+function appdataCleanupPlusBuildBrowseBreadcrumbs($rootPath, $path) {
+  $normalizedRoot = appdataCleanupPlusCanonicalizePath($rootPath);
+  $normalizedPath = appdataCleanupPlusCanonicalizePath($path);
+  $rootSegments = array();
+  $pathSegments = array();
+  $extraSegments = array();
+  $breadcrumbs = array();
+  $currentPath = "";
+
+  if ( ! appdataCleanupPlusPathIsWithinRoot($normalizedRoot, $normalizedPath) ) {
+    return $breadcrumbs;
+  }
+
+  $rootSegments = array_values(array_filter(explode("/", trim($normalizedRoot, "/")), "strlen"));
+  $pathSegments = array_values(array_filter(explode("/", trim($normalizedPath, "/")), "strlen"));
+  $breadcrumbs[] = array(
+    "label" => $normalizedRoot,
+    "path" => $normalizedRoot
+  );
+
+  if ( $normalizedPath === $normalizedRoot ) {
+    return $breadcrumbs;
+  }
+
+  $extraSegments = array_slice($pathSegments, count($rootSegments));
+  $currentPath = $normalizedRoot;
+
+  foreach ( $extraSegments as $segment ) {
+    $currentPath = appdataCleanupPlusCanonicalizePath($currentPath . "/" . $segment);
+    $breadcrumbs[] = array(
+      "label" => (string)$segment,
+      "path" => $currentPath
+    );
+  }
+
+  return $breadcrumbs;
+}
+
+function appdataCleanupPlusBuildManualSourceBrowsePayload($path="") {
+  $browseRoot = appdataCleanupPlusManualSourceBrowseRoot();
+  $requestedPath = trim((string)$path);
+  $normalizedPath = $requestedPath !== "" ? appdataCleanupPlusCanonicalizePath($requestedPath) : $browseRoot;
+  $validationMessage = "";
+  $entries = array();
+  $parentPath = "";
+
+  if ( ! appdataCleanupPlusPathIsWithinRoot($browseRoot, $normalizedPath) ) {
+    return array(
+      "ok" => false,
+      "message" => "Only /mnt paths can be browsed here.",
+      "statusCode" => 400
+    );
+  }
+
+  if ( ! is_dir($normalizedPath) ) {
+    return array(
+      "ok" => false,
+      "message" => "The requested folder is not available right now.",
+      "statusCode" => 400
+    );
+  }
+
+  foreach ( dirContents($normalizedPath) as $entryName ) {
+    $entryPath = appdataCleanupPlusCanonicalizePath($normalizedPath . "/" . (string)$entryName);
+
+    if ( $entryPath === "" || ! appdataCleanupPlusPathIsWithinRoot($browseRoot, $entryPath) || ! is_dir($entryPath) ) {
+      continue;
+    }
+
+    $entries[] = array(
+      "name" => (string)$entryName,
+      "path" => $entryPath
+    );
+  }
+
+  usort($entries, function($left, $right) {
+    return strnatcasecmp(
+      isset($left["name"]) ? (string)$left["name"] : "",
+      isset($right["name"]) ? (string)$right["name"] : ""
+    );
+  });
+
+  $validationMessage = appdataCleanupPlusValidateManualAppdataSource($normalizedPath);
+
+  if ( $normalizedPath !== $browseRoot ) {
+    $parentPath = appdataCleanupPlusCanonicalizePath(dirname($normalizedPath));
+    if ( ! appdataCleanupPlusPathIsWithinRoot($browseRoot, $parentPath) ) {
+      $parentPath = $browseRoot;
+    }
+  }
+
+  return array(
+    "ok" => true,
+    "browser" => array(
+      "root" => $browseRoot,
+      "currentPath" => $normalizedPath,
+      "parentPath" => $parentPath,
+      "breadcrumbs" => appdataCleanupPlusBuildBrowseBreadcrumbs($browseRoot, $normalizedPath),
+      "entries" => $entries,
+      "canAdd" => $validationMessage === "",
+      "validationMessage" => $validationMessage
+    )
+  );
+}
+
 function appdataCleanupPlusConfiguredStateRoot() {
   $override = "";
 

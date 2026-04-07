@@ -279,6 +279,22 @@ function handleSaveSafetySettings() {
   ));
 }
 
+function handleBrowseAppdataSourcePath() {
+  $browseResult = appdataCleanupPlusBuildManualSourceBrowsePayload(getPostedString("path"));
+
+  if ( empty($browseResult["ok"]) ) {
+    jsonResponse(array(
+      "ok" => false,
+      "message" => isset($browseResult["message"]) ? (string)$browseResult["message"] : "The requested folder could not be browsed right now."
+    ), isset($browseResult["statusCode"]) ? (int)$browseResult["statusCode"] : 400);
+  }
+
+  jsonResponse(array(
+    "ok" => true,
+    "browser" => isset($browseResult["browser"]) && is_array($browseResult["browser"]) ? $browseResult["browser"] : array()
+  ));
+}
+
 function handleUpdateCandidateState() {
   $token = getRequestedToken();
   $candidateIds = parseCandidateIds(getPostedString("candidateIds"));

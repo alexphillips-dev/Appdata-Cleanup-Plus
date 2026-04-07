@@ -18,6 +18,7 @@
       detected: [],
       effective: []
     },
+    appdataSourceBrowser: defaultAppdataSourceBrowserState(),
     quarantine: {
       loading: false,
       loaded: false,
@@ -42,6 +43,23 @@
   var els = {};
 
   $(init);
+
+  function defaultAppdataSourceBrowserState() {
+    return {
+      loading: false,
+      loaded: false,
+      root: "/mnt",
+      currentPath: "",
+      parentPath: "",
+      breadcrumbs: [],
+      entries: [],
+      canAdd: false,
+      validationMessage: "",
+      feedbackMessage: "",
+      requestToken: "",
+      manual: []
+    };
+  }
 
   function init() {
     cacheElements();
@@ -386,16 +404,48 @@
       syncQuarantineManagerSelectionUi();
     });
 
-    $(document).on("input.acpSources", ".sweet-alert [data-role='manual-appdata-sources']", function() {
-      setAppdataSourcesFeedback("");
-    });
-
     $(document).on("click.acpSources", ".sweet-alert [data-action='save-appdata-sources']", function(event) {
       event.preventDefault();
       event.stopPropagation();
 
       if (!state.busy) {
         saveAppdataSourcesFromModal();
+      }
+    });
+
+    $(document).on("click.acpSources", ".sweet-alert [data-action='browse-appdata-source']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.appdataSourceBrowser.loading) {
+        loadAppdataSourceBrowser($(this).data("path"));
+      }
+    });
+
+    $(document).on("click.acpSources", ".sweet-alert [data-action='browse-appdata-source-parent']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.appdataSourceBrowser.loading && state.appdataSourceBrowser.parentPath) {
+        loadAppdataSourceBrowser(state.appdataSourceBrowser.parentPath);
+      }
+    });
+
+    $(document).on("click.acpSources", ".sweet-alert [data-action='add-current-appdata-source']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.appdataSourceBrowser.loading) {
+        addCurrentAppdataSourceFromBrowser();
+      }
+    });
+
+    $(document).on("click.acpSources", ".sweet-alert [data-action='remove-manual-appdata-source']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.appdataSourceBrowser.loading) {
+        removeManualAppdataSourceFromBrowser($(this).data("path"));
       }
     });
 
@@ -533,6 +583,7 @@
     state.scanWarningMessage = "";
     state.settings = ACP.defaultSafetySettings();
     state.appdataSources = { detected: [], effective: [] };
+    state.appdataSourceBrowser = defaultAppdataSourceBrowserState();
     state.quarantine.entries = [];
     state.quarantine.loaded = false;
     state.quarantine.selected = {};
@@ -546,6 +597,7 @@
 
   function loadScan() {
     var shouldHydrate = false;
+    var previousBrowserState = $.extend(true, {}, state.appdataSourceBrowser || defaultAppdataSourceBrowserState());
 
     stopScanStatHydration();
     setBusy(true);
@@ -577,6 +629,7 @@
       }
     }).fail(function(xhr) {
       resetDashboardState();
+      state.appdataSourceBrowser = previousBrowserState;
       syncSafetyControls();
       renderSummaryCards();
       renderPanels();
@@ -760,9 +813,14 @@
   }
 
   function openAppdataSourcesModal() {
+    syncAppdataSourceBrowserManualSourcesFromSettings();
+    state.appdataSourceBrowser.feedbackMessage = "";
     ensureAppdataSourcesModal();
     renderPanels();
     renderAppdataSourcesModal();
+    loadAppdataSourceBrowser(state.appdataSourceBrowser.currentPath || state.appdataSourceBrowser.root || "/mnt", {
+      preserveFeedback: true
+    });
   }
 
   function isAppdataSourcesModalVisible() {
@@ -778,20 +836,40 @@
     };
   }
 
+  function setAppdataSourceBrowserPayload(payload) {
+    var nextPayload = $.isPlainObject(payload) ? payload : {};
+    var nextState = $.extend({}, defaultAppdataSourceBrowserState(), state.appdataSourceBrowser || {});
+
+    nextState.root = String(nextPayload.root || nextState.root || "/mnt");
+    nextState.currentPath = String(nextPayload.currentPath || nextState.currentPath || nextState.root);
+    nextState.parentPath = String(nextPayload.parentPath || "");
+    nextState.breadcrumbs = $.isArray(nextPayload.breadcrumbs) ? nextPayload.breadcrumbs : [];
+    nextState.entries = $.isArray(nextPayload.entries) ? nextPayload.entries : [];
+    nextState.canAdd = !!nextPayload.canAdd;
+    nextState.validationMessage = String(nextPayload.validationMessage || "");
+    nextState.loaded = true;
+    nextState.loading = false;
+    state.appdataSourceBrowser = nextState;
+  }
+
   function setAppdataSourcesFeedback(message) {
     var $feedback = $(".sweet-alert [data-role='appdata-sources-feedback']");
+    var nextMessage = String(message || "");
+
+    state.appdataSourceBrowser.feedbackMessage = nextMessage;
 
     if (!$feedback.length) {
       return;
     }
 
-    $feedback.text(String(message || ""));
+    $feedback.text(nextMessage);
   }
 
   function normalizeManualAppdataSourcesInput(rawValue) {
     var seen = {};
+    var sourceValues = $.isArray(rawValue) ? rawValue : String(rawValue || "").split(/\r?\n/);
 
-    return $.grep($.map(String(rawValue || "").split(/\r?\n/), function(line) {
+    return $.grep($.map(sourceValues, function(line) {
       var trimmed = $.trim(String(line || ""));
 
       if (!trimmed || seen[trimmed]) {
@@ -805,8 +883,102 @@
     });
   }
 
+  function syncAppdataSourceBrowserManualSourcesFromSettings() {
+    var nextBrowserState = $.extend({}, defaultAppdataSourceBrowserState(), state.appdataSourceBrowser || {});
+
+    nextBrowserState.manual = normalizeManualAppdataSourcesInput((state.settings || {}).manualAppdataSources || []);
+    state.appdataSourceBrowser = nextBrowserState;
+  }
+
   function getManualAppdataSourcesFromModal() {
-    return normalizeManualAppdataSourcesInput($(".sweet-alert [data-role='manual-appdata-sources']").val());
+    return normalizeManualAppdataSourcesInput((state.appdataSourceBrowser || {}).manual || []);
+  }
+
+  function loadAppdataSourceBrowser(path, options) {
+    var normalizedOptions = $.isPlainObject(options) ? options : {};
+    var requestedPath = $.trim(String(path || state.appdataSourceBrowser.currentPath || state.appdataSourceBrowser.root || "/mnt"));
+    var requestToken = requestedPath + ":" + String(Date.now());
+
+    state.appdataSourceBrowser.root = String(state.appdataSourceBrowser.root || "/mnt");
+    state.appdataSourceBrowser.currentPath = requestedPath || state.appdataSourceBrowser.root;
+    state.appdataSourceBrowser.loading = true;
+    state.appdataSourceBrowser.requestToken = requestToken;
+
+    if (!normalizedOptions.preserveFeedback) {
+      setAppdataSourcesFeedback("");
+    }
+
+    if (isAppdataSourcesModalVisible()) {
+      renderAppdataSourcesModal();
+    }
+
+    apiPost({
+      action: "browseAppdataSourcePath",
+      path: requestedPath
+    }).done(function(response) {
+      if (requestToken !== String(state.appdataSourceBrowser.requestToken || "")) {
+        return;
+      }
+
+      setAppdataSourceBrowserPayload((response && response.browser) || {});
+      state.appdataSourceBrowser.requestToken = "";
+
+      if (isAppdataSourcesModalVisible()) {
+        renderAppdataSourcesModal();
+      }
+    }).fail(function(xhr) {
+      if (requestToken !== String(state.appdataSourceBrowser.requestToken || "")) {
+        return;
+      }
+
+      state.appdataSourceBrowser.loading = false;
+      state.appdataSourceBrowser.requestToken = "";
+      setAppdataSourcesFeedback(ACP.extractErrorMessage(xhr, ACP.t(strings, "appdataSourcesBrowseFailedMessage", "The selected folder could not be browsed right now.")));
+
+      if (isAppdataSourcesModalVisible()) {
+        renderAppdataSourcesModal();
+      }
+    });
+  }
+
+  function addCurrentAppdataSourceFromBrowser() {
+    var currentPath = $.trim(String(state.appdataSourceBrowser.currentPath || ""));
+    var nextManualSources = getManualAppdataSourcesFromModal();
+
+    if (!currentPath) {
+      return;
+    }
+
+    if ($.inArray(currentPath, nextManualSources) !== -1) {
+      setAppdataSourcesFeedback(ACP.t(strings, "appdataSourcesAlreadyAddedMessage", "This path is already in the manual source list."));
+      renderAppdataSourcesModal();
+      return;
+    }
+
+    if (!state.appdataSourceBrowser.canAdd) {
+      setAppdataSourcesFeedback(state.appdataSourceBrowser.validationMessage || ACP.t(strings, "appdataSourcesInvalidCurrentMessage", "This path cannot be added as a manual appdata source yet."));
+      renderAppdataSourcesModal();
+      return;
+    }
+
+    nextManualSources.push(currentPath);
+    state.appdataSourceBrowser.manual = normalizeManualAppdataSourcesInput(nextManualSources);
+    setAppdataSourcesFeedback("");
+    renderAppdataSourcesModal();
+  }
+
+  function removeManualAppdataSourceFromBrowser(path) {
+    var targetPath = $.trim(String(path || ""));
+
+    if (!targetPath) {
+      return;
+    }
+
+    state.appdataSourceBrowser.manual = $.grep(getManualAppdataSourcesFromModal(), function(sourcePath) {
+      return String(sourcePath || "") !== targetPath;
+    });
+    setAppdataSourcesFeedback("");
+    renderAppdataSourcesModal();
   }
 
   function saveAppdataSourcesFromModal() {
@@ -2266,6 +2438,7 @@
 
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || nextSettings);
       setAppdataSourceInfo(response.appdataSourceInfo || {});
+      state.appdataSourceBrowser.manual = normalizeManualAppdataSourcesInput((state.settings || {}).manualAppdataSources || []);
       if (quarantine) {
         setQuarantineEntries(quarantine.entries, quarantine.summary);
         state.quarantine.loaded = true;
@@ -2279,6 +2452,9 @@
       setBusy(false);
       if (!normalizedOptions.skipRenderAll) {
         renderAll();
+      }
+      if (isAppdataSourcesModalVisible()) {
+        renderAppdataSourcesModal();
       }
       if (wasQuarantineManagerVisible || normalizedOptions.syncQuarantineModal) {
         renderOpenQuarantineManagerModal();

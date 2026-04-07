@@ -294,14 +294,28 @@
     var strings = context.strings || {};
     var settings = state.settings || {};
     var sourceInfo = state.appdataSources || {};
+    var browser = state.appdataSourceBrowser || {};
     var detected = $.isArray(sourceInfo.detected) ? sourceInfo.detected : [];
-    var effective = $.isArray(sourceInfo.effective) ? sourceInfo.effective : [];
-    var manual = $.isArray(settings.manualAppdataSources) ? settings.manualAppdataSources : [];
-    var disabledAttr = state.busy ? ' disabled="disabled"' : "";
+    var manual = $.isArray(browser.manual) ? browser.manual : ($.isArray(settings.manualAppdataSources) ? settings.manualAppdataSources : []);
+    var effective = [];
+    var effectiveSeen = {};
+    var breadcrumbs = $.isArray(browser.breadcrumbs) ? browser.breadcrumbs : [];
+    var entries = $.isArray(browser.entries) ? browser.entries : [];
+    var currentPath = String(browser.currentPath || browser.root || "/mnt");
+    var feedbackMessage = String(browser.feedbackMessage || "");
+    var currentValidationMessage = String(browser.validationMessage || "");
+    var alreadyAdded = $.inArray(currentPath, manual) !== -1;
+    var canAddCurrentPath = !!browser.canAdd && !alreadyAdded;
+    var disabledAttr = (state.busy || browser.loading) ? ' disabled="disabled"' : "";
+    var pathStatusMessage = "";
+    var pathStatusClass = "acp-appdata-browser-status";
+    var breadcrumbHtml = [];
+    var manualHtml = [];
+    var entryHtml = [];
     var html = [
       '<div class="acp-modal-summary">',
       '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesLead", "The Docker appdata root is auto-detected when available. Add one extra absolute path per line for non-standard appdata locations.")) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesLead", "The Docker appdata root is auto-detected when available. Browse to a non-standard appdata location, then add it to the manual source list.")) + "</div>",
       '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesHint", "Only add dedicated appdata roots. Direct child folders under each root are treated as discovery candidates.")) + "</div>",
       "</div>",
       '<div class="acp-modal-actions-row">',
@@ -311,6 +325,17 @@
       '<div class="acp-modal-panel">',
       '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesDetectedTitle", "Detected source")) + "</div>"
     ];
+
+    $.each(detected.concat(manual), function(_, path) {
+      var normalizedPath = $.trim(String(path || ""));
+
+      if (!normalizedPath || effectiveSeen[normalizedPath]) {
+        return;
+      }
+
+      effectiveSeen[normalizedPath] = true;
+      effective.push(normalizedPath);
+    });
 
     if (!detected.length) {
       html.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesDetectedEmpty", "No Docker appdata source is auto-detected right now.")) + "</div>");
@@ -322,13 +347,67 @@
       html.push("</div>");
     }
 
+    if (browser.loading) {
+      pathStatusMessage = ACP.t(strings, "appdataSourcesBrowseLoadingMessage", "Loading folders from the selected path.");
+      pathStatusClass += " is-loading";
+    } else if (alreadyAdded) {
+      pathStatusMessage = ACP.t(strings, "appdataSourcesAlreadyAddedMessage", "This path is already in the manual source list.");
+      pathStatusClass += " is-info";
+    } else if (browser.canAdd) {
+      pathStatusMessage = ACP.t(strings, "appdataSourcesReadyMessage", "This path can be added as a manual appdata source.");
+      pathStatusClass += " is-ready";
+    } else if (currentValidationMessage) {
+      pathStatusMessage = currentValidationMessage;
+      pathStatusClass += " is-warning";
+    }
+
+    $.each(manual, function(_, path) {
+      manualHtml.push(
+        '<div class="acp-appdata-source-manual-item">' +
+          '<code class="acp-modal-path">' + ACP.escapeHtml(path || "") + "</code>" +
+          '<button type="button" class="acp-button acp-button-secondary" data-action="remove-manual-appdata-source" data-path="' + ACP.escapeHtml(path || "") + '"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesRemoveLabel", "Remove")) + "</button>" +
+        "</div>"
+      );
+    });
+
+    $.each(breadcrumbs, function(_, crumb) {
+      breadcrumbHtml.push(
+        '<button type="button" class="acp-button acp-button-secondary acp-appdata-breadcrumb" data-action="browse-appdata-source" data-path="' + ACP.escapeHtml(String((crumb && crumb.path) || "")) + '"' + disabledAttr + '>' + ACP.escapeHtml(String((crumb && crumb.label) || "")) + "</button>"
+      );
+    });
+
+    $.each(entries, function(_, entry) {
+      entryHtml.push(
+        '<button type="button" class="acp-appdata-browser-entry" data-action="browse-appdata-source" data-path="' + ACP.escapeHtml(String((entry && entry.path) || "")) + '"' + disabledAttr + '>' +
+          '<span class="acp-appdata-browser-entry-name">' + ACP.escapeHtml(String((entry && entry.name) || "")) + "</span>" +
+          '<span class="acp-appdata-browser-entry-path">' + ACP.escapeHtml(String((entry && entry.path) || "")) + "</span>" +
+        "</button>"
+      );
+    });
+
     html.push(
       "</div>",
       '<div class="acp-modal-panel">',
       '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualTitle", "Manual source paths")) + "</div>",
-      '<textarea class="acp-input acp-appdata-sources-textarea" data-role="manual-appdata-sources"' + disabledAttr + ">" + ACP.escapeHtml(manual.join("\n")) + "</textarea>",
-      '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualHint", "Enter one absolute path per line, for example /mnt/fcache/appdata.")) + "</div>",
-      '<div class="acp-modal-feedback" data-role="appdata-sources-feedback"></div>',
+      manualHtml.length
+        ? ('<div class="acp-appdata-source-manual-list">' + manualHtml.join("") + "</div>")
+        : ('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualEmpty", "No manual appdata source paths have been added yet.")) + "</div>"),
+      '<div class="acp-appdata-browser-toolbar">',
+      '<button type="button" class="acp-button acp-button-secondary" data-action="browse-appdata-source-parent"' + ((!browser.parentPath || state.busy || browser.loading) ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesBrowseUpLabel", "Up")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="add-current-appdata-source"' + ((!canAddCurrentPath || state.busy || browser.loading) ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesAddCurrentLabel", "Add selected path")) + "</button>",
+      "</div>",
+      '<div class="acp-appdata-browser-current">',
+      '<div class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesCurrentPathLabel", "Current path")) + "</div>",
+      '<code class="acp-modal-path">' + ACP.escapeHtml(currentPath) + "</code>",
+      "</div>",
+      breadcrumbHtml.length
+        ? ('<div class="acp-appdata-breadcrumbs">' + breadcrumbHtml.join("") + "</div>")
+        : "",
+      '<div class="' + ACP.escapeHtml(pathStatusClass) + '">' + ACP.escapeHtml(pathStatusMessage || ACP.t(strings, "appdataSourcesManualHint", "Select a folder path and add it when you reach the full appdata root.")) + "</div>",
+      entryHtml.length
+        ? ('<div class="acp-appdata-browser-list">' + entryHtml.join("") + "</div>")
+        : ('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesBrowseEmptyMessage", "No child folders are available under the current path.")) + "</div>"),
+      '<div class="acp-modal-feedback" data-role="appdata-sources-feedback">' + ACP.escapeHtml(feedbackMessage) + "</div>",
       "</div>",
       '<div class="acp-modal-panel">',
       '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesEffectiveTitle", "Effective scan roots")) + "</div>"
