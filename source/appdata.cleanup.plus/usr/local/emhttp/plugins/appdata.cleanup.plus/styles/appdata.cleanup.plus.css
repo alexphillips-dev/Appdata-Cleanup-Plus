@@ -1609,21 +1609,23 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-appdata-browser-entry {
-  align-items: center;
+  align-items: start;
   background: transparent;
   border: 0;
   border-radius: 0;
+  box-sizing: border-box;
   box-shadow: none !important;
   color: var(--acp-text);
   cursor: pointer;
   display: grid;
-  gap: 1px;
+  gap: 0;
+  justify-items: start;
   margin: 0 !important;
-  min-height: 52px;
+  min-height: 40px;
   outline: none !important;
-  padding: 7px 10px;
+  padding: 4px 10px;
   position: relative;
-  text-align: center;
+  text-align: left;
   transition: background 120ms ease;
   width: 100%;
 }
@@ -1645,10 +1647,13 @@ body[data-acp-host-theme="light"] #acp-app,
   background: transparent;
   border: 0;
   border-radius: 0;
+  box-sizing: border-box;
   gap: 0;
   max-height: min(38vh, 360px);
+  overflow-x: hidden;
   overflow-y: auto;
   padding-right: 0;
+  width: 100%;
 }
 
 .acp-appdata-browser-actions {
@@ -1660,16 +1665,20 @@ body[data-acp-host-theme="light"] #acp-app,
   color: var(--acp-heading);
   font-size: 12px;
   font-weight: 800;
+  justify-self: start;
   letter-spacing: 0.08em;
-  line-height: 1.35;
+  line-height: 1.2;
+  text-align: left;
 }
 
 .acp-appdata-browser-entry-path {
   color: var(--acp-muted);
   font-size: 10px;
   font-weight: 700;
+  justify-self: start;
   letter-spacing: 0.05em;
-  line-height: 1.35;
+  line-height: 1.2;
+  text-align: left;
   word-break: break-all;
 }
 
