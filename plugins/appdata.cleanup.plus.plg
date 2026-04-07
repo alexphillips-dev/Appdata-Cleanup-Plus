@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.07.10
+- Release: Promote the `2026.04.07.09` development build to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
+- Discovery: Surface empty direct-child parent folders left behind after nested appdata mount paths are removed, instead of hiding them forever behind stale nested template or live-path references
+- Safety: Keep direct-child parents hidden when a real nested appdata descendant still exists, and keep non-empty stale parents hidden in this first safe pass
+- Test: Extend the behavior smoke coverage for active nested mounts, empty stale parents, and non-empty stale parent remnants
+
 ###2026.04.07.09
 - Maintenance: Refresh package metadata and build artifacts
 
