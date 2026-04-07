@@ -620,10 +620,38 @@ function appdataCleanupPlusShouldExcludeFilesystemDiscoveryEntry($entryName) {
   ), true);
 }
 
+function appdataCleanupPlusDirectoryIsEmpty($path) {
+  if ( ! is_dir($path) ) {
+    return false;
+  }
+
+  return count(dirContents($path)) === 0;
+}
+
+function appdataCleanupPlusResolveExistingNestedReferencePath($candidatePath, $referencePath) {
+  foreach ( appdataCleanupPlusPathComparisonVariants($referencePath) as $referenceVariant ) {
+    if ( $referenceVariant === "" || ! pathIsDescendant($candidatePath, $referenceVariant) ) {
+      continue;
+    }
+
+    if ( is_dir($referenceVariant) ) {
+      return $referenceVariant;
+    }
+  }
+
+  return "";
+}
+
+function appdataCleanupPlusBuildEmptyParentRemnantReason($sourceRoot) {
+  $sourceLead = $sourceRoot !== "" ? "Configured appdata source '" . $sourceRoot . "'" : "Configured appdata source scan";
+  return $sourceLead . " found this empty parent folder after nested appdata mount paths under it were removed.";
+}
+
 function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning) {
   $availableVolumes = array();
   $templatePaths = array();
   $installedHostPaths = appdataCleanupPlusExtractDockerVolumeHostPaths($containers);
+  $nestedReferencePaths = array();
   $excludedRoots = array();
   $configuredSourceRoots = getAppdataCleanupPlusConfiguredSourceRoots($settings);
 
@@ -649,6 +677,8 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
     $templatePaths[] = (string)$volume["HostDir"];
   }
 
+  $nestedReferencePaths = array_values(array_unique(array_merge($templatePaths, $installedHostPaths)));
+
   foreach ( $configuredSourceRoots as $sourceRoot ) {
     $entries = array();
 
@@ -667,6 +697,7 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
       $candidatePath = "";
       $candidateKey = "";
       $skipCandidate = false;
+      $hasStaleNestedReference = false;
 
       if ( appdataCleanupPlusShouldExcludeFilesystemDiscoveryEntry($entryName) ) {
         continue;
@@ -688,29 +719,38 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
         continue;
       }
 
-      foreach ( $templatePaths as $referencePath ) {
-        if ( pathMatchesOrIsDescendant($candidatePath, $referencePath) ) {
+      foreach ( $nestedReferencePaths as $referencePath ) {
+        if ( appdataCleanupPlusPathsEquivalent($candidatePath, $referencePath) ) {
           $skipCandidate = true;
           break;
         }
-      }
 
-      if ( $skipCandidate ) {
-        continue;
-      }
+        if ( ! pathIsDescendant($candidatePath, $referencePath) ) {
+          continue;
+        }
 
-      foreach ( $installedHostPaths as $referencePath ) {
-        if ( pathMatchesOrIsDescendant($candidatePath, $referencePath) ) {
+        if ( appdataCleanupPlusResolveExistingNestedReferencePath($candidatePath, $referencePath) !== "" ) {
           $skipCandidate = true;
           break;
         }
+
+        $hasStaleNestedReference = true;
       }
 
       if ( $skipCandidate || isset($availableVolumes[$candidateKey]) ) {
         continue;
       }
 
+      if ( $hasStaleNestedReference && ! appdataCleanupPlusDirectoryIsEmpty($candidatePath) ) {
+        continue;
+      }
+
       $availableVolumes[$candidateKey] = appdataCleanupPlusCreateCandidateVolume($candidatePath, "filesystem", $sourceRoot, $sourceRoot);
+
+      if ( $hasStaleNestedReference ) {
+        $availableVolumes[$candidateKey]["ReasonOverride"] = appdataCleanupPlusBuildEmptyParentRemnantReason($sourceRoot);
+        $availableVolumes[$candidateKey]["RiskReasonOverride"] = "This empty parent folder sits inside a configured appdata source and no current nested appdata path still exists under it.";
+      }
     }
   }
 
@@ -875,6 +915,8 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
       $targetPaths = isset($volume["Targets"]) ? array_values(array_keys($volume["Targets"])) : array();
       $templateRefs = isset($volume["TemplateRefs"]) ? array_values($volume["TemplateRefs"]) : array();
       $sourceRoot = isset($volume["SourceRoot"]) ? trim((string)$volume["SourceRoot"]) : "";
+      $reasonOverride = isset($volume["ReasonOverride"]) ? trim((string)$volume["ReasonOverride"]) : "";
+      $riskReasonOverride = isset($volume["RiskReasonOverride"]) ? trim((string)$volume["RiskReasonOverride"]) : "";
       natcasesort($sourceNames);
       natcasesort($targetPaths);
       $sourceNames = array_values($sourceNames);
@@ -926,8 +968,8 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
         "realPath" => $realPath ? $realPath : "",
         "risk" => $classification["risk"],
         "riskLabel" => $classification["riskLabel"],
-        "riskReason" => $classification["riskReason"],
-        "reason" => buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning, $sourceRoot),
+        "riskReason" => $riskReasonOverride !== "" ? $riskReasonOverride : $classification["riskReason"],
+        "reason" => $reasonOverride !== "" ? $reasonOverride : buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning, $sourceRoot),
         "status" => $dockerRunning ? "orphaned" : "docker_offline",
         "statusLabel" => $dockerRunning ? "Orphaned" : "Docker offline",
         "canDelete" => $classification["canDelete"],

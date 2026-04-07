@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.07.08">
-<!ENTITY md5 "0069ee4a39e8d848cb4504bb4f0fe866">
+<!ENTITY version "2026.04.07.09">
+<!ENTITY md5 "22cd071436847b90332bcfaa0fa621f3">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.07.09
+- Maintenance: Refresh package metadata and build artifacts
+
 ###2026.04.07.08
 - Release: Promote the full `2026.04.07.01` through `2026.04.07.07` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
 - Feature: Add an `Appdata sources` action-bar workflow for non-standard Docker appdata roots so extra mount locations can be saved and scanned beside the auto-detected Docker appdata path
