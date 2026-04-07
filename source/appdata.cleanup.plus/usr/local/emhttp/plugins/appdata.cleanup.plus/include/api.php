@@ -78,6 +78,69 @@ function resolveSnapshotCandidates($token, $candidateIds) {
   );
 }
 
+function updateSnapshotCandidateLockOverrideState($token, $candidateIds, $intent) {
+  $normalizedIntent = strtolower(trim((string)$intent));
+  $resolvedCandidates = resolveSnapshotCandidates($token, $candidateIds);
+  $candidateMap = array();
+  $updatedCandidates = array();
+  $updatedSnapshot = null;
+
+  if ( ! $resolvedCandidates["ok"] ) {
+    return $resolvedCandidates;
+  }
+
+  if ( ! in_array($normalizedIntent, array("unlock", "relock"), true) ) {
+    return array(
+      "ok" => false,
+      "message" => "Unsupported lock override update.",
+      "statusCode" => 400
+    );
+  }
+
+  $candidateMap = isset($resolvedCandidates["snapshot"]["candidates"]) && is_array($resolvedCandidates["snapshot"]["candidates"])
+    ? $resolvedCandidates["snapshot"]["candidates"]
+    : array();
+
+  foreach ( $resolvedCandidates["candidates"] as $candidate ) {
+    $candidateId = isset($candidate["id"]) ? (string)$candidate["id"] : "";
+
+    if ( ! $candidateId || empty($candidateMap[$candidateId]) || ! is_array($candidateMap[$candidateId]) ) {
+      return array(
+        "ok" => false,
+        "message" => "One or more selected candidates are no longer valid. Rescan and try again.",
+        "statusCode" => 409
+      );
+    }
+
+    if ( ! appdataCleanupPlusCandidateSupportsLockOverride($candidateMap[$candidateId]) ) {
+      return array(
+        "ok" => false,
+        "message" => "Only outside-share review locks can be manually unlocked.",
+        "statusCode" => 400
+      );
+    }
+
+    $candidateMap[$candidateId]["lockOverridden"] = $normalizedIntent === "unlock";
+    $updatedCandidates[] = $candidateMap[$candidateId];
+  }
+
+  $updatedSnapshot = writeAppdataCleanupPlusSnapshot($candidateMap);
+
+  if ( ! $updatedSnapshot ) {
+    return array(
+      "ok" => false,
+      "message" => "The selected review folders could not be updated right now.",
+      "statusCode" => 500
+    );
+  }
+
+  return array(
+    "ok" => true,
+    "scanToken" => (string)$updatedSnapshot["token"],
+    "candidates" => $updatedCandidates
+  );
+}
+
 function buildDashboardPayload() {
   $settings = getAppdataCleanupPlusSafetySettings();
   $allFiles = glob(appdataCleanupPlusDockerTemplateDir() . "/*.xml");
@@ -221,12 +284,30 @@ function handleUpdateCandidateState() {
   $candidateIds = parseCandidateIds(getPostedString("candidateIds"));
   $intent = getPostedString("intent");
   $resolvedCandidates = resolveSnapshotCandidates($token, $candidateIds);
+  $lockOverrideUpdate = array();
 
   if ( ! $resolvedCandidates["ok"] ) {
     jsonResponse(array(
       "ok" => false,
       "message" => $resolvedCandidates["message"]
     ), $resolvedCandidates["statusCode"]);
+  }
+
+  if ( in_array($intent, array("unlock", "relock"), true) ) {
+    $lockOverrideUpdate = updateSnapshotCandidateLockOverrideState($token, $candidateIds, $intent);
+
+    if ( ! $lockOverrideUpdate["ok"] ) {
+      jsonResponse(array(
+        "ok" => false,
+        "message" => $lockOverrideUpdate["message"]
+      ), $lockOverrideUpdate["statusCode"]);
+    }
+
+    jsonResponse(array(
+      "ok" => true,
+      "scanToken" => isset($lockOverrideUpdate["scanToken"]) ? $lockOverrideUpdate["scanToken"] : "",
+      "candidates" => isset($lockOverrideUpdate["candidates"]) ? $lockOverrideUpdate["candidates"] : array()
+    ));
   }
 
   if ( ! in_array($intent, array("ignore", "unignore"), true) ) {
@@ -256,7 +337,8 @@ function handleUpdateCandidateState() {
   }
 
   jsonResponse(array(
-    "ok" => true
+    "ok" => true,
+    "scanToken" => $token
   ));
 }
 

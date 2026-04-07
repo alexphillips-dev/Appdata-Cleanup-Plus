@@ -678,6 +678,14 @@ function classifyAppdataCandidate($path, $settings=null) {
   return $classification;
 }
 
+function appdataCleanupPlusCandidateSupportsLockOverride($candidate) {
+  return is_array($candidate) && ! empty($candidate["lockOverrideAllowed"]);
+}
+
+function appdataCleanupPlusCandidateHasLockOverride($candidate) {
+  return appdataCleanupPlusCandidateSupportsLockOverride($candidate) && ! empty($candidate["lockOverridden"]);
+}
+
 function findAppdata($volumes, $settings=null) {
   $path = false;
   $configuredRoots = getAppdataCleanupPlusConfiguredSourceRoots($settings);

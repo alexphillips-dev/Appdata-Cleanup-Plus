@@ -213,6 +213,14 @@
       }
     });
 
+    els.$modeStrip.on("click", "[data-action='toggle-lock-override']", function() {
+      var intent = String($(this).data("lock-intent") || "unlock");
+
+      if (!state.busy) {
+        startSelectedLockOverrideFlow(intent);
+      }
+    });
+
     els.$modeStrip.on("click", "[data-action='open-audit-history']", function() {
       if (!state.busy) {
         openAuditHistoryModal();
@@ -484,6 +492,22 @@
     return state.settings.enablePermanentDelete
       ? ACP.t(strings, "deleteActionLabel", "Delete selected")
       : ACP.t(strings, "quarantineActionLabel", "Quarantine selected");
+  }
+
+  function isRowLockOverrideAllowed(row) {
+    return !!row && !row.ignored && !!row.lockOverrideAllowed;
+  }
+
+  function isRowPendingLockOverride(row) {
+    return isRowLockOverrideAllowed(row) && !!row.policyLocked && !row.lockOverridden;
+  }
+
+  function isRowRelockable(row) {
+    return isRowLockOverrideAllowed(row) && !!row.lockOverridden;
+  }
+
+  function isRowSelectable(row) {
+    return !!row && !row.ignored && (!!row.canDelete || isRowLockOverrideAllowed(row));
   }
 
   function setBusy(isBusy) {
@@ -808,8 +832,12 @@
 
     nextRow.policyLocked = false;
     nextRow.policyReason = "";
+    nextRow.lockOverrideAllowed = !!nextRow.lockOverrideAllowed;
+    nextRow.lockOverridden = nextRow.lockOverrideAllowed && !!nextRow.lockOverridden;
 
     if (nextRow.ignored) {
+      nextRow.lockOverrideAllowed = false;
+      nextRow.lockOverridden = false;
       nextRow.canDelete = false;
       return nextRow;
     }
@@ -818,21 +846,34 @@
       nextRow.canDelete = false;
       nextRow.policyLocked = true;
       nextRow.policyReason = nextRow.securityLockReason;
+      nextRow.lockOverrideAllowed = false;
+      nextRow.lockOverridden = false;
       return nextRow;
     }
 
     if (nextRow.risk === "blocked") {
+      nextRow.lockOverrideAllowed = false;
+      nextRow.lockOverridden = false;
       nextRow.canDelete = false;
       return nextRow;
     }
 
     if (nextRow.risk === "review" && !state.settings.allowOutsideShareCleanup) {
-      nextRow.canDelete = false;
-      nextRow.policyLocked = true;
-      nextRow.policyReason = "Outside-share cleanup is disabled in Safety settings.";
+      nextRow.lockOverrideAllowed = true;
+
+      if (!nextRow.lockOverridden) {
+        nextRow.canDelete = false;
+        nextRow.policyLocked = true;
+        nextRow.policyReason = "Outside-share cleanup is disabled in Safety settings.";
+        return nextRow;
+      }
+
+      nextRow.canDelete = true;
       return nextRow;
     }
 
+    nextRow.lockOverrideAllowed = false;
+    nextRow.lockOverridden = false;
     nextRow.canDelete = true;
     return nextRow;
   }
@@ -893,7 +934,7 @@
         notices.push({
           type: "info",
           title: ACP.t(strings, "noticeOutsideShareDisabledTitle", "Outside-share cleanup is disabled"),
-          message: ACP.t(strings, "noticeOutsideShareDisabledMessage", "Review paths stay visible but locked until you explicitly enable outside-share cleanup.")
+          message: ACP.t(strings, "noticeOutsideShareDisabledMessage", "Review paths stay visible and start locked. Select them and use Unlock selected to allow them for this scan.")
         });
       } else {
         notices.push({
@@ -908,7 +949,7 @@
       notices.push({
         type: "warning",
         title: ACP.t(strings, "noticeLockedPathsTitle", "Locked paths stay blocked"),
-        message: ACP.t(strings, "noticeLockedPathsMessage", "Any path that resolves to a share root, mount point, symlinked location, or other unsafe target cannot be acted on here.")
+        message: ACP.t(strings, "noticeLockedPathsMessage", "Any path that resolves to a share root, mount point, symlinked location, or other unsafe target cannot be unlocked or acted on here.")
       });
     }
 
@@ -1049,7 +1090,7 @@
     var allowed = {};
 
     $.each(state.rows, function(_, row) {
-      if (row.canDelete) {
+      if (isRowSelectable(row)) {
         allowed[row.id] = true;
       }
     });
@@ -1422,6 +1463,10 @@
       notes.push('<div class="acp-row-note is-warning">' + ACP.escapeHtml(row.policyReason) + "</div>");
     }
 
+    if (row.lockOverridden) {
+      notes.push('<div class="acp-row-note is-warning">' + ACP.escapeHtml(ACP.t(strings, "lockOverrideNote", "Manual unlock override is active for this scan only.")) + "</div>");
+    }
+
     if (row.ignored && row.ignoredReason) {
       notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.ignoredReason) + "</div>");
     } else if (!row.policyReason && row.risk !== "safe" && row.riskReason) {
@@ -1518,6 +1563,10 @@
 
     if (filter.kind === "reason") {
       if (value === "outside_share") {
+        return "review";
+      }
+
+      if (value === "override_active") {
         return "review";
       }
 
@@ -1722,6 +1771,17 @@
       return descriptors;
     }
 
+    if (row.lockOverridden) {
+      pushBadgeDescriptor(descriptors, {
+        kind: "reason",
+        value: "override_active",
+        label: ACP.t(strings, "badgeReasonOverrideActive", "Override active"),
+        tone: "review",
+        title: ACP.t(strings, "lockOverrideNote", "Manual unlock override is active for this scan only."),
+        kindClass: "reason"
+      });
+    }
+
     if (row.risk === "review" || /outside-share cleanup is disabled/i.test(policyReason)) {
       pushBadgeDescriptor(descriptors, {
         kind: "reason",
@@ -1848,6 +1908,7 @@
 
   function buildRowHtml(row) {
     var isSelected = !!state.selected[row.id];
+    var selectable = isRowSelectable(row);
     var rowClass = "acp-row";
     var rowActionHtml = buildRowActionHtml(row);
     var rowNotesHtml = buildRowNotesHtml(row);
@@ -1861,7 +1922,7 @@
     if (row.ignored) {
       rowClass += " is-ignored";
     }
-    if (!row.canDelete) {
+    if (!selectable) {
       rowClass += " is-disabled";
     } else {
       rowClass += " is-clickable";
@@ -1870,7 +1931,7 @@
     return (
       '<article class="' + rowClass + '" data-row-id="' + ACP.escapeHtml(row.id) + '">' +
         '<div class="acp-row-check">' +
-          '<input type="checkbox" class="acp-row-checkbox" data-row-id="' + ACP.escapeHtml(row.id) + '"' + (isSelected ? " checked" : "") + (row.canDelete ? "" : " disabled") + ">" +
+          '<input type="checkbox" class="acp-row-checkbox" data-row-id="' + ACP.escapeHtml(row.id) + '"' + (isSelected ? " checked" : "") + (selectable ? "" : " disabled") + ">" +
         "</div>" +
         '<div class="acp-row-main">' +
           '<div class="acp-row-primary">' +
@@ -2059,7 +2120,7 @@
 
   function selectVisibleRows() {
     $.each(getVisibleRows(), function(_, row) {
-      if (row.canDelete) {
+      if (isRowSelectable(row)) {
         state.selected[row.id] = true;
       }
     });
@@ -2071,7 +2132,7 @@
 
   function selectAllRows() {
     $.each(state.rows || [], function(_, row) {
-      if (row.canDelete) {
+      if (isRowSelectable(row)) {
         state.selected[row.id] = true;
       }
     });
@@ -2083,43 +2144,63 @@
 
   function updateActionBar() {
     var selectedRows = getSelectedRows();
+    var selectedActionRows = getSelectedActionRows();
+    var selectedUnlockRows = getSelectedLockOverrideRows("unlock");
     var totalSelectableCount = $.grep(state.rows || [], function(row) {
-      return !!row.canDelete;
+      return isRowSelectable(row);
     }).length;
     var visibleSelectableCount = $.grep(getVisibleRows(), function(row) {
-      return !!row.canDelete;
+      return isRowSelectable(row);
     }).length;
-    var reviewSelected = $.grep(selectedRows, function(row) {
+    var reviewSelected = $.grep(selectedActionRows, function(row) {
       return row.risk === "review";
     }).length;
     var summaryText = selectedRows.length + " " + (selectedRows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
-    var detailText = ACP.t(strings, "selectionHintIdle", "Click rows to select. Locked paths stay visible but cannot be selected.");
+    var detailText = ACP.t(strings, "selectionHintIdle", "Click rows to select. Outside-share review rows can be selected for manual unlock, but hard-locked paths stay blocked.");
 
     if (!state.scanToken && Number(state.summary.total || 0) > 0) {
       detailText = ACP.t(strings, "selectionHintReadOnly", "Scan results are read-only right now because the secure action snapshot could not be created.");
+    } else if (selectedUnlockRows.length > 0) {
+      detailText = ACP.t(strings, "selectionHintUnlock", "Selected review rows are locked by outside-share safety. Use Unlock selected to allow them for this scan.");
     } else if (!state.settings.allowOutsideShareCleanup && Number(state.summary.review || 0) > 0) {
-      detailText = ACP.t(strings, "selectionHintSafety", "Outside-share cleanup is disabled, so review rows stay locked until you enable it.");
+      detailText = ACP.t(strings, "selectionHintSafety", "Outside-share cleanup is disabled. Select review rows and use Unlock selected to allow them for this scan.");
     } else if (reviewSelected > 0 && state.settings.enablePermanentDelete) {
       detailText = ACP.t(strings, "selectionHintReview", "Review rows still need extra scrutiny before permanent delete.");
-    } else if (selectedRows.length && state.settings.enablePermanentDelete) {
+    } else if (selectedActionRows.length && state.settings.enablePermanentDelete) {
       detailText = ACP.t(strings, "selectionHintDeleteMode", "Permanent delete requires typed confirmation.");
-    } else if (selectedRows.length) {
+    } else if (selectedActionRows.length) {
       detailText = ACP.t(strings, "selectionHintQuarantineMode", "Selected folders will be moved into quarantine instead of being permanently deleted.");
     }
 
     els.$selectionSummary.text(summaryText);
     els.$selectionDetail.text(detailText);
     els.$primaryAction.text(getPrimaryActionLabel());
-    els.$primaryAction.prop("disabled", state.busy || !state.scanToken || selectedRows.length === 0);
-    els.$dryRun.prop("disabled", state.busy || !state.scanToken || selectedRows.length === 0);
+    els.$primaryAction.prop("disabled", state.busy || !state.scanToken || selectedActionRows.length === 0);
+    els.$dryRun.prop("disabled", state.busy || !state.scanToken || selectedActionRows.length === 0);
     els.$selectAll.prop("disabled", state.busy || totalSelectableCount === 0 || selectedRows.length >= totalSelectableCount);
     els.$selectVisible.prop("disabled", state.busy || visibleSelectableCount === 0);
     els.$clearSelection.prop("disabled", state.busy || selectedRows.length === 0);
+
+    if (typeof ACP.syncModeStripLockOverrideButton === "function") {
+      ACP.syncModeStripLockOverrideButton(buildContext());
+    }
   }
 
   function getSelectedRows() {
     return $.grep(state.rows, function(row) {
-      return !!state.selected[row.id] && row.canDelete;
+      return !!state.selected[row.id] && isRowSelectable(row);
+    });
+  }
+
+  function getSelectedActionRows() {
+    return $.grep(getSelectedRows(), function(row) {
+      return !!row.canDelete;
+    });
+  }
+
+  function getSelectedLockOverrideRows(intent) {
+    return $.grep(getSelectedRows(), function(row) {
+      return intent === "relock" ? isRowRelockable(row) : isRowPendingLockOverride(row);
     });
   }
 
@@ -2319,13 +2400,22 @@
     return true;
   }
 
-  function applyLocalCandidateState(rowId, intent) {
+  function applyLocalCandidateState(rowIds, intent) {
+    var targetIds = {};
     var found = false;
+
+    $.each($.isArray(rowIds) ? rowIds : [rowIds], function(_, rowId) {
+      var rowKey = String(rowId || "");
+
+      if (rowKey) {
+        targetIds[rowKey] = true;
+      }
+    });
 
     state.rows = $.map(state.rows || [], function(row) {
       var nextRow;
 
-      if (String(row.id || "") !== String(rowId || "")) {
+      if (!targetIds[String(row.id || "")]) {
         return row;
       }
 
@@ -2339,13 +2429,17 @@
         nextRow.ignoredReason = "This folder is hidden by your ignore list. Restore it to include this folder in cleanup scans again.";
         nextRow.status = "ignored";
         nextRow.statusLabel = "Ignored";
-      } else {
+      } else if (intent === "unignore") {
         nextRow.ignored = false;
         nextRow.ignoredAt = "";
         nextRow.ignoredAtLabel = "";
         nextRow.ignoredReason = "";
         nextRow.status = state.dockerRunning ? "orphaned" : "docker_offline";
         nextRow.statusLabel = state.dockerRunning ? "Orphaned" : "Docker offline";
+      } else if (intent === "unlock") {
+        nextRow.lockOverridden = true;
+      } else if (intent === "relock") {
+        nextRow.lockOverridden = false;
       }
 
       return applyLocalSafetyStateToRow(nextRow);
@@ -2360,24 +2454,40 @@
     return true;
   }
 
-  function postRowAction(action, rowId) {
-    var intent = action === "unignore" ? "unignore" : "ignore";
-    var failureTitle = action === "unignore" ? ACP.t(strings, "restoreFailedTitle", "Restore failed") : ACP.t(strings, "ignoreFailedTitle", "Ignore failed");
-    var failureMessage = action === "unignore" ? ACP.t(strings, "restoreFailedMessage", "The ignore list could not be updated right now.") : ACP.t(strings, "ignoreFailedMessage", "The ignore list could not be updated right now.");
+  function postCandidateStateIntent(rowIds, intent, options) {
+    var normalizedOptions = $.isPlainObject(options) ? options : {};
+    var normalizedRowIds = [];
+
+    $.each($.isArray(rowIds) ? rowIds : [rowIds], function(_, rowId) {
+      var rowKey = String(rowId || "");
+
+      if (rowKey && $.inArray(rowKey, normalizedRowIds) === -1) {
+        normalizedRowIds.push(rowKey);
+      }
+    });
+
+    if (!normalizedRowIds.length) {
+      return;
+    }
 
     setBusy(true);
 
     apiPost({
       action: "updateCandidateState",
       scanToken: state.scanToken,
-      candidateIds: JSON.stringify([rowId]),
+      candidateIds: JSON.stringify(normalizedRowIds),
       intent: intent
-    }).done(function() {
-      var updated = applyLocalCandidateState(rowId, intent);
+    }).done(function(response) {
+      var updated = applyLocalCandidateState(normalizedRowIds, intent);
+      var nextScanToken = $.trim(String((response && response.scanToken) || state.scanToken || ""));
 
       setBusy(false);
 
-      if (!updated) {
+      if (nextScanToken) {
+        state.scanToken = nextScanToken;
+      }
+
+      if (!updated || !nextScanToken) {
         loadScan();
         return;
       }
@@ -2385,11 +2495,98 @@
       renderAll();
     }).fail(function(xhr) {
       setBusy(false);
-      swal(failureTitle, ACP.extractErrorMessage(xhr, failureMessage), "error");
+      swal(
+        normalizedOptions.failureTitle || ACP.t(strings, "settingsSaveFailedTitle", "Safety settings failed"),
+        ACP.extractErrorMessage(xhr, normalizedOptions.failureMessage || ACP.t(strings, "settingsSaveFailedMessage", "The new safety settings could not be saved right now.")),
+        "error"
+      );
       if (xhr && xhr.status === 409) {
         loadScan();
       }
     });
+  }
+
+  function postRowAction(action, rowId) {
+    var intent = action === "unignore" ? "unignore" : "ignore";
+
+    postCandidateStateIntent([rowId], intent, {
+      failureTitle: action === "unignore" ? ACP.t(strings, "restoreFailedTitle", "Restore failed") : ACP.t(strings, "ignoreFailedTitle", "Ignore failed"),
+      failureMessage: action === "unignore" ? ACP.t(strings, "restoreFailedMessage", "The ignore list could not be updated right now.") : ACP.t(strings, "ignoreFailedMessage", "The ignore list could not be updated right now.")
+    });
+  }
+
+  function buildLockOverridePreviewHtml(rows, intent) {
+    var isUnlock = intent !== "relock";
+    var preview = rows.slice(0, 6);
+    var listTitle = isUnlock
+      ? ACP.t(strings, "lockOverrideUnlockListTitle", "Folders to unlock")
+      : ACP.t(strings, "lockOverrideRelockListTitle", "Folders to relock");
+    var html = [
+      '<div class="acp-modal-summary">',
+      '<div class="acp-modal-flag">' + ACP.escapeHtml(isUnlock ? ACP.t(strings, "lockOverrideUnlockButton", "Unlock") : ACP.t(strings, "lockOverrideRelockButton", "Relock")) + "</div>",
+      '<div class="acp-modal-copy">',
+      '<div class="acp-modal-lead">' + ACP.escapeHtml(isUnlock ? ACP.t(strings, "lockOverrideUnlockMessage", "The selected review folders will be manually unlocked for this scan only.") : ACP.t(strings, "lockOverrideRelockMessage", "The selected review folders will return to their locked review state for this scan.")) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(isUnlock ? ACP.t(strings, "lockOverrideUnlockDetail", "This bypass only applies to outside-share policy locks. Hard safety locks stay blocked.") : ACP.t(strings, "lockOverrideRelockDetail", "This removes the temporary manual unlock override from the selected review folders.")) + "</div>",
+      "</div>",
+      '<div class="acp-modal-stats"><span class="acp-modal-stat is-review">' + ACP.escapeHtml(String(rows.length)) + " " + ACP.escapeHtml(rows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected")) + "</span></div>",
+      '<div class="acp-modal-panel">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(listTitle) + "</div>",
+      '<ul class="acp-modal-list">'
+    ];
+
+    $.each(preview, function(_, row) {
+      html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code></li>");
+    });
+
+    if (rows.length > preview.length) {
+      html.push('<li class="acp-modal-list-more">+' + ACP.escapeHtml(String(rows.length - preview.length)) + " more</li>");
+    }
+
+    html.push("</ul></div></div>");
+    return html.join("");
+  }
+
+  function startSelectedLockOverrideFlow(intent) {
+    var normalizedIntent = intent === "relock" ? "relock" : "unlock";
+    var targetRows = getSelectedLockOverrideRows(normalizedIntent);
+    var isUnlock = normalizedIntent === "unlock";
+    var confirmTitle = isUnlock
+      ? ACP.t(strings, "lockOverrideUnlockTitle", "Unlock selected review folders?")
+      : ACP.t(strings, "lockOverrideRelockTitle", "Relock selected review folders?");
+    var confirmButtonText = isUnlock
+      ? ACP.t(strings, "lockOverrideUnlockButton", "Unlock")
+      : ACP.t(strings, "lockOverrideRelockButton", "Relock");
+
+    if (!targetRows.length) {
+      swal(
+        ACP.t(strings, "lockOverrideEmptyTitle", "Nothing to update"),
+        ACP.t(strings, "lockOverrideEmptyMessage", "Select at least one outside-share review row before using the lock override control."),
+        "warning"
+      );
+      return;
+    }
+
+    swal({
+      title: confirmTitle,
+      text: "",
+      type: "warning",
+      html: true,
+      showCancelButton: true,
+      closeOnConfirm: true,
+      confirmButtonText: confirmButtonText + " " + String(targetRows.length)
+    }, function(confirmed) {
+      if (!confirmed) {
+        return;
+      }
+
+      postCandidateStateIntent($.map(targetRows, function(row) {
+        return row.id;
+      }), normalizedIntent, {
+        failureTitle: ACP.t(strings, "lockOverrideFailedTitle", "Lock override failed"),
+        failureMessage: ACP.t(strings, "lockOverrideFailedMessage", "The selected review folders could not be updated right now.")
+      });
+    });
+    ACP.applyDeleteModalClass("acp-delete-modal", buildLockOverridePreviewHtml(targetRows, normalizedIntent));
   }
 
   function buildOperationContext(operation) {
@@ -2527,7 +2724,7 @@
   }
 
   function startDryRunFlow() {
-    var selectedRows = getSelectedRows();
+    var selectedRows = getSelectedActionRows();
 
     if (!selectedRows.length) {
       swal(ACP.t(strings, "deleteEmptyTitle", "Nothing selected"), ACP.t(strings, "deleteEmptyMessage", "Select at least one deletable folder before continuing."), "warning");
@@ -2538,7 +2735,7 @@
   }
 
   function startPrimaryActionFlow() {
-    var selectedRows = getSelectedRows();
+    var selectedRows = getSelectedActionRows();
     var reviewRows = $.grep(selectedRows, function(row) {
       return row.risk === "review";
     });

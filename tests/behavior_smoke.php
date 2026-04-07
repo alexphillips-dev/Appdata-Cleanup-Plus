@@ -14,6 +14,8 @@ $appdataShareName = "acp-smoke-share-" . getmypid();
 $appdataShareRoot = "/mnt/user/" . $appdataShareName;
 $manualAliasSourceRoot = "/mnt/fcache/" . $appdataShareName;
 $manualCustomSourceRoot = "/mnt/fcache/acp-extra-source-" . getmypid();
+$outsideShareReviewRoot = "/mnt/fcache/acp-outside-review-" . getmypid();
+$outsideShareReviewPath = $outsideShareReviewRoot . "/candidate";
 $appdataSharePhysicalRoot = $stateRoot . "/appdata-share-root";
 $appdataShareUsesSymlink = false;
 
@@ -110,6 +112,7 @@ behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);
 behaviorSmokeRemoveTree($manualAliasSourceRoot);
 behaviorSmokeRemoveTree($manualCustomSourceRoot);
+behaviorSmokeRemoveTree($outsideShareReviewRoot);
 behaviorSmokeRemoveTree($appdataSharePhysicalRoot);
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusConfigDir(), "State root should be created.");
 $defaultSafetySettings = getAppdataCleanupPlusSafetySettings();
@@ -465,6 +468,7 @@ if ( function_exists("symlink") && @symlink($appdataSharePhysicalRoot, $appdataS
 }
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualAliasSourceRoot), "Manual alias appdata source fixture root should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualCustomSourceRoot), "Manual custom appdata source fixture root should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($outsideShareReviewPath), "Outside-share review fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templatedOrphanPath), "Templated orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($filesystemOrphanPath), "Filesystem orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($liveAppPath), "Live app fixture should be created.");
@@ -500,6 +504,7 @@ behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/nested-app.xml", "nest
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/adguard-workingdir.xml", "AdGuard", $slashTemplatePath, "/opt/adguardhome/work");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/manual-template-only.xml", "manual-template-only", $manualAliasTemplatePath, "/opt/manual");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/alias-live.xml", "alias-live", $manualUserAliasTemplatePath, "/opt/alias");
+behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/outside-share-review.xml", "outside-share-review", $outsideShareReviewPath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/vm-template-managed.xml", "vm-template-managed", $vmDomainTemplatePath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/docker-template-managed.xml", "docker-template-managed", $dockerManagedTemplatePath, "/config");
 file_put_contents($libvirtImagePath, "libvirt-image");
@@ -531,6 +536,7 @@ $slashLiveRow = behaviorSmokeFindRowByPath($dashboardRows, $slashLivePath);
 $manualAliasTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $manualAliasTemplatePath);
 $manualCustomFilesystemRow = behaviorSmokeFindRowByPath($dashboardRows, $manualCustomOrphanPath);
 $manualUserAliasTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $manualUserAliasTemplatePath);
+$outsideShareReviewRow = behaviorSmokeFindRowByPath($dashboardRows, $outsideShareReviewPath);
 $vmDomainsRow = behaviorSmokeFindRowByPath($dashboardRows, $vmDomainsPath);
 $vmTemplateRow = behaviorSmokeFindRowByPath($dashboardRows, $vmDomainTemplatePath);
 $vmIsosRow = behaviorSmokeFindRowByPath($dashboardRows, $vmIsosPath);
@@ -549,6 +555,7 @@ behaviorSmokeAssertSame(null, $slashLiveRow, "A trailing slash difference betwee
 behaviorSmokeAssertTrue(is_array($manualAliasTemplateRow), "Template-backed paths under manual appdata sources should be detected.");
 behaviorSmokeAssertTrue(is_array($manualCustomFilesystemRow), "Manual appdata source roots should be scanned for filesystem orphans.");
 behaviorSmokeAssertSame(null, $manualUserAliasTemplateRow, "Share-like alias live mounts should suppress matching template candidates.");
+behaviorSmokeAssertTrue(is_array($outsideShareReviewRow), "Outside-share template-backed rows should still be detected for review.");
 behaviorSmokeAssertSame(null, $vmDomainsRow, "VM Manager vdisk storage paths should be excluded from orphaned results.");
 behaviorSmokeAssertSame(null, $vmTemplateRow, "Template-backed paths inside VM Manager storage should be excluded from orphaned results.");
 behaviorSmokeAssertSame(null, $vmIsosRow, "VM Manager ISO storage paths should be excluded from orphaned results.");
@@ -565,11 +572,56 @@ behaviorSmokeAssertSame($manualCustomSourceRoot, $manualCustomFilesystemRow["sou
 behaviorSmokeAssertSame("safe", $manualCustomFilesystemRow["risk"], "Manual appdata source rows should be treated as inside-source candidates.");
 behaviorSmokeAssertSame(true, ! empty($manualCustomFilesystemRow["canDelete"]), "Manual appdata source rows should remain actionable without outside-share cleanup.");
 behaviorSmokeAssertSame("safe", $manualAliasTemplateRow["risk"], "Template-backed rows under manual appdata sources should be treated as inside-source candidates.");
+behaviorSmokeAssertSame("review", $outsideShareReviewRow["risk"], "Outside-share template rows should be marked for review.");
+behaviorSmokeAssertSame(true, ! empty($outsideShareReviewRow["policyLocked"]), "Outside-share review rows should start locked when outside-share cleanup is disabled.");
+behaviorSmokeAssertSame(true, ! empty($outsideShareReviewRow["lockOverrideAllowed"]), "Outside-share review rows should allow a manual lock override.");
+behaviorSmokeAssertSame(false, ! empty($outsideShareReviewRow["canDelete"]), "Outside-share review rows should not be actionable before manual unlock.");
 behaviorSmokeAssertContains("Saved templates", $templatedRow["reason"], "Template-backed rows should explain their saved-template reference.");
 behaviorSmokeAssertContains("no saved Docker template or installed container currently references it", $filesystemRow["reason"], "Filesystem-only rows should explain that they are unreferenced.");
 behaviorSmokeAssertContains($manualCustomSourceRoot, $manualCustomFilesystemRow["reason"], "Manual-source discovery rows should describe the source root that surfaced them.");
 behaviorSmokeAssertSame($slashLivePath, normalizeUserPath($slashTemplatePath), "Path normalization should collapse trailing slashes on saved template paths.");
 behaviorSmokeAssertTrue(! empty($templatedRow["statsPending"]), "Initial dashboard rows should mark heavy stats as pending for progressive hydration.");
+$outsideShareActionResolution = resolveCandidateForAction(array(
+  "path" => $outsideShareReviewPath,
+  "displayPath" => $outsideShareReviewPath,
+  "realPath" => (string)@realpath($outsideShareReviewPath),
+  "lockOverrideAllowed" => true,
+  "lockOverridden" => false
+), getAppdataCleanupPlusSafetySettings(), "quarantine");
+behaviorSmokeAssertSame(false, ! empty($outsideShareActionResolution["ok"]), "Outside-share review rows should remain blocked before a manual unlock.");
+behaviorSmokeAssertContains("Outside-share cleanup is disabled", $outsideShareActionResolution["message"], "Outside-share action blocks should explain the policy lock.");
+$lockOverrideUpdate = updateSnapshotCandidateLockOverrideState($dashboard["payload"]["scanToken"], array($outsideShareReviewRow["id"]), "unlock");
+behaviorSmokeAssertSame(true, ! empty($lockOverrideUpdate["ok"]), "Outside-share review rows should support snapshot-scoped manual unlock updates.");
+behaviorSmokeAssertTrue($lockOverrideUpdate["scanToken"] !== $dashboard["payload"]["scanToken"], "Manual unlock updates should rotate the scan token.");
+$unlockedOutsideShareCandidate = resolveSnapshotCandidates($lockOverrideUpdate["scanToken"], array($outsideShareReviewRow["id"]));
+behaviorSmokeAssertSame(true, ! empty($unlockedOutsideShareCandidate["ok"]), "The updated scan token should resolve unlocked review candidates.");
+behaviorSmokeAssertSame(true, ! empty($unlockedOutsideShareCandidate["candidates"][0]["lockOverridden"]), "Unlocked review candidates should persist their override state in the snapshot.");
+$unlockedOutsideShareResolution = resolveCandidateForAction($unlockedOutsideShareCandidate["candidates"][0], getAppdataCleanupPlusSafetySettings(), "quarantine");
+behaviorSmokeAssertSame(true, ! empty($unlockedOutsideShareResolution["ok"]), "Unlocked outside-share review rows should become actionable without enabling outside-share cleanup.");
+$relockedOutsideShareUpdate = updateSnapshotCandidateLockOverrideState($lockOverrideUpdate["scanToken"], array($outsideShareReviewRow["id"]), "relock");
+behaviorSmokeAssertSame(true, ! empty($relockedOutsideShareUpdate["ok"]), "Unlocked review rows should be able to return to their locked state.");
+$relockedOutsideShareCandidate = resolveSnapshotCandidates($relockedOutsideShareUpdate["scanToken"], array($outsideShareReviewRow["id"]));
+behaviorSmokeAssertSame(false, ! empty($relockedOutsideShareCandidate["candidates"][0]["lockOverridden"]), "Relocked review candidates should clear the override flag in the snapshot.");
+$relockedOutsideShareResolution = resolveCandidateForAction($relockedOutsideShareCandidate["candidates"][0], getAppdataCleanupPlusSafetySettings(), "quarantine");
+behaviorSmokeAssertSame(false, ! empty($relockedOutsideShareResolution["ok"]), "Relocking should restore the outside-share policy block.");
+$hardLockOverrideUpdate = updateSnapshotCandidateLockOverrideState(writeAppdataCleanupPlusSnapshot(array(
+  "root-lock" => array(
+    "id" => "root-lock",
+    "name" => "root-lock",
+    "path" => "/mnt/user",
+    "displayPath" => "/mnt/user",
+    "realPath" => (string)@realpath("/mnt/user"),
+    "lockOverrideAllowed" => false,
+    "lockOverridden" => false
+  )
+))["token"], array("root-lock"), "unlock");
+behaviorSmokeAssertSame(false, ! empty($hardLockOverrideUpdate["ok"]), "Hard-locked root paths should not support manual unlock updates.");
+behaviorSmokeAssertSame(400, (int)$hardLockOverrideUpdate["statusCode"], "Hard-locked root paths should reject manual unlock updates as a bad request.");
+$dashboardRescan = buildDashboardPayload();
+$rescannedOutsideShareRow = behaviorSmokeFindRowByPath(isset($dashboardRescan["payload"]["rows"]) ? $dashboardRescan["payload"]["rows"] : array(), $outsideShareReviewPath);
+behaviorSmokeAssertTrue(is_array($rescannedOutsideShareRow), "Outside-share review rows should still be present after a rescan.");
+behaviorSmokeAssertSame(false, ! empty($rescannedOutsideShareRow["lockOverridden"]), "Rescanning should clear temporary manual unlock overrides.");
+behaviorSmokeAssertSame(true, ! empty($rescannedOutsideShareRow["policyLocked"]), "Rescanning should restore the outside-share review lock.");
 $manualSourceActionResolution = resolveCandidateForAction(array(
   "path" => $manualCustomOrphanPath,
   "displayPath" => $manualCustomOrphanPath,
@@ -720,5 +772,6 @@ behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);
 behaviorSmokeRemoveTree($manualAliasSourceRoot);
 behaviorSmokeRemoveTree($manualCustomSourceRoot);
+behaviorSmokeRemoveTree($outsideShareReviewRoot);
 behaviorSmokeRemoveTree($appdataSharePhysicalRoot);
 echo "behavior_smoke: OK" . PHP_EOL;

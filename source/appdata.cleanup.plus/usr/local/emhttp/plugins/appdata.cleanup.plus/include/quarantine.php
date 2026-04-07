@@ -1498,7 +1498,7 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
-  if ( $classification["risk"] === "review" && empty($settings["allowOutsideShareCleanup"]) ) {
+  if ( $classification["risk"] === "review" && empty($settings["allowOutsideShareCleanup"]) && ! appdataCleanupPlusCandidateHasLockOverride($candidate) ) {
     return array(
       "ok" => false,
       "path" => $candidatePath,

@@ -824,6 +824,8 @@ function buildPathSecurityLockReason($resolvedPath) {
 function applySafetyPolicyToRow($row, $settings) {
   $row["policyLocked"] = false;
   $row["policyReason"] = "";
+  $row["lockOverrideAllowed"] = ! empty($row["lockOverrideAllowed"]);
+  $row["lockOverridden"] = ! empty($row["lockOverridden"]) && $row["lockOverrideAllowed"];
 
   if ( ! empty($row["securityLockReason"]) ) {
     $row["policyLocked"] = true;
@@ -832,13 +834,28 @@ function applySafetyPolicyToRow($row, $settings) {
     $row["risk"] = "blocked";
     $row["riskLabel"] = "Locked";
     $row["riskReason"] = $row["securityLockReason"];
+    $row["lockOverrideAllowed"] = false;
+    $row["lockOverridden"] = false;
+    return $row;
+  }
+
+  if ( ! empty($row["ignored"]) ) {
+    $row["lockOverrideAllowed"] = false;
+    $row["lockOverridden"] = false;
     return $row;
   }
 
   if ( $row["risk"] === "review" && empty($settings["allowOutsideShareCleanup"]) ) {
-    $row["policyLocked"] = true;
-    $row["policyReason"] = "Outside-share cleanup is disabled in Safety settings.";
-    $row["canDelete"] = false;
+    $row["lockOverrideAllowed"] = true;
+
+    if ( empty($row["lockOverridden"]) ) {
+      $row["policyLocked"] = true;
+      $row["policyReason"] = "Outside-share cleanup is disabled in Safety settings.";
+      $row["canDelete"] = false;
+    }
+  } else {
+    $row["lockOverrideAllowed"] = false;
+    $row["lockOverridden"] = false;
   }
 
   return $row;
@@ -928,6 +945,8 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
         "securityLockReason" => $securityLockReason,
         "policyLocked" => false,
         "policyReason" => "",
+        "lockOverrideAllowed" => false,
+        "lockOverridden" => false,
         "ignored" => false,
         "ignoredAt" => "",
         "ignoredAtLabel" => "",
@@ -1009,8 +1028,11 @@ function buildSnapshotCandidateMap($rows) {
       "targetSummary" => $row["targetSummary"],
       "templateRefs" => isset($row["templateRefs"]) ? $row["templateRefs"] : array(),
       "sizeBytes" => $row["sizeBytes"],
+      "risk" => isset($row["risk"]) ? $row["risk"] : "safe",
       "reason" => isset($row["reason"]) ? $row["reason"] : "",
-      "ignored" => ! empty($row["ignored"])
+      "ignored" => ! empty($row["ignored"]),
+      "lockOverrideAllowed" => ! empty($row["lockOverrideAllowed"]),
+      "lockOverridden" => ! empty($row["lockOverridden"])
     );
   }
 

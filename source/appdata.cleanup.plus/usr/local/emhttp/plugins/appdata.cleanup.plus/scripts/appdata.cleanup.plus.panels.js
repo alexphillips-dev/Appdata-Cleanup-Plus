@@ -28,11 +28,53 @@
     }
   };
 
+  ACP.buildLockOverrideButtonState = function(context) {
+    var state = context.state || {};
+    var strings = context.strings || {};
+    var selected = state.selected || {};
+    var rows = $.isArray(state.rows) ? state.rows : [];
+    var selectedRows = $.grep(rows, function(row) {
+      var rowId = String((row && row.id) || "");
+      return !!rowId && !!selected[rowId] && !row.ignored && (!!row.canDelete || !!row.lockOverrideAllowed);
+    });
+    var unlockCount = $.grep(selectedRows, function(row) {
+      return !!row.lockOverrideAllowed && !!row.policyLocked && !row.lockOverridden;
+    }).length;
+    var relockCount = $.grep(selectedRows, function(row) {
+      return !!row.lockOverrideAllowed && !!row.lockOverridden;
+    }).length;
+    var intent = unlockCount > 0 ? "unlock" : (relockCount > 0 ? "relock" : "unlock");
+
+    return {
+      disabled: !!state.busy || !state.scanToken || (unlockCount === 0 && relockCount === 0),
+      intent: intent,
+      label: intent === "relock"
+        ? ACP.t(strings, "lockOverrideRelockLabel", "Relock selected")
+        : ACP.t(strings, "lockOverrideUnlockLabel", "Unlock selected")
+    };
+  };
+
+  ACP.syncModeStripLockOverrideButton = function(context) {
+    var els = context.els || {};
+    var $button = els.$modeStrip ? els.$modeStrip.find("[data-action='toggle-lock-override']").first() : $();
+    var buttonState;
+
+    if (!$button.length) {
+      return;
+    }
+
+    buttonState = ACP.buildLockOverrideButtonState(context);
+    $button.text(buttonState.label);
+    $button.attr("data-lock-intent", buttonState.intent);
+    $button.prop("disabled", !!buttonState.disabled);
+  };
+
   ACP.renderModeStrip = function(context) {
     var state = context.state || {};
     var els = context.els || {};
     var strings = context.strings || {};
     var summary = (state.quarantine && state.quarantine.summary) || { count: 0, sizeLabel: "0 B" };
+    var lockOverrideButton = ACP.buildLockOverrideButtonState(context);
     var isDeleteMode = !!(state.settings && state.settings.enablePermanentDelete);
     var leftTitle = isDeleteMode
       ? ACP.t(strings, "noticeDeleteModeTitle", "Permanent delete mode is enabled")
@@ -47,6 +89,7 @@
     var quarantineButtonLabel = state.quarantine && state.quarantine.loading
       ? ACP.t(strings, "quarantineLoadingLabel", "Loading quarantine")
       : ACP.t(strings, "quarantineManagerOpenLabel", "Show quarantine");
+    var lockOverrideButtonLabel = lockOverrideButton.label;
     var appdataSourcesButtonLabel = ACP.t(strings, "appdataSourcesOpenLabel", "Appdata sources");
     var auditButtonLabel = ACP.t(strings, "auditHistoryOpenLabel", "Show history");
     var html = [
@@ -63,6 +106,7 @@
       '<div class="acp-mode-card-message">' + ACP.escapeHtml(managerMessage + managerMeta) + "</div>",
       "</div>",
       '<div class="acp-mode-card-actions">',
+      '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-lock-override" data-lock-intent="' + ACP.escapeHtml(lockOverrideButton.intent) + '"' + (lockOverrideButton.disabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(lockOverrideButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources">' + ACP.escapeHtml(appdataSourcesButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(quarantineButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history">' + ACP.escapeHtml(auditButtonLabel) + "</button>",
