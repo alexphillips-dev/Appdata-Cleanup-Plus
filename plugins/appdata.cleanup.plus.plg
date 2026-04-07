@@ -13,6 +13,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.07.08
+- Release: Promote the full `2026.04.07.01` through `2026.04.07.07` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
+- Feature: Add an `Appdata sources` action-bar workflow for non-standard Docker appdata roots so extra mount locations can be saved and scanned beside the auto-detected Docker appdata path
+- Scan and match: Treat configured manual appdata roots as first-class discovery sources and normalize share-like aliases such as `/mnt/user/...` versus pool or disk-backed paths to suppress false orphan results from alternate mounts
+- Safety: Add scan-scoped unlock and relock controls for outside-share review rows while keeping hard locks non-bypassable and server-side action validation intact
+- UI: Replace manual source text entry with a browseable folder picker that supports current-path navigation, parent-directory stepping, and a tighter Unraid-style list layout for selecting appdata roots
+
 ###2026.04.07.07
 - Maintenance: Refresh package metadata and build artifacts
 
