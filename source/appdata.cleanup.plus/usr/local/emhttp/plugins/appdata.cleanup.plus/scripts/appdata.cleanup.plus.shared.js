@@ -48,9 +48,11 @@
     return {
       allowOutsideShareCleanup: false,
       enablePermanentDelete: false,
+      enableZfsDatasetDelete: false,
       quarantineRoot: "",
       defaultQuarantinePurgeDays: 0,
-      manualAppdataSources: []
+      manualAppdataSources: [],
+      zfsPathMappings: []
     };
   };
 

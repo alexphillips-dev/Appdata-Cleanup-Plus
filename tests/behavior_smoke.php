@@ -10,8 +10,10 @@ $dockerConfigFixture = $stateRoot . "/boot/config/docker.cfg";
 $vmConfigFixture = $stateRoot . "/boot/config/domain.cfg";
 $shareConfigFixtureDir = $stateRoot . "/boot/config/shares";
 $templateFixtureDir = $stateRoot . "/boot/config/plugins/dockerMan/templates-user";
+$zfsClientFixture = $repoRoot . "/tests/fixtures/zfs_client_fixture.php";
 $appdataShareName = "acp-smoke-share-" . getmypid();
 $appdataShareRoot = "/mnt/user/" . $appdataShareName;
+$zfsDatasetRoot = "/mnt/docker_vm_nvme/" . $appdataShareName;
 $manualAliasSourceRoot = "/mnt/fcache/" . $appdataShareName;
 $manualCustomSourceRoot = "/mnt/fcache/acp-extra-source-" . getmypid();
 $outsideShareReviewRoot = "/mnt/fcache/acp-outside-review-" . getmypid();
@@ -24,6 +26,9 @@ putenv("APPDATA_CLEANUP_PLUS_DOCKER_CONFIG_PATH=" . $dockerConfigFixture);
 putenv("APPDATA_CLEANUP_PLUS_VM_CONFIG_PATH=" . $vmConfigFixture);
 putenv("APPDATA_CLEANUP_PLUS_SHARE_CONFIG_DIR=" . $shareConfigFixtureDir);
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_TEMPLATE_DIR=" . $templateFixtureDir);
+putenv("APPDATA_CLEANUP_PLUS_ZFS_CLIENT_COMMAND=php \"" . str_replace("\\", "/", $zfsClientFixture) . "\"");
+putenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_SHARE_ROOT=" . $appdataShareRoot);
+putenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_DATASET_ROOT=" . $zfsDatasetRoot);
 
 if ( function_exists("session_status") && session_status() === PHP_SESSION_ACTIVE ) {
   session_write_close();
@@ -110,6 +115,7 @@ function behaviorSmokeFindRowByPath($rows, $path) {
 
 behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);
+behaviorSmokeRemoveTree($zfsDatasetRoot);
 behaviorSmokeRemoveTree($manualAliasSourceRoot);
 behaviorSmokeRemoveTree($manualCustomSourceRoot);
 behaviorSmokeRemoveTree($outsideShareReviewRoot);
@@ -117,27 +123,45 @@ behaviorSmokeRemoveTree($appdataSharePhysicalRoot);
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusConfigDir(), "State root should be created.");
 $defaultSafetySettings = getAppdataCleanupPlusSafetySettings();
 behaviorSmokeAssertSame(0, (int)$defaultSafetySettings["defaultQuarantinePurgeDays"], "Default safety settings should start with no quarantine purge timer.");
+behaviorSmokeAssertSame(false, ! empty($defaultSafetySettings["enableZfsDatasetDelete"]), "Default safety settings should start with ZFS dataset delete disabled.");
+behaviorSmokeAssertSame(array(), $defaultSafetySettings["zfsPathMappings"], "Default safety settings should start without ZFS path mappings.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "allowOutsideShareCleanup" => false,
   "enablePermanentDelete" => false,
+  "enableZfsDatasetDelete" => true,
   "manualAppdataSources" => array(
     "/mnt/fcache/test-appdata/",
     "",
     "/mnt/fcache/test-appdata",
     "/mnt/fcache/second-appdata"
   ),
+  "zfsPathMappings" => array(
+    array(
+      "shareRoot" => "/mnt/user/test-appdata",
+      "datasetRoot" => "/mnt/docker_vm_nvme/test-appdata"
+    )
+  ),
   "defaultQuarantinePurgeDays" => 21
 )), "Safety settings persistence should succeed.");
 $persistedSafetySettings = getAppdataCleanupPlusSafetySettings();
 behaviorSmokeAssertSame(21, (int)$persistedSafetySettings["defaultQuarantinePurgeDays"], "Safety settings should persist the default quarantine purge days value.");
+behaviorSmokeAssertSame(true, ! empty($persistedSafetySettings["enableZfsDatasetDelete"]), "Safety settings should persist the ZFS dataset delete toggle.");
 behaviorSmokeAssertSame(array(
   "/mnt/fcache/test-appdata",
   "/mnt/fcache/second-appdata"
 ), $persistedSafetySettings["manualAppdataSources"], "Safety settings should normalize and persist manual appdata sources.");
+behaviorSmokeAssertSame(array(
+  array(
+    "shareRoot" => "/mnt/user/test-appdata",
+    "datasetRoot" => "/mnt/docker_vm_nvme/test-appdata"
+  )
+), $persistedSafetySettings["zfsPathMappings"], "Safety settings should normalize and persist ZFS path mappings.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "allowOutsideShareCleanup" => false,
   "enablePermanentDelete" => false,
+  "enableZfsDatasetDelete" => false,
   "manualAppdataSources" => array(),
+  "zfsPathMappings" => array(),
   "defaultQuarantinePurgeDays" => 0
 )), "Safety settings reset should succeed.");
 
@@ -431,6 +455,7 @@ behaviorSmokeAssertSame(1, isset($latestAuditEntry["summary"]["purged"]) ? (int)
 $dockerRuntimeFixture = $stateRoot . "/docker-runtime";
 $dockerClientFixture = $stateRoot . "/DockerClient.php";
 $templatedOrphanPath = $appdataShareRoot . "/templated-orphan";
+$zfsCaseSensitivePath = $appdataShareRoot . "/Sonarr";
 $filesystemOrphanPath = $appdataShareRoot . "/fs-orphan";
 $liveAppPath = $appdataShareRoot . "/live-app";
 $nestedAppRoot = $appdataShareRoot . "/nested-app";
@@ -464,6 +489,7 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($dockerConfigF
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($shareConfigFixtureDir), "Share config fixture directory should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templateFixtureDir), "Template fixture directory should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($appdataShareRoot)), "Appdata share parent fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($zfsDatasetRoot)), "ZFS dataset parent fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($manualAliasSourceRoot)), "Manual appdata source parent fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($appdataSharePhysicalRoot), "Appdata share physical fixture root should be created.");
 if ( function_exists("symlink") && @symlink($appdataSharePhysicalRoot, $appdataShareRoot) ) {
@@ -473,8 +499,10 @@ if ( function_exists("symlink") && @symlink($appdataSharePhysicalRoot, $appdataS
 }
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualAliasSourceRoot), "Manual alias appdata source fixture root should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualCustomSourceRoot), "Manual custom appdata source fixture root should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsDatasetRoot), "ZFS dataset fixture root should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($outsideShareReviewPath), "Outside-share review fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templatedOrphanPath), "Templated orphan fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsCaseSensitivePath), "Case-sensitive ZFS fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($filesystemOrphanPath), "Filesystem orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($liveAppPath), "Live app fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($nestedTemplatePath), "Nested template fixture should be created.");
@@ -484,6 +512,8 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($staleNestedNonEmptyPa
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualAliasTemplatePath), "Manual source template fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualAliasLivePath), "Alias-mounted live path fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualCustomOrphanPath), "Manual source filesystem orphan fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsDatasetRoot . "/templated-orphan"), "ZFS dataset templated orphan fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsDatasetRoot . "/Sonarr"), "ZFS dataset case-sensitive fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmDomainTemplatePath), "VM domains fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmIsosPath), "VM ISO fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($dockerManagedTemplatePath), "Docker managed path fixture should be created.");
@@ -498,9 +528,16 @@ file_put_contents($shareConfigFixtureDir . "/" . $appdataShareName . ".cfg", "sh
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "allowOutsideShareCleanup" => false,
   "enablePermanentDelete" => false,
+  "enableZfsDatasetDelete" => false,
   "manualAppdataSources" => array(
     $manualAliasSourceRoot,
     $manualCustomSourceRoot
+  ),
+  "zfsPathMappings" => array(
+    array(
+      "shareRoot" => $appdataShareRoot,
+      "datasetRoot" => $zfsDatasetRoot
+    )
   ),
   "defaultQuarantinePurgeDays" => 0
 )), "Manual appdata sources should save before dashboard testing.");
@@ -525,7 +562,9 @@ behaviorSmokeAssertSame(400, (int)$browseInvalidPayload["statusCode"], "Manual s
 $appdataSourceInfo = buildAppdataCleanupPlusSourceInfo(getAppdataCleanupPlusSafetySettings());
 behaviorSmokeAssertSame(1, count($appdataSourceInfo["detected"]), "Source info should expose the detected Docker appdata root.");
 behaviorSmokeAssertSame(2, count($appdataSourceInfo["effective"]), "Source info should include the default root plus distinct manual appdata roots.");
+behaviorSmokeAssertSame(1, count($appdataSourceInfo["zfsPathMappings"]), "Source info should expose configured ZFS path mappings.");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/templated-orphan.xml", "templated-orphan", $templatedOrphanPath, "/config");
+behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/sonarr-zfs.xml", "Sonarr", $zfsCaseSensitivePath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/nested-app.xml", "nested-app", $nestedTemplatePath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/adguard-workingdir.xml", "AdGuard", $slashTemplatePath, "/opt/adguardhome/work");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/stale-empty-parent.xml", "stale-empty-parent", $staleNestedEmptyTemplatePath, "/config");
@@ -556,6 +595,7 @@ $dashboard = buildDashboardPayload();
 behaviorSmokeAssertTrue(is_array($dashboard) && ! empty($dashboard["ok"]), "Dashboard build should survive DockerClient warnings and output.");
 $dashboardRows = isset($dashboard["payload"]["rows"]) && is_array($dashboard["payload"]["rows"]) ? $dashboard["payload"]["rows"] : array();
 $templatedRow = behaviorSmokeFindRowByPath($dashboardRows, $templatedOrphanPath);
+$zfsCaseRow = behaviorSmokeFindRowByPath($dashboardRows, $zfsCaseSensitivePath);
 $filesystemRow = behaviorSmokeFindRowByPath($dashboardRows, $filesystemOrphanPath);
 $liveRow = behaviorSmokeFindRowByPath($dashboardRows, $liveAppPath);
 $nestedRootRow = behaviorSmokeFindRowByPath($dashboardRows, $nestedAppRoot);
@@ -578,6 +618,7 @@ $recycleBinRow = behaviorSmokeFindRowByPath($dashboardRows, $recycleBinPath);
 $lostFoundRow = behaviorSmokeFindRowByPath($dashboardRows, $lostFoundPath);
 $quarantineRow = behaviorSmokeFindRowByPath($dashboardRows, $quarantinePath);
 behaviorSmokeAssertTrue(is_array($templatedRow), "Template-backed orphan should be detected.");
+behaviorSmokeAssertTrue(is_array($zfsCaseRow), "Case-sensitive ZFS-backed template orphan should be detected.");
 behaviorSmokeAssertTrue(is_array($filesystemRow), "Filesystem-only orphan should be detected.");
 behaviorSmokeAssertSame(null, $liveRow, "Installed appdata paths should not be surfaced as orphaned.");
 behaviorSmokeAssertSame(null, $nestedRootRow, "Top-level share folders containing a nested tracked path should not be duplicated as filesystem orphans.");
@@ -600,6 +641,11 @@ behaviorSmokeAssertSame(null, $recycleBinRow, ".Recycle.Bin should be excluded f
 behaviorSmokeAssertSame(null, $lostFoundRow, "lost+found should be excluded from filesystem orphan discovery.");
 behaviorSmokeAssertSame(null, $quarantineRow, "The plugin quarantine root should not be surfaced as a filesystem orphan.");
 behaviorSmokeAssertSame("template", $templatedRow["sourceKind"], "Template-backed rows should preserve their source kind.");
+behaviorSmokeAssertSame("zfs", $templatedRow["storageKind"], "Mapped template-backed rows should resolve to ZFS dataset storage.");
+behaviorSmokeAssertSame("docker_vm_nvme/" . $appdataShareName . "/templated-orphan", $templatedRow["datasetName"], "Mapped template-backed rows should expose the resolved ZFS dataset name.");
+behaviorSmokeAssertSame(true, ! empty($templatedRow["policyLocked"]), "ZFS-backed rows should start locked while ZFS dataset delete is disabled.");
+behaviorSmokeAssertSame(false, ! empty($templatedRow["canDelete"]), "ZFS-backed rows should not be actionable until ZFS dataset delete is enabled.");
+behaviorSmokeAssertSame("docker_vm_nvme/" . $appdataShareName . "/Sonarr", $zfsCaseRow["datasetName"], "ZFS dataset resolution should preserve case-sensitive dataset names.");
 behaviorSmokeAssertSame("filesystem", $filesystemRow["sourceKind"], "Filesystem-only rows should be marked as discovery candidates.");
 behaviorSmokeAssertSame("filesystem", $staleNestedEmptyParentRow["sourceKind"], "Empty stale parent remnants should be surfaced as discovery candidates.");
 behaviorSmokeAssertSame($appdataShareRoot, $filesystemRow["sourceDisplay"], "Filesystem-only rows should expose the configured source root.");
@@ -666,6 +712,112 @@ $manualSourceActionResolution = resolveCandidateForAction(array(
   "realPath" => (string)@realpath($manualCustomOrphanPath)
 ), getAppdataCleanupPlusSafetySettings(), "quarantine");
 behaviorSmokeAssertSame(true, ! empty($manualSourceActionResolution["ok"]), "Paths inside manual appdata sources should stay actionable without enabling outside-share cleanup.");
+$zfsDeleteDisabledResolution = resolveCandidateForAction(array(
+  "path" => $templatedOrphanPath,
+  "displayPath" => $templatedOrphanPath,
+  "realPath" => (string)@realpath($templatedOrphanPath),
+  "storageKind" => "zfs",
+  "datasetName" => "docker_vm_nvme/" . $appdataShareName . "/templated-orphan"
+), getAppdataCleanupPlusSafetySettings(), "delete");
+behaviorSmokeAssertSame(false, ! empty($zfsDeleteDisabledResolution["ok"]), "ZFS-backed rows should stay blocked while ZFS dataset delete is disabled.");
+behaviorSmokeAssertContains("Permanent delete mode is disabled", $zfsDeleteDisabledResolution["message"], "Delete actions should still respect the global permanent delete toggle before ZFS dataset destroy can run.");
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => false,
+  "enableZfsDatasetDelete" => true,
+  "manualAppdataSources" => array(
+    $manualAliasSourceRoot,
+    $manualCustomSourceRoot
+  ),
+  "zfsPathMappings" => array(
+    array(
+      "shareRoot" => $appdataShareRoot,
+      "datasetRoot" => $zfsDatasetRoot
+    )
+  ),
+  "defaultQuarantinePurgeDays" => 0
+)), "ZFS dataset delete should be enabled before action-time checks.");
+$zfsQuarantineBlockedResolution = resolveCandidateForAction(array(
+  "path" => $templatedOrphanPath,
+  "displayPath" => $templatedOrphanPath,
+  "realPath" => (string)@realpath($templatedOrphanPath),
+  "storageKind" => "zfs",
+  "datasetName" => "docker_vm_nvme/" . $appdataShareName . "/templated-orphan"
+), getAppdataCleanupPlusSafetySettings(), "quarantine");
+behaviorSmokeAssertSame(false, ! empty($zfsQuarantineBlockedResolution["ok"]), "ZFS-backed rows should not support quarantine mode.");
+behaviorSmokeAssertContains("cannot be quarantined", $zfsQuarantineBlockedResolution["message"], "ZFS-backed quarantine blocks should explain the delete-only workflow.");
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => true,
+  "enableZfsDatasetDelete" => true,
+  "manualAppdataSources" => array(
+    $manualAliasSourceRoot,
+    $manualCustomSourceRoot
+  ),
+  "zfsPathMappings" => array(
+    array(
+      "shareRoot" => $appdataShareRoot,
+      "datasetRoot" => $zfsDatasetRoot
+    )
+  ),
+  "defaultQuarantinePurgeDays" => 0
+)), "Permanent delete and ZFS dataset delete should be enabled before the ZFS delete workflow.");
+$zfsDeleteReadyResolution = resolveCandidateForAction(array(
+  "path" => $templatedOrphanPath,
+  "displayPath" => $templatedOrphanPath,
+  "realPath" => (string)@realpath($templatedOrphanPath),
+  "storageKind" => "zfs",
+  "datasetName" => "docker_vm_nvme/" . $appdataShareName . "/templated-orphan"
+), getAppdataCleanupPlusSafetySettings(), "delete");
+behaviorSmokeAssertSame(true, ! empty($zfsDeleteReadyResolution["ok"]), "ZFS-backed rows should become actionable in permanent delete mode once ZFS dataset delete is enabled.");
+$zfsPreviewExecution = executeCandidateOperation(array(array(
+  "id" => "templated-zfs",
+  "name" => "templated-orphan",
+  "path" => $templatedOrphanPath,
+  "displayPath" => $templatedOrphanPath,
+  "realPath" => (string)@realpath($templatedOrphanPath),
+  "storageKind" => "zfs",
+  "datasetName" => "docker_vm_nvme/" . $appdataShareName . "/templated-orphan"
+)), getAppdataCleanupPlusSafetySettings(), "preview_delete");
+behaviorSmokeAssertSame("ready", $zfsPreviewExecution["results"][0]["status"], "ZFS delete previews should report ready when the dataset can be destroyed.");
+behaviorSmokeAssertSame(false, ! empty($zfsPreviewExecution["results"][0]["recursive"]), "Standard ZFS dataset previews should avoid recursive destroy when it is not required.");
+$zfsRecursivePreviewExecution = executeCandidateOperation(array(array(
+  "id" => "sonarr-zfs",
+  "name" => "Sonarr",
+  "path" => $zfsCaseSensitivePath,
+  "displayPath" => $zfsCaseSensitivePath,
+  "realPath" => (string)@realpath($zfsCaseSensitivePath),
+  "storageKind" => "zfs",
+  "datasetName" => "docker_vm_nvme/" . $appdataShareName . "/Sonarr"
+)), getAppdataCleanupPlusSafetySettings(), "preview_delete");
+behaviorSmokeAssertSame(true, ! empty($zfsRecursivePreviewExecution["results"][0]["recursive"]), "Recursive ZFS previews should surface when the dataset requires -r.");
+$zfsDeleteExecution = executeCandidateOperation(array(array(
+  "id" => "templated-zfs",
+  "name" => "templated-orphan",
+  "path" => $templatedOrphanPath,
+  "displayPath" => $templatedOrphanPath,
+  "realPath" => (string)@realpath($templatedOrphanPath),
+  "storageKind" => "zfs",
+  "datasetName" => "docker_vm_nvme/" . $appdataShareName . "/templated-orphan"
+)), getAppdataCleanupPlusSafetySettings(), "delete");
+behaviorSmokeAssertSame("deleted", $zfsDeleteExecution["results"][0]["status"], "ZFS-backed deletes should report deleted when the dataset destroy succeeds.");
+behaviorSmokeAssertSame(false, is_dir($templatedOrphanPath), "Successful ZFS-backed deletes should remove the mapped share path.");
+$zfsRecursiveDeleteExecution = executeCandidateOperation(array(array(
+  "id" => "sonarr-zfs",
+  "name" => "Sonarr",
+  "path" => $zfsCaseSensitivePath,
+  "displayPath" => $zfsCaseSensitivePath,
+  "realPath" => (string)@realpath($zfsCaseSensitivePath),
+  "storageKind" => "zfs",
+  "datasetName" => "docker_vm_nvme/" . $appdataShareName . "/Sonarr"
+)), getAppdataCleanupPlusSafetySettings(), "delete");
+behaviorSmokeAssertSame("deleted", $zfsRecursiveDeleteExecution["results"][0]["status"], "Recursive ZFS-backed deletes should still report deleted when the dataset destroy succeeds.");
+behaviorSmokeAssertSame(true, ! empty($zfsRecursiveDeleteExecution["results"][0]["recursive"]), "Recursive ZFS-backed deletes should report that -r was used.");
+behaviorSmokeAssertSame(false, is_dir($zfsCaseSensitivePath), "Recursive ZFS-backed deletes should remove the case-sensitive share path.");
+$postDeleteDashboard = buildDashboardPayload();
+behaviorSmokeAssertSame(null, behaviorSmokeFindRowByPath(isset($postDeleteDashboard["payload"]["rows"]) ? $postDeleteDashboard["payload"]["rows"] : array(), $templatedOrphanPath), "Deleted ZFS-backed rows should disappear after a rescan.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templatedOrphanPath), "Templated orphan fixture should be recreated after ZFS delete testing.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsCaseSensitivePath), "Case-sensitive ZFS fixture should be recreated after ZFS delete testing.");
 $defaultPurgeCandidatePath = $appdataShareRoot . "/default-purge-candidate";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($defaultPurgeCandidatePath), "Default purge candidate fixture should be created.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
@@ -764,7 +916,6 @@ behaviorSmokeAssertSame(false, is_dir($legacyRecoveredDestination), "Purging a r
 
 if ( $appdataShareUsesSymlink ) {
   behaviorSmokeAssertSame("", buildPathSecurityLockReason($templatedOrphanPath), "Configured appdata share root symlinks should not lock inside-share candidates.");
-  behaviorSmokeAssertSame(false, ! empty($templatedRow["policyLocked"]), "Configured appdata share root symlinks should leave inside-share template rows actionable.");
   behaviorSmokeAssertSame(false, ! empty($filesystemRow["policyLocked"]), "Configured appdata share root symlinks should leave inside-share discovery rows actionable.");
 }
 $hydratedCandidate = resolveSnapshotCandidates($dashboard["payload"]["scanToken"], array($templatedRow["id"]));
@@ -808,6 +959,7 @@ if ( function_exists("symlink") && @symlink($symlinkTargetPath, $symlinkLinkPath
 
 behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);
+behaviorSmokeRemoveTree($zfsDatasetRoot);
 behaviorSmokeRemoveTree($manualAliasSourceRoot);
 behaviorSmokeRemoveTree($manualCustomSourceRoot);
 behaviorSmokeRemoveTree($outsideShareReviewRoot);

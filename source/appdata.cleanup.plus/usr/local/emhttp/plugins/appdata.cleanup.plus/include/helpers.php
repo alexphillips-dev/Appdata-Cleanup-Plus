@@ -1,5 +1,7 @@
 <?php
 
+require_once(__DIR__ . "/zfs.php");
+
 if ( ! function_exists("appdataCleanupPlusParseIniFile") ) {
   function appdataCleanupPlusParseIniFile($file,$mode=false,$scanner_mode=INI_SCANNER_NORMAL) {
     $contents = @file_get_contents($file);
@@ -380,6 +382,7 @@ function appdataCleanupPlusPathComparisonVariants($path) {
   $variants = array();
   $normalized = appdataCleanupPlusCanonicalizePath($path);
   $realPath = "";
+  $pendingVariants = array();
 
   if ( $normalized === "" ) {
     return array();
@@ -393,6 +396,21 @@ function appdataCleanupPlusPathComparisonVariants($path) {
     $realPath = appdataCleanupPlusCanonicalizePath($realPath);
     $variants[$realPath] = true;
     $variants[appdataCleanupPlusShareLikeComparisonPath($realPath)] = true;
+  }
+
+  $pendingVariants = array_keys($variants);
+  while ( ! empty($pendingVariants) ) {
+    $variant = array_shift($pendingVariants);
+
+    foreach ( appdataCleanupPlusExpandZfsMappedPathVariants($variant) as $mappedVariant ) {
+      if ( $mappedVariant === "" || isset($variants[$mappedVariant]) ) {
+        continue;
+      }
+
+      $variants[$mappedVariant] = true;
+      $variants[appdataCleanupPlusShareLikeComparisonPath($mappedVariant)] = true;
+      $pendingVariants[] = $mappedVariant;
+    }
   }
 
   return array_values(array_filter(array_keys($variants), "strlen"));
@@ -573,7 +591,8 @@ function buildAppdataCleanupPlusSourceInfo($settings=null) {
   return array(
     "detected" => array_values(array_filter($detectedRoots, "strlen")),
     "manual" => isset($settings["manualAppdataSources"]) ? appdataCleanupPlusNormalizeManualAppdataSources($settings["manualAppdataSources"]) : array(),
-    "effective" => getAppdataCleanupPlusConfiguredSourceRoots($settings)
+    "effective" => getAppdataCleanupPlusConfiguredSourceRoots($settings),
+    "zfsPathMappings" => appdataCleanupPlusGetConfiguredZfsPathMappings($settings)
   );
 }
 
@@ -1106,9 +1125,11 @@ function getDefaultAppdataCleanupPlusSafetySettings() {
   return array(
     "allowOutsideShareCleanup" => false,
     "enablePermanentDelete" => false,
+    "enableZfsDatasetDelete" => false,
     "quarantineRoot" => getDefaultAppdataCleanupPlusQuarantineRoot(),
     "defaultQuarantinePurgeDays" => 0,
-    "manualAppdataSources" => array()
+    "manualAppdataSources" => array(),
+    "zfsPathMappings" => array()
   );
 }
 
@@ -1127,9 +1148,11 @@ function normalizeAppdataCleanupPlusSafetySettings($settings) {
   $normalized = array(
     "allowOutsideShareCleanup" => ! empty($settings["allowOutsideShareCleanup"]),
     "enablePermanentDelete" => ! empty($settings["enablePermanentDelete"]),
+    "enableZfsDatasetDelete" => ! empty($settings["enableZfsDatasetDelete"]),
     "quarantineRoot" => isset($settings["quarantineRoot"]) ? trim((string)$settings["quarantineRoot"]) : $defaults["quarantineRoot"],
     "defaultQuarantinePurgeDays" => $defaultQuarantinePurgeDays,
-    "manualAppdataSources" => appdataCleanupPlusNormalizeManualAppdataSources(isset($settings["manualAppdataSources"]) ? $settings["manualAppdataSources"] : $defaults["manualAppdataSources"])
+    "manualAppdataSources" => appdataCleanupPlusNormalizeManualAppdataSources(isset($settings["manualAppdataSources"]) ? $settings["manualAppdataSources"] : $defaults["manualAppdataSources"]),
+    "zfsPathMappings" => appdataCleanupPlusNormalizeZfsPathMappings(isset($settings["zfsPathMappings"]) ? $settings["zfsPathMappings"] : $defaults["zfsPathMappings"])
   );
 
   if ( ! $normalized["quarantineRoot"] ) {

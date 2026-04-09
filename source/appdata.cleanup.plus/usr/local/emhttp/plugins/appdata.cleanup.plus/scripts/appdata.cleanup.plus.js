@@ -57,7 +57,8 @@
       validationMessage: "",
       feedbackMessage: "",
       requestToken: "",
-      manual: []
+      manual: [],
+      zfsMappingsInput: ""
     };
   }
 
@@ -85,6 +86,7 @@
     els.$showIgnored = $("#acp-show-ignored");
     els.$allowExternal = $("#acp-allow-external");
     els.$enableDelete = $("#acp-enable-delete");
+    els.$enableZfsDelete = $("#acp-enable-zfs-delete");
     els.$sort = $("#acp-sort");
     els.$rescan = $("#acp-rescan");
     els.$selectVisible = $("#acp-select-visible");
@@ -156,6 +158,7 @@
 
     els.$allowExternal.on("change", saveSafetySettings);
     els.$enableDelete.on("change", saveSafetySettings);
+    els.$enableZfsDelete.on("change", saveSafetySettings);
 
     els.$results.on("click", ".acp-row", function(event) {
       if ($(event.target).closest(".acp-row-checkbox, .acp-button, a, button, input, select, textarea").length) {
@@ -413,6 +416,10 @@
       }
     });
 
+    $(document).on("input.acpSources change.acpSources", ".sweet-alert .acp-zfs-mappings-input", function() {
+      state.appdataSourceBrowser.zfsMappingsInput = String($(this).val() || "");
+    });
+
     $(document).on("click.acpSources", ".sweet-alert [data-action='browse-appdata-source']", function(event) {
       event.preventDefault();
       event.stopPropagation();
@@ -544,6 +551,7 @@
 
     els.$allowExternal.prop("checked", !!settings.allowOutsideShareCleanup);
     els.$enableDelete.prop("checked", !!settings.enablePermanentDelete);
+    els.$enableZfsDelete.prop("checked", !!settings.enableZfsDatasetDelete);
   }
 
   function getPrimaryOperation() {
@@ -581,6 +589,7 @@
     els.$showIgnored.prop("disabled", state.busy);
     els.$allowExternal.prop("disabled", state.busy);
     els.$enableDelete.prop("disabled", state.busy);
+    els.$enableZfsDelete.prop("disabled", state.busy);
     els.$sort.prop("disabled", state.busy);
     updateActionBar();
   }
@@ -596,6 +605,7 @@
     state.settings = ACP.defaultSafetySettings();
     state.appdataSources = { detected: [], effective: [] };
     state.appdataSourceBrowser = defaultAppdataSourceBrowserState();
+    state.appdataSourceBrowser.zfsMappingsInput = "";
     state.quarantine.entries = [];
     state.quarantine.loaded = false;
     state.quarantine.selected = {};
@@ -629,6 +639,7 @@
       state.scanWarningMessage = String(response.scanWarningMessage || "");
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || {});
       setAppdataSourceInfo(response.appdataSourceInfo || {});
+      state.appdataSourceBrowser.zfsMappingsInput = serializeZfsPathMappings((state.settings || {}).zfsPathMappings || []);
       state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary || {});
       syncQuarantinePurgeInputDefaults(true);
       syncSafetyControls();
@@ -895,15 +906,80 @@
     });
   }
 
+  function normalizeZfsPathMapping(path) {
+    return $.trim(String(path || "")).replace(/\\/g, "/").replace(/\/+/g, "/").replace(/\/$/, "");
+  }
+
+  function normalizeZfsPathMappingsInput(rawValue) {
+    var mappingValues = $.isArray(rawValue) ? rawValue : [];
+    var seen = {};
+
+    return $.grep($.map(mappingValues, function(mapping) {
+      var shareRoot = normalizeZfsPathMapping(mapping && mapping.shareRoot);
+      var datasetRoot = normalizeZfsPathMapping(mapping && mapping.datasetRoot);
+      var mappingKey = shareRoot + "=>" + datasetRoot;
+
+      if (!shareRoot || !datasetRoot || shareRoot === datasetRoot || seen[mappingKey]) {
+        return null;
+      }
+
+      seen[mappingKey] = true;
+      return {
+        shareRoot: shareRoot,
+        datasetRoot: datasetRoot
+      };
+    }), function(mapping) {
+      return !!mapping;
+    });
+  }
+
+  function serializeZfsPathMappings(rawValue) {
+    return $.map(normalizeZfsPathMappingsInput(rawValue), function(mapping) {
+      return String(mapping.shareRoot || "") + " => " + String(mapping.datasetRoot || "");
+    }).join("\n");
+  }
+
   function syncAppdataSourceBrowserManualSourcesFromSettings() {
     var nextBrowserState = $.extend({}, defaultAppdataSourceBrowserState(), state.appdataSourceBrowser || {});
 
     nextBrowserState.manual = normalizeManualAppdataSourcesInput((state.settings || {}).manualAppdataSources || []);
+    nextBrowserState.zfsMappingsInput = serializeZfsPathMappings((state.settings || {}).zfsPathMappings || []);
     state.appdataSourceBrowser = nextBrowserState;
   }
 
   function getManualAppdataSourcesFromModal() {
     return normalizeManualAppdataSourcesInput((state.appdataSourceBrowser || {}).manual || []);
+  }
+
+  function getZfsPathMappingsFromModal() {
+    var rawMappings = String((state.appdataSourceBrowser || {}).zfsMappingsInput || "");
+
+    return $.grep($.map(rawMappings.split(/\r?\n/), function(line) {
+      var normalizedLine = $.trim(String(line || ""));
+      var parts;
+
+      if (!normalizedLine) {
+        return null;
+      }
+
+      parts = normalizedLine.split(/\s*=>\s*/);
+      if (parts.length !== 2) {
+        return null;
+      }
+
+      return {
+        shareRoot: normalizeZfsPathMapping(parts[0]),
+        datasetRoot: normalizeZfsPathMapping(parts[1])
+      };
+    }), function(mapping) {
+      return !!mapping && !!mapping.shareRoot && !!mapping.datasetRoot;
+    });
+  }
+
+  function getZfsPathMappingsInputLineCount() {
+    return $.grep(String((state.appdataSourceBrowser || {}).zfsMappingsInput || "").split(/\r?\n/), function(line) {
+      return $.trim(String(line || "")) !== "";
+    }).length;
   }
 
   function loadAppdataSourceBrowser(path, options) {
@@ -994,10 +1070,20 @@
   }
 
   function saveAppdataSourcesFromModal() {
+    var parsedZfsPathMappings = getZfsPathMappingsFromModal();
+    var rawZfsPathMappings = String((state.appdataSourceBrowser || {}).zfsMappingsInput || "");
+
+    if (getZfsPathMappingsInputLineCount() !== parsedZfsPathMappings.length) {
+      setAppdataSourcesFeedback(ACP.t(strings, "appdataSourcesZfsInvalidMessage", "Each ZFS path mapping must use '/source/root => /dataset/root'."));
+      return;
+    }
+
     setAppdataSourcesFeedback(ACP.t(strings, "appdataSourcesSavingMessage", "Saving appdata sources and rescanning."));
     saveSafetySettings({
-      manualAppdataSources: getManualAppdataSourcesFromModal()
+      manualAppdataSources: getManualAppdataSourcesFromModal(),
+      zfsPathMappings: parsedZfsPathMappings
     }, {
+      zfsPathMappingsInput: rawZfsPathMappings,
       reloadScanOnSuccess: true,
       skipRenderAll: true,
       failureTitle: ACP.t(strings, "appdataSourcesSaveFailedTitle", "Appdata sources failed"),
@@ -1033,6 +1119,25 @@
       nextRow.lockOverrideAllowed = false;
       nextRow.lockOverridden = false;
       return nextRow;
+    }
+
+    if (nextRow.storageKind === "zfs") {
+      nextRow.lockOverrideAllowed = false;
+      nextRow.lockOverridden = false;
+
+      if (!state.settings.enableZfsDatasetDelete) {
+        nextRow.canDelete = false;
+        nextRow.policyLocked = true;
+        nextRow.policyReason = "ZFS dataset delete is disabled in Safety settings.";
+        return nextRow;
+      }
+
+      if (!state.settings.enablePermanentDelete) {
+        nextRow.canDelete = false;
+        nextRow.policyLocked = true;
+        nextRow.policyReason = ACP.t(strings, "selectionHintZfsMode", "ZFS dataset-backed rows require permanent delete mode and cannot be quarantined.");
+        return nextRow;
+      }
     }
 
     if (nextRow.risk === "blocked") {
@@ -1088,6 +1193,9 @@
   function buildLocalNotices() {
     var notices = [];
     var summary = state.summary || { total: 0, review: 0, blocked: 0, ignored: 0 };
+    var hasZfsRows = $.grep(state.rows || [], function(row) {
+      return row && row.storageKind === "zfs";
+    }).length > 0;
 
     if (!state.dockerRunning) {
       notices.push({
@@ -1134,6 +1242,18 @@
         type: "warning",
         title: ACP.t(strings, "noticeLockedPathsTitle", "Locked paths stay blocked"),
         message: ACP.t(strings, "noticeLockedPathsMessage", "Any path that resolves to a share root, mount point, symlinked location, or other unsafe target cannot be unlocked or acted on here.")
+      });
+    }
+
+    if (hasZfsRows) {
+      notices.push({
+        type: state.settings.enableZfsDatasetDelete ? "info" : "warning",
+        title: state.settings.enableZfsDatasetDelete
+          ? ACP.t(strings, "noticeZfsDatasetTitle", "ZFS dataset candidates found")
+          : ACP.t(strings, "noticeZfsDeleteDisabledTitle", "ZFS dataset delete is disabled"),
+        message: state.settings.enableZfsDatasetDelete
+          ? ACP.t(strings, "noticeZfsDatasetMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows.")
+          : ACP.t(strings, "noticeZfsDeleteDisabledMessage", "ZFS-backed rows stay visible but blocked until ZFS dataset delete is enabled in Safety settings.")
       });
     }
 
@@ -1626,6 +1746,10 @@
       facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "targetLabel", "Target")) + "</strong> " + ACP.escapeHtml(row.targetSummary) + "</span>");
     }
 
+    if (row.storageKind === "zfs") {
+      facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "storageLabel", "Storage")) + "</strong> " + ACP.escapeHtml(row.datasetName || row.storageLabel || ACP.t(strings, "zfsDatasetLabel", "ZFS dataset")) + "</span>");
+    }
+
     facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + "</strong> " + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || "Unknown")) + "</span>");
     facts.push(
       '<span class="acp-row-meta-item"' + (row.lastModifiedExact ? ' title="' + ACP.escapeHtml(row.lastModifiedExact) + '"' : "") + '><strong>' +
@@ -1759,6 +1883,10 @@
       }
     }
 
+    if (filter.kind === "storage" && value === "zfs") {
+      return "neutral";
+    }
+
     return "neutral";
   }
 
@@ -1882,6 +2010,21 @@
     };
   }
 
+  function getRowStorageDescriptor(row) {
+    if (row.storageKind !== "zfs") {
+      return null;
+    }
+
+    return {
+      kind: "storage",
+      value: "zfs",
+      label: ACP.t(strings, "badgeStorageZfs", "ZFS dataset"),
+      tone: "neutral",
+      title: row.datasetName || row.datasetMountpoint || "",
+      kindClass: "storage"
+    };
+  }
+
   function pushBadgeDescriptor(descriptors, badge) {
     var exists;
 
@@ -1981,7 +2124,14 @@
   }
 
   function getRowBadgeDescriptors(row) {
-    return [getRowActionabilityDescriptor(row), getRowStateDescriptor(row), getRowSourceDescriptor(row)].concat(getRowReasonDescriptors(row));
+    var descriptors = [getRowActionabilityDescriptor(row), getRowStateDescriptor(row), getRowSourceDescriptor(row)];
+    var storageDescriptor = getRowStorageDescriptor(row);
+
+    if (storageDescriptor) {
+      descriptors.push(storageDescriptor);
+    }
+
+    return descriptors.concat(getRowReasonDescriptors(row));
   }
 
   function rowMatchesBadgeFilter(row, filter) {
@@ -2001,6 +2151,10 @@
 
     if (filter.kind === "source") {
       return String(row.sourceKind || "") === filter.value;
+    }
+
+    if (filter.kind === "storage") {
+      return String(row.storageKind || "") === filter.value;
     }
 
     if (filter.kind === "reason") {
@@ -2410,7 +2564,8 @@
     var wasQuarantineManagerVisible = isQuarantineManagerModalVisible();
     var nextSettings = $.extend({}, previousSettings, {
       allowOutsideShareCleanup: !!els.$allowExternal.prop("checked"),
-      enablePermanentDelete: !!els.$enableDelete.prop("checked")
+      enablePermanentDelete: !!els.$enableDelete.prop("checked"),
+      enableZfsDatasetDelete: !!els.$enableZfsDelete.prop("checked")
     }, normalizedOverrides);
     var nextDefaultPurgeDays = normalizeDefaultQuarantinePurgeDaysValue(nextSettings.defaultQuarantinePurgeDays);
 
@@ -2437,9 +2592,15 @@
       action: "saveSafetySettings",
       allowOutsideShareCleanup: nextSettings.allowOutsideShareCleanup ? "1" : "0",
       enablePermanentDelete: nextSettings.enablePermanentDelete ? "1" : "0",
+      enableZfsDatasetDelete: nextSettings.enableZfsDatasetDelete ? "1" : "0",
       defaultQuarantinePurgeDays: String(Number(nextSettings.defaultQuarantinePurgeDays || 0)),
-      manualAppdataSources: ($.isArray(nextSettings.manualAppdataSources) ? nextSettings.manualAppdataSources : []).join("\n")
+      manualAppdataSources: ($.isArray(nextSettings.manualAppdataSources) ? nextSettings.manualAppdataSources : []).join("\n"),
+      zfsPathMappings: JSON.stringify($.isArray(nextSettings.zfsPathMappings) ? nextSettings.zfsPathMappings : [])
     };
+
+    if (typeof normalizedOptions.zfsPathMappingsInput === "string") {
+      state.appdataSourceBrowser.zfsMappingsInput = normalizedOptions.zfsPathMappingsInput;
+    }
 
     if (state.scanToken) {
       requestData.scanToken = state.scanToken;
@@ -2451,6 +2612,7 @@
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || nextSettings);
       setAppdataSourceInfo(response.appdataSourceInfo || {});
       state.appdataSourceBrowser.manual = normalizeManualAppdataSourcesInput((state.settings || {}).manualAppdataSources || []);
+      state.appdataSourceBrowser.zfsMappingsInput = serializeZfsPathMappings((state.settings || {}).zfsPathMappings || []);
       if (quarantine) {
         setQuarantineEntries(quarantine.entries, quarantine.summary);
         state.quarantine.loaded = true;
@@ -2723,7 +2885,11 @@
     ];
 
     $.each(preview, function(_, row) {
-      html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code></li>");
+      html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code>");
+      if (row.datasetName) {
+        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDatasetLabel", "ZFS dataset")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.datasetName) + "</code></div>");
+      }
+      html.push("</li>");
     });
 
     if (rows.length > preview.length) {
@@ -2892,6 +3058,22 @@
           '<div class="acp-modal-result-destination">' +
             '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "destinationLabel", "Destination")) + "</span>" +
             '<code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.destination) + "</code>" +
+          "</div>";
+      }
+
+      if (result.datasetName) {
+        destinationHtml +=
+          '<div class="acp-modal-result-destination">' +
+            '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDatasetLabel", "ZFS dataset")) + "</span>" +
+            '<code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.datasetName) + "</code>" +
+          "</div>";
+      }
+
+      if (result.datasetName && (result.recursive === true || result.recursive === false)) {
+        destinationHtml +=
+          '<div class="acp-modal-result-destination">' +
+            '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsRecursiveDestroyLabel", "Destroy mode")) + "</span>" +
+            '<code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.recursive ? ACP.t(strings, "zfsRecursiveDestroyValue", "Recursive destroy") : ACP.t(strings, "zfsStandardDestroyValue", "Standard destroy")) + "</code>" +
           "</div>";
       }
 

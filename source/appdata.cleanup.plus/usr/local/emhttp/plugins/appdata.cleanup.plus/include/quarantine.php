@@ -1391,6 +1391,7 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
   $candidatePath = isset($candidate["path"]) ? (string)$candidate["path"] : "";
   $candidateDisplayPath = isset($candidate["displayPath"]) ? (string)$candidate["displayPath"] : $candidatePath;
   $snapshotRealPath = isset($candidate["realPath"]) ? (string)$candidate["realPath"] : "";
+  $snapshotDatasetName = isset($candidate["datasetName"]) ? trim((string)$candidate["datasetName"]) : "";
 
   if ( ! $candidatePath ) {
     return array(
@@ -1415,6 +1416,7 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
   $classification = classifyAppdataCandidate($candidatePath);
   $displayPath = resolveExistingPath($classification);
   $currentRealPath = @realpath($displayPath);
+  $storageMeta = appdataCleanupPlusResolveStorageForPath($displayPath, $settings);
 
   if ( ! is_dir($displayPath) ) {
     return array(
@@ -1458,6 +1460,18 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
+  if ( $snapshotDatasetName !== "" ) {
+    if ( $storageMeta["kind"] !== "zfs" || ! hash_equals($snapshotDatasetName, (string)$storageMeta["datasetName"]) ) {
+      return array(
+        "ok" => false,
+        "path" => $candidatePath,
+        "displayPath" => $displayPath,
+        "status" => "blocked",
+        "message" => "ZFS dataset mapping changed since the last scan. Rescan before continuing."
+      );
+    }
+  }
+
   if ( @is_link($displayPath) ) {
     return array(
       "ok" => false,
@@ -1478,7 +1492,10 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
-  if ( pathIsMountPoint($displayPath) || pathIsMountPoint($currentRealPath) ) {
+  if (
+    (pathIsMountPoint($displayPath) || pathIsMountPoint($currentRealPath)) &&
+    $storageMeta["kind"] !== "zfs"
+  ) {
     return array(
       "ok" => false,
       "path" => $candidatePath,
@@ -1518,6 +1535,38 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
+  if ( ! empty($storageMeta["lockReason"]) ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "blocked",
+      "message" => $storageMeta["lockReason"]
+    );
+  }
+
+  if ( $storageMeta["kind"] === "zfs" ) {
+    if ( empty($settings["enableZfsDatasetDelete"]) ) {
+      return array(
+        "ok" => false,
+        "path" => $candidatePath,
+        "displayPath" => $displayPath,
+        "status" => "blocked",
+        "message" => "ZFS dataset delete is disabled in Safety settings."
+      );
+    }
+
+    if ( $baseOperation !== "delete" ) {
+      return array(
+        "ok" => false,
+        "path" => $candidatePath,
+        "displayPath" => $displayPath,
+        "status" => "blocked",
+        "message" => "ZFS dataset-backed paths cannot be quarantined. Enable permanent delete mode to destroy the dataset."
+      );
+    }
+  }
+
   $quarantineRoot = buildCandidateQuarantineRoot($displayPath, $settings);
   $normalizedDisplayPath = normalizeUserPath($displayPath);
   $normalizedQuarantineRoot = normalizeUserPath($quarantineRoot);
@@ -1536,7 +1585,8 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     "ok" => true,
     "path" => $candidatePath,
     "displayPath" => $displayPath,
-    "realPath" => $currentRealPath
+    "realPath" => $currentRealPath,
+    "storage" => $storageMeta
   );
 }
 
@@ -1643,6 +1693,15 @@ function executeCandidateOperation($candidates, $settings, $operation) {
 
       if ( $baseOperation === "quarantine" ) {
         $previewResult["destination"] = buildQuarantineDestination($resolved["displayPath"], $settings);
+      } elseif ( ! empty($resolved["storage"]["kind"]) && $resolved["storage"]["kind"] === "zfs" ) {
+        $previewResult["datasetName"] = (string)$resolved["storage"]["datasetName"];
+        $previewResult["datasetMountpoint"] = (string)$resolved["storage"]["datasetMountpoint"];
+        $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($previewResult["datasetName"]);
+        $previewResult["message"] = $zfsPreview["message"];
+        $previewResult["recursive"] = ! empty($zfsPreview["recursive"]);
+        if ( ! $zfsPreview["ok"] ) {
+          $previewResult["status"] = "error";
+        }
       }
 
       $results[] = $previewResult;
@@ -1663,6 +1722,30 @@ function executeCandidateOperation($candidates, $settings, $operation) {
       }
 
       $results[] = $result;
+      continue;
+    }
+
+    if ( ! empty($resolved["storage"]["kind"]) && $resolved["storage"]["kind"] === "zfs" ) {
+      $datasetName = (string)$resolved["storage"]["datasetName"];
+      $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName);
+      $deleteResult = $zfsPreview["ok"]
+        ? appdataCleanupPlusDestroyZfsDataset($datasetName, ! empty($zfsPreview["recursive"]))
+        : $zfsPreview;
+
+      if ( ! empty($deleteResult["ok"]) ) {
+        clearCachedAppdataCleanupPlusPathStats($resolved["displayPath"]);
+        clearCachedAppdataCleanupPlusPathStats((string)$resolved["storage"]["datasetMountpoint"]);
+      }
+
+      $results[] = array(
+        "path" => $resolved["path"],
+        "displayPath" => $resolved["displayPath"],
+        "datasetName" => $datasetName,
+        "datasetMountpoint" => (string)$resolved["storage"]["datasetMountpoint"],
+        "recursive" => ! empty($zfsPreview["recursive"]),
+        "status" => $deleteResult["ok"] ? "deleted" : "error",
+        "message" => $deleteResult["message"]
+      );
       continue;
     }
 

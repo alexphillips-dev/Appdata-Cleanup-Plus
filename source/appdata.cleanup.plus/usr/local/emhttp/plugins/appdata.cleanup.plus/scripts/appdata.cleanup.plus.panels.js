@@ -297,6 +297,7 @@
     var browser = state.appdataSourceBrowser || {};
     var detected = $.isArray(sourceInfo.detected) ? sourceInfo.detected : [];
     var manual = $.isArray(browser.manual) ? browser.manual : ($.isArray(settings.manualAppdataSources) ? settings.manualAppdataSources : []);
+    var zfsMappingsInput = String(browser.zfsMappingsInput || "");
     var effective = [];
     var effectiveSeen = {};
     var breadcrumbs = $.isArray(browser.breadcrumbs) ? browser.breadcrumbs : [];
@@ -400,6 +401,12 @@
     browserListHtml = browserListHtml.concat(entryHtml);
 
     html.push(
+      "</div>",
+      '<div class="acp-modal-panel">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesZfsTitle", "ZFS path mappings")) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesZfsLead", "Map the user-share appdata root to the dataset mount root so scan results can resolve exact ZFS datasets safely.")) + "</div>",
+      '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesZfsHint", "Enter one mapping per line using \'/mnt/user/appdata => /mnt/pool/appdata\'. Only exact dataset mountpoint matches become ZFS-backed delete candidates.")) + "</div>",
+      '<textarea class="acp-input acp-zfs-mappings-input" rows="4"' + disabledAttr + ' placeholder="' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesZfsPlaceholder", "/mnt/user/appdata => /mnt/docker_vm_nvme/appdata")) + '">' + ACP.escapeHtml(zfsMappingsInput) + "</textarea>",
       "</div>",
       '<div class="acp-modal-panel">',
       '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualTitle", "Manual source paths")) + "</div>",

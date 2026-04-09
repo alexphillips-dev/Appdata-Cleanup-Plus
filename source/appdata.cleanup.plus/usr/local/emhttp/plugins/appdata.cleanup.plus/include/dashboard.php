@@ -831,9 +831,17 @@ function removeParentsUsedByInstalledContainers($availableVolumes, $containers) 
   return $filtered;
 }
 
-function buildPathSecurityLockReason($resolvedPath) {
+function buildPathSecurityLockReason($resolvedPath, $settings=null, $storageMeta=null) {
   if ( ! is_dir($resolvedPath) ) {
     return "Path no longer exists.";
+  }
+
+  if ( ! is_array($storageMeta) ) {
+    $storageMeta = appdataCleanupPlusResolveStorageForPath($resolvedPath, $settings);
+  }
+
+  if ( ! empty($storageMeta["lockReason"]) ) {
+    return (string)$storageMeta["lockReason"];
   }
 
   $managedSystemLockReason = appdataCleanupPlusBuildManagedSystemLockReason($resolvedPath);
@@ -850,7 +858,7 @@ function buildPathSecurityLockReason($resolvedPath) {
     return buildPathSymlinkSegmentLockReason($resolvedPath);
   }
 
-  if ( pathIsMountPoint($resolvedPath) ) {
+  if ( pathIsMountPoint($resolvedPath) && (! isset($storageMeta["kind"]) || $storageMeta["kind"] !== "zfs") ) {
     return "Mount-point folders are locked for safety.";
   }
 
@@ -880,6 +888,15 @@ function applySafetyPolicyToRow($row, $settings) {
   }
 
   if ( ! empty($row["ignored"]) ) {
+    $row["lockOverrideAllowed"] = false;
+    $row["lockOverridden"] = false;
+    return $row;
+  }
+
+  if ( isset($row["storageKind"]) && $row["storageKind"] === "zfs" && empty($settings["enableZfsDatasetDelete"]) ) {
+    $row["policyLocked"] = true;
+    $row["policyReason"] = "ZFS dataset delete is disabled in Safety settings.";
+    $row["canDelete"] = false;
     $row["lockOverrideAllowed"] = false;
     $row["lockOverridden"] = false;
     return $row;
@@ -931,7 +948,8 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
       $candidateKey = appdataCleanupPlusCandidateKey($resolvedPath);
       $ignoredEntry = isset($ignoredCandidates[$candidateKey]) && is_array($ignoredCandidates[$candidateKey]) ? $ignoredCandidates[$candidateKey] : null;
       $ignoredAt = $ignoredEntry && ! empty($ignoredEntry["ignoredAt"]) ? strtotime((string)$ignoredEntry["ignoredAt"]) : 0;
-      $securityLockReason = buildPathSecurityLockReason($resolvedPath);
+      $storageMeta = appdataCleanupPlusResolveStorageForPath($resolvedPath, $settings);
+      $securityLockReason = buildPathSecurityLockReason($resolvedPath, $settings, $storageMeta);
       $pathStats = buildCandidatePathStats($resolvedPath, $classification, $securityLockReason, $includeHeavyStats);
       $realPath = @realpath($resolvedPath);
 
@@ -963,6 +981,11 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
         "targetSummary" => $targetSummary,
         "targetCount" => count($targetPaths),
         "templateRefs" => $templateRefs,
+        "storageKind" => isset($storageMeta["kind"]) ? $storageMeta["kind"] : "filesystem",
+        "storageLabel" => isset($storageMeta["label"]) ? $storageMeta["label"] : "Filesystem",
+        "storageDetail" => isset($storageMeta["detail"]) ? $storageMeta["detail"] : "",
+        "datasetName" => isset($storageMeta["datasetName"]) ? $storageMeta["datasetName"] : "",
+        "datasetMountpoint" => isset($storageMeta["datasetMountpoint"]) ? $storageMeta["datasetMountpoint"] : "",
         "path" => $resolvedPath,
         "displayPath" => $resolvedPath,
         "realPath" => $realPath ? $realPath : "",
@@ -1069,6 +1092,11 @@ function buildSnapshotCandidateMap($rows) {
       "targetPaths" => isset($row["targetPaths"]) ? $row["targetPaths"] : array(),
       "targetSummary" => $row["targetSummary"],
       "templateRefs" => isset($row["templateRefs"]) ? $row["templateRefs"] : array(),
+      "storageKind" => isset($row["storageKind"]) ? $row["storageKind"] : "filesystem",
+      "storageLabel" => isset($row["storageLabel"]) ? $row["storageLabel"] : "Filesystem",
+      "storageDetail" => isset($row["storageDetail"]) ? $row["storageDetail"] : "",
+      "datasetName" => isset($row["datasetName"]) ? $row["datasetName"] : "",
+      "datasetMountpoint" => isset($row["datasetMountpoint"]) ? $row["datasetMountpoint"] : "",
       "sizeBytes" => $row["sizeBytes"],
       "risk" => isset($row["risk"]) ? $row["risk"] : "safe",
       "reason" => isset($row["reason"]) ? $row["reason"] : "",
@@ -1086,7 +1114,8 @@ function buildHydratedCandidateStatRow($candidate) {
   $candidatePath = isset($candidate["path"]) ? (string)$candidate["path"] : (isset($candidate["displayPath"]) ? (string)$candidate["displayPath"] : "");
   $classification = classifyAppdataCandidate($candidatePath);
   $resolvedPath = resolveExistingPath($classification);
-  $securityLockReason = buildPathSecurityLockReason($resolvedPath);
+  $storageMeta = appdataCleanupPlusResolveStorageForPath($resolvedPath);
+  $securityLockReason = buildPathSecurityLockReason($resolvedPath, null, $storageMeta);
   $pathStats = buildCandidatePathStats($resolvedPath, $classification, $securityLockReason, true);
 
   return array(

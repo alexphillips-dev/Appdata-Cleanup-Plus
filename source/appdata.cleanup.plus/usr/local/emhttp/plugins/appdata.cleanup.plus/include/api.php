@@ -233,6 +233,16 @@ function handleSaveSafetySettings() {
   $manualAppdataSources = isset($_POST["manualAppdataSources"])
     ? preg_split('/\r\n|\r|\n/', getPostedString("manualAppdataSources"))
     : (isset($currentSettings["manualAppdataSources"]) ? $currentSettings["manualAppdataSources"] : array());
+  $zfsPathMappings = isset($_POST["zfsPathMappings"])
+    ? json_decode(getPostedString("zfsPathMappings"), true)
+    : (isset($currentSettings["zfsPathMappings"]) ? $currentSettings["zfsPathMappings"] : array());
+
+  if ( isset($_POST["zfsPathMappings"]) && ! is_array($zfsPathMappings) ) {
+    jsonResponse(array(
+      "ok" => false,
+      "message" => "ZFS path mappings must be valid JSON."
+    ), 400);
+  }
 
   foreach ( $manualAppdataSources as $manualSourcePath ) {
     $validationMessage = appdataCleanupPlusValidateManualAppdataSource($manualSourcePath);
@@ -249,13 +259,26 @@ function handleSaveSafetySettings() {
     }
   }
 
+  foreach ( is_array($zfsPathMappings) ? $zfsPathMappings : array() as $zfsPathMapping ) {
+    $validationMessage = appdataCleanupPlusValidateZfsPathMapping($zfsPathMapping);
+
+    if ( $validationMessage !== "" ) {
+      jsonResponse(array(
+        "ok" => false,
+        "message" => $validationMessage
+      ), 400);
+    }
+  }
+
   $settings = array(
     "allowOutsideShareCleanup" => getPostedBoolean("allowOutsideShareCleanup"),
     "enablePermanentDelete" => getPostedBoolean("enablePermanentDelete"),
+    "enableZfsDatasetDelete" => getPostedBoolean("enableZfsDatasetDelete"),
     "defaultQuarantinePurgeDays" => isset($_POST["defaultQuarantinePurgeDays"])
       ? (int)getPostedString("defaultQuarantinePurgeDays")
       : (int)(isset($currentSettings["defaultQuarantinePurgeDays"]) ? $currentSettings["defaultQuarantinePurgeDays"] : 0),
-    "manualAppdataSources" => $manualAppdataSources
+    "manualAppdataSources" => $manualAppdataSources,
+    "zfsPathMappings" => is_array($zfsPathMappings) ? $zfsPathMappings : array()
   );
 
   if ( ! setAppdataCleanupPlusSafetySettings($settings) ) {

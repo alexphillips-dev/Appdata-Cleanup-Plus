@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.07.10">
-<!ENTITY md5 "710b8007c80ebb15f21cf23a915fa7cd">
+<!ENTITY version "2026.04.09.02">
+<!ENTITY md5 "122c52143e480c72e0435da2ca8b0f02">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.09.02
+- Maintenance: Refresh package metadata and build artifacts
+
 ###2026.04.07.10
 - Release: Promote the `2026.04.07.09` development build to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
 - Discovery: Surface empty direct-child parent folders left behind after nested appdata mount paths are removed, instead of hiding them forever behind stale nested template or live-path references

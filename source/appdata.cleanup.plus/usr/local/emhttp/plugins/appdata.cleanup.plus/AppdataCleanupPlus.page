@@ -107,7 +107,13 @@ $config = array(
     "showIgnoredLabel" => _("Show ignored"),
     "showExternalLabel" => _("Allow outside-share cleanup"),
     "enablePermanentDeleteLabel" => _("Enable permanent delete"),
+    "enableZfsDatasetDeleteLabel" => _("Enable ZFS dataset delete"),
     "sourceLabel" => _("Source"),
+    "storageLabel" => _("Storage"),
+    "zfsDatasetLabel" => _("ZFS dataset"),
+    "zfsRecursiveDestroyLabel" => _("Destroy mode"),
+    "zfsRecursiveDestroyValue" => _("Recursive destroy"),
+    "zfsStandardDestroyValue" => _("Standard destroy"),
     "templateSectionTitle" => _("Saved template references"),
     "templateSectionMessage" => _("Paths still referenced by saved Docker templates but not by installed containers."),
     "discoverySectionTitle" => _("Appdata source discovery"),
@@ -131,6 +137,7 @@ $config = array(
     "badgeReasonRootPath" => _("Root path"),
     "badgeReasonUnsafePath" => _("Unsafe path"),
     "badgeReasonSafetyLock" => _("Safety lock"),
+    "badgeStorageZfs" => _("ZFS dataset"),
     "cardDeletable" => _("Ready"),
     "selectedSingular" => _("folder selected"),
     "selectedPlural" => _("folders selected"),
@@ -141,10 +148,15 @@ $config = array(
     "selectionHintUnlock" => _("Selected review rows are locked by outside-share safety. Use Unlock selected to allow them for this scan."),
     "selectionHintDeleteMode" => _("Permanent delete requires typed confirmation."),
     "selectionHintQuarantineMode" => _("Selected folders will be moved into quarantine instead of being permanently deleted."),
+    "selectionHintZfsMode" => _("ZFS dataset-backed rows require permanent delete mode and cannot be quarantined."),
     "noticeSafeModeTitle" => _("Safe mode is on"),
     "noticeSafeModeMessage" => _("The primary action moves selected folders into quarantine instead of permanently deleting them."),
     "noticeDeleteModeTitle" => _("Permanent delete mode is enabled"),
     "noticeDeleteModeMessage" => _("Selected folders will be permanently removed after confirmation. Use this mode carefully."),
+    "noticeZfsDatasetTitle" => _("ZFS dataset candidates found"),
+    "noticeZfsDatasetMessage" => _("ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows."),
+    "noticeZfsDeleteDisabledTitle" => _("ZFS dataset delete is disabled"),
+    "noticeZfsDeleteDisabledMessage" => _("ZFS-backed rows stay visible but blocked until ZFS dataset delete is enabled in Safety settings."),
     "noticeDockerOfflineTitle" => _("Docker is offline"),
     "noticeDockerOfflineMessage" => _("Results are based only on saved Docker templates. Review every path before acting on anything."),
     "noticeIgnoredTitle" => _("Ignore list active"),
@@ -199,6 +211,11 @@ $config = array(
     "appdataSourcesInvalidCurrentMessage" => _("This path cannot be added as a manual appdata source yet."),
     "appdataSourcesEffectiveTitle" => _("Effective scan roots"),
     "appdataSourcesEffectiveEmpty" => _("No appdata sources are currently available."),
+    "appdataSourcesZfsTitle" => _("ZFS path mappings"),
+    "appdataSourcesZfsLead" => _("Map the user-share appdata root to the dataset mount root so scan results can resolve exact ZFS datasets safely."),
+    "appdataSourcesZfsHint" => _("Enter one mapping per line using '/mnt/user/appdata => /mnt/pool/appdata'. Only exact dataset mountpoint matches become ZFS-backed delete candidates."),
+    "appdataSourcesZfsPlaceholder" => _("/mnt/user/appdata => /mnt/docker_vm_nvme/appdata"),
+    "appdataSourcesZfsInvalidMessage" => _("Each ZFS path mapping must use '/source/root => /dataset/root'."),
     "appdataSourcesSaveLabel" => _("Save sources"),
     "appdataSourcesSavingMessage" => _("Saving appdata sources and rescanning."),
     "appdataSourcesSaveFailedTitle" => _("Appdata sources failed"),
@@ -381,6 +398,10 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
             <label class="acp-toggle">
               <input type="checkbox" id="acp-enable-delete">
               <span><?php echo _("Enable permanent delete"); ?></span>
+            </label>
+            <label class="acp-toggle">
+              <input type="checkbox" id="acp-enable-zfs-delete">
+              <span><?php echo _("Enable ZFS dataset delete"); ?></span>
             </label>
           </div>
           <div class="acp-toolbar-actions acp-control-actions">
