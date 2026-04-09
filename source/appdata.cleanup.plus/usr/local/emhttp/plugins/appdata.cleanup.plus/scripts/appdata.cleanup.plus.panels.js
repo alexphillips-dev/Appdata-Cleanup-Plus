@@ -91,6 +91,7 @@
       : ACP.t(strings, "quarantineManagerOpenLabel", "Show quarantine");
     var lockOverrideButtonLabel = lockOverrideButton.label;
     var appdataSourcesButtonLabel = ACP.t(strings, "appdataSourcesOpenLabel", "Appdata sources");
+    var zfsPathMappingsButtonLabel = ACP.t(strings, "zfsPathMappingsOpenLabel", "ZFS mappings");
     var auditButtonLabel = ACP.t(strings, "auditHistoryOpenLabel", "Show history");
     var html = [
       '<div class="acp-mode-strip-grid">',
@@ -108,6 +109,7 @@
       '<div class="acp-mode-card-actions">',
       '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-lock-override" data-lock-intent="' + ACP.escapeHtml(lockOverrideButton.intent) + '"' + (lockOverrideButton.disabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(lockOverrideButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources">' + ACP.escapeHtml(appdataSourcesButtonLabel) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings">' + ACP.escapeHtml(zfsPathMappingsButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(quarantineButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history">' + ACP.escapeHtml(auditButtonLabel) + "</button>",
       "</div>",
@@ -297,7 +299,6 @@
     var browser = state.appdataSourceBrowser || {};
     var detected = $.isArray(sourceInfo.detected) ? sourceInfo.detected : [];
     var manual = $.isArray(browser.manual) ? browser.manual : ($.isArray(settings.manualAppdataSources) ? settings.manualAppdataSources : []);
-    var zfsMappingsInput = String(browser.zfsMappingsInput || "");
     var effective = [];
     var effectiveSeen = {};
     var breadcrumbs = $.isArray(browser.breadcrumbs) ? browser.breadcrumbs : [];
@@ -403,12 +404,6 @@
     html.push(
       "</div>",
       '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesZfsTitle", "ZFS path mappings")) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesZfsLead", "Map the user-share appdata root to the dataset mount root so scan results can resolve exact ZFS datasets safely.")) + "</div>",
-      '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesZfsHint", "Enter one mapping per line using \'/mnt/user/appdata => /mnt/pool/appdata\'. Only exact dataset mountpoint matches become ZFS-backed delete candidates.")) + "</div>",
-      '<textarea class="acp-input acp-zfs-mappings-input" rows="4"' + disabledAttr + ' placeholder="' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesZfsPlaceholder", "/mnt/user/appdata => /mnt/docker_vm_nvme/appdata")) + '">' + ACP.escapeHtml(zfsMappingsInput) + "</textarea>",
-      "</div>",
-      '<div class="acp-modal-panel">',
       '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualTitle", "Manual source paths")) + "</div>",
       manualHtml.length
         ? ('<div class="acp-appdata-source-manual-list">' + manualHtml.join("") + "</div>")
@@ -446,6 +441,146 @@
     }
 
     html.push("</div>");
+    return html.join("");
+  };
+
+  ACP.buildZfsPathMappingsModalHtml = function(context) {
+    var state = context.state || {};
+    var strings = context.strings || {};
+    var settings = state.settings || {};
+    var browser = state.zfsPathMappingBrowser || {};
+    var mappings = $.isArray(browser.mappings) ? browser.mappings : ($.isArray(settings.zfsPathMappings) ? settings.zfsPathMappings : []);
+    var draft = $.isPlainObject(browser.draft) ? browser.draft : {};
+    var breadcrumbs = $.isArray(browser.breadcrumbs) ? browser.breadcrumbs : [];
+    var entries = $.isArray(browser.entries) ? browser.entries : [];
+    var currentPath = String(browser.currentPath || browser.root || "/mnt");
+    var activeField = String(browser.activeField || "shareRoot") === "datasetRoot" ? "datasetRoot" : "shareRoot";
+    var feedbackMessage = String(browser.feedbackMessage || "");
+    var disabledAttr = (state.busy || browser.loading) ? ' disabled="disabled"' : "";
+    var browserEntryAttr = (state.busy || browser.loading)
+      ? ' aria-disabled="true" tabindex="-1"'
+      : ' role="button" tabindex="0"';
+    var trailHtml = [];
+    var mappingHtml = [];
+    var browserListHtml = [];
+    var shareRoot = String(draft.shareRoot || "");
+    var datasetRoot = String(draft.datasetRoot || "");
+    var canAddMapping = !!shareRoot && !!datasetRoot && shareRoot !== datasetRoot;
+    var shareRootDisplay = shareRoot || "/";
+    var datasetRootDisplay = datasetRoot || "/";
+    var html = [
+      '<div class="acp-modal-summary">',
+      '<div class="acp-modal-copy">',
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsLead", "Map the user-share appdata root to the dataset mount root so scan results can resolve exact ZFS datasets safely.")) + "</div>",
+      '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsHint", "Choose the share root first, then the matching dataset mount root. Only exact dataset mountpoint matches become ZFS-backed delete candidates.")) + "</div>",
+      "</div>",
+      '<div class="acp-modal-actions-row">',
+      '<button type="button" class="acp-button acp-button-secondary" data-action="save-zfs-path-mappings"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsSaveLabel", "Save mappings")) + "</button>",
+      "</div>",
+      "</div>",
+      '<div class="acp-modal-panel">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsExistingTitle", "Configured mappings")) + "</div>"
+    ];
+
+    $.each(mappings, function(_, mapping) {
+      var share = String((mapping && mapping.shareRoot) || "");
+      var dataset = String((mapping && mapping.datasetRoot) || "");
+
+      if (!share || !dataset) {
+        return;
+      }
+
+      mappingHtml.push(
+        '<div class="acp-zfs-mapping-item">' +
+          '<div class="acp-zfs-mapping-paths">' +
+            '<div class="acp-modal-result-destination">' +
+              '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsShareRootLabel", "Share root")) + '</span>' +
+              '<code class="acp-modal-path">' + ACP.escapeHtml(share) + "</code>" +
+            "</div>" +
+            '<div class="acp-modal-result-destination">' +
+              '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsDatasetRootLabel", "Dataset root")) + '</span>' +
+              '<code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(dataset) + "</code>" +
+            "</div>" +
+          "</div>" +
+          '<button type="button" class="acp-button acp-button-secondary" data-action="remove-zfs-path-mapping" data-share-root="' + ACP.escapeHtml(share) + '" data-dataset-root="' + ACP.escapeHtml(dataset) + '"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsRemoveLabel", "Remove")) + "</button>" +
+        "</div>"
+      );
+    });
+
+    if (!mappingHtml.length) {
+      html.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsEmpty", "No ZFS path mappings have been added yet.")) + "</div>");
+    } else {
+      html.push('<div class="acp-zfs-mapping-list">' + mappingHtml.join("") + "</div>");
+    }
+
+    $.each(breadcrumbs, function(_, crumb) {
+      trailHtml.push('<span class="acp-appdata-browser-trail-part">' + ACP.escapeHtml(String((crumb && crumb.label) || "")) + "</span>");
+    });
+
+    if (browser.parentPath) {
+      browserListHtml.push(
+        '<div class="acp-appdata-browser-entry acp-appdata-browser-entry-parent" data-action="browse-zfs-mapping-parent"' + browserEntryAttr + '>' +
+          '<span class="acp-appdata-browser-entry-name">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesBrowseParentLabel", "...")) + "</span>" +
+          '<span class="acp-appdata-browser-entry-path">' + ACP.escapeHtml(String(browser.parentPath || "")) + "</span>" +
+        "</div>"
+      );
+    }
+
+    $.each(entries, function(_, entry) {
+      browserListHtml.push(
+        '<div class="acp-appdata-browser-entry" data-action="browse-zfs-mapping-path" data-path="' + ACP.escapeHtml(String((entry && entry.path) || "")) + '"' + browserEntryAttr + '>' +
+          '<span class="acp-appdata-browser-entry-name">' + ACP.escapeHtml(String((entry && entry.name) || "")) + "</span>" +
+          '<span class="acp-appdata-browser-entry-path">' + ACP.escapeHtml(String((entry && entry.path) || "")) + "</span>" +
+        "</div>"
+      );
+    });
+
+    html.push(
+      "</div>",
+      '<div class="acp-modal-panel">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsDraftTitle", "Add mapping")) + "</div>",
+      '<div class="acp-zfs-mapping-draft-grid">',
+      '<div class="acp-zfs-mapping-field">',
+      '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsShareRootLabel", "Share root")) + "</span>",
+      '<code class="acp-modal-path">' + ACP.escapeHtml(shareRootDisplay) + "</code>",
+      "</div>",
+      '<div class="acp-zfs-mapping-field">',
+      '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsDatasetRootLabel", "Dataset root")) + "</span>",
+      '<code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(datasetRootDisplay) + "</code>",
+      "</div>",
+      "</div>",
+      '<div class="acp-modal-result-destination">',
+      '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsCurrentTargetLabel", "Picker target")) + "</span>",
+      '<div class="acp-zfs-mapping-target-actions">',
+      '<button type="button" class="acp-button ' + (activeField === "shareRoot" ? "acp-button-primary" : "acp-button-secondary") + '" data-action="set-zfs-browser-field" data-field="shareRoot"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsBrowseShareLabel", "Browse share root")) + "</button>",
+      '<button type="button" class="acp-button ' + (activeField === "datasetRoot" ? "acp-button-primary" : "acp-button-secondary") + '" data-action="set-zfs-browser-field" data-field="datasetRoot"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsBrowseDatasetLabel", "Browse dataset root")) + "</button>",
+      "</div>",
+      "</div>",
+      '<div class="acp-appdata-browser-actions">',
+      '<button type="button" class="acp-button acp-button-secondary" data-action="use-current-zfs-mapping-path"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsUseCurrentLabel", "Use current path")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="clear-zfs-mapping-draft"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsClearDraftLabel", "Clear draft")) + "</button>",
+      '<button type="button" class="acp-button acp-button-primary" data-action="add-zfs-path-mapping"' + ((!canAddMapping || state.busy || browser.loading) ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsAddLabel", "Add mapping")) + "</button>",
+      "</div>",
+      "</div>",
+      '<div class="acp-modal-panel">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsBrowserTitle", "Folder picker")) + "</div>",
+      '<div class="acp-appdata-browser-shell">',
+      '<div class="acp-appdata-browser-current">',
+      '<div class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesCurrentPathLabel", "Current path")) + "</div>",
+      '<div class="acp-appdata-browser-current-path"><code class="acp-modal-path">' + ACP.escapeHtml(currentPath) + "</code></div>",
+      "</div>",
+      trailHtml.length ? ('<div class="acp-appdata-browser-trail">' + trailHtml.join("") + "</div>") : "",
+      browser.loading
+        ? ('<div class="acp-appdata-browser-status is-loading">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesBrowseLoadingMessage", "Loading folders from the selected path.")) + "</div>")
+        : "",
+      browserListHtml.length
+        ? ('<div class="acp-appdata-browser-list">' + browserListHtml.join("") + "</div>")
+        : ('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesBrowseEmptyMessage", "No child folders are available under the current path.")) + "</div>"),
+      '<div class="acp-modal-feedback" data-role="zfs-path-mappings-feedback">' + ACP.escapeHtml(feedbackMessage) + "</div>",
+      "</div>",
+      "</div>"
+    );
+
     return html.join("");
   };
 })(window, document, jQuery);

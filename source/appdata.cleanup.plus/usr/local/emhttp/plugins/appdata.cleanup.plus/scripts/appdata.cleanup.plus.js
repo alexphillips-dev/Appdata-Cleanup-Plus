@@ -19,6 +19,7 @@
       effective: []
     },
     appdataSourceBrowser: defaultAppdataSourceBrowserState(),
+    zfsPathMappingBrowser: defaultZfsPathMappingBrowserState(),
     quarantine: {
       loading: false,
       loaded: false,
@@ -57,8 +58,27 @@
       validationMessage: "",
       feedbackMessage: "",
       requestToken: "",
-      manual: [],
-      zfsMappingsInput: ""
+      manual: []
+    };
+  }
+
+  function defaultZfsPathMappingBrowserState() {
+    return {
+      loading: false,
+      loaded: false,
+      root: "/mnt",
+      currentPath: "",
+      parentPath: "",
+      breadcrumbs: [],
+      entries: [],
+      requestToken: "",
+      activeField: "shareRoot",
+      draft: {
+        shareRoot: "",
+        datasetRoot: ""
+      },
+      mappings: [],
+      feedbackMessage: ""
     };
   }
 
@@ -231,6 +251,12 @@
     els.$modeStrip.on("click", "[data-action='open-appdata-sources']", function() {
       if (!state.busy) {
         openAppdataSourcesModal();
+      }
+    });
+
+    els.$modeStrip.on("click", "[data-action='open-zfs-path-mappings']", function() {
+      if (!state.busy) {
+        openZfsPathMappingsModal();
       }
     });
 
@@ -416,10 +442,6 @@
       }
     });
 
-    $(document).on("input.acpSources change.acpSources", ".sweet-alert .acp-zfs-mappings-input", function() {
-      state.appdataSourceBrowser.zfsMappingsInput = String($(this).val() || "");
-    });
-
     $(document).on("click.acpSources", ".sweet-alert [data-action='browse-appdata-source']", function(event) {
       event.preventDefault();
       event.stopPropagation();
@@ -465,6 +487,90 @@
 
       if (!state.busy && !state.appdataSourceBrowser.loading) {
         removeManualAppdataSourceFromBrowser($(this).data("path"));
+      }
+    });
+
+    $(document).on("click.acpZfsMappings", ".sweet-alert [data-action='save-zfs-path-mappings']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy) {
+        saveZfsPathMappingsFromModal();
+      }
+    });
+
+    $(document).on("click.acpZfsMappings", ".sweet-alert [data-action='browse-zfs-mapping-path']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.zfsPathMappingBrowser.loading) {
+        loadZfsPathMappingBrowser($(this).data("path"));
+      }
+    });
+
+    $(document).on("click.acpZfsMappings", ".sweet-alert [data-action='browse-zfs-mapping-parent']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.zfsPathMappingBrowser.loading && state.zfsPathMappingBrowser.parentPath) {
+        loadZfsPathMappingBrowser(state.zfsPathMappingBrowser.parentPath);
+      }
+    });
+
+    $(document).on("keydown.acpZfsMappings", ".sweet-alert .acp-appdata-browser-entry[data-action='browse-zfs-mapping-path'], .sweet-alert .acp-appdata-browser-entry[data-action='browse-zfs-mapping-parent']", function(event) {
+      var key = String(event.key || "");
+
+      if (key !== "Enter" && key !== " ") {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      $(this).trigger("click");
+    });
+
+    $(document).on("click.acpZfsMappings", ".sweet-alert [data-action='set-zfs-browser-field']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.zfsPathMappingBrowser.loading) {
+        setCurrentZfsPathMappingField($(this).data("field"));
+      }
+    });
+
+    $(document).on("click.acpZfsMappings", ".sweet-alert [data-action='use-current-zfs-mapping-path']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.zfsPathMappingBrowser.loading) {
+        assignCurrentZfsPathMappingBrowserPath();
+      }
+    });
+
+    $(document).on("click.acpZfsMappings", ".sweet-alert [data-action='add-zfs-path-mapping']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.zfsPathMappingBrowser.loading) {
+        addZfsPathMappingFromDraft();
+      }
+    });
+
+    $(document).on("click.acpZfsMappings", ".sweet-alert [data-action='clear-zfs-mapping-draft']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.zfsPathMappingBrowser.loading) {
+        clearZfsPathMappingDraft();
+      }
+    });
+
+    $(document).on("click.acpZfsMappings", ".sweet-alert [data-action='remove-zfs-path-mapping']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.zfsPathMappingBrowser.loading) {
+        removeZfsPathMappingFromBrowser($(this).data("shareRoot"), $(this).data("datasetRoot"));
       }
     });
 
@@ -605,7 +711,7 @@
     state.settings = ACP.defaultSafetySettings();
     state.appdataSources = { detected: [], effective: [] };
     state.appdataSourceBrowser = defaultAppdataSourceBrowserState();
-    state.appdataSourceBrowser.zfsMappingsInput = "";
+    state.zfsPathMappingBrowser = defaultZfsPathMappingBrowserState();
     state.quarantine.entries = [];
     state.quarantine.loaded = false;
     state.quarantine.selected = {};
@@ -620,12 +726,16 @@
   function loadScan() {
     var shouldHydrate = false;
     var previousBrowserState = $.extend(true, {}, state.appdataSourceBrowser || defaultAppdataSourceBrowserState());
+    var previousZfsBrowserState = $.extend(true, {}, state.zfsPathMappingBrowser || defaultZfsPathMappingBrowserState());
 
     stopScanStatHydration();
     setBusy(true);
     renderLoadingState();
     if (isAppdataSourcesModalVisible()) {
       renderAppdataSourcesModal();
+    }
+    if (isZfsPathMappingsModalVisible()) {
+      renderZfsPathMappingsModal();
     }
 
     apiPost({
@@ -639,7 +749,8 @@
       state.scanWarningMessage = String(response.scanWarningMessage || "");
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || {});
       setAppdataSourceInfo(response.appdataSourceInfo || {});
-      state.appdataSourceBrowser.zfsMappingsInput = serializeZfsPathMappings((state.settings || {}).zfsPathMappings || []);
+      state.appdataSourceBrowser.manual = normalizeManualAppdataSourcesInput((state.settings || {}).manualAppdataSources || []);
+      syncZfsPathMappingBrowserFromSettings();
       state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary || {});
       syncQuarantinePurgeInputDefaults(true);
       syncSafetyControls();
@@ -650,9 +761,13 @@
       if (isAppdataSourcesModalVisible()) {
         renderAppdataSourcesModal();
       }
+      if (isZfsPathMappingsModalVisible()) {
+        renderZfsPathMappingsModal();
+      }
     }).fail(function(xhr) {
       resetDashboardState();
       state.appdataSourceBrowser = previousBrowserState;
+      state.zfsPathMappingBrowser = previousZfsBrowserState;
       syncSafetyControls();
       renderSummaryCards();
       renderPanels();
@@ -667,6 +782,9 @@
       updateActionBar();
       if (isAppdataSourcesModalVisible()) {
         renderAppdataSourcesModal();
+      }
+      if (isZfsPathMappingsModalVisible()) {
+        renderZfsPathMappingsModal();
       }
     }).always(function() {
       setBusy(false);
@@ -741,6 +859,13 @@
     );
   }
 
+  function renderZfsPathMappingsModal() {
+    ACP.applyDeleteModalClass(
+      "acp-delete-modal acp-delete-results-modal acp-zfs-path-mappings-modal",
+      ACP.buildZfsPathMappingsModalHtml(buildContext())
+    );
+  }
+
   function ensureQuarantineManagerModal() {
     if (isQuarantineManagerModalVisible()) {
       return;
@@ -806,6 +931,27 @@
     });
   }
 
+  function ensureZfsPathMappingsModal() {
+    if (isZfsPathMappingsModalVisible()) {
+      return;
+    }
+
+    swal({
+      title: ACP.t(strings, "zfsPathMappingsTitle", "ZFS path mappings"),
+      text: "",
+      type: "info",
+      html: true,
+      showCancelButton: false,
+      confirmButtonText: ACP.t(strings, "doneLabel", "Done"),
+      closeOnConfirm: true
+    }, function() {
+      window.setTimeout(function() {
+        ACP.releaseModalScrollLock(false);
+        renderPanels();
+      }, 180);
+    });
+  }
+
   function openQuarantineManagerModal(forceRefresh) {
     if (state.busy) {
       return;
@@ -850,6 +996,21 @@
     return getActiveSweetAlertModal().hasClass("acp-appdata-sources-modal");
   }
 
+  function openZfsPathMappingsModal() {
+    syncZfsPathMappingBrowserFromSettings();
+    state.zfsPathMappingBrowser.feedbackMessage = "";
+    ensureZfsPathMappingsModal();
+    renderPanels();
+    renderZfsPathMappingsModal();
+    loadZfsPathMappingBrowser(state.zfsPathMappingBrowser.currentPath || state.zfsPathMappingBrowser.root || "/mnt", {
+      preserveFeedback: true
+    });
+  }
+
+  function isZfsPathMappingsModalVisible() {
+    return getActiveSweetAlertModal().hasClass("acp-zfs-path-mappings-modal");
+  }
+
   function setAppdataSourceInfo(info) {
     var nextInfo = $.isPlainObject(info) ? info : {};
 
@@ -880,6 +1041,19 @@
     var nextMessage = String(message || "");
 
     state.appdataSourceBrowser.feedbackMessage = nextMessage;
+
+    if (!$feedback.length) {
+      return;
+    }
+
+    $feedback.text(nextMessage);
+  }
+
+  function setZfsPathMappingsFeedback(message) {
+    var $feedback = $(".sweet-alert [data-role='zfs-path-mappings-feedback']");
+    var nextMessage = String(message || "");
+
+    state.zfsPathMappingBrowser.feedbackMessage = nextMessage;
 
     if (!$feedback.length) {
       return;
@@ -933,17 +1107,10 @@
     });
   }
 
-  function serializeZfsPathMappings(rawValue) {
-    return $.map(normalizeZfsPathMappingsInput(rawValue), function(mapping) {
-      return String(mapping.shareRoot || "") + " => " + String(mapping.datasetRoot || "");
-    }).join("\n");
-  }
-
   function syncAppdataSourceBrowserManualSourcesFromSettings() {
     var nextBrowserState = $.extend({}, defaultAppdataSourceBrowserState(), state.appdataSourceBrowser || {});
 
     nextBrowserState.manual = normalizeManualAppdataSourcesInput((state.settings || {}).manualAppdataSources || []);
-    nextBrowserState.zfsMappingsInput = serializeZfsPathMappings((state.settings || {}).zfsPathMappings || []);
     state.appdataSourceBrowser = nextBrowserState;
   }
 
@@ -952,34 +1119,14 @@
   }
 
   function getZfsPathMappingsFromModal() {
-    var rawMappings = String((state.appdataSourceBrowser || {}).zfsMappingsInput || "");
-
-    return $.grep($.map(rawMappings.split(/\r?\n/), function(line) {
-      var normalizedLine = $.trim(String(line || ""));
-      var parts;
-
-      if (!normalizedLine) {
-        return null;
-      }
-
-      parts = normalizedLine.split(/\s*=>\s*/);
-      if (parts.length !== 2) {
-        return null;
-      }
-
-      return {
-        shareRoot: normalizeZfsPathMapping(parts[0]),
-        datasetRoot: normalizeZfsPathMapping(parts[1])
-      };
-    }), function(mapping) {
-      return !!mapping && !!mapping.shareRoot && !!mapping.datasetRoot;
-    });
+    return normalizeZfsPathMappingsInput((state.zfsPathMappingBrowser || {}).mappings || []);
   }
 
-  function getZfsPathMappingsInputLineCount() {
-    return $.grep(String((state.appdataSourceBrowser || {}).zfsMappingsInput || "").split(/\r?\n/), function(line) {
-      return $.trim(String(line || "")) !== "";
-    }).length;
+  function syncZfsPathMappingBrowserFromSettings() {
+    var nextBrowserState = $.extend(true, {}, defaultZfsPathMappingBrowserState(), state.zfsPathMappingBrowser || {});
+
+    nextBrowserState.mappings = normalizeZfsPathMappingsInput((state.settings || {}).zfsPathMappings || []);
+    state.zfsPathMappingBrowser = nextBrowserState;
   }
 
   function loadAppdataSourceBrowser(path, options) {
@@ -1029,6 +1176,151 @@
     });
   }
 
+  function setZfsPathMappingBrowserPayload(payload) {
+    var nextPayload = $.isPlainObject(payload) ? payload : {};
+    var nextState = $.extend(true, {}, defaultZfsPathMappingBrowserState(), state.zfsPathMappingBrowser || {});
+
+    nextState.root = String(nextPayload.root || nextState.root || "/mnt");
+    nextState.currentPath = String(nextPayload.currentPath || nextState.currentPath || nextState.root);
+    nextState.parentPath = String(nextPayload.parentPath || "");
+    nextState.breadcrumbs = $.isArray(nextPayload.breadcrumbs) ? nextPayload.breadcrumbs : [];
+    nextState.entries = $.isArray(nextPayload.entries) ? nextPayload.entries : [];
+    nextState.loaded = true;
+    nextState.loading = false;
+    state.zfsPathMappingBrowser = nextState;
+  }
+
+  function loadZfsPathMappingBrowser(path, options) {
+    var normalizedOptions = $.isPlainObject(options) ? options : {};
+    var requestedPath = $.trim(String(path || state.zfsPathMappingBrowser.currentPath || state.zfsPathMappingBrowser.root || "/mnt"));
+    var requestToken = requestedPath + ":" + String(Date.now());
+
+    state.zfsPathMappingBrowser.root = String(state.zfsPathMappingBrowser.root || "/mnt");
+    state.zfsPathMappingBrowser.currentPath = requestedPath || state.zfsPathMappingBrowser.root;
+    state.zfsPathMappingBrowser.loading = true;
+    state.zfsPathMappingBrowser.requestToken = requestToken;
+
+    if (!normalizedOptions.preserveFeedback) {
+      setZfsPathMappingsFeedback("");
+    }
+
+    if (isZfsPathMappingsModalVisible()) {
+      renderZfsPathMappingsModal();
+    }
+
+    apiPost({
+      action: "browseAppdataSourcePath",
+      path: requestedPath
+    }).done(function(response) {
+      if (requestToken !== String(state.zfsPathMappingBrowser.requestToken || "")) {
+        return;
+      }
+
+      setZfsPathMappingBrowserPayload((response && response.browser) || {});
+      state.zfsPathMappingBrowser.requestToken = "";
+
+      if (isZfsPathMappingsModalVisible()) {
+        renderZfsPathMappingsModal();
+      }
+    }).fail(function(xhr) {
+      if (requestToken !== String(state.zfsPathMappingBrowser.requestToken || "")) {
+        return;
+      }
+
+      state.zfsPathMappingBrowser.loading = false;
+      state.zfsPathMappingBrowser.requestToken = "";
+      setZfsPathMappingsFeedback(ACP.extractErrorMessage(xhr, ACP.t(strings, "appdataSourcesBrowseFailedMessage", "The selected folder could not be browsed right now.")));
+
+      if (isZfsPathMappingsModalVisible()) {
+        renderZfsPathMappingsModal();
+      }
+    });
+  }
+
+  function setCurrentZfsPathMappingField(field) {
+    state.zfsPathMappingBrowser.activeField = String(field || "") === "datasetRoot" ? "datasetRoot" : "shareRoot";
+    renderZfsPathMappingsModal();
+  }
+
+  function assignCurrentZfsPathMappingBrowserPath() {
+    var field = String((state.zfsPathMappingBrowser || {}).activeField || "shareRoot") === "datasetRoot" ? "datasetRoot" : "shareRoot";
+    var currentPath = normalizeZfsPathMapping((state.zfsPathMappingBrowser || {}).currentPath || "");
+
+    if (!currentPath) {
+      return;
+    }
+
+    state.zfsPathMappingBrowser.draft[field] = currentPath;
+    setZfsPathMappingsFeedback("");
+    renderZfsPathMappingsModal();
+  }
+
+  function clearZfsPathMappingDraft() {
+    state.zfsPathMappingBrowser.draft = {
+      shareRoot: "",
+      datasetRoot: ""
+    };
+    setZfsPathMappingsFeedback("");
+    renderZfsPathMappingsModal();
+  }
+
+  function addZfsPathMappingFromDraft() {
+    var draft = $.isPlainObject(state.zfsPathMappingBrowser.draft) ? state.zfsPathMappingBrowser.draft : {};
+    var shareRoot = normalizeZfsPathMapping(draft.shareRoot || "");
+    var datasetRoot = normalizeZfsPathMapping(draft.datasetRoot || "");
+    var nextMappings = getZfsPathMappingsFromModal();
+    var mappingKey = shareRoot + "=>" + datasetRoot;
+    var isDuplicate = false;
+
+    if (!shareRoot || !datasetRoot || shareRoot === datasetRoot) {
+      setZfsPathMappingsFeedback(ACP.t(strings, "zfsPathMappingsDraftIncompleteMessage", "Choose both a share root and a dataset root before adding the mapping."));
+      renderZfsPathMappingsModal();
+      return;
+    }
+
+    $.each(nextMappings, function(_, mapping) {
+      var nextKey = String((mapping && mapping.shareRoot) || "") + "=>" + String((mapping && mapping.datasetRoot) || "");
+
+      if (nextKey === mappingKey) {
+        isDuplicate = true;
+        return false;
+      }
+
+      return undefined;
+    });
+
+    if (isDuplicate) {
+      setZfsPathMappingsFeedback(ACP.t(strings, "zfsPathMappingsDuplicateMessage", "This ZFS path mapping is already configured."));
+      renderZfsPathMappingsModal();
+      return;
+    }
+
+    nextMappings.push({
+      shareRoot: shareRoot,
+      datasetRoot: datasetRoot
+    });
+    state.zfsPathMappingBrowser.mappings = normalizeZfsPathMappingsInput(nextMappings);
+    state.zfsPathMappingBrowser.draft = {
+      shareRoot: "",
+      datasetRoot: ""
+    };
+    state.zfsPathMappingBrowser.activeField = "shareRoot";
+    setZfsPathMappingsFeedback("");
+    renderZfsPathMappingsModal();
+  }
+
+  function removeZfsPathMappingFromBrowser(shareRoot, datasetRoot) {
+    var targetShareRoot = normalizeZfsPathMapping(shareRoot || "");
+    var targetDatasetRoot = normalizeZfsPathMapping(datasetRoot || "");
+
+    state.zfsPathMappingBrowser.mappings = $.grep(getZfsPathMappingsFromModal(), function(mapping) {
+      return String((mapping && mapping.shareRoot) || "") !== targetShareRoot
+        || String((mapping && mapping.datasetRoot) || "") !== targetDatasetRoot;
+    });
+    setZfsPathMappingsFeedback("");
+    renderZfsPathMappingsModal();
+  }
+
   function addCurrentAppdataSourceFromBrowser() {
     var currentPath = $.trim(String(state.appdataSourceBrowser.currentPath || ""));
     var nextManualSources = getManualAppdataSourcesFromModal();
@@ -1070,20 +1362,10 @@
   }
 
   function saveAppdataSourcesFromModal() {
-    var parsedZfsPathMappings = getZfsPathMappingsFromModal();
-    var rawZfsPathMappings = String((state.appdataSourceBrowser || {}).zfsMappingsInput || "");
-
-    if (getZfsPathMappingsInputLineCount() !== parsedZfsPathMappings.length) {
-      setAppdataSourcesFeedback(ACP.t(strings, "appdataSourcesZfsInvalidMessage", "Each ZFS path mapping must use '/source/root => /dataset/root'."));
-      return;
-    }
-
     setAppdataSourcesFeedback(ACP.t(strings, "appdataSourcesSavingMessage", "Saving appdata sources and rescanning."));
     saveSafetySettings({
-      manualAppdataSources: getManualAppdataSourcesFromModal(),
-      zfsPathMappings: parsedZfsPathMappings
+      manualAppdataSources: getManualAppdataSourcesFromModal()
     }, {
-      zfsPathMappingsInput: rawZfsPathMappings,
       reloadScanOnSuccess: true,
       skipRenderAll: true,
       failureTitle: ACP.t(strings, "appdataSourcesSaveFailedTitle", "Appdata sources failed"),
@@ -1093,6 +1375,24 @@
       },
       onFailure: function(xhr) {
         setAppdataSourcesFeedback(ACP.extractErrorMessage(xhr, ACP.t(strings, "appdataSourcesSaveFailedMessage", "The appdata source list could not be saved right now.")));
+      }
+    });
+  }
+
+  function saveZfsPathMappingsFromModal() {
+    setZfsPathMappingsFeedback(ACP.t(strings, "zfsPathMappingsSavingMessage", "Saving ZFS path mappings and rescanning."));
+    saveSafetySettings({
+      zfsPathMappings: getZfsPathMappingsFromModal()
+    }, {
+      reloadScanOnSuccess: true,
+      skipRenderAll: true,
+      failureTitle: ACP.t(strings, "zfsPathMappingsSaveFailedTitle", "ZFS path mappings failed"),
+      failureMessage: ACP.t(strings, "zfsPathMappingsSaveFailedMessage", "The ZFS path mappings could not be saved right now."),
+      onSuccess: function() {
+        setZfsPathMappingsFeedback(ACP.t(strings, "zfsPathMappingsSavingMessage", "Saving ZFS path mappings and rescanning."));
+      },
+      onFailure: function(xhr) {
+        setZfsPathMappingsFeedback(ACP.extractErrorMessage(xhr, ACP.t(strings, "zfsPathMappingsSaveFailedMessage", "The ZFS path mappings could not be saved right now.")));
       }
     });
   }
@@ -2598,10 +2898,6 @@
       zfsPathMappings: JSON.stringify($.isArray(nextSettings.zfsPathMappings) ? nextSettings.zfsPathMappings : [])
     };
 
-    if (typeof normalizedOptions.zfsPathMappingsInput === "string") {
-      state.appdataSourceBrowser.zfsMappingsInput = normalizedOptions.zfsPathMappingsInput;
-    }
-
     if (state.scanToken) {
       requestData.scanToken = state.scanToken;
     }
@@ -2612,7 +2908,7 @@
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || nextSettings);
       setAppdataSourceInfo(response.appdataSourceInfo || {});
       state.appdataSourceBrowser.manual = normalizeManualAppdataSourcesInput((state.settings || {}).manualAppdataSources || []);
-      state.appdataSourceBrowser.zfsMappingsInput = serializeZfsPathMappings((state.settings || {}).zfsPathMappings || []);
+      syncZfsPathMappingBrowserFromSettings();
       if (quarantine) {
         setQuarantineEntries(quarantine.entries, quarantine.summary);
         state.quarantine.loaded = true;
@@ -2629,6 +2925,9 @@
       }
       if (isAppdataSourcesModalVisible()) {
         renderAppdataSourcesModal();
+      }
+      if (isZfsPathMappingsModalVisible()) {
+        renderZfsPathMappingsModal();
       }
       if (wasQuarantineManagerVisible || normalizedOptions.syncQuarantineModal) {
         renderOpenQuarantineManagerModal();
@@ -2666,6 +2965,12 @@
         loadScan();
       } else {
         renderAll();
+        if (isAppdataSourcesModalVisible()) {
+          renderAppdataSourcesModal();
+        }
+        if (isZfsPathMappingsModalVisible()) {
+          renderZfsPathMappingsModal();
+        }
         updateActionBar();
       }
     });
