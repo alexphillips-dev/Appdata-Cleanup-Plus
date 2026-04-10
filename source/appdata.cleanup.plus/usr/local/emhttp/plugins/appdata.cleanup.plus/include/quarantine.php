@@ -1699,6 +1699,11 @@ function executeCandidateOperation($candidates, $settings, $operation) {
         $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($previewResult["datasetName"]);
         $previewResult["message"] = $zfsPreview["message"];
         $previewResult["recursive"] = ! empty($zfsPreview["recursive"]);
+        $previewResult["zfsImpactSummary"] = isset($zfsPreview["impactSummary"]) ? (string)$zfsPreview["impactSummary"] : "";
+        $previewResult["zfsChildDatasets"] = isset($zfsPreview["childDatasets"]) ? array_values((array)$zfsPreview["childDatasets"]) : array();
+        $previewResult["zfsSnapshots"] = isset($zfsPreview["snapshots"]) ? array_values((array)$zfsPreview["snapshots"]) : array();
+        $previewResult["zfsChildDatasetCount"] = isset($zfsPreview["childDatasetCount"]) ? (int)$zfsPreview["childDatasetCount"] : 0;
+        $previewResult["zfsSnapshotCount"] = isset($zfsPreview["snapshotCount"]) ? (int)$zfsPreview["snapshotCount"] : 0;
         if ( ! $zfsPreview["ok"] ) {
           $previewResult["status"] = "error";
         }
@@ -1743,6 +1748,11 @@ function executeCandidateOperation($candidates, $settings, $operation) {
         "datasetName" => $datasetName,
         "datasetMountpoint" => (string)$resolved["storage"]["datasetMountpoint"],
         "recursive" => ! empty($zfsPreview["recursive"]),
+        "zfsImpactSummary" => isset($zfsPreview["impactSummary"]) ? (string)$zfsPreview["impactSummary"] : "",
+        "zfsChildDatasets" => isset($zfsPreview["childDatasets"]) ? array_values((array)$zfsPreview["childDatasets"]) : array(),
+        "zfsSnapshots" => isset($zfsPreview["snapshots"]) ? array_values((array)$zfsPreview["snapshots"]) : array(),
+        "zfsChildDatasetCount" => isset($zfsPreview["childDatasetCount"]) ? (int)$zfsPreview["childDatasetCount"] : 0,
+        "zfsSnapshotCount" => isset($zfsPreview["snapshotCount"]) ? (int)$zfsPreview["snapshotCount"] : 0,
         "status" => $deleteResult["ok"] ? "deleted" : "error",
         "message" => $deleteResult["message"]
       );

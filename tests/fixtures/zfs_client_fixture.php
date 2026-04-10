@@ -53,6 +53,25 @@ if ( empty($args) ) {
 }
 
 if ( $args[0] === "list" ) {
+  if ( in_array("-r", $args, true) && in_array("filesystem,snapshot", $args, true) ) {
+    $datasetName = trim((string)$args[count($args) - 1]);
+    $childName = basename($datasetName);
+    $mode = isset($datasets[$childName]) ? $datasets[$childName] : "";
+
+    if ( $mode === "" ) {
+      fwrite(STDERR, "unknown dataset\n");
+      exit(1);
+    }
+
+    echo $datasetName . PHP_EOL;
+    if ( $mode === "recursive" ) {
+      echo $datasetName . "@keep" . PHP_EOL;
+      echo $datasetName . "/library" . PHP_EOL;
+      echo $datasetName . "/library@keep" . PHP_EOL;
+    }
+    exit(0);
+  }
+
   foreach ( $datasets as $childName => $mode ) {
     echo zfsFixtureDatasetName($datasetRoot, $childName) . "\t" . zfsFixtureDeletePath($datasetRoot, $childName) . PHP_EOL;
   }

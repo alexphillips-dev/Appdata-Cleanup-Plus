@@ -997,6 +997,15 @@
   }
 
   function openZfsPathMappingsModal() {
+    if (!state.settings.enableZfsDatasetDelete) {
+      swal(
+        ACP.t(strings, "zfsPathMappingsUnavailableTitle", "Enable ZFS dataset delete first"),
+        ACP.t(strings, "zfsPathMappingsUnavailableMessage", "Turn on ZFS dataset delete in Safety settings before configuring ZFS mappings."),
+        "warning"
+      );
+      return;
+    }
+
     syncZfsPathMappingBrowserFromSettings();
     state.zfsPathMappingBrowser.feedbackMessage = "";
     ensureZfsPathMappingsModal();
@@ -1081,7 +1090,13 @@
   }
 
   function normalizeZfsPathMapping(path) {
-    return $.trim(String(path || "")).replace(/\\/g, "/").replace(/\/+/g, "/").replace(/\/$/, "");
+    var normalized = $.trim(String(path || "")).replace(/\\/g, "/").replace(/\/+/g, "/");
+
+    if (normalized.length > 1) {
+      normalized = normalized.replace(/\/$/, "");
+    }
+
+    return normalized;
   }
 
   function normalizeZfsPathMappingsInput(rawValue) {
@@ -1120,6 +1135,72 @@
 
   function getZfsPathMappingsFromModal() {
     return normalizeZfsPathMappingsInput((state.zfsPathMappingBrowser || {}).mappings || []);
+  }
+
+  function getSavedZfsPathMappings() {
+    return normalizeZfsPathMappingsInput((state.settings || {}).zfsPathMappings || []);
+  }
+
+  function getZfsPathMappingDraftState(mappings) {
+    var activeMappings = normalizeZfsPathMappingsInput($.isArray(mappings) ? mappings : getZfsPathMappingsFromModal());
+    var draft = $.isPlainObject(state.zfsPathMappingBrowser.draft) ? state.zfsPathMappingBrowser.draft : {};
+    var shareRoot = normalizeZfsPathMapping(draft.shareRoot || "");
+    var datasetRoot = normalizeZfsPathMapping(draft.datasetRoot || "");
+    var mappingKey = shareRoot + "=>" + datasetRoot;
+    var isComplete = !!shareRoot && !!datasetRoot && shareRoot !== datasetRoot;
+    var isPartial = (!!shareRoot || !!datasetRoot) && !isComplete;
+    var isDuplicate = false;
+
+    $.each(activeMappings, function(_, mapping) {
+      var nextKey = String((mapping && mapping.shareRoot) || "") + "=>" + String((mapping && mapping.datasetRoot) || "");
+
+      if (nextKey === mappingKey) {
+        isDuplicate = true;
+        return false;
+      }
+
+      return undefined;
+    });
+
+    return {
+      shareRoot: shareRoot,
+      datasetRoot: datasetRoot,
+      mappingKey: mappingKey,
+      isEmpty: !shareRoot && !datasetRoot,
+      isComplete: isComplete,
+      isPartial: isPartial,
+      isDuplicate: isDuplicate,
+      isPending: isComplete && !isDuplicate
+    };
+  }
+
+  function getPreparedZfsPathMappingsForSave() {
+    var baseMappings = getZfsPathMappingsFromModal();
+    var savedMappings = getSavedZfsPathMappings();
+    var draftState = getZfsPathMappingDraftState(baseMappings);
+    var nextMappings = baseMappings.slice(0);
+
+    if (draftState.isPartial) {
+      return {
+        ok: false,
+        message: ACP.t(strings, "zfsPathMappingsDraftPartialMessage", "Finish both roots before saving. ZFS mappings only affect dataset delete resolution, not scan discovery.")
+      };
+    }
+
+    if (draftState.isPending) {
+      nextMappings.push({
+        shareRoot: draftState.shareRoot,
+        datasetRoot: draftState.datasetRoot
+      });
+      nextMappings = normalizeZfsPathMappingsInput(nextMappings);
+    }
+
+    return {
+      ok: true,
+      mappings: nextMappings,
+      autoAddedDraft: draftState.isPending,
+      changed: JSON.stringify(nextMappings) !== JSON.stringify(savedMappings)
+    };
   }
 
   function syncZfsPathMappingBrowserFromSettings() {
@@ -1273,7 +1354,7 @@
     var isDuplicate = false;
 
     if (!shareRoot || !datasetRoot || shareRoot === datasetRoot) {
-      setZfsPathMappingsFeedback(ACP.t(strings, "zfsPathMappingsDraftIncompleteMessage", "Choose both a share root and a dataset root before adding the mapping."));
+      setZfsPathMappingsFeedback(ACP.t(strings, "zfsPathMappingsDraftIncompleteMessage", "Choose both an Unraid share root and a ZFS dataset mount root before adding the mapping."));
       renderZfsPathMappingsModal();
       return;
     }
@@ -1380,16 +1461,46 @@
   }
 
   function saveZfsPathMappingsFromModal() {
-    setZfsPathMappingsFeedback(ACP.t(strings, "zfsPathMappingsSavingMessage", "Saving ZFS path mappings and rescanning."));
+    var prepared = getPreparedZfsPathMappingsForSave();
+
+    if (!prepared.ok) {
+      setZfsPathMappingsFeedback(prepared.message || ACP.t(strings, "zfsPathMappingsSaveFailedMessage", "The ZFS path mappings could not be saved right now."));
+      renderZfsPathMappingsModal();
+      return;
+    }
+
+    if (!prepared.changed) {
+      setZfsPathMappingsFeedback(ACP.t(strings, "zfsPathMappingsNoChangesMessage", "No ZFS mapping changes are waiting to be saved."));
+      renderZfsPathMappingsModal();
+      return;
+    }
+
+    setZfsPathMappingsFeedback(
+      prepared.autoAddedDraft
+        ? ACP.t(strings, "zfsPathMappingsSavingWithDraftMessage", "Saving ZFS path mappings, including the current draft, and rescanning.")
+        : ACP.t(strings, "zfsPathMappingsSavingMessage", "Saving ZFS path mappings and rescanning.")
+    );
     saveSafetySettings({
-      zfsPathMappings: getZfsPathMappingsFromModal()
+      zfsPathMappings: prepared.mappings
     }, {
       reloadScanOnSuccess: true,
       skipRenderAll: true,
       failureTitle: ACP.t(strings, "zfsPathMappingsSaveFailedTitle", "ZFS path mappings failed"),
       failureMessage: ACP.t(strings, "zfsPathMappingsSaveFailedMessage", "The ZFS path mappings could not be saved right now."),
-      onSuccess: function() {
-        setZfsPathMappingsFeedback(ACP.t(strings, "zfsPathMappingsSavingMessage", "Saving ZFS path mappings and rescanning."));
+      onSuccess: function(response) {
+        var savedMappings = normalizeZfsPathMappingsInput((response && response.settings && response.settings.zfsPathMappings) || prepared.mappings);
+        var mappingCount = savedMappings.length;
+
+        state.zfsPathMappingBrowser.draft = {
+          shareRoot: "",
+          datasetRoot: ""
+        };
+        state.zfsPathMappingBrowser.activeField = "shareRoot";
+        setZfsPathMappingsFeedback(
+          mappingCount === 1
+            ? ACP.t(strings, "zfsPathMappingsSavedSingleMessage", "Saved 1 ZFS mapping and rescanning.")
+            : ACP.t(strings, "zfsPathMappingsSavedManyMessage", "Saved {count} ZFS mappings and rescanning.").replace("{count}", String(mappingCount))
+        );
       },
       onFailure: function(xhr) {
         setZfsPathMappingsFeedback(ACP.extractErrorMessage(xhr, ACP.t(strings, "zfsPathMappingsSaveFailedMessage", "The ZFS path mappings could not be saved right now.")));
@@ -1553,7 +1664,7 @@
           : ACP.t(strings, "noticeZfsDeleteDisabledTitle", "ZFS dataset delete is disabled"),
         message: state.settings.enableZfsDatasetDelete
           ? ACP.t(strings, "noticeZfsDatasetMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows.")
-          : ACP.t(strings, "noticeZfsDeleteDisabledMessage", "ZFS-backed rows stay visible but blocked until ZFS dataset delete is enabled in Safety settings.")
+          : ACP.t(strings, "noticeZfsDeleteDisabledMessage", "ZFS-backed rows stay visible but blocked until ZFS dataset delete is enabled in Safety settings. Enabling it also reveals the ZFS mappings action so share roots can be mapped to dataset mount roots.")
       });
     }
 
@@ -2048,6 +2159,8 @@
 
     if (row.storageKind === "zfs") {
       facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "storageLabel", "Storage")) + "</strong> " + ACP.escapeHtml(row.datasetName || row.storageLabel || ACP.t(strings, "zfsDatasetLabel", "ZFS dataset")) + "</span>");
+    } else if (row.zfsMappingMatched) {
+      facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "storageLabel", "Storage")) + "</strong> " + ACP.escapeHtml(ACP.t(strings, "zfsMappingPendingLabel", "Mapped share path")) + "</span>");
     }
 
     facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + "</strong> " + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || "Unknown")) + "</span>");
@@ -2069,6 +2182,10 @@
 
     if (row.policyReason) {
       notes.push('<div class="acp-row-note is-warning">' + ACP.escapeHtml(row.policyReason) + "</div>");
+    }
+
+    if (row.zfsMappingMatched && row.storageKind !== "zfs" && row.zfsResolutionMessage) {
+      notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.zfsResolutionMessage) + "</div>");
     }
 
     if (row.lockOverridden) {
@@ -2904,6 +3021,7 @@
 
     apiPost(requestData).done(function(response) {
       var quarantine = response.quarantine || null;
+      var zfsModalWasVisible = isZfsPathMappingsModalVisible();
 
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || nextSettings);
       setAppdataSourceInfo(response.appdataSourceInfo || {});
@@ -2926,7 +3044,13 @@
       if (isAppdataSourcesModalVisible()) {
         renderAppdataSourcesModal();
       }
-      if (isZfsPathMappingsModalVisible()) {
+      if (zfsModalWasVisible && previousSettings.enableZfsDatasetDelete && !state.settings.enableZfsDatasetDelete) {
+        swal(
+          ACP.t(strings, "zfsPathMappingsDisabledTitle", "ZFS mappings closed"),
+          ACP.t(strings, "zfsPathMappingsDisabledMessage", "ZFS dataset delete was turned off, so the ZFS mappings editor has been closed."),
+          "info"
+        );
+      } else if (isZfsPathMappingsModalVisible()) {
         renderZfsPathMappingsModal();
       }
       if (wasQuarantineManagerVisible || normalizedOptions.syncQuarantineModal) {
@@ -3248,32 +3372,72 @@
     ACP.applyDeleteModalClass("acp-delete-modal", buildLockOverridePreviewHtml(targetRows, normalizedIntent));
   }
 
-  function buildOperationContext(operation) {
+  function buildOperationContext(operation, rows) {
     var baseOperation = String(operation || "").replace(/^preview_/, "");
     var preview = baseOperation !== operation;
     var isDelete = baseOperation === "delete";
+    var operationRows = $.isArray(rows) ? rows : [];
+    var zfsCount = $.grep(operationRows, function(row) {
+      return row && row.storageKind === "zfs";
+    }).length;
+    var folderCount = Math.max(0, operationRows.length - zfsCount);
+    var deleteTargetLabelSingular = ACP.t(strings, "deleteFolderSingular", "folder");
+    var deleteTargetLabelPlural = ACP.t(strings, "deleteFolderPlural", "folders");
+    var deleteActionLabel = ACP.t(strings, "deleteConfirmButton", "Delete");
+    var deleteListTitle = ACP.t(strings, "deleteListTitle", "Folders to delete");
+    var deleteLoadingTitle = ACP.t(strings, "deletingTitle", "Deleting selected folders");
+    var deleteLoadingMessage = ACP.t(strings, "deletingMessage", "Large folders can take a moment to remove.");
+    var deleteConfirmTitle = ACP.t(strings, "deleteConfirmTitle", "Delete selected folders?");
+    var deleteConfirmMessage = ACP.t(strings, "deleteConfirmMessage", "Selected folders will be removed immediately.");
+    var deleteDetailMessage = ACP.t(strings, "deleteIrreversibleMessage", "This action cannot be undone by this plugin.");
+
+    if (zfsCount > 0 && folderCount === 0) {
+      deleteTargetLabelSingular = ACP.t(strings, "deleteDatasetSingular", "dataset");
+      deleteTargetLabelPlural = ACP.t(strings, "deleteDatasetPlural", "datasets");
+      deleteActionLabel = ACP.t(strings, "deleteDatasetActionLabel", "Destroy");
+      deleteListTitle = ACP.t(strings, "deleteDatasetListTitle", "Datasets to destroy");
+      deleteLoadingTitle = ACP.t(strings, "destroyingTitle", "Destroying selected datasets");
+      deleteLoadingMessage = ACP.t(strings, "destroyingMessage", "ZFS dataset destroy can take a moment to validate and complete.");
+      deleteConfirmTitle = ACP.t(strings, "destroyConfirmTitle", "Destroy selected datasets?");
+      deleteConfirmMessage = ACP.t(strings, "destroyConfirmMessage", "Selected ZFS datasets will be destroyed immediately.");
+      deleteDetailMessage = ACP.t(strings, "destroyIrreversibleMessage", "This permanently destroys the selected datasets. Quarantine is not available for ZFS dataset-backed rows.");
+    } else if (zfsCount > 0) {
+      deleteTargetLabelSingular = ACP.t(strings, "deleteItemSingular", "item");
+      deleteTargetLabelPlural = ACP.t(strings, "deleteItemPlural", "items");
+      deleteActionLabel = ACP.t(strings, "deleteMixedActionLabel", "Delete");
+      deleteListTitle = ACP.t(strings, "deleteMixedListTitle", "Items to delete");
+      deleteLoadingTitle = ACP.t(strings, "deletingMixedTitle", "Deleting selected items");
+      deleteLoadingMessage = ACP.t(strings, "deletingMixedMessage", "Folder deletes and dataset destroys can take a moment to complete.");
+      deleteConfirmTitle = ACP.t(strings, "deleteMixedConfirmTitle", "Delete selected items?");
+      deleteConfirmMessage = ACP.t(strings, "deleteMixedConfirmMessage", "Selected folders and ZFS datasets will be removed immediately.");
+      deleteDetailMessage = ACP.t(strings, "deleteMixedIrreversibleMessage", "This action cannot be undone by this plugin. ZFS dataset-backed rows are destroyed instead of being quarantined.");
+    }
 
     return {
       operation: operation,
       preview: preview,
       baseOperation: baseOperation,
-      confirmTitle: isDelete ? ACP.t(strings, "deleteConfirmTitle", "Delete selected folders?") : ACP.t(strings, "quarantineConfirmTitle", "Quarantine selected folders?"),
-      confirmMessage: isDelete ? ACP.t(strings, "deleteConfirmMessage", "Selected folders will be removed immediately.") : ACP.t(strings, "quarantineConfirmMessage", "Selected folders will be moved into quarantine instead of being permanently deleted."),
-      detailMessage: isDelete ? ACP.t(strings, "deleteIrreversibleMessage", "This action cannot be undone by this plugin.") : ACP.t(strings, "quarantineDetailMessage", "The selected folders will be moved into the quarantine root instead of being permanently deleted."),
-      confirmButtonLabel: isDelete ? ACP.t(strings, "deleteConfirmButton", "Delete") : ACP.t(strings, "quarantineConfirmButton", "Quarantine"),
-      loadingTitle: preview ? ACP.t(strings, "dryRunTitle", "Running dry run") : (isDelete ? ACP.t(strings, "deletingTitle", "Deleting selected folders") : ACP.t(strings, "quarantiningTitle", "Moving selected folders to quarantine")),
-      loadingMessage: preview ? ACP.t(strings, "dryRunMessage", "Reviewing what the current action would do without changing anything.") : (isDelete ? ACP.t(strings, "deletingMessage", "Large folders can take a moment to remove.") : ACP.t(strings, "quarantiningMessage", "Selected folders are being moved into a hidden quarantine root.")),
+      confirmTitle: isDelete ? deleteConfirmTitle : ACP.t(strings, "quarantineConfirmTitle", "Quarantine selected folders?"),
+      confirmMessage: isDelete ? deleteConfirmMessage : ACP.t(strings, "quarantineConfirmMessage", "Selected folders will be moved into quarantine instead of being permanently deleted."),
+      detailMessage: isDelete ? deleteDetailMessage : ACP.t(strings, "quarantineDetailMessage", "The selected folders will be moved into the quarantine root instead of being permanently deleted."),
+      confirmButtonLabel: isDelete ? deleteActionLabel : ACP.t(strings, "quarantineConfirmButton", "Quarantine"),
+      loadingTitle: preview ? ACP.t(strings, "dryRunTitle", "Running dry run") : (isDelete ? deleteLoadingTitle : ACP.t(strings, "quarantiningTitle", "Moving selected folders to quarantine")),
+      loadingMessage: preview ? ACP.t(strings, "dryRunMessage", "Reviewing what the current action would do without changing anything.") : (isDelete ? deleteLoadingMessage : ACP.t(strings, "quarantiningMessage", "Selected folders are being moved into a hidden quarantine root.")),
       resultTitleSuccess: preview ? ACP.t(strings, "dryRunResultTitleSuccess", "Dry run complete") : (isDelete ? ACP.t(strings, "deleteResultTitleSuccess", "Cleanup complete") : ACP.t(strings, "quarantineResultTitleSuccess", "Quarantine complete")),
       resultTitleWarning: preview ? ACP.t(strings, "dryRunResultTitleWarning", "Dry run finished with warnings") : (isDelete ? ACP.t(strings, "deleteResultTitleWarning", "Cleanup finished with warnings") : ACP.t(strings, "quarantineResultTitleWarning", "Quarantine finished with warnings")),
       failureTitle: isDelete ? ACP.t(strings, "deleteFailedTitle", "Delete failed") : ACP.t(strings, "quarantineFailedTitle", "Quarantine failed"),
-      listTitle: preview ? ACP.t(strings, "previewListTitle", "Operation preview") : (isDelete ? ACP.t(strings, "deleteListTitle", "Folders to delete") : ACP.t(strings, "quarantineListTitle", "Folders to quarantine")),
+      listTitle: preview
+        ? (isDelete ? deleteListTitle : ACP.t(strings, "quarantineListTitle", "Folders to quarantine"))
+        : (isDelete ? deleteListTitle : ACP.t(strings, "quarantineListTitle", "Folders to quarantine")),
       successStatus: preview ? "ready" : (isDelete ? "deleted" : "quarantined"),
-      warningLabel: preview ? ACP.t(strings, "previewWarningLabel", "DRY RUN") : ACP.t(strings, "deleteWarningLabel", "WARNING")
+      warningLabel: preview ? ACP.t(strings, "previewWarningLabel", "DRY RUN") : ACP.t(strings, "deleteWarningLabel", "WARNING"),
+      deleteTargetLabelSingular: deleteTargetLabelSingular,
+      deleteTargetLabelPlural: deleteTargetLabelPlural
     };
   }
 
   function buildActionConfirmButtonText(context, count) {
-    var noun = count === 1 ? ACP.t(strings, "deleteFolderSingular", "folder") : ACP.t(strings, "deleteFolderPlural", "folders");
+    var noun = count === 1 ? context.deleteTargetLabelSingular : context.deleteTargetLabelPlural;
     return context.confirmButtonLabel + " " + count + " " + noun;
   }
 
@@ -3320,7 +3484,11 @@
     html.push('<ul class="acp-modal-list">');
 
     $.each(preview, function(_, row) {
-      html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code></li>");
+      html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code>");
+      if (row.datasetName) {
+        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDatasetLabel", "ZFS dataset")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.datasetName) + "</code></div>");
+      }
+      html.push("</li>");
     });
 
     if (rows.length > preview.length) {
@@ -3382,6 +3550,30 @@
           "</div>";
       }
 
+      if (result.zfsImpactSummary) {
+        destinationHtml +=
+          '<div class="acp-modal-result-destination">' +
+            '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDestroyImpactLabel", "Impact")) + "</span>" +
+            '<span class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.zfsImpactSummary) + "</span>" +
+          "</div>";
+      }
+
+      if ($.isArray(result.zfsChildDatasets) && result.zfsChildDatasets.length) {
+        destinationHtml +=
+          '<div class="acp-modal-result-destination">' +
+            '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsChildDatasetsLabel", "Child datasets")) + "</span>" +
+            '<code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.zfsChildDatasets.join(", ")) + "</code>" +
+          "</div>";
+      }
+
+      if ($.isArray(result.zfsSnapshots) && result.zfsSnapshots.length) {
+        destinationHtml +=
+          '<div class="acp-modal-result-destination">' +
+            '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsSnapshotsLabel", "Snapshots")) + "</span>" +
+            '<code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(result.zfsSnapshots.join(", ")) + "</code>" +
+          "</div>";
+      }
+
       html.push(
         '<li class="acp-modal-result">' +
           '<div class="acp-modal-result-head">' +
@@ -3414,7 +3606,7 @@
     var reviewRows = $.grep(selectedRows, function(row) {
       return row.risk === "review";
     });
-    var context = buildOperationContext(getPrimaryOperation());
+    var context = buildOperationContext(getPrimaryOperation(), selectedRows);
     var confirmButtonText = buildActionConfirmButtonText(context, selectedRows.length);
 
     if (!selectedRows.length) {
@@ -3423,8 +3615,16 @@
     }
 
     if (context.baseOperation === "delete") {
+      var typedDeleteTitle = ACP.t(strings, "deleteTypedTitle", "Type DELETE to confirm permanent delete");
+
+      if (context.confirmButtonLabel === ACP.t(strings, "deleteDatasetActionLabel", "Destroy")) {
+        typedDeleteTitle = ACP.t(strings, "destroyTypedTitle", "Type DELETE to confirm dataset destroy");
+      } else if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
+        typedDeleteTitle = ACP.t(strings, "deleteMixedTypedTitle", "Type DELETE to confirm item delete");
+      }
+
       swal({
-        title: ACP.t(strings, "deleteTypedTitle", "Type DELETE to confirm permanent delete"),
+        title: typedDeleteTitle,
         text: "",
         type: "input",
         html: true,
@@ -3470,7 +3670,7 @@
   }
 
   function runCandidateOperation(selectedRows, operation) {
-    var context = buildOperationContext(operation);
+    var context = buildOperationContext(operation, selectedRows);
 
     setBusy(true);
     ACP.applyDeleteModalClass("");

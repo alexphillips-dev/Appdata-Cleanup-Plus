@@ -781,6 +781,7 @@ $zfsPreviewExecution = executeCandidateOperation(array(array(
 )), getAppdataCleanupPlusSafetySettings(), "preview_delete");
 behaviorSmokeAssertSame("ready", $zfsPreviewExecution["results"][0]["status"], "ZFS delete previews should report ready when the dataset can be destroyed.");
 behaviorSmokeAssertSame(false, ! empty($zfsPreviewExecution["results"][0]["recursive"]), "Standard ZFS dataset previews should avoid recursive destroy when it is not required.");
+behaviorSmokeAssertSame("", (string)$zfsPreviewExecution["results"][0]["zfsImpactSummary"], "Standard ZFS previews should not report recursive impact when it is not needed.");
 $zfsRecursivePreviewExecution = executeCandidateOperation(array(array(
   "id" => "sonarr-zfs",
   "name" => "Sonarr",
@@ -791,6 +792,11 @@ $zfsRecursivePreviewExecution = executeCandidateOperation(array(array(
   "datasetName" => "docker_vm_nvme/" . $appdataShareName . "/Sonarr"
 )), getAppdataCleanupPlusSafetySettings(), "preview_delete");
 behaviorSmokeAssertSame(true, ! empty($zfsRecursivePreviewExecution["results"][0]["recursive"]), "Recursive ZFS previews should surface when the dataset requires -r.");
+behaviorSmokeAssertContains("Recursive destroy will also remove", $zfsRecursivePreviewExecution["results"][0]["zfsImpactSummary"], "Recursive ZFS previews should summarize descendant impact.");
+behaviorSmokeAssertSame(1, (int)$zfsRecursivePreviewExecution["results"][0]["zfsChildDatasetCount"], "Recursive ZFS previews should count child datasets.");
+behaviorSmokeAssertSame(2, (int)$zfsRecursivePreviewExecution["results"][0]["zfsSnapshotCount"], "Recursive ZFS previews should count affected snapshots.");
+behaviorSmokeAssertContains("library", implode(",", $zfsRecursivePreviewExecution["results"][0]["zfsChildDatasets"]), "Recursive ZFS previews should list child datasets.");
+behaviorSmokeAssertContains("@keep", implode(",", $zfsRecursivePreviewExecution["results"][0]["zfsSnapshots"]), "Recursive ZFS previews should list affected snapshots.");
 $zfsDeleteExecution = executeCandidateOperation(array(array(
   "id" => "templated-zfs",
   "name" => "templated-orphan",
@@ -813,6 +819,7 @@ $zfsRecursiveDeleteExecution = executeCandidateOperation(array(array(
 )), getAppdataCleanupPlusSafetySettings(), "delete");
 behaviorSmokeAssertSame("deleted", $zfsRecursiveDeleteExecution["results"][0]["status"], "Recursive ZFS-backed deletes should still report deleted when the dataset destroy succeeds.");
 behaviorSmokeAssertSame(true, ! empty($zfsRecursiveDeleteExecution["results"][0]["recursive"]), "Recursive ZFS-backed deletes should report that -r was used.");
+behaviorSmokeAssertContains("Recursive destroy will also remove", $zfsRecursiveDeleteExecution["results"][0]["zfsImpactSummary"], "Recursive ZFS-backed deletes should preserve recursive impact details in the results.");
 behaviorSmokeAssertSame(false, is_dir($zfsCaseSensitivePath), "Recursive ZFS-backed deletes should remove the case-sensitive share path.");
 $postDeleteDashboard = buildDashboardPayload();
 behaviorSmokeAssertSame(null, behaviorSmokeFindRowByPath(isset($postDeleteDashboard["payload"]["rows"]) ? $postDeleteDashboard["payload"]["rows"] : array(), $templatedOrphanPath), "Deleted ZFS-backed rows should disappear after a rescan.");

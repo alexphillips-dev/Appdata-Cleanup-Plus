@@ -370,6 +370,7 @@ function appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName) {
   $normalizedDatasetName = trim((string)$datasetName);
   $basePreview = array();
   $recursivePreview = array();
+  $impact = array();
 
   if ( $normalizedDatasetName === "" ) {
     return array(
@@ -380,19 +381,31 @@ function appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName) {
 
   $basePreview = appdataCleanupPlusRunZfsCommand(array("destroy", "-nvp", $normalizedDatasetName));
   if ( $basePreview["ok"] ) {
+    $impact = appdataCleanupPlusDescribeZfsDatasetDestroyImpact($normalizedDatasetName, false);
     return array(
       "ok" => true,
       "recursive" => false,
-      "message" => "Would destroy ZFS dataset '" . $normalizedDatasetName . "'."
+      "message" => "Would destroy ZFS dataset '" . $normalizedDatasetName . "'.",
+      "impactSummary" => isset($impact["summary"]) ? $impact["summary"] : "",
+      "childDatasets" => isset($impact["childDatasets"]) ? $impact["childDatasets"] : array(),
+      "snapshots" => isset($impact["snapshots"]) ? $impact["snapshots"] : array(),
+      "childDatasetCount" => isset($impact["childDatasetCount"]) ? (int)$impact["childDatasetCount"] : 0,
+      "snapshotCount" => isset($impact["snapshotCount"]) ? (int)$impact["snapshotCount"] : 0
     );
   }
 
   $recursivePreview = appdataCleanupPlusRunZfsCommand(array("destroy", "-nrvp", $normalizedDatasetName));
   if ( $recursivePreview["ok"] ) {
+    $impact = appdataCleanupPlusDescribeZfsDatasetDestroyImpact($normalizedDatasetName, true);
     return array(
       "ok" => true,
       "recursive" => true,
-      "message" => "Would destroy ZFS dataset '" . $normalizedDatasetName . "' recursively."
+      "message" => "Would destroy ZFS dataset '" . $normalizedDatasetName . "' recursively.",
+      "impactSummary" => isset($impact["summary"]) ? $impact["summary"] : "",
+      "childDatasets" => isset($impact["childDatasets"]) ? $impact["childDatasets"] : array(),
+      "snapshots" => isset($impact["snapshots"]) ? $impact["snapshots"] : array(),
+      "childDatasetCount" => isset($impact["childDatasetCount"]) ? (int)$impact["childDatasetCount"] : 0,
+      "snapshotCount" => isset($impact["snapshotCount"]) ? (int)$impact["snapshotCount"] : 0
     );
   }
 
@@ -401,6 +414,98 @@ function appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName) {
     "message" => $recursivePreview["outputText"] !== ""
       ? $recursivePreview["outputText"]
       : ($basePreview["outputText"] !== "" ? $basePreview["outputText"] : "The ZFS dataset could not be destroyed safely.")
+  );
+}
+
+function appdataCleanupPlusSummarizeZfsImpactCount($count, $singular, $plural) {
+  $normalizedCount = (int)$count;
+  if ( $normalizedCount <= 0 ) {
+    return "";
+  }
+
+  return $normalizedCount . " " . ($normalizedCount === 1 ? $singular : $plural);
+}
+
+function appdataCleanupPlusDescribeZfsDatasetDestroyImpact($datasetName, $recursive=false) {
+  $normalizedDatasetName = trim((string)$datasetName);
+  $childDatasets = array();
+  $snapshots = array();
+  $allChildDatasets = array();
+  $allSnapshots = array();
+  $commandResult = array();
+  $summaryParts = array();
+  $summary = "";
+  $childDatasetCount = 0;
+  $snapshotCount = 0;
+
+  if ( $normalizedDatasetName === "" ) {
+    return array(
+      "summary" => "",
+      "childDatasets" => array(),
+      "snapshots" => array(),
+      "childDatasetCount" => 0,
+      "snapshotCount" => 0
+    );
+  }
+
+  $commandResult = appdataCleanupPlusRunZfsCommand(array("list", "-H", "-o", "name", "-t", "filesystem,snapshot", "-r", $normalizedDatasetName));
+  if ( ! $commandResult["ok"] ) {
+    return array(
+      "summary" => "",
+      "childDatasets" => array(),
+      "snapshots" => array(),
+      "childDatasetCount" => 0,
+      "snapshotCount" => 0
+    );
+  }
+
+  foreach ( $commandResult["output"] as $line ) {
+    $name = trim((string)$line);
+
+    if ( $name === "" || $name === $normalizedDatasetName ) {
+      continue;
+    }
+
+    if ( strpos($name, "@") !== false ) {
+      if ( strpos($name, $normalizedDatasetName . "@") === 0 || strpos($name, $normalizedDatasetName . "/") === 0 ) {
+        $allSnapshots[$name] = true;
+      }
+      continue;
+    }
+
+    if ( strpos($name, $normalizedDatasetName . "/") === 0 ) {
+      $allChildDatasets[$name] = true;
+    }
+  }
+
+  $childDatasetCount = count($allChildDatasets);
+  $snapshotCount = count($allSnapshots);
+  $childDatasets = array_values(array_slice(array_keys($allChildDatasets), 0, 4));
+  $snapshots = array_values(array_slice(array_keys($allSnapshots), 0, 4));
+
+  if ( $recursive ) {
+    $summaryParts[] = appdataCleanupPlusSummarizeZfsImpactCount($childDatasetCount, "child dataset", "child datasets");
+  }
+
+  $summaryParts[] = appdataCleanupPlusSummarizeZfsImpactCount($snapshotCount, "snapshot", "snapshots");
+  $summaryParts = array_values(array_filter($summaryParts, "strlen"));
+
+  if ( $recursive ) {
+    if ( ! empty($summaryParts) ) {
+      $summary = "Recursive destroy will also remove " . implode(" and ", $summaryParts) . ".";
+    } else {
+      $summary = "Recursive destroy is required for this dataset.";
+    }
+  } elseif ( ! empty($summaryParts) ) {
+    $summary = "Destroy will also remove " . implode(" and ", $summaryParts) . ".";
+  }
+
+  return array(
+    "summary" => $summary,
+    "childDatasets" => $childDatasets,
+    "snapshots" => $snapshots,
+    "childDatasetCount" => $recursive ? $childDatasetCount : 0,
+    "snapshotCount" => $snapshotCount
   );
 }
 

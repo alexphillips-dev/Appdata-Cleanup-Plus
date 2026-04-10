@@ -73,9 +73,11 @@
     var state = context.state || {};
     var els = context.els || {};
     var strings = context.strings || {};
+    var settings = state.settings || {};
     var summary = (state.quarantine && state.quarantine.summary) || { count: 0, sizeLabel: "0 B" };
     var lockOverrideButton = ACP.buildLockOverrideButtonState(context);
     var isDeleteMode = !!(state.settings && state.settings.enablePermanentDelete);
+    var showZfsPathMappingsButton = !!settings.enableZfsDatasetDelete;
     var leftTitle = isDeleteMode
       ? ACP.t(strings, "noticeDeleteModeTitle", "Permanent delete mode is enabled")
       : ACP.t(strings, "noticeSafeModeTitle", "Safe mode is on");
@@ -109,7 +111,9 @@
       '<div class="acp-mode-card-actions">',
       '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-lock-override" data-lock-intent="' + ACP.escapeHtml(lockOverrideButton.intent) + '"' + (lockOverrideButton.disabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(lockOverrideButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources">' + ACP.escapeHtml(appdataSourcesButtonLabel) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings">' + ACP.escapeHtml(zfsPathMappingsButtonLabel) + "</button>",
+      showZfsPathMappingsButton
+        ? ('<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings">' + ACP.escapeHtml(zfsPathMappingsButtonLabel) + "</button>")
+        : "",
       '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(quarantineButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history">' + ACP.escapeHtml(auditButtonLabel) + "</button>",
       "</div>",
@@ -450,6 +454,7 @@
     var settings = state.settings || {};
     var browser = state.zfsPathMappingBrowser || {};
     var mappings = $.isArray(browser.mappings) ? browser.mappings : ($.isArray(settings.zfsPathMappings) ? settings.zfsPathMappings : []);
+    var savedMappings = $.isArray(settings.zfsPathMappings) ? settings.zfsPathMappings : [];
     var draft = $.isPlainObject(browser.draft) ? browser.draft : {};
     var breadcrumbs = $.isArray(browser.breadcrumbs) ? browser.breadcrumbs : [];
     var entries = $.isArray(browser.entries) ? browser.entries : [];
@@ -465,17 +470,57 @@
     var browserListHtml = [];
     var shareRoot = String(draft.shareRoot || "");
     var datasetRoot = String(draft.datasetRoot || "");
-    var canAddMapping = !!shareRoot && !!datasetRoot && shareRoot !== datasetRoot;
-    var shareRootDisplay = shareRoot || "/";
-    var datasetRootDisplay = datasetRoot || "/";
+    var shareRootLabel = ACP.t(strings, "zfsPathMappingsShareRootLabel", "Unraid share root");
+    var datasetRootLabel = ACP.t(strings, "zfsPathMappingsDatasetRootLabel", "ZFS dataset mount root");
+    var shareRootDisplay = shareRoot || ACP.t(strings, "notSelectedLabel", "Not selected");
+    var datasetRootDisplay = datasetRoot || ACP.t(strings, "notSelectedLabel", "Not selected");
+    var draftPartial = (!!shareRoot || !!datasetRoot) && (!shareRoot || !datasetRoot || shareRoot === datasetRoot);
+    var draftComplete = !!shareRoot && !!datasetRoot && shareRoot !== datasetRoot;
+    var draftKey = shareRoot + "=>" + datasetRoot;
+    var draftDuplicate = false;
+    var effectiveMappings = [];
+    var savedMappingKeys = $.map(savedMappings, function(mapping) {
+      return String((mapping && mapping.shareRoot) || "") + "=>" + String((mapping && mapping.datasetRoot) || "");
+    });
+    var currentMappingKeys = $.map(mappings, function(mapping) {
+      return String((mapping && mapping.shareRoot) || "") + "=>" + String((mapping && mapping.datasetRoot) || "");
+    });
+    var draftStatusMessage = "";
+    var draftStatusClass = "acp-modal-hint";
+    var canAddMapping = draftComplete;
+    var canSaveMappings = false;
+
+    draftDuplicate = $.inArray(draftKey, currentMappingKeys) !== -1;
+    if (draftComplete && !draftDuplicate) {
+      effectiveMappings = mappings.concat([{
+        shareRoot: shareRoot,
+        datasetRoot: datasetRoot
+      }]);
+    } else {
+      effectiveMappings = mappings.slice(0);
+    }
+
+    if (draftPartial) {
+      draftStatusMessage = ACP.t(strings, "zfsPathMappingsDraftPartialMessage", "Finish both roots before saving. ZFS mappings only affect dataset delete resolution, not scan discovery.");
+      draftStatusClass += " is-warning";
+    } else if (draftComplete && !draftDuplicate) {
+      draftStatusMessage = ACP.t(strings, "zfsPathMappingsDraftPendingSaveMessage", "Save mappings will add the current draft automatically. Mappings change ZFS dataset resolution only; they do not change which rows are discovered.");
+    } else {
+      draftStatusMessage = ACP.t(strings, "zfsPathMappingsResolutionHint", "Mappings change ZFS dataset resolution only. They do not change whether orphan rows are discovered.");
+    }
+
+    canSaveMappings = !state.busy &&
+      !browser.loading &&
+      !draftPartial &&
+      JSON.stringify(effectiveMappings) !== JSON.stringify(savedMappings);
     var html = [
       '<div class="acp-modal-summary">',
       '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsLead", "Map the user-share appdata root to the dataset mount root so scan results can resolve exact ZFS datasets safely.")) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsLead", "Map the Unraid share root to the real dataset mount root so matched orphan rows can resolve exact ZFS datasets safely.")) + "</div>",
       '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsHint", "Choose the share root first, then the matching dataset mount root. Only exact dataset mountpoint matches become ZFS-backed delete candidates.")) + "</div>",
       "</div>",
       '<div class="acp-modal-actions-row">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="save-zfs-path-mappings"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsSaveLabel", "Save mappings")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="save-zfs-path-mappings"' + ((!canSaveMappings || state.busy || browser.loading) ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsSaveLabel", "Save mappings")) + "</button>",
       "</div>",
       "</div>",
       '<div class="acp-modal-panel">',
@@ -494,11 +539,11 @@
         '<div class="acp-zfs-mapping-item">' +
           '<div class="acp-zfs-mapping-paths">' +
             '<div class="acp-modal-result-destination">' +
-              '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsShareRootLabel", "Share root")) + '</span>' +
+              '<span class="acp-modal-result-label">' + ACP.escapeHtml(shareRootLabel) + '</span>' +
               '<code class="acp-modal-path">' + ACP.escapeHtml(share) + "</code>" +
             "</div>" +
             '<div class="acp-modal-result-destination">' +
-              '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsDatasetRootLabel", "Dataset root")) + '</span>' +
+              '<span class="acp-modal-result-label">' + ACP.escapeHtml(datasetRootLabel) + '</span>' +
               '<code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(dataset) + "</code>" +
             "</div>" +
           "</div>" +
@@ -541,19 +586,20 @@
       '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsDraftTitle", "Add mapping")) + "</div>",
       '<div class="acp-zfs-mapping-draft-grid">',
       '<div class="acp-zfs-mapping-field">',
-      '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsShareRootLabel", "Share root")) + "</span>",
+      '<span class="acp-modal-result-label">' + ACP.escapeHtml(shareRootLabel) + "</span>",
       '<code class="acp-modal-path">' + ACP.escapeHtml(shareRootDisplay) + "</code>",
       "</div>",
       '<div class="acp-zfs-mapping-field">',
-      '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsDatasetRootLabel", "Dataset root")) + "</span>",
+      '<span class="acp-modal-result-label">' + ACP.escapeHtml(datasetRootLabel) + "</span>",
       '<code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(datasetRootDisplay) + "</code>",
       "</div>",
       "</div>",
+      '<div class="' + ACP.escapeHtml(draftStatusClass) + '">' + ACP.escapeHtml(draftStatusMessage) + "</div>",
       '<div class="acp-modal-result-destination">',
       '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsCurrentTargetLabel", "Picker target")) + "</span>",
       '<div class="acp-zfs-mapping-target-actions">',
       '<button type="button" class="acp-button ' + (activeField === "shareRoot" ? "acp-button-primary" : "acp-button-secondary") + '" data-action="set-zfs-browser-field" data-field="shareRoot"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsBrowseShareLabel", "Browse share root")) + "</button>",
-      '<button type="button" class="acp-button ' + (activeField === "datasetRoot" ? "acp-button-primary" : "acp-button-secondary") + '" data-action="set-zfs-browser-field" data-field="datasetRoot"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsBrowseDatasetLabel", "Browse dataset root")) + "</button>",
+      '<button type="button" class="acp-button ' + (activeField === "datasetRoot" ? "acp-button-primary" : "acp-button-secondary") + '" data-action="set-zfs-browser-field" data-field="datasetRoot"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsBrowseDatasetLabel", "Browse ZFS mount root")) + "</button>",
       "</div>",
       "</div>",
       '<div class="acp-appdata-browser-actions">',

@@ -949,9 +949,15 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
       $ignoredEntry = isset($ignoredCandidates[$candidateKey]) && is_array($ignoredCandidates[$candidateKey]) ? $ignoredCandidates[$candidateKey] : null;
       $ignoredAt = $ignoredEntry && ! empty($ignoredEntry["ignoredAt"]) ? strtotime((string)$ignoredEntry["ignoredAt"]) : 0;
       $storageMeta = appdataCleanupPlusResolveStorageForPath($resolvedPath, $settings);
+      $zfsMappingMatched = ! empty($storageMeta["mappingMatched"]);
+      $zfsResolutionMessage = "";
       $securityLockReason = buildPathSecurityLockReason($resolvedPath, $settings, $storageMeta);
       $pathStats = buildCandidatePathStats($resolvedPath, $classification, $securityLockReason, $includeHeavyStats);
       $realPath = @realpath($resolvedPath);
+
+      if ( $zfsMappingMatched && (! isset($storageMeta["kind"]) || $storageMeta["kind"] !== "zfs") ) {
+        $zfsResolutionMessage = "A configured ZFS mapping matched this path, but it does not resolve to an exact dataset mountpoint. It will be handled as a normal folder until the dataset mount root matches exactly.";
+      }
 
       if ( ! $sourceDisplay ) {
         if ( $sourceSummary ) {
@@ -986,6 +992,8 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
         "storageDetail" => isset($storageMeta["detail"]) ? $storageMeta["detail"] : "",
         "datasetName" => isset($storageMeta["datasetName"]) ? $storageMeta["datasetName"] : "",
         "datasetMountpoint" => isset($storageMeta["datasetMountpoint"]) ? $storageMeta["datasetMountpoint"] : "",
+        "zfsMappingMatched" => $zfsMappingMatched,
+        "zfsResolutionMessage" => $zfsResolutionMessage,
         "path" => $resolvedPath,
         "displayPath" => $resolvedPath,
         "realPath" => $realPath ? $realPath : "",
@@ -1097,6 +1105,8 @@ function buildSnapshotCandidateMap($rows) {
       "storageDetail" => isset($row["storageDetail"]) ? $row["storageDetail"] : "",
       "datasetName" => isset($row["datasetName"]) ? $row["datasetName"] : "",
       "datasetMountpoint" => isset($row["datasetMountpoint"]) ? $row["datasetMountpoint"] : "",
+      "zfsMappingMatched" => ! empty($row["zfsMappingMatched"]),
+      "zfsResolutionMessage" => isset($row["zfsResolutionMessage"]) ? $row["zfsResolutionMessage"] : "",
       "sizeBytes" => $row["sizeBytes"],
       "risk" => isset($row["risk"]) ? $row["risk"] : "safe",
       "reason" => isset($row["reason"]) ? $row["reason"] : "",
