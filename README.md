@@ -15,15 +15,16 @@
 
 Appdata Cleanup Plus is an Unraid plugin for finding orphaned Docker appdata folders, reviewing why they were surfaced, and then quarantining or deleting only the paths you explicitly choose.
 
-It is built around conservative cleanup: grouped scan results, server-side action snapshots, quarantine-first workflow, restore and purge management, and hard safety locks for risky filesystem targets.
+It is built around conservative cleanup: grouped scan results, server-side action snapshots, quarantine-first workflow, restore and purge management, hard safety locks for risky filesystem targets, and ZFS-aware permanent delete for dataset-backed appdata roots.
 
-Quick links: [Install](#install) | [Update](#update) | [What It Detects](#what-it-detects) | [Safety Model](#safety-model) | [Quarantine and Restore](#quarantine-and-restore) | [Stored State](#stored-state) | [Development](#development) | [Support](#support)
+Quick links: [Install](#install) | [Update](#update) | [What It Detects](#what-it-detects) | [ZFS-Backed Appdata](#zfs-backed-appdata) | [Safety Model](#safety-model) | [Quarantine and Restore](#quarantine-and-restore) | [Stored State](#stored-state) | [Development](#development) | [Support](#support)
 
 ## Why Install This
 
 - Find leftover appdata folders from removed containers without manually digging through shares.
 - Cross-check saved Docker templates against live container mounts when Docker is online.
 - Catch direct-child orphan folders in the configured appdata share even when no saved template still references them.
+- Resolve mapped `/mnt/user/...` style appdata paths to exact ZFS dataset mountpoints for dataset-aware permanent delete.
 - Review grouped results with search, risk filtering, sorting, badges, and progressive stat loading instead of a raw folder dump.
 - Default real actions to quarantine so cleanup stays reversible until you intentionally purge.
 
@@ -55,6 +56,39 @@ The scan automatically excludes or blocks paths that should not be treated as no
 
 If Docker is offline, the plugin can still surface template-backed candidates, but those rows should be reviewed more carefully because active container mounts cannot be verified at scan time.
 
+## ZFS-Backed Appdata
+
+The plugin supports ZFS-backed appdata when your user-share path and your real dataset mount root are different, for example:
+
+- User share root: `/mnt/user/appdata`
+- Dataset mount root: `/mnt/docker_vm_nvme/appdata`
+
+Current ZFS support includes:
+
+- A dedicated `ZFS mappings` workflow for mapping the Unraid share root to the real dataset mount root
+- Exact dataset mountpoint resolution using configured mappings
+- Case-sensitive dataset handling
+- Dry run previews that choose standard destroy or recursive destroy only when required
+- Recursive impact summaries for child datasets and snapshots
+- Permanent delete using `zfs destroy` instead of normal folder deletion for resolved dataset-backed rows
+
+Important limits:
+
+- `ZFS mappings` is only shown after `Enable ZFS dataset delete` is enabled in Safety settings
+- ZFS-backed rows still require `Enable permanent delete` before they become actionable
+- ZFS-backed rows cannot be quarantined in the current implementation
+- Only exact dataset mountpoint matches are treated as ZFS-backed delete targets
+- ZFS mappings affect delete resolution, not scan discovery
+
+Recommended workflow:
+
+1. Enable `ZFS dataset delete` in Safety settings.
+2. Open `ZFS mappings`.
+3. Add a mapping from the Unraid share root to the real dataset mount root.
+4. Rescan.
+5. Use `Dry run` first.
+6. Enable `Enable permanent delete` only when you intentionally want dataset destroy.
+
 ## What The UI Gives You
 
 - Compact Unraid Settings page built around one scan and one global action bar
@@ -76,11 +110,13 @@ Safety is the core behavior, not an afterthought.
 - `Dry run` previews the current action without changing anything
 - `Allow outside-share cleanup` must be enabled before outside-share review rows can be acted on
 - `Enable permanent delete` must be enabled before irreversible delete becomes the primary action
+- `Enable ZFS dataset delete` must be enabled before ZFS-backed rows can resolve to dataset destroy actions
 - Locked rows stay visible, but they are not selectable
 - Actions run from server-side scan snapshots using candidate ids instead of trusting posted client paths
 - CSRF validation is required for action requests
 - Share roots, mount points, symlinked path segments, VM Manager managed paths, and other unsafe targets are blocked at action time
 - Restore operations preflight collisions before moving folders back out of quarantine
+- ZFS-backed rows remain blocked unless both the ZFS toggle and permanent delete mode are enabled
 
 ## Quarantine And Restore
 
