@@ -39,6 +39,8 @@ if ( ! validateAppdataCleanupPlusCsrfToken($csrfToken) ) {
   ), 403);
 }
 
+closeAppdataCleanupPlusSession();
+
 try {
   switch ( $action ) {
     case "getOrphanAppdata":

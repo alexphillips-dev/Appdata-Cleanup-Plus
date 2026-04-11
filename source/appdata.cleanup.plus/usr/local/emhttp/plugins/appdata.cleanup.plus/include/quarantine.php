@@ -596,6 +596,19 @@ function buildQuarantineSummary($entries) {
   return $summary;
 }
 
+function buildQuarantineSummaryFromRegistry($registry) {
+  $entries = array();
+
+  foreach ( is_array($registry) ? $registry : array() as $record ) {
+    $normalized = normalizeAppdataCleanupPlusQuarantineRecord($record);
+    $entries[] = array(
+      "sizeBytes" => isset($normalized["sizeBytes"]) ? $normalized["sizeBytes"] : null
+    );
+  }
+
+  return buildQuarantineSummary($entries);
+}
+
 function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false) {
   $registry = pruneMissingAppdataCleanupPlusQuarantineRecords(recoverMissingAppdataCleanupPlusQuarantineRecords());
   $nextRegistry = $registry;
@@ -764,11 +777,25 @@ function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0
 }
 
 function buildQuarantineManagerPayload($includeEntries=true) {
+  $entries = array();
+  $summary = array(
+    "count" => 0,
+    "sizeBytes" => 0,
+    "sizeLabel" => "0 B"
+  );
+
   sweepExpiredAppdataCleanupPlusQuarantineEntries();
-  $entries = getActiveAppdataCleanupPlusQuarantineEntries($includeEntries);
+
+  if ( $includeEntries ) {
+    $entries = getActiveAppdataCleanupPlusQuarantineEntries(true);
+    $summary = buildQuarantineSummary($entries);
+  } else {
+    $registry = pruneMissingAppdataCleanupPlusQuarantineRecords(recoverMissingAppdataCleanupPlusQuarantineRecords());
+    $summary = buildQuarantineSummaryFromRegistry($registry);
+  }
 
   return array(
-    "summary" => buildQuarantineSummary($entries),
+    "summary" => $summary,
     "entries" => $includeEntries ? $entries : array()
   );
 }

@@ -113,6 +113,16 @@ function behaviorSmokeFindRowByPath($rows, $path) {
   return null;
 }
 
+function behaviorSmokeFindEntryById($entries, $entryId) {
+  foreach ( $entries as $entry ) {
+    if ( isset($entry["id"]) && $entry["id"] === $entryId ) {
+      return $entry;
+    }
+  }
+
+  return null;
+}
+
 behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);
 behaviorSmokeRemoveTree($zfsDatasetRoot);
@@ -185,6 +195,10 @@ behaviorSmokeAssertSame(null, getValidatedAppdataCleanupPlusSnapshot($snapshot["
 session_write_close();
 session_id("acp-behavior-primary");
 session_start();
+behaviorSmokeAssertTrue(closeAppdataCleanupPlusSession(), "Session close helper should release the active PHP session lock.");
+behaviorSmokeAssertSame(PHP_SESSION_NONE, session_status(), "Session close helper should leave no active session.");
+session_id("acp-behavior-primary");
+session_start();
 
 $statsPath = "/mnt/user/appdata/cache-target";
 clearCachedAppdataCleanupPlusPathStats($statsPath);
@@ -227,18 +241,42 @@ behaviorSmokeAssertSame(1, count($activeEntries), "Quarantine registry should re
 behaviorSmokeAssertSame("entry-one", $activeEntries[0]["id"], "Quarantine entry id should round-trip.");
 $quarantineSummary = buildQuarantineSummary($activeEntries);
 behaviorSmokeAssertSame(1, $quarantineSummary["count"], "Quarantine summary should count active entries.");
+$quarantineSummaryOnlyRoot = $stateRoot . "/quarantine-summary-only";
+$quarantineSummaryOnlyDestination = $quarantineSummaryOnlyRoot . "/20260330-120010/mnt/user/appdata/summary-only";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($quarantineSummaryOnlyDestination), "Summary-only quarantine destination should be created.");
+registerAppdataCleanupPlusQuarantineRecord(array(
+  "id" => "entry-summary-only",
+  "name" => "summary-only",
+  "sourcePath" => "/mnt/user/appdata/summary-only",
+  "destination" => $quarantineSummaryOnlyDestination,
+  "quarantineRoot" => $quarantineSummaryOnlyRoot,
+  "quarantinedAt" => date("c", time() - 3600),
+  "sourceSummary" => "summary-only",
+  "targetSummary" => "/config",
+  "sizeBytes" => null
+));
+$summaryOnlyPayload = buildQuarantineManagerPayload(false);
+$summaryOnlyRegistry = getAppdataCleanupPlusQuarantineRegistry();
+behaviorSmokeAssertSame(2, (int)$summaryOnlyPayload["summary"]["count"], "Summary-only quarantine payload should count tracked entries without loading full entries.");
+behaviorSmokeAssertSame(0, (int)$summaryOnlyPayload["summary"]["sizeBytes"], "Summary-only quarantine payload should not force uncached size scans.");
+behaviorSmokeAssertSame(null, $summaryOnlyRegistry["entry-summary-only"]["sizeBytes"], "Summary-only quarantine payload should leave uncached quarantine sizes untouched.");
+removeAppdataCleanupPlusQuarantineRecord("entry-summary-only");
 $scheduleSetResult = updateTrackedQuarantinePurgeSchedule($activeEntries, "set", 0, "2030-01-01T12:00:00+00:00");
 behaviorSmokeAssertSame("scheduled", $scheduleSetResult["results"][0]["status"], "Purge scheduling should mark selected quarantine entries as scheduled.");
 behaviorSmokeAssertSame("2030-01-01T12:00:00+00:00", $scheduleSetResult["results"][0]["purgeAt"], "Exact purge scheduling should preserve the selected purge timestamp.");
 behaviorSmokeAssertContains("Scheduled to purge on", $scheduleSetResult["results"][0]["message"], "Exact purge scheduling should report the scheduled purge time.");
 $scheduledEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
-behaviorSmokeAssertSame(true, ! empty($scheduledEntries[0]["purgeScheduled"]), "Scheduled purge entries should expose their scheduled state in the manager payload.");
-behaviorSmokeAssertSame("2030-01-01T12:00:00+00:00", $scheduledEntries[0]["purgeAt"], "Scheduled purge entries should expose the exact purge timestamp.");
-behaviorSmokeAssertTrue($scheduledEntries[0]["purgeBadgeLabel"] !== "", "Scheduled purge entries should expose a purge badge label.");
+$scheduledPrimaryEntry = behaviorSmokeFindEntryById($scheduledEntries, "entry-one");
+behaviorSmokeAssertTrue(is_array($scheduledPrimaryEntry), "Scheduled purge entry should still be present in the manager payload.");
+behaviorSmokeAssertSame(true, ! empty($scheduledPrimaryEntry["purgeScheduled"]), "Scheduled purge entries should expose their scheduled state in the manager payload.");
+behaviorSmokeAssertSame("2030-01-01T12:00:00+00:00", $scheduledPrimaryEntry["purgeAt"], "Scheduled purge entries should expose the exact purge timestamp.");
+behaviorSmokeAssertTrue($scheduledPrimaryEntry["purgeBadgeLabel"] !== "", "Scheduled purge entries should expose a purge badge label.");
 $scheduleClearResult = updateTrackedQuarantinePurgeSchedule($scheduledEntries, "clear", 0);
 behaviorSmokeAssertSame("cleared", $scheduleClearResult["results"][0]["status"], "Clearing a scheduled purge should update the entry status.");
 $clearedEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
-behaviorSmokeAssertSame(false, ! empty($clearedEntries[0]["purgeScheduled"]), "Cleared purge schedules should disappear from the manager payload.");
+$clearedPrimaryEntry = behaviorSmokeFindEntryById($clearedEntries, "entry-one");
+behaviorSmokeAssertTrue(is_array($clearedPrimaryEntry), "Cleared purge entry should still be present in the manager payload.");
+behaviorSmokeAssertSame(false, ! empty($clearedPrimaryEntry["purgeScheduled"]), "Cleared purge schedules should disappear from the manager payload.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "allowOutsideShareCleanup" => false,
   "enablePermanentDelete" => false,
@@ -248,8 +286,10 @@ $defaultSyncResult = syncTrackedQuarantineEntriesToDefaultPurgeSchedule(getAppda
 behaviorSmokeAssertSame(1, (int)$defaultSyncResult["updatedCount"], "Changing the default purge timer should update existing tracked quarantine entries.");
 $defaultSyncedEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
 $expectedDefaultSyncedPurgeAt = buildAppdataCleanupPlusDefaultPurgeAtForTimestamp(getAppdataCleanupPlusSafetySettings(), strtotime($entryOneQuarantinedAt));
-behaviorSmokeAssertTrue(! empty($defaultSyncedEntries[0]["purgeScheduled"]), "Existing tracked quarantine entries should show a scheduled purge after default-timer sync.");
-behaviorSmokeAssertSame($expectedDefaultSyncedPurgeAt, $defaultSyncedEntries[0]["purgeAt"], "Default-timer sync should be based on each entry's quarantine time.");
+$defaultSyncedPrimaryEntry = behaviorSmokeFindEntryById($defaultSyncedEntries, "entry-one");
+behaviorSmokeAssertTrue(is_array($defaultSyncedPrimaryEntry), "Default-synced quarantine entry should still be present.");
+behaviorSmokeAssertTrue(! empty($defaultSyncedPrimaryEntry["purgeScheduled"]), "Existing tracked quarantine entries should show a scheduled purge after default-timer sync.");
+behaviorSmokeAssertSame($expectedDefaultSyncedPurgeAt, $defaultSyncedPrimaryEntry["purgeAt"], "Default-timer sync should be based on each entry's quarantine time.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "allowOutsideShareCleanup" => false,
   "enablePermanentDelete" => false,
@@ -258,7 +298,9 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
 $defaultSyncClearResult = syncTrackedQuarantineEntriesToDefaultPurgeSchedule(getAppdataCleanupPlusSafetySettings());
 behaviorSmokeAssertSame(1, (int)$defaultSyncClearResult["updatedCount"], "Clearing the default purge timer should also clear existing tracked quarantine entries.");
 $defaultClearedEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
-behaviorSmokeAssertSame(false, ! empty($defaultClearedEntries[0]["purgeScheduled"]), "Tracked quarantine entries should clear their purge schedule when the default is cleared.");
+$defaultClearedPrimaryEntry = behaviorSmokeFindEntryById($defaultClearedEntries, "entry-one");
+behaviorSmokeAssertTrue(is_array($defaultClearedPrimaryEntry), "Default-cleared quarantine entry should still be present.");
+behaviorSmokeAssertSame(false, ! empty($defaultClearedPrimaryEntry["purgeScheduled"]), "Tracked quarantine entries should clear their purge schedule when the default is cleared.");
 $manualOverridePurgeAt = date("c", time() + (9 * 86400));
 $manualOverrideResult = updateTrackedQuarantinePurgeSchedule($defaultClearedEntries, "set", 0, $manualOverridePurgeAt);
 behaviorSmokeAssertSame("scheduled", $manualOverrideResult["results"][0]["status"], "Manual exact-time scheduling should still work after default-timer sync.");
@@ -271,7 +313,9 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
 $manualPreservationResult = syncTrackedQuarantineEntriesToDefaultPurgeSchedule(getAppdataCleanupPlusSafetySettings());
 behaviorSmokeAssertSame(0, (int)$manualPreservationResult["updatedCount"], "Changing the default purge timer should not overwrite manual per-entry purge overrides.");
 $manualPreservedEntries = getActiveAppdataCleanupPlusQuarantineEntries(false);
-behaviorSmokeAssertSame($manualOverridePurgeAt, $manualPreservedEntries[0]["purgeAt"], "Manual per-entry purge overrides should remain unchanged when the global default changes.");
+$manualPreservedPrimaryEntry = behaviorSmokeFindEntryById($manualPreservedEntries, "entry-one");
+behaviorSmokeAssertTrue(is_array($manualPreservedPrimaryEntry), "Manual-preserved quarantine entry should still be present.");
+behaviorSmokeAssertSame($manualOverridePurgeAt, $manualPreservedPrimaryEntry["purgeAt"], "Manual per-entry purge overrides should remain unchanged when the global default changes.");
 $manualClearResult = updateTrackedQuarantinePurgeSchedule($manualPreservedEntries, "clear", 0);
 behaviorSmokeAssertSame("cleared", $manualClearResult["results"][0]["status"], "Clearing a manual purge override should still work.");
 setAppdataCleanupPlusQuarantineRegistry(array());

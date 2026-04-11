@@ -1196,6 +1196,15 @@ function ensureAppdataCleanupPlusSession() {
   return function_exists("session_status") && session_status() === PHP_SESSION_ACTIVE;
 }
 
+function closeAppdataCleanupPlusSession() {
+  if ( ! function_exists("session_status") || session_status() !== PHP_SESSION_ACTIVE ) {
+    return true;
+  }
+
+  @session_write_close();
+  return session_status() !== PHP_SESSION_ACTIVE;
+}
+
 function getAppdataCleanupPlusCsrfToken() {
   if ( ! ensureAppdataCleanupPlusSession() ) {
     return "";
