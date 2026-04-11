@@ -1663,7 +1663,11 @@
           ? ACP.t(strings, "noticeZfsDatasetTitle", "ZFS dataset candidates found")
           : ACP.t(strings, "noticeZfsDeleteDisabledTitle", "ZFS dataset delete is disabled"),
         message: state.settings.enableZfsDatasetDelete
-          ? ACP.t(strings, "noticeZfsDatasetMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows.")
+          ? (
+            state.settings.enablePermanentDelete
+              ? ACP.t(strings, "noticeZfsDatasetMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows.")
+              : ACP.t(strings, "noticeZfsDatasetDeleteModeMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows, so permanent delete mode must also be enabled before they become actionable.")
+          )
           : ACP.t(strings, "noticeZfsDeleteDisabledMessage", "ZFS-backed rows stay visible but blocked until ZFS dataset delete is enabled in Safety settings. Enabling it also reveals the ZFS mappings action so share roots can be mapped to dataset mount roots.")
       });
     }
@@ -3476,7 +3480,15 @@
     }
 
     if (settings.showTypeHint) {
-      html.push('<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "deleteTypedHint", "Type DELETE to continue with this permanent delete.")) + "</div>");
+      var typeHint = ACP.t(strings, "deleteTypedHint", "Type DELETE to continue with this permanent delete.");
+
+      if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteDatasetPlural", "datasets")) {
+        typeHint = ACP.t(strings, "destroyTypedHint", "Type DELETE to continue with this dataset destroy.");
+      } else if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
+        typeHint = ACP.t(strings, "deleteMixedTypedHint", "Type DELETE to continue with this delete.");
+      }
+
+      html.push('<div class="acp-modal-hint">' + ACP.escapeHtml(typeHint) + "</div>");
     }
 
     html.push('<div class="acp-modal-panel">');
@@ -3594,7 +3606,7 @@
     var selectedRows = getSelectedActionRows();
 
     if (!selectedRows.length) {
-      swal(ACP.t(strings, "deleteEmptyTitle", "Nothing selected"), ACP.t(strings, "deleteEmptyMessage", "Select at least one deletable folder before continuing."), "warning");
+      swal(ACP.t(strings, "deleteEmptyTitle", "Nothing selected"), ACP.t(strings, "deleteEmptyMessage", "Select at least one ready row before continuing."), "warning");
       return;
     }
 
@@ -3610,7 +3622,7 @@
     var confirmButtonText = buildActionConfirmButtonText(context, selectedRows.length);
 
     if (!selectedRows.length) {
-      swal(ACP.t(strings, "deleteEmptyTitle", "Nothing selected"), ACP.t(strings, "deleteEmptyMessage", "Select at least one deletable folder before continuing."), "warning");
+      swal(ACP.t(strings, "deleteEmptyTitle", "Nothing selected"), ACP.t(strings, "deleteEmptyMessage", "Select at least one ready row before continuing."), "warning");
       return;
     }
 
