@@ -16,6 +16,15 @@ $jsVersion = ! empty($scriptVersions) ? max($scriptVersions) : false;
 $hostThemeName = strtolower(trim((string)($display['theme'] ?? "")));
 $hostThemeClass = "";
 $csrfToken = getAppdataCleanupPlusCsrfToken();
+$pluginVersion = "";
+$installedManifest = appdataCleanupPlusConfigDir() . "/appdata.cleanup.plus.plg";
+
+if ( is_file($installedManifest) ) {
+  $manifestContents = @file_get_contents($installedManifest);
+  if ( is_string($manifestContents) && preg_match('/<!ENTITY version "([^"]+)">/', $manifestContents, $versionMatches) ) {
+    $pluginVersion = (string)$versionMatches[1];
+  }
+}
 
 if ( $hostThemeName === "grey" ) {
   $hostThemeName = "gray";
@@ -40,6 +49,7 @@ $config = array(
   "csrfToken" => $csrfToken,
   "spinnerUrl" => "/plugins/appdata.cleanup.plus/images/spinner2.gif",
   "logoUrl" => "/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png",
+  "pluginVersion" => $pluginVersion,
   "strings" => array(
     "loadingTitle" => _("Scanning appdata sources and saved Docker templates"),
     "loadingMessage" => _("Reviewing orphaned appdata folders and active container mappings."),
@@ -178,7 +188,59 @@ $config = array(
     "cardReview" => _("Needs review"),
     "cardBlocked" => _("Locked"),
     "cardSelected" => _("Selected"),
+    "scanSummaryTitle" => _("Scan summary"),
+    "scanSummarySubtitle" => _("A quick view of how the current scan is distributed across sources, safety states, and storage types."),
+    "scanSummaryRootsLabel" => _("Scan roots"),
+    "scanSummaryTemplateLabel" => _("Template rows"),
+    "scanSummaryDiscoveryLabel" => _("Discovery rows"),
+    "scanSummaryReviewLabel" => _("Outside-share review"),
+    "scanSummaryLockedLabel" => _("Hard locked"),
+    "scanSummaryZfsLabel" => _("ZFS-backed"),
+    "scanSummaryMappedLabel" => _("Mapped share path"),
+    "scanSummaryIgnoredLabel" => _("Ignored"),
+    "scanSummaryRootsEmpty" => _("No scan roots are configured yet."),
     "actionBarTitle" => _("Action bar"),
+    "toolsOpenLabel" => _("Tools"),
+    "toolsTitle" => _("Tools"),
+    "toolsSubtitle" => _("Support and maintainer utilities for exporting the current plugin state."),
+    "toolsDiagnosticsTitle" => _("Export diagnostics"),
+    "toolsDiagnosticsMessage" => _("Downloads a JSON snapshot of the current scan, safety settings, source roots, notices, quarantine summary, audit history, and row metadata for troubleshooting."),
+    "toolsDiagnosticsPrivacyNote" => _("Diagnostics include app names and filesystem paths. Review before sharing."),
+    "toolsDiagnosticsExportLabel" => _("Download diagnostics"),
+    "toolsDiagnosticsEmptyMessage" => _("Run a scan first so the diagnostics export includes current plugin state."),
+    "toolsDiagnosticsDoneTitle" => _("Diagnostics exported"),
+    "toolsDiagnosticsDoneMessage" => _("The diagnostics JSON has been downloaded."),
+    "toolsDiagnosticsFailedTitle" => _("Diagnostics export failed"),
+    "toolsDiagnosticsFailedMessage" => _("The diagnostics file could not be created right now."),
+    "rowDetailsActionLabel" => _("Details"),
+    "rowDetailsTitle" => _("Row details"),
+    "rowDetailsSummaryTitle" => _("Why this row looks the way it does"),
+    "rowDetailsPathTitle" => _("Paths"),
+    "rowDetailsSourceTitle" => _("Source evidence"),
+    "rowDetailsSafetyTitle" => _("Safety and actionability"),
+    "rowDetailsStorageTitle" => _("Storage"),
+    "rowDetailsStatsTitle" => _("Stats"),
+    "rowDetailsCurrentPathLabel" => _("Current path"),
+    "rowDetailsRealPathLabel" => _("Canonical path"),
+    "rowDetailsSourceRootLabel" => _("Matched source root"),
+    "rowDetailsSourceNamesLabel" => _("Source names"),
+    "rowDetailsTargetsLabel" => _("Targets"),
+    "rowDetailsTemplateRefsLabel" => _("Template refs"),
+    "rowDetailsRiskLabel" => _("Risk"),
+    "rowDetailsStatusLabel" => _("Status"),
+    "rowDetailsPolicyLabel" => _("Policy"),
+    "rowDetailsSecurityLabel" => _("Security"),
+    "rowDetailsStorageKindLabel" => _("Storage kind"),
+    "rowDetailsDatasetLabel" => _("Dataset"),
+    "rowDetailsMountpointLabel" => _("Mountpoint"),
+    "rowDetailsMappingLabel" => _("ZFS mapping"),
+    "rowDetailsInsideSourceLabel" => _("Inside configured source"),
+    "rowDetailsInsideShareLabel" => _("Inside default share"),
+    "rowDetailsShareLabel" => _("Share"),
+    "rowDetailsDepthLabel" => _("Depth"),
+    "rowDetailsYesLabel" => _("Yes"),
+    "rowDetailsNoLabel" => _("No"),
+    "rowDetailsNoneLabel" => _("None"),
     "lockOverrideUnlockLabel" => _("Unlock selected"),
     "lockOverrideRelockLabel" => _("Relock selected"),
     "lockOverrideUnlockTitle" => _("Unlock selected review folders?"),
@@ -439,6 +501,7 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
   </section>
 
   <section class="acp-mode-strip" id="acp-mode-strip" aria-live="polite"></section>
+  <section class="acp-scan-summary" id="acp-scan-summary" aria-live="polite"></section>
   <section class="acp-notices" id="acp-notices"></section>
   <section class="acp-results" id="acp-results" aria-live="polite"></section>
 

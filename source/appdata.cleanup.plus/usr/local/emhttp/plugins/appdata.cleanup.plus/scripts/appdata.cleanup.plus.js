@@ -16,7 +16,9 @@
     settings: ACP.defaultSafetySettings(),
     appdataSources: {
       detected: [],
-      effective: []
+      manual: [],
+      effective: [],
+      zfsPathMappings: []
     },
     appdataSourceBrowser: defaultAppdataSourceBrowserState(),
     zfsPathMappingBrowser: defaultZfsPathMappingBrowserState(),
@@ -116,6 +118,7 @@
     els.$primaryAction = $("#acp-primary-action");
     els.$resultsMeta = $("#acp-results-meta");
     els.$modeStrip = $("#acp-mode-strip");
+    els.$scanSummary = $("#acp-scan-summary");
     els.$notices = $("#acp-notices");
     els.$results = $("#acp-results");
     els.$selectionSummary = $("#acp-selection-summary");
@@ -227,6 +230,11 @@
         return;
       }
 
+      if (action === "details") {
+        openRowDetailsModal(findRowById(rowId));
+        return;
+      }
+
       postRowAction(action, rowId);
     });
 
@@ -271,6 +279,12 @@
     els.$modeStrip.on("click", "[data-action='open-audit-history']", function() {
       if (!state.busy) {
         openAuditHistoryModal();
+      }
+    });
+
+    els.$modeStrip.on("click", "[data-action='open-tools']", function() {
+      if (!state.busy) {
+        openToolsModal();
       }
     });
 
@@ -457,6 +471,15 @@
 
       if (!state.busy && !state.appdataSourceBrowser.loading && state.appdataSourceBrowser.parentPath) {
         loadAppdataSourceBrowser(state.appdataSourceBrowser.parentPath);
+      }
+    });
+
+    $(document).on("click.acpTools", ".sweet-alert [data-action='export-diagnostics']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy) {
+        exportDiagnostics();
       }
     });
 
@@ -771,6 +794,7 @@
       syncSafetyControls();
       renderSummaryCards();
       renderPanels();
+      renderScanSummary();
       renderNotices([]);
       renderResultsMeta();
       renderStateMessage(
@@ -852,6 +876,13 @@
     );
   }
 
+  function renderToolsModal() {
+    ACP.applyDeleteModalClass(
+      "acp-delete-modal acp-delete-results-modal acp-tools-modal",
+      ACP.buildToolsModalHtml(buildContext())
+    );
+  }
+
   function renderAppdataSourcesModal() {
     ACP.applyDeleteModalClass(
       "acp-delete-modal acp-delete-results-modal acp-appdata-sources-modal",
@@ -903,6 +934,27 @@
       closeOnConfirm: true
     }, function() {
       state.auditOpen = false;
+      window.setTimeout(function() {
+        ACP.releaseModalScrollLock(false);
+        renderPanels();
+      }, 180);
+    });
+  }
+
+  function ensureToolsModal() {
+    if (isToolsModalVisible()) {
+      return;
+    }
+
+    swal({
+      title: ACP.t(strings, "toolsTitle", "Tools"),
+      text: "",
+      type: "info",
+      html: true,
+      showCancelButton: false,
+      confirmButtonText: ACP.t(strings, "doneLabel", "Done"),
+      closeOnConfirm: true
+    }, function() {
       window.setTimeout(function() {
         ACP.releaseModalScrollLock(false);
         renderPanels();
@@ -981,6 +1033,46 @@
     renderAuditHistoryModal();
   }
 
+  function openToolsModal() {
+    if (state.busy) {
+      return;
+    }
+
+    ensureToolsModal();
+    renderPanels();
+    renderToolsModal();
+  }
+
+  function isToolsModalVisible() {
+    return getActiveSweetAlertModal().hasClass("acp-tools-modal");
+  }
+
+  function openRowDetailsModal(row) {
+    if (!row) {
+      return;
+    }
+
+    swal({
+      title: ACP.t(strings, "rowDetailsTitle", "Row details"),
+      text: "",
+      type: "info",
+      html: true,
+      showCancelButton: false,
+      confirmButtonText: ACP.t(strings, "doneLabel", "Done"),
+      closeOnConfirm: true
+    }, function() {
+      window.setTimeout(function() {
+        ACP.releaseModalScrollLock(false);
+        renderPanels();
+      }, 180);
+    });
+
+    ACP.applyDeleteModalClass(
+      "acp-delete-modal acp-delete-results-modal acp-row-details-modal",
+      ACP.buildRowDetailsModalHtml(buildContext(), row)
+    );
+  }
+
   function openAppdataSourcesModal() {
     syncAppdataSourceBrowserManualSourcesFromSettings();
     state.appdataSourceBrowser.feedbackMessage = "";
@@ -1020,12 +1112,30 @@
     return getActiveSweetAlertModal().hasClass("acp-zfs-path-mappings-modal");
   }
 
+  function findRowById(rowId) {
+    var targetId = String(rowId || "");
+    var match = null;
+
+    $.each(state.rows || [], function(_, row) {
+      if (String((row && row.id) || "") === targetId) {
+        match = row;
+        return false;
+      }
+
+      return undefined;
+    });
+
+    return match;
+  }
+
   function setAppdataSourceInfo(info) {
     var nextInfo = $.isPlainObject(info) ? info : {};
 
     state.appdataSources = {
       detected: $.isArray(nextInfo.detected) ? nextInfo.detected : [],
-      effective: $.isArray(nextInfo.effective) ? nextInfo.effective : []
+      manual: $.isArray(nextInfo.manual) ? nextInfo.manual : [],
+      effective: $.isArray(nextInfo.effective) ? nextInfo.effective : [],
+      zfsPathMappings: $.isArray(nextInfo.zfsPathMappings) ? nextInfo.zfsPathMappings : []
     };
   }
 
@@ -1601,6 +1711,46 @@
     return summary;
   }
 
+  function buildScanInsights() {
+    var rows = $.isArray(state.rows) ? state.rows : [];
+    var effectiveRoots = (state.appdataSources && $.isArray(state.appdataSources.effective)) ? state.appdataSources.effective : [];
+    var summary = state.summary || {};
+    var templateRows = 0;
+    var discoveryRows = 0;
+    var zfsRows = 0;
+    var mappedRows = 0;
+
+    $.each(rows, function(_, row) {
+      if (!row || row.ignored) {
+        return;
+      }
+
+      if (String(row.sourceKind || "template") === "filesystem") {
+        discoveryRows += 1;
+      } else {
+        templateRows += 1;
+      }
+
+      if (String(row.storageKind || "") === "zfs") {
+        zfsRows += 1;
+      } else if (row.zfsMappingMatched) {
+        mappedRows += 1;
+      }
+    });
+
+    return {
+      scanRoots: effectiveRoots.slice(0),
+      scanRootCount: effectiveRoots.length,
+      templateRowCount: templateRows,
+      discoveryRowCount: discoveryRows,
+      reviewCount: Number(summary.review || 0),
+      lockedCount: Number(summary.blocked || 0),
+      zfsBackedCount: zfsRows,
+      mappedShareCount: mappedRows,
+      ignoredCount: Number(summary.ignored || 0)
+    };
+  }
+
   function buildLocalNotices() {
     var notices = [];
     var summary = state.summary || { total: 0, review: 0, blocked: 0, ignored: 0 };
@@ -1828,6 +1978,7 @@
   function renderAll() {
     renderSummaryCards();
     renderPanels();
+    renderScanSummary();
     renderNotices(buildLocalNotices());
     renderResults();
     renderResultsMeta();
@@ -1858,6 +2009,62 @@
     els.$summaryCards.html(html.join(""));
   }
 
+  function renderScanSummary() {
+    var insights = buildScanInsights();
+    var cards = [
+      { label: ACP.t(strings, "scanSummaryRootsLabel", "Scan roots"), value: insights.scanRootCount, tone: "" },
+      { label: ACP.t(strings, "scanSummaryTemplateLabel", "Template rows"), value: insights.templateRowCount, tone: "" },
+      { label: ACP.t(strings, "scanSummaryDiscoveryLabel", "Discovery rows"), value: insights.discoveryRowCount, tone: "is-scheduled" },
+      { label: ACP.t(strings, "scanSummaryReviewLabel", "Outside-share review"), value: insights.reviewCount, tone: "is-review" },
+      { label: ACP.t(strings, "scanSummaryLockedLabel", "Hard locked"), value: insights.lockedCount, tone: "is-blocked" },
+      { label: ACP.t(strings, "scanSummaryZfsLabel", "ZFS-backed"), value: insights.zfsBackedCount, tone: "is-selected" },
+      { label: ACP.t(strings, "scanSummaryMappedLabel", "Mapped share path"), value: insights.mappedShareCount, tone: "is-scheduled" },
+      { label: ACP.t(strings, "scanSummaryIgnoredLabel", "Ignored"), value: insights.ignoredCount, tone: "" }
+    ];
+    var cardHtml = [];
+    var rootsHtml = [];
+
+    if (!els.$scanSummary || !els.$scanSummary.length) {
+      return;
+    }
+
+    if (!state.rows.length && !insights.scanRootCount) {
+      els.$scanSummary.empty();
+      return;
+    }
+
+    $.each(cards, function(_, card) {
+      cardHtml.push(
+        '<span class="acp-modal-stat ' + ACP.escapeHtml(card.tone || "") + '">' +
+          ACP.escapeHtml(card.label) + ": " + ACP.escapeHtml(String(card.value || 0)) +
+        "</span>"
+      );
+    });
+
+    if (insights.scanRoots.length) {
+      $.each(insights.scanRoots, function(_, path) {
+        rootsHtml.push('<code class="acp-modal-path">' + ACP.escapeHtml(String(path || "")) + "</code>");
+      });
+    } else {
+      rootsHtml.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "scanSummaryRootsEmpty", "No scan roots are configured yet.")) + "</div>");
+    }
+
+    els.$scanSummary.html(
+      '<article class="acp-scan-summary-panel">' +
+        '<div class="acp-scan-summary-head">' +
+          '<div class="acp-utility-copy">' +
+            '<div class="acp-utility-title">' + ACP.escapeHtml(ACP.t(strings, "scanSummaryTitle", "Scan summary")) + "</div>" +
+            '<div class="acp-utility-subtitle">' + ACP.escapeHtml(ACP.t(strings, "scanSummarySubtitle", "A quick view of how the current scan is distributed across sources, safety states, and storage types.")) + "</div>" +
+          "</div>" +
+        "</div>" +
+        '<div class="acp-scan-summary-body">' +
+          '<div class="acp-modal-stats">' + cardHtml.join("") + "</div>" +
+          '<div class="acp-scan-summary-roots">' + rootsHtml.join("") + "</div>" +
+        "</div>" +
+      "</article>"
+    );
+  }
+
   function renderNotices(notices) {
     var html = [];
 
@@ -1875,6 +2082,7 @@
 
   function renderLoadingState() {
     renderPanels();
+    renderScanSummary();
     renderNotices([]);
     renderResultsMeta("");
     renderStateMessage(
@@ -1907,6 +2115,95 @@
     state.quarantine.restoreConflict = null;
     syncQuarantinePurgeInputDefaults(false);
     reconcileQuarantineSelection();
+  }
+
+  function buildDiagnosticsPayload() {
+    var generatedAt = new Date();
+    var visibleRows = getVisibleRows();
+    var selectedRows = getSelectedRows();
+    var notices = buildLocalNotices();
+
+    return {
+      generatedAt: generatedAt.toISOString(),
+      pluginVersion: String(config.pluginVersion || ""),
+      hostTheme: {
+        name: ACP.resolveHostThemeName ? ACP.resolveHostThemeName() : "",
+        themeClass: ACP.inferThemeClass ? ACP.inferThemeClass(ACP.resolveHostThemeName ? ACP.resolveHostThemeName() : "") : ""
+      },
+      uiState: {
+        searchTerm: $.trim(String(els.$search.val() || "")),
+        riskFilter: String(state.riskFilter || "all"),
+        showIgnored: !!state.showIgnored,
+        sortMode: String(state.sortMode || "risk"),
+        badgeFilter: state.badgeFilter || null,
+        busy: !!state.busy
+      },
+      scan: {
+        dockerRunning: !!state.dockerRunning,
+        scanTokenPresent: !!state.scanToken,
+        scanWarningMessage: String(state.scanWarningMessage || ""),
+        summary: $.extend({}, state.summary || {}),
+        insights: buildScanInsights(),
+        visibleRowCount: visibleRows.length,
+        selectedRowCount: selectedRows.length,
+        pendingStatCount: $.grep(state.rows || [], function(row) {
+          return !!(row && row.statsPending);
+        }).length
+      },
+      settings: $.extend(true, {}, state.settings || {}),
+      appdataSources: $.extend(true, {}, state.appdataSources || {}),
+      quarantine: {
+        loaded: !!(state.quarantine && state.quarantine.loaded),
+        loading: !!(state.quarantine && state.quarantine.loading),
+        summary: $.extend({}, (state.quarantine && state.quarantine.summary) || {})
+      },
+      notices: notices,
+      auditHistory: ($.isArray(state.auditHistory) ? state.auditHistory : []).slice(0, 25),
+      rows: $.extend(true, [], state.rows || []),
+      visibleRowIds: $.map(visibleRows, function(row) {
+        return row && row.id ? String(row.id) : null;
+      }),
+      selectedRowIds: $.map(selectedRows, function(row) {
+        return row && row.id ? String(row.id) : null;
+      })
+    };
+  }
+
+  function buildDiagnosticsFilename() {
+    var stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+$/, "").replace("T", "-");
+    return "appdata-cleanup-plus-diagnostics-" + stamp + ".json";
+  }
+
+  function downloadJsonFile(filename, payload) {
+    var blob = new window.Blob([JSON.stringify(payload, null, 2) + "\n"], { type: "application/json;charset=utf-8" });
+    var url = window.URL.createObjectURL(blob);
+    var link = document.createElement("a");
+
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(function() {
+      window.URL.revokeObjectURL(url);
+    }, 0);
+  }
+
+  function exportDiagnostics() {
+    try {
+      downloadJsonFile(buildDiagnosticsFilename(), buildDiagnosticsPayload());
+      swal(
+        ACP.t(strings, "toolsDiagnosticsDoneTitle", "Diagnostics exported"),
+        ACP.t(strings, "toolsDiagnosticsDoneMessage", "The diagnostics JSON has been downloaded."),
+        "success"
+      );
+    } catch (_error) {
+      swal(
+        ACP.t(strings, "toolsDiagnosticsFailedTitle", "Diagnostics export failed"),
+        ACP.t(strings, "toolsDiagnosticsFailedMessage", "The diagnostics file could not be created right now."),
+        "error"
+      );
+    }
   }
 
   function reconcileQuarantineSelection() {
@@ -2206,12 +2503,20 @@
   }
 
   function buildRowActionHtml(row) {
+    var actions = [];
+
+    if (row.id) {
+      actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="details" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsActionLabel", "Details")) + "</button>");
+    }
+
     if (row.ignored) {
-      return '<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "restoreActionLabel", "Restore")) + "</button>";
+      actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "restoreActionLabel", "Restore")) + "</button>");
+      return '<div class="acp-row-actions">' + actions.join("") + "</div>";
     }
 
     if (row.id) {
-      return '<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="ignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "ignoreActionLabel", "Ignore")) + "</button>";
+      actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="ignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "ignoreActionLabel", "Ignore")) + "</button>");
+      return '<div class="acp-row-actions">' + actions.join("") + "</div>";
     }
 
     return "";
@@ -2981,7 +3286,7 @@
     var previousSettings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
     var previousRows = state.rows.slice(0);
     var previousSummary = $.extend({}, state.summary || {});
-    var previousAppdataSources = $.extend(true, { detected: [], effective: [] }, state.appdataSources || {});
+    var previousAppdataSources = $.extend(true, { detected: [], manual: [], effective: [], zfsPathMappings: [] }, state.appdataSources || {});
     var wasQuarantineManagerVisible = isQuarantineManagerModalVisible();
     var nextSettings = $.extend({}, previousSettings, {
       allowOutsideShareCleanup: !!els.$allowExternal.prop("checked"),

@@ -8,7 +8,7 @@
 <Name>Appdata Cleanup Plus</Name>
 <CA>AddOn</CA>
 <Description>
-Appdata Cleanup Plus finds orphaned appdata folders from removed Docker containers so you can review and delete them.
+Appdata Cleanup Plus finds orphaned appdata folders from removed Docker containers so you can review and delete them. Dev build: testing channel. Expect preview changes before main.
 </Description>
 <Date>2026-04-13</Date>
 <MinVer>7.0.0</MinVer>

@@ -95,6 +95,7 @@
     var appdataSourcesButtonLabel = ACP.t(strings, "appdataSourcesOpenLabel", "Appdata sources");
     var zfsPathMappingsButtonLabel = ACP.t(strings, "zfsPathMappingsOpenLabel", "ZFS mappings");
     var auditButtonLabel = ACP.t(strings, "auditHistoryOpenLabel", "Show history");
+    var toolsButtonLabel = ACP.t(strings, "toolsOpenLabel", "Tools");
     var html = [
       '<div class="acp-mode-strip-grid">',
       '<article class="acp-mode-card ' + (isDeleteMode ? "is-delete-mode" : "is-safe-mode") + '">',
@@ -116,6 +117,7 @@
         : "",
       '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(quarantineButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history">' + ACP.escapeHtml(auditButtonLabel) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="open-tools">' + ACP.escapeHtml(toolsButtonLabel) + "</button>",
       "</div>",
       "</article>",
       "</div>"
@@ -292,6 +294,144 @@
     }
 
     html.push("</div></div>");
+    return html.join("");
+  };
+
+  function buildModalFieldHtml(label, value, options) {
+    var settings = $.isPlainObject(options) ? options : {};
+    var text = $.trim(String(value || ""));
+
+    if (!text) {
+      text = ACP.t(settings.strings || {}, "rowDetailsNoneLabel", "None");
+    }
+
+    return (
+      '<div class="acp-detail-item">' +
+        '<div class="acp-detail-label">' + ACP.escapeHtml(label || "") + "</div>" +
+        (
+          settings.code
+            ? ('<code class="acp-modal-path' + (settings.secondary ? ' acp-modal-path-secondary' : '') + '">' + ACP.escapeHtml(text) + "</code>")
+            : ('<div class="acp-detail-value">' + ACP.escapeHtml(text) + "</div>")
+        ) +
+      "</div>"
+    );
+  }
+
+  function buildModalFieldListHtml(items) {
+    var html = ['<div class="acp-detail-list">'];
+
+    $.each(items || [], function(_, item) {
+      if (!item || !item.label) {
+        return;
+      }
+
+      html.push(buildModalFieldHtml(item.label, item.value, item));
+    });
+
+    html.push("</div>");
+    return html.join("");
+  }
+
+  ACP.buildToolsModalHtml = function(context) {
+    var strings = context.strings || {};
+
+    return [
+      '<div class="acp-modal-summary">',
+      '<div class="acp-modal-copy">',
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsSubtitle", "Support and maintainer utilities for exporting the current plugin state.")) + "</div>",
+      '</div>',
+      '<div class="acp-modal-panel">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsTitle", "Export diagnostics")) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsMessage", "Downloads a JSON snapshot of the current scan, safety settings, source roots, notices, quarantine summary, audit history, and row metadata for troubleshooting.")) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsPrivacyNote", "Diagnostics include app names and filesystem paths. Review before sharing.")) + "</div>",
+      '<div class="acp-modal-actions-row">',
+      '<button type="button" class="acp-button acp-button-secondary" data-action="export-diagnostics">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsExportLabel", "Download diagnostics")) + "</button>",
+      "</div>",
+      "</div>",
+      "</div>"
+    ].join("");
+  };
+
+  ACP.buildRowDetailsModalHtml = function(context, row) {
+    var strings = context.strings || {};
+    var summaryStats = [];
+    var templateRefs = $.isArray(row.templateRefs) ? row.templateRefs : [];
+    var sourceNames = $.isArray(row.sourceNames) ? row.sourceNames : [];
+    var targetPaths = $.isArray(row.targetPaths) ? row.targetPaths : [];
+    var riskTone = row.policyLocked || row.risk === "blocked"
+      ? "is-blocked"
+      : (row.risk === "review" ? "is-review" : "is-safe");
+    var summaryMessage = row.policyReason || row.securityLockReason || row.riskReason || row.reason || "";
+    var html = [
+      '<div class="acp-modal-summary">',
+      '<div class="acp-modal-copy">',
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(summaryMessage || ACP.t(strings, "rowDetailsSummaryTitle", "Why this row looks the way it does")) + "</div>",
+      "</div>",
+      '<div class="acp-modal-stats">'
+    ];
+
+    summaryStats.push('<span class="acp-modal-stat ' + ACP.escapeHtml(riskTone) + '">' + ACP.escapeHtml((row.riskLabel || row.risk || "").toString()) + "</span>");
+    summaryStats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(row.statusLabel || row.status || "") + "</span>");
+    if (row.storageKind === "zfs") {
+      summaryStats.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(row.datasetName || ACP.t(strings, "badgeStorageZfs", "ZFS dataset")) + "</span>");
+    } else if (row.zfsMappingMatched) {
+      summaryStats.push('<span class="acp-modal-stat is-scheduled">' + ACP.escapeHtml(ACP.t(strings, "scanSummaryMappedLabel", "Mapped share path")) + "</span>");
+    }
+    html.push(summaryStats.join(""));
+    html.push("</div>");
+
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsPathTitle", "Paths")) + "</div>");
+    html.push(buildModalFieldListHtml([
+      { label: ACP.t(strings, "rowDetailsCurrentPathLabel", "Current path"), value: row.displayPath || row.path || "", code: true },
+      { label: ACP.t(strings, "rowDetailsRealPathLabel", "Canonical path"), value: row.realPath || "", code: true, secondary: true },
+      { label: ACP.t(strings, "rowDetailsSourceRootLabel", "Matched source root"), value: row.sourceRoot || "", code: true }
+    ]));
+    html.push("</div>");
+
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsSourceTitle", "Source evidence")) + "</div>");
+    html.push(buildModalFieldListHtml([
+      { label: ACP.t(strings, "sourceLabel", "Source"), value: row.sourceDisplay || row.sourceSummary || "" },
+      { label: ACP.t(strings, "rowDetailsSourceNamesLabel", "Source names"), value: sourceNames.join(", ") },
+      { label: ACP.t(strings, "rowDetailsTargetsLabel", "Targets"), value: targetPaths.join(", ") },
+      { label: ACP.t(strings, "rowDetailsTemplateRefsLabel", "Template refs"), value: templateRefs.length ? $.map(templateRefs, function(ref) { return (ref && ref.name ? ref.name : "") + (ref && ref.target ? " -> " + ref.target : ""); }).join(", ") : "" }
+    ]));
+    html.push("</div>");
+
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsSafetyTitle", "Safety and actionability")) + "</div>");
+    html.push(buildModalFieldListHtml([
+      { label: ACP.t(strings, "rowDetailsRiskLabel", "Risk"), value: row.riskLabel || row.risk || "" },
+      { label: ACP.t(strings, "rowDetailsStatusLabel", "Status"), value: row.statusLabel || row.status || "" },
+      { label: ACP.t(strings, "rowDetailsPolicyLabel", "Policy"), value: row.policyReason || "" },
+      { label: ACP.t(strings, "rowDetailsSecurityLabel", "Security"), value: row.securityLockReason || row.riskReason || "" },
+      { label: ACP.t(strings, "rowDetailsInsideSourceLabel", "Inside configured source"), value: row.insideConfiguredSource ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No") },
+      { label: ACP.t(strings, "rowDetailsInsideShareLabel", "Inside default share"), value: row.insideDefaultShare ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No") },
+      { label: ACP.t(strings, "rowDetailsShareLabel", "Share"), value: row.shareName || "" },
+      { label: ACP.t(strings, "rowDetailsDepthLabel", "Depth"), value: row.depth === null || row.depth === undefined ? "" : String(row.depth) }
+    ]));
+    html.push("</div>");
+
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsStorageTitle", "Storage")) + "</div>");
+    html.push(buildModalFieldListHtml([
+      { label: ACP.t(strings, "rowDetailsStorageKindLabel", "Storage kind"), value: row.storageLabel || row.storageKind || "" },
+      { label: ACP.t(strings, "rowDetailsDatasetLabel", "Dataset"), value: row.datasetName || "" },
+      { label: ACP.t(strings, "rowDetailsMountpointLabel", "Mountpoint"), value: row.datasetMountpoint || "", code: true },
+      { label: ACP.t(strings, "rowDetailsMappingLabel", "ZFS mapping"), value: row.zfsResolutionMessage || (row.zfsMappingMatched ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No")) }
+    ]));
+    html.push("</div>");
+
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsStatsTitle", "Stats")) + "</div>");
+    html.push(buildModalFieldListHtml([
+      { label: ACP.t(strings, "sizeLabel", "Size"), value: row.sizeLabel || "" },
+      { label: ACP.t(strings, "updatedLabel", "Updated"), value: row.lastModifiedExact || row.lastModifiedLabel || "" }
+    ]));
+    html.push("</div>");
+    html.push("</div>");
+
     return html.join("");
   };
 

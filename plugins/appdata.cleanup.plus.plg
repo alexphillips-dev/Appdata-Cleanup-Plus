@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.13.02">
-<!ENTITY md5 "a6eb55e9334270768f324f4b3a171708">
+<!ENTITY version "2026.04.13.03">
+<!ENTITY md5 "b25157947239181af15e43f013d2d839">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.13.03
+- Support: Add a `Tools` action with one-click diagnostics export so users can download the current scan state, safety settings, source roots, notices, quarantine summary, audit history, and row metadata for troubleshooting
+- UX: Add a dedicated `Scan summary` panel that surfaces current scan-root coverage plus template, discovery, review, locked, ZFS-backed, mapped-share, and ignored row counts without needing to infer them from the grouped results
+- UX: Add per-row `Details` dialogs so each orphaned path can explain its current path, canonical path, source evidence, safety state, storage metadata, and key stats before the user decides what to do
+
 ###2026.04.13.02
 - Release: Promote the full `2026.04.09.02` through `2026.04.13.01` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
 - Feature: Add ZFS-backed appdata cleanup with exact dataset mountpoint resolution, case-sensitive dataset handling, dataset-aware permanent delete using `zfs destroy`, and recursive destroy support only when required
