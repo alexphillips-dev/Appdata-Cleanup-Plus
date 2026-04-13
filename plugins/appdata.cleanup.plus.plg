@@ -13,6 +13,15 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.13.02
+- Release: Promote the full `2026.04.09.02` through `2026.04.13.01` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
+- Feature: Add ZFS-backed appdata cleanup with exact dataset mountpoint resolution, case-sensitive dataset handling, dataset-aware permanent delete using `zfs destroy`, and recursive destroy support only when required
+- UI: Add a dedicated `ZFS mappings` workflow, hide it until ZFS dataset delete is enabled, clarify the share-root versus dataset-root setup, and prevent incomplete or unsaved mapping drafts from being mistaken as saved configuration
+- UX: Improve ZFS delete wording and confirmation flows so dataset-backed rows describe destroy behavior clearly, surface recursive impact summaries, and show child datasets and snapshots directly in the delete preview and results modals
+- Safety: Keep ZFS-backed rows behind both the ZFS dataset delete toggle and permanent delete mode while continuing to block quarantine for dataset-backed paths
+- Fix: Harden the quarantine action response path by releasing the PHP session lock before long-running actions and avoiding expensive uncached quarantine size scans in lightweight post-action summary responses
+- Docs and test: Refresh the README for ZFS-backed appdata support and extend the behavior smoke coverage for ZFS dataset resolution, recursive destroy metadata, quarantine response-path hardening, and the refined ZFS workflow
+
 ###2026.04.13.01
 - Maintenance: Refresh package metadata and build artifacts
 
