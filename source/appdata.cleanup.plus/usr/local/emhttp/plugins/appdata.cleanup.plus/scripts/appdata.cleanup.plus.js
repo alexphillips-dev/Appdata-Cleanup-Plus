@@ -4,7 +4,6 @@
   var ACP = window.AppdataCleanupPlus = window.AppdataCleanupPlus || {};
   var config = window.appdataCleanupPlusConfig || {};
   var strings = config.strings || {};
-  var VIEW_PRESETS_STORAGE_KEY = "appdata.cleanup.plus.view-presets.v1";
   var state = {
     rows: [],
     summary: { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 },
@@ -42,8 +41,6 @@
     sortMode: "risk",
     showIgnored: false,
     badgeFilter: null,
-    viewPresets: [],
-    viewPresetSelection: "",
     bulkSelectPreset: "safe",
     busy: false
   };
@@ -86,326 +83,6 @@
       mappings: [],
       feedbackMessage: ""
     };
-  }
-
-  function normalizeViewPresetBadgeFilter(filter) {
-    if (!filter || !filter.kind || !filter.value) {
-      return null;
-    }
-
-    return {
-      kind: $.trim(String(filter.kind || "")),
-      value: $.trim(String(filter.value || "")),
-      label: $.trim(String(filter.label || filter.value || ""))
-    };
-  }
-
-  function normalizeViewPresetRecord(record) {
-    var normalized = $.isPlainObject(record) ? $.extend({}, record) : {};
-    var name = $.trim(String(normalized.name || ""));
-    var riskFilter = $.trim(String(normalized.riskFilter || "all"));
-    var sortMode = $.trim(String(normalized.sortMode || "risk"));
-
-    if (!name) {
-      return null;
-    }
-
-    if ($.inArray(riskFilter, ["all", "safe", "review", "blocked"]) === -1) {
-      riskFilter = "all";
-    }
-
-    if ($.inArray(sortMode, ["risk", "path", "name"]) === -1) {
-      sortMode = "risk";
-    }
-
-    return {
-      name: name,
-      searchTerm: $.trim(String(normalized.searchTerm || "")),
-      riskFilter: riskFilter,
-      showIgnored: !!normalized.showIgnored,
-      sortMode: sortMode,
-      badgeFilter: normalizeViewPresetBadgeFilter(normalized.badgeFilter)
-    };
-  }
-
-  function sortViewPresets(records) {
-    return ($.isArray(records) ? records.slice(0) : []).sort(function(left, right) {
-      return String((left && left.name) || "").toLowerCase().localeCompare(String((right && right.name) || "").toLowerCase());
-    });
-  }
-
-  function loadSavedViewPresets() {
-    var raw = "";
-    var parsed;
-
-    try {
-      raw = window.localStorage ? String(window.localStorage.getItem(VIEW_PRESETS_STORAGE_KEY) || "") : "";
-    } catch (_error) {
-      return [];
-    }
-
-    if (!raw) {
-      return [];
-    }
-
-    try {
-      parsed = JSON.parse(raw);
-    } catch (_error) {
-      return [];
-    }
-
-    return sortViewPresets($.grep($.map($.isArray(parsed) ? parsed : [], function(record) {
-      return normalizeViewPresetRecord(record);
-    }), function(record) {
-      return !!record;
-    }));
-  }
-
-  function persistViewPresets() {
-    try {
-      if (!window.localStorage) {
-        return false;
-      }
-
-      window.localStorage.setItem(VIEW_PRESETS_STORAGE_KEY, JSON.stringify(sortViewPresets(state.viewPresets)));
-      return true;
-    } catch (_error) {
-      return false;
-    }
-  }
-
-  function findViewPresetByName(name) {
-    var targetName = $.trim(String(name || "")).toLowerCase();
-    var matches = $.grep(state.viewPresets || [], function(record) {
-      return String((record && record.name) || "").toLowerCase() === targetName;
-    });
-
-    return matches.length ? matches[0] : null;
-  }
-
-  function buildCurrentViewPresetState() {
-    return {
-      searchTerm: $.trim(String((els.$search && els.$search.val()) || "")),
-      riskFilter: $.trim(String(state.riskFilter || "all")),
-      showIgnored: !!state.showIgnored,
-      sortMode: $.trim(String(state.sortMode || "risk")),
-      badgeFilter: normalizeViewPresetBadgeFilter(state.badgeFilter)
-    };
-  }
-
-  function viewPresetStatesMatch(left, right) {
-    var leftBadge = normalizeViewPresetBadgeFilter(left && left.badgeFilter);
-    var rightBadge = normalizeViewPresetBadgeFilter(right && right.badgeFilter);
-
-    return (
-      $.trim(String((left && left.searchTerm) || "")) === $.trim(String((right && right.searchTerm) || "")) &&
-      $.trim(String((left && left.riskFilter) || "all")) === $.trim(String((right && right.riskFilter) || "all")) &&
-      !!(left && left.showIgnored) === !!(right && right.showIgnored) &&
-      $.trim(String((left && left.sortMode) || "risk")) === $.trim(String((right && right.sortMode) || "risk")) &&
-      ((leftBadge && rightBadge && leftBadge.kind === rightBadge.kind && leftBadge.value === rightBadge.value) || (!leftBadge && !rightBadge))
-    );
-  }
-
-  function syncViewPresetSelectionFromCurrentState() {
-    var currentState = buildCurrentViewPresetState();
-    var matchingPreset = $.grep(state.viewPresets || [], function(record) {
-      return viewPresetStatesMatch(record, currentState);
-    });
-
-    state.viewPresetSelection = matchingPreset.length ? String(matchingPreset[0].name || "") : "";
-  }
-
-  function syncViewPresetControls() {
-    var html = [
-      '<option value="">' + ACP.escapeHtml(ACP.t(strings, "viewPresetsEmptyLabel", "No saved presets")) + "</option>"
-    ];
-    var hasSelection = !!findViewPresetByName(state.viewPresetSelection);
-
-    $.each(sortViewPresets(state.viewPresets), function(_, record) {
-      html.push('<option value="' + ACP.escapeHtml(String(record.name || "")) + '">' + ACP.escapeHtml(String(record.name || "")) + "</option>");
-    });
-
-    if (els.$viewPreset && els.$viewPreset.length) {
-      els.$viewPreset.html(html.join(""));
-      els.$viewPreset.val(hasSelection ? state.viewPresetSelection : "");
-      els.$viewPreset.prop("disabled", state.busy);
-    }
-
-    if (els.$applyViewPreset && els.$applyViewPreset.length) {
-      els.$applyViewPreset.prop("disabled", state.busy || !hasSelection);
-    }
-
-    if (els.$saveViewPreset && els.$saveViewPreset.length) {
-      els.$saveViewPreset.prop("disabled", state.busy);
-    }
-
-    if (els.$deleteViewPreset && els.$deleteViewPreset.length) {
-      els.$deleteViewPreset.prop("disabled", state.busy || !hasSelection);
-    }
-  }
-
-  function applyViewPreset(record) {
-    var preset = normalizeViewPresetRecord(record);
-
-    if (!preset) {
-      return false;
-    }
-
-    state.riskFilter = preset.riskFilter;
-    state.showIgnored = !!preset.showIgnored;
-    state.sortMode = preset.sortMode;
-    state.badgeFilter = normalizeViewPresetBadgeFilter(preset.badgeFilter);
-    state.viewPresetSelection = preset.name;
-
-    els.$search.val(preset.searchTerm);
-    els.$riskFilter.val(preset.riskFilter);
-    els.$showIgnored.prop("checked", !!preset.showIgnored);
-    els.$sort.val(preset.sortMode);
-
-    renderAll();
-    return true;
-  }
-
-  function applySelectedViewPreset() {
-    var preset = findViewPresetByName(state.viewPresetSelection);
-
-    if (!preset) {
-      syncViewPresetControls();
-      return;
-    }
-
-    applyViewPreset(preset);
-  }
-
-  function upsertViewPreset(record) {
-    var preset = normalizeViewPresetRecord(record);
-    var previousPresets = (state.viewPresets || []).slice(0);
-    var previousSelection = String(state.viewPresetSelection || "");
-    var nextPresets;
-    var inserted = false;
-
-    if (!preset) {
-      return false;
-    }
-
-    nextPresets = $.map(state.viewPresets || [], function(existing) {
-      if (String((existing && existing.name) || "").toLowerCase() === preset.name.toLowerCase()) {
-        inserted = true;
-        return preset;
-      }
-
-      return existing;
-    });
-
-    if (!inserted) {
-      nextPresets.push(preset);
-    }
-
-    state.viewPresets = sortViewPresets(nextPresets);
-    state.viewPresetSelection = preset.name;
-    if (persistViewPresets()) {
-      return true;
-    }
-
-    state.viewPresets = previousPresets;
-    state.viewPresetSelection = previousSelection;
-    return false;
-  }
-
-  function startSaveViewPresetFlow() {
-    var currentState = buildCurrentViewPresetState();
-    var existingSelection = findViewPresetByName(state.viewPresetSelection);
-    var defaultName = existingSelection ? existingSelection.name : "";
-
-    swal({
-      title: ACP.t(strings, "viewPresetsSaveTitle", "Save view preset"),
-      text: ACP.t(strings, "viewPresetsSaveMessage", "Name this preset so the current search, filters, badge filter, and sort order can be reused later."),
-      type: "input",
-      showCancelButton: true,
-      closeOnConfirm: false,
-      inputPlaceholder: ACP.t(strings, "viewPresetsSavePlaceholder", "Preset name"),
-      inputValue: defaultName
-    }, function(inputValue) {
-      var name;
-
-      if (inputValue === false) {
-        return;
-      }
-
-      name = $.trim(String(inputValue || ""));
-
-      if (!name) {
-        swal.showInputError(ACP.t(strings, "viewPresetsSaveError", "Enter a preset name."));
-        return false;
-      }
-
-      if (!upsertViewPreset($.extend({}, currentState, { name: name }))) {
-        swal(
-          ACP.t(strings, "viewPresetsStorageFailedTitle", "View presets unavailable"),
-          ACP.t(strings, "viewPresetsStorageFailedMessage", "Saved view presets could not be stored in this browser right now."),
-          "error"
-        );
-        return;
-      }
-
-      syncViewPresetControls();
-      swal(
-        ACP.t(strings, "viewPresetsSavedTitle", "View preset saved"),
-        ACP.t(strings, "viewPresetsSavedMessage", "The current filter combination has been saved."),
-        "success"
-      );
-    });
-  }
-
-  function startDeleteViewPresetFlow() {
-    var preset = findViewPresetByName(state.viewPresetSelection);
-
-    if (!preset) {
-      syncViewPresetControls();
-      return;
-    }
-
-    swal({
-      title: ACP.t(strings, "viewPresetsDeleteTitle", "Delete view preset?"),
-      text: ACP.t(strings, "viewPresetsDeleteMessage", "The selected saved view preset will be removed from this browser."),
-      type: "warning",
-      showCancelButton: true,
-      closeOnConfirm: true,
-      confirmButtonText: ACP.t(strings, "viewPresetsDeleteLabel", "Delete")
-    }, function(confirmed) {
-      var previousPresets = (state.viewPresets || []).slice(0);
-      var previousSelection = String(state.viewPresetSelection || "");
-      var nextPresets;
-
-      if (!confirmed) {
-        return;
-      }
-
-      nextPresets = $.grep(state.viewPresets || [], function(record) {
-        return String((record && record.name) || "").toLowerCase() !== String(preset.name || "").toLowerCase();
-      });
-
-      state.viewPresets = sortViewPresets(nextPresets);
-
-      if (!persistViewPresets()) {
-        state.viewPresets = previousPresets;
-        state.viewPresetSelection = previousSelection;
-        swal(
-          ACP.t(strings, "viewPresetsStorageFailedTitle", "View presets unavailable"),
-          ACP.t(strings, "viewPresetsStorageFailedMessage", "Saved view presets could not be stored in this browser right now."),
-          "error"
-        );
-        return;
-      }
-
-      syncViewPresetSelectionFromCurrentState();
-      syncViewPresetControls();
-      swal(
-        ACP.t(strings, "viewPresetsDeletedTitle", "View preset deleted"),
-        ACP.t(strings, "viewPresetsDeletedMessage", "The saved view preset has been removed."),
-        "success"
-      );
-    });
   }
 
   function buildBulkSelectionPresetDefinitions() {
@@ -511,7 +188,6 @@
 
   function init() {
     cacheElements();
-    state.viewPresets = loadSavedViewPresets();
     ACP.applyThemeState(els.$app);
     ACP.watchThemeChanges(function() {
       ACP.applyThemeState(els.$app);
@@ -532,10 +208,6 @@
     els.$search = $("#acp-search");
     els.$riskFilter = $("#acp-risk-filter");
     els.$showIgnored = $("#acp-show-ignored");
-    els.$viewPreset = $("#acp-view-preset");
-    els.$applyViewPreset = $("#acp-apply-view-preset");
-    els.$saveViewPreset = $("#acp-save-view-preset");
-    els.$deleteViewPreset = $("#acp-delete-view-preset");
     els.$allowExternal = $("#acp-allow-external");
     els.$enableDelete = $("#acp-enable-delete");
     els.$enableZfsDelete = $("#acp-enable-zfs-delete");
@@ -558,58 +230,26 @@
   }
 
   function bindEvents() {
-    els.$search.on("input", function() {
-      syncViewPresetSelectionFromCurrentState();
-      renderAll();
-    });
+    els.$search.on("input", renderAll);
 
     els.$riskFilter.on("change", function() {
       state.riskFilter = els.$riskFilter.val();
-      syncViewPresetSelectionFromCurrentState();
       renderResults();
       renderResultsMeta();
-      syncViewPresetControls();
       updateActionBar();
     });
 
     els.$showIgnored.on("change", function() {
       state.showIgnored = !!els.$showIgnored.prop("checked");
-      syncViewPresetSelectionFromCurrentState();
       renderResults();
       renderResultsMeta();
-      syncViewPresetControls();
       updateActionBar();
     });
 
     els.$sort.on("change", function() {
       state.sortMode = els.$sort.val();
-      syncViewPresetSelectionFromCurrentState();
       renderResults();
       renderResultsMeta();
-      syncViewPresetControls();
-    });
-
-    els.$viewPreset.on("change", function() {
-      state.viewPresetSelection = $.trim(String(els.$viewPreset.val() || ""));
-      syncViewPresetControls();
-    });
-
-    els.$applyViewPreset.on("click", function() {
-      if (!state.busy) {
-        applySelectedViewPreset();
-      }
-    });
-
-    els.$saveViewPreset.on("click", function() {
-      if (!state.busy) {
-        startSaveViewPresetFlow();
-      }
-    });
-
-    els.$deleteViewPreset.on("click", function() {
-      if (!state.busy) {
-        startDeleteViewPresetFlow();
-      }
     });
 
     els.$rescan.on("click", function() {
@@ -1110,10 +750,8 @@
       };
     }
 
-    syncViewPresetSelectionFromCurrentState();
     renderResults();
     renderResultsMeta();
-    syncViewPresetControls();
     updateActionBar();
   }
 
@@ -1197,7 +835,6 @@
     els.$enableDelete.prop("disabled", state.busy);
     els.$enableZfsDelete.prop("disabled", state.busy);
     els.$sort.prop("disabled", state.busy);
-    syncViewPresetControls();
     syncBulkSelectionPresetControls();
     updateActionBar();
   }
@@ -1258,7 +895,6 @@
       syncSafetyControls();
       applyLocalSafetyState();
       reconcileSelection();
-      syncViewPresetSelectionFromCurrentState();
       shouldHydrate = hasPendingRowStats();
       renderAll();
       if (isAppdataSourcesModalVisible()) {
@@ -2462,7 +2098,6 @@
     renderNotices(buildLocalNotices());
     renderResults();
     renderResultsMeta();
-    syncViewPresetControls();
     syncBulkSelectionPresetControls();
     updateActionBar();
   }
@@ -4080,10 +3715,8 @@
     els.$search.val("");
     els.$riskFilter.val("all");
     els.$showIgnored.prop("checked", false);
-    syncViewPresetSelectionFromCurrentState();
     renderResults();
     renderResultsMeta();
-    syncViewPresetControls();
     updateActionBar();
   }
 

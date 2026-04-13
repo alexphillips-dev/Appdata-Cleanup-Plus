@@ -82,24 +82,6 @@ $config = array(
     "selectAllLabel" => _("Select all"),
     "clearFiltersLabel" => _("Clear filters"),
     "clearLabel" => _("Clear"),
-    "viewPresetsLabel" => _("View preset"),
-    "viewPresetsEmptyLabel" => _("No saved presets"),
-    "viewPresetsApplyLabel" => _("Apply"),
-    "viewPresetsSaveLabel" => _("Save current"),
-    "viewPresetsDeleteLabel" => _("Delete"),
-    "viewPresetsStorageNote" => _("Saved in this browser only."),
-    "viewPresetsSaveTitle" => _("Save view preset"),
-    "viewPresetsSaveMessage" => _("Name this preset so the current search, filters, badge filter, and sort order can be reused later."),
-    "viewPresetsSavePlaceholder" => _("Preset name"),
-    "viewPresetsSaveError" => _("Enter a preset name."),
-    "viewPresetsSavedTitle" => _("View preset saved"),
-    "viewPresetsSavedMessage" => _("The current filter combination has been saved."),
-    "viewPresetsDeleteTitle" => _("Delete view preset?"),
-    "viewPresetsDeleteMessage" => _("The selected saved view preset will be removed from this browser."),
-    "viewPresetsDeletedTitle" => _("View preset deleted"),
-    "viewPresetsDeletedMessage" => _("The saved view preset has been removed."),
-    "viewPresetsStorageFailedTitle" => _("View presets unavailable"),
-    "viewPresetsStorageFailedMessage" => _("Saved view presets could not be stored in this browser right now."),
     "deleteEmptyTitle" => _("Nothing selected"),
     "deleteEmptyMessage" => _("Select at least one deletable folder before continuing."),
     "deleteConfirmTitle" => _("Delete selected folders?"),
@@ -490,25 +472,11 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
             </select>
           </label>
         </div>
-        <div class="acp-toolbar-footer acp-toolbar-footer-search">
+        <div class="acp-toolbar-footer">
           <label class="acp-toggle">
             <input type="checkbox" id="acp-show-ignored">
             <span><?php echo _("Show ignored"); ?></span>
           </label>
-          <div class="acp-view-preset-wrap">
-            <label class="acp-field acp-view-preset-field">
-              <span class="acp-field-label"><?php echo _("View preset"); ?></span>
-              <select id="acp-view-preset" class="acp-select">
-                <option value=""><?php echo _("No saved presets"); ?></option>
-              </select>
-            </label>
-            <div class="acp-toolbar-actions acp-view-preset-actions">
-              <button type="button" class="acp-button acp-button-secondary" id="acp-apply-view-preset"><?php echo _("Apply"); ?></button>
-              <button type="button" class="acp-button acp-button-secondary" id="acp-save-view-preset"><?php echo _("Save current"); ?></button>
-              <button type="button" class="acp-button acp-button-secondary" id="acp-delete-view-preset"><?php echo _("Delete"); ?></button>
-            </div>
-            <div class="acp-toolbar-note"><?php echo _("Saved in this browser only."); ?></div>
-          </div>
         </div>
       </section>
 
