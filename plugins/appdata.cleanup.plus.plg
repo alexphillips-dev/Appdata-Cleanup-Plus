@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.13.04">
-<!ENTITY md5 "9390611fc033a13794a47c788612e622">
+<!ENTITY version "2026.04.13.05">
+<!ENTITY md5 "46b277546209c93b83c86050d740403f">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.13.05
+- Usability: Add bulk selection presets in the bottom action bar for ready rows, discovery-only rows, ZFS-backed rows, and rows older than 90 days
+- Usability: Add saved view presets in the filter panel so the current search term, risk filter, ignored visibility, badge filter, and sort order can be reused later from the same browser
+- UX: Strengthen the empty-state guidance so zero-result scans explain which appdata roots were checked, whether Docker templates were part of the scan, and what to verify next
+
 ###2026.04.13.04
 - Support: Add a `Tools` action with one-click diagnostics export so users can download the current scan state, safety settings, source roots, notices, quarantine summary, audit history, and row metadata for troubleshooting
 - UX: Add a dedicated `Scan summary` panel that surfaces current scan-root coverage plus template, discovery, review, locked, ZFS-backed, mapped-share, and ignored row counts without needing to infer them from the grouped results

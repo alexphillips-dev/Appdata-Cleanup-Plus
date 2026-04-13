@@ -400,6 +400,11 @@ body[data-acp-host-theme="light"] #acp-app,
   min-height: 18px;
 }
 
+.acp-toolbar-footer-search {
+  align-items: end;
+  gap: 12px;
+}
+
 .acp-safety-strip {
   display: grid;
   gap: 6px;
@@ -511,6 +516,31 @@ body[data-acp-host-theme="light"] #acp-app,
   gap: 6px;
 }
 
+.acp-view-preset-wrap {
+  align-items: end;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: minmax(150px, 1fr) auto;
+  margin-left: auto;
+  min-width: min(100%, 440px);
+}
+
+.acp-view-preset-field,
+.acp-selection-preset-field {
+  min-width: 150px;
+}
+
+.acp-view-preset-actions {
+  justify-content: flex-end;
+}
+
+.acp-toolbar-note {
+  color: var(--acp-muted);
+  font-size: 10px;
+  grid-column: 1 / -1;
+  line-height: 1.3;
+}
+
 .acp-button,
 .acp-filter {
   appearance: none;
@@ -602,6 +632,25 @@ body[data-acp-host-theme="light"] #acp-app,
   margin: 0;
   padding: 0 8px;
   width: 100%;
+}
+
+.acp-bottom-selection-tools {
+  align-items: end;
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.acp-bottom-selection-tools .acp-button {
+  min-height: 34px;
+}
+
+.acp-bottom-actions .acp-field {
+  min-width: 0;
+}
+
+.acp-bottom-actions .acp-select {
+  min-width: 170px;
 }
 
 .acp-sort-panel .acp-results-meta {
@@ -2199,6 +2248,20 @@ body[data-acp-host-theme="light"] #acp-app,
     width: 100%;
   }
 
+  .acp-view-preset-wrap,
+  .acp-bottom-selection-tools {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .acp-view-preset-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .acp-view-preset-actions {
+    justify-content: flex-start;
+  }
+
   .acp-safety-strip {
     gap: 6px;
     margin-top: 0;
@@ -2279,6 +2342,11 @@ body[data-acp-host-theme="light"] #acp-app,
     min-width: 100%;
   }
 
+  .acp-view-preset-wrap,
+  .acp-bottom-selection-tools {
+    display: grid;
+  }
+
   .acp-mode-card-actions,
   .acp-utility-actions,
   .acp-quarantine-actions {
@@ -2295,6 +2363,10 @@ body[data-acp-host-theme="light"] #acp-app,
   .acp-bottom-actions .acp-button,
   .acp-state-actions .acp-button {
     flex: 1 1 0;
+  }
+
+  .acp-bottom-actions .acp-select {
+    min-width: 100%;
   }
 
   .acp-results-meta {

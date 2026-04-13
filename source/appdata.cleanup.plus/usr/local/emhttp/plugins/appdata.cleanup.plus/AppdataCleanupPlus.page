@@ -63,6 +63,12 @@ $config = array(
     "loadingMessage" => _("Reviewing orphaned appdata folders and active container mappings."),
     "emptyTitle" => _("No orphaned appdata found"),
     "emptyMessage" => _("Nothing currently looks safe to clean up from the configured appdata sources or saved Docker templates."),
+    "emptyScannedSinglePrefix" => _("Scanned appdata root:"),
+    "emptyScannedPluralPrefix" => _("Scanned appdata roots:"),
+    "emptyNoRootsMessage" => _("No appdata source roots are configured right now."),
+    "emptyTemplatesCheckedMessage" => _("Saved Docker templates were checked too."),
+    "emptyDockerOfflineCheckedMessage" => _("Docker is offline, so only saved Docker templates could be checked."),
+    "emptyNextStepsMessage" => _("If you expected orphaned folders, confirm the full appdata root in Appdata sources, remove the container first, and rescan."),
     "noMatchesTitle" => _("No folders match the current filters"),
     "noMatchesMessage" => _("Clear the search, badge, or risk filters to see the full scan again."),
     "ignoredOnlyTitle" => _("Only ignored paths remain"),
@@ -76,6 +82,24 @@ $config = array(
     "selectAllLabel" => _("Select all"),
     "clearFiltersLabel" => _("Clear filters"),
     "clearLabel" => _("Clear"),
+    "viewPresetsLabel" => _("View preset"),
+    "viewPresetsEmptyLabel" => _("No saved presets"),
+    "viewPresetsApplyLabel" => _("Apply"),
+    "viewPresetsSaveLabel" => _("Save current"),
+    "viewPresetsDeleteLabel" => _("Delete"),
+    "viewPresetsStorageNote" => _("Saved in this browser only."),
+    "viewPresetsSaveTitle" => _("Save view preset"),
+    "viewPresetsSaveMessage" => _("Name this preset so the current search, filters, badge filter, and sort order can be reused later."),
+    "viewPresetsSavePlaceholder" => _("Preset name"),
+    "viewPresetsSaveError" => _("Enter a preset name."),
+    "viewPresetsSavedTitle" => _("View preset saved"),
+    "viewPresetsSavedMessage" => _("The current filter combination has been saved."),
+    "viewPresetsDeleteTitle" => _("Delete view preset?"),
+    "viewPresetsDeleteMessage" => _("The selected saved view preset will be removed from this browser."),
+    "viewPresetsDeletedTitle" => _("View preset deleted"),
+    "viewPresetsDeletedMessage" => _("The saved view preset has been removed."),
+    "viewPresetsStorageFailedTitle" => _("View presets unavailable"),
+    "viewPresetsStorageFailedMessage" => _("Saved view presets could not be stored in this browser right now."),
     "deleteEmptyTitle" => _("Nothing selected"),
     "deleteEmptyMessage" => _("Select at least one deletable folder before continuing."),
     "deleteConfirmTitle" => _("Delete selected folders?"),
@@ -165,6 +189,15 @@ $config = array(
     "cardDeletable" => _("Ready"),
     "selectedSingular" => _("folder selected"),
     "selectedPlural" => _("folders selected"),
+    "selectionPresetLabel" => _("Select preset"),
+    "selectionPresetEmptyLabel" => _("Preset"),
+    "selectionPresetApplyLabel" => _("Select"),
+    "selectionPresetSafeLabel" => _("Ready rows"),
+    "selectionPresetDiscoveryLabel" => _("Discovery only"),
+    "selectionPresetZfsLabel" => _("ZFS-backed"),
+    "selectionPresetOlderLabel" => _("Older than 90 days"),
+    "selectionPresetEmptyTitle" => _("Nothing matched"),
+    "selectionPresetEmptyMessage" => _("No selectable rows matched that preset in the current scan."),
     "selectionHintIdle" => _("Click rows to select. Outside-share review rows can be selected for manual unlock, but hard-locked paths stay blocked."),
     "selectionHintReadOnly" => _("Scan results are read-only right now because the secure action snapshot could not be created."),
     "selectionHintReview" => _("Review rows still need extra scrutiny before permanent delete."),
@@ -458,11 +491,25 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
             </select>
           </label>
         </div>
-        <div class="acp-toolbar-footer">
+        <div class="acp-toolbar-footer acp-toolbar-footer-search">
           <label class="acp-toggle">
             <input type="checkbox" id="acp-show-ignored">
             <span><?php echo _("Show ignored"); ?></span>
           </label>
+          <div class="acp-view-preset-wrap">
+            <label class="acp-field acp-view-preset-field">
+              <span class="acp-field-label"><?php echo _("View preset"); ?></span>
+              <select id="acp-view-preset" class="acp-select">
+                <option value=""><?php echo _("No saved presets"); ?></option>
+              </select>
+            </label>
+            <div class="acp-toolbar-actions acp-view-preset-actions">
+              <button type="button" class="acp-button acp-button-secondary" id="acp-apply-view-preset"><?php echo _("Apply"); ?></button>
+              <button type="button" class="acp-button acp-button-secondary" id="acp-save-view-preset"><?php echo _("Save current"); ?></button>
+              <button type="button" class="acp-button acp-button-secondary" id="acp-delete-view-preset"><?php echo _("Delete"); ?></button>
+            </div>
+            <div class="acp-toolbar-note"><?php echo _("Saved in this browser only."); ?></div>
+          </div>
         </div>
       </section>
 
@@ -519,6 +566,15 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
       <span id="acp-selection-detail"><?php echo _("Click rows to select. Locked paths stay visible but cannot be selected."); ?></span>
     </div>
     <div class="acp-bottom-actions">
+      <div class="acp-bottom-selection-tools">
+        <label class="acp-field acp-selection-preset-field">
+          <span class="acp-field-label"><?php echo _("Select preset"); ?></span>
+          <select id="acp-select-preset" class="acp-select">
+            <option value=""><?php echo _("Preset"); ?></option>
+          </select>
+        </label>
+        <button type="button" class="acp-button acp-button-secondary" id="acp-apply-select-preset" disabled><?php echo _("Select"); ?></button>
+      </div>
       <button type="button" class="acp-button acp-button-secondary" id="acp-select-all" disabled><?php echo _("Select all"); ?></button>
       <button type="button" class="acp-button acp-button-secondary" id="acp-dry-run" disabled><?php echo _("Dry run"); ?></button>
       <button type="button" class="acp-button acp-button-primary" id="acp-primary-action" disabled><?php echo _("Quarantine selected"); ?></button>
