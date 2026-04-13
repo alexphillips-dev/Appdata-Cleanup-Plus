@@ -3445,6 +3445,36 @@
     return context.confirmButtonLabel + " " + count + " " + noun;
   }
 
+  function selectionIncludesZfsRows(rows) {
+    return $.grep($.isArray(rows) ? rows : [], function(row) {
+      return row && row.storageKind === "zfs";
+    }).length > 0;
+  }
+
+  function formatPreviewList(values, totalCount) {
+    var previewValues = $.isArray(values) ? values : [];
+    var previewCount = previewValues.length;
+    var suffix = "";
+
+    if (typeof totalCount === "number" && totalCount > previewCount) {
+      suffix = " (+" + String(totalCount - previewCount) + " more)";
+    }
+
+    return previewValues.join(", ") + suffix;
+  }
+
+  function getDeleteTypedTitle(context) {
+    if (context.confirmButtonLabel === ACP.t(strings, "deleteDatasetActionLabel", "Destroy")) {
+      return ACP.t(strings, "destroyTypedTitle", "Type DELETE to confirm dataset destroy");
+    }
+
+    if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
+      return ACP.t(strings, "deleteMixedTypedTitle", "Type DELETE to confirm item delete");
+    }
+
+    return ACP.t(strings, "deleteTypedTitle", "Type DELETE to confirm permanent delete");
+  }
+
   function buildOperationPreviewHtml(rows, context, options) {
     var settings = options || {};
     var reviewCount = typeof settings.reviewCount === "number" ? settings.reviewCount : $.grep(rows, function(row) {
@@ -3499,6 +3529,15 @@
       html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code>");
       if (row.datasetName) {
         html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDatasetLabel", "ZFS dataset")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.datasetName) + "</code></div>");
+      }
+      if (row.zfsImpactSummary) {
+        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDestroyImpactLabel", "Impact")) + '</span><span class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.zfsImpactSummary) + "</span></div>");
+      }
+      if ($.isArray(row.zfsChildDatasets) && row.zfsChildDatasets.length) {
+        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsChildDatasetsLabel", "Child datasets")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(formatPreviewList(row.zfsChildDatasets, Number(row.zfsChildDatasetCount || row.zfsChildDatasets.length))) + "</code></div>");
+      }
+      if ($.isArray(row.zfsSnapshots) && row.zfsSnapshots.length) {
+        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsSnapshotsLabel", "Snapshots")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(formatPreviewList(row.zfsSnapshots, Number(row.zfsSnapshotCount || row.zfsSnapshots.length))) + "</code></div>");
       }
       html.push("</li>");
     });
@@ -3627,16 +3666,81 @@
     }
 
     if (context.baseOperation === "delete") {
-      var typedDeleteTitle = ACP.t(strings, "deleteTypedTitle", "Type DELETE to confirm permanent delete");
+      if (selectionIncludesZfsRows(selectedRows)) {
+        setBusy(true);
+        ACP.applyDeleteModalClass("");
+        swal({
+          title: ACP.t(strings, "deletePreviewLoadingTitle", "Preparing delete review"),
+          text: ACP.t(strings, "deletePreviewLoadingMessage", "Checking the selected items and collecting any recursive ZFS delete details."),
+          type: "info",
+          showConfirmButton: false,
+          allowEscapeKey: false,
+          allowOutsideClick: false
+        });
 
-      if (context.confirmButtonLabel === ACP.t(strings, "deleteDatasetActionLabel", "Destroy")) {
-        typedDeleteTitle = ACP.t(strings, "destroyTypedTitle", "Type DELETE to confirm dataset destroy");
-      } else if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
-        typedDeleteTitle = ACP.t(strings, "deleteMixedTypedTitle", "Type DELETE to confirm item delete");
+        apiPost({
+          action: "executeCandidateAction",
+          scanToken: state.scanToken,
+          candidateIds: JSON.stringify($.map(selectedRows, function(row) {
+            return row.id;
+          })),
+          operation: "preview_delete"
+        }).done(function(response) {
+          var previewSummary = response.summary || { ready: 0, missing: 0, blocked: 0, errors: 0 };
+          var previewResults = $.isArray(response.results) ? response.results : [];
+          var hasWarnings = Number(previewSummary.blocked || 0) > 0 || Number(previewSummary.missing || 0) > 0 || Number(previewSummary.errors || 0) > 0;
+
+          setBusy(false);
+
+          if (hasWarnings) {
+            swal({
+              title: ACP.t(strings, "dryRunResultTitleWarning", "Dry run finished with warnings"),
+              text: "",
+              type: "warning",
+              html: true
+            });
+            ACP.applyDeleteModalClass(
+              "acp-delete-modal acp-delete-results-modal",
+              buildOperationResultsHtml(previewSummary, previewResults, buildOperationContext("preview_delete", selectedRows))
+            );
+            return;
+          }
+
+          swal({
+            title: getDeleteTypedTitle(context),
+            text: "",
+            type: "input",
+            html: true,
+            showCancelButton: true,
+            closeOnConfirm: false,
+            inputPlaceholder: ACP.t(strings, "deleteTypedPlaceholder", "DELETE"),
+            confirmButtonText: confirmButtonText
+          }, function(inputValue) {
+            if (inputValue === false) {
+              return false;
+            }
+
+            if ($.trim(String(inputValue || "")).toUpperCase() !== "DELETE") {
+              swal.showInputError(ACP.t(strings, "deleteTypedError", "Type DELETE to continue."));
+              return false;
+            }
+
+            runCandidateOperation(selectedRows, context.operation);
+            return true;
+          });
+          ACP.applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildOperationPreviewHtml(previewResults, context, {
+            reviewCount: reviewRows.length,
+            showTypeHint: true
+          }));
+        }).fail(function(xhr) {
+          setBusy(false);
+          swal(context.failureTitle, ACP.extractErrorMessage(xhr, ACP.t(strings, "deletePreviewFailedMessage", "The delete preview could not be prepared right now.")), "error");
+        });
+        return;
       }
 
       swal({
-        title: typedDeleteTitle,
+        title: getDeleteTypedTitle(context),
         text: "",
         type: "input",
         html: true,
