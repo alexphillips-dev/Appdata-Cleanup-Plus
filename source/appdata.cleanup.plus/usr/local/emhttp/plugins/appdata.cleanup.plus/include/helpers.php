@@ -576,6 +576,102 @@ function getAppdataCleanupPlusConfiguredSourceRoots($settings=null) {
   return array_values($roots);
 }
 
+function appdataCleanupPlusBuildSuggestedZfsPathMappings($settings=null) {
+  $suggestions = array();
+  $seen = array();
+  $configuredMappings = array();
+  $datasetMap = array();
+  $effectiveRoots = array();
+
+  if ( ! is_array($settings) ) {
+    $settings = getAppdataCleanupPlusSafetySettings();
+  }
+
+  $configuredMappings = appdataCleanupPlusGetConfiguredZfsPathMappings($settings);
+  $datasetMap = appdataCleanupPlusGetZfsDatasetMountMap();
+  $effectiveRoots = getAppdataCleanupPlusConfiguredSourceRoots($settings);
+
+  if ( empty($datasetMap["ok"]) || empty($datasetMap["mountMap"]) || ! is_array($datasetMap["mountMap"]) ) {
+    return array();
+  }
+
+  foreach ( $configuredMappings as $mapping ) {
+    $seen[$mapping["shareRoot"] . "=>" . $mapping["datasetRoot"]] = true;
+  }
+
+  foreach ( $effectiveRoots as $shareRoot ) {
+    $normalizedShareRoot = appdataCleanupPlusCanonicalizeZfsPath($shareRoot);
+    $shareBasename = basename($normalizedShareRoot);
+
+    if (
+      $normalizedShareRoot === "" ||
+      $shareBasename === "" ||
+      strpos($normalizedShareRoot, "/mnt/") !== 0
+    ) {
+      continue;
+    }
+
+    foreach ( $datasetMap["mountMap"] as $mountpoint => $datasetName ) {
+      $normalizedMountpoint = appdataCleanupPlusCanonicalizeZfsPath($mountpoint);
+      $candidateRoots = array();
+      $candidateRoot = $normalizedMountpoint;
+
+      while ( $candidateRoot !== "" && $candidateRoot !== "/" && strpos($candidateRoot, "/mnt") === 0 ) {
+        $candidateRoots[] = $candidateRoot;
+        $parentRoot = dirname($candidateRoot);
+
+        if ( ! is_string($parentRoot) || $parentRoot === $candidateRoot ) {
+          break;
+        }
+
+        $candidateRoot = appdataCleanupPlusCanonicalizeZfsPath($parentRoot);
+      }
+
+      foreach ( array_values(array_unique($candidateRoots)) as $candidateRoot ) {
+        $mappingKey = $normalizedShareRoot . "=>" . $candidateRoot;
+        $candidateDatasetName = trim((string)$datasetName);
+
+        if (
+          $candidateRoot === "" ||
+          $candidateRoot === $normalizedShareRoot ||
+          strpos($candidateRoot, "/mnt/") !== 0 ||
+          strpos($candidateRoot, "/mnt/user/") === 0 ||
+          basename($candidateRoot) !== $shareBasename ||
+          isset($seen[$mappingKey])
+        ) {
+          continue;
+        }
+
+        if ( $candidateDatasetName === "" || $candidateRoot !== $normalizedMountpoint ) {
+          $candidateDatasetName = trim((string)preg_replace('#^/mnt/#', "", $candidateRoot));
+        }
+
+        $seen[$mappingKey] = true;
+        $suggestions[] = array(
+          "shareRoot" => $normalizedShareRoot,
+          "datasetRoot" => $candidateRoot,
+          "datasetName" => $candidateDatasetName
+        );
+      }
+    }
+  }
+
+  usort($suggestions, function($left, $right) {
+    $leftShare = isset($left["shareRoot"]) ? (string)$left["shareRoot"] : "";
+    $rightShare = isset($right["shareRoot"]) ? (string)$right["shareRoot"] : "";
+    $leftDataset = isset($left["datasetRoot"]) ? (string)$left["datasetRoot"] : "";
+    $rightDataset = isset($right["datasetRoot"]) ? (string)$right["datasetRoot"] : "";
+
+    if ( $leftShare === $rightShare ) {
+      return strcasecmp($leftDataset, $rightDataset);
+    }
+
+    return strcasecmp($leftShare, $rightShare);
+  });
+
+  return array_values($suggestions);
+}
+
 function buildAppdataCleanupPlusSourceInfo($settings=null) {
   $detectedRoots = array();
   $defaultRoot = getDefaultAppdataCleanupPlusSourceRoot();
@@ -592,7 +688,8 @@ function buildAppdataCleanupPlusSourceInfo($settings=null) {
     "detected" => array_values(array_filter($detectedRoots, "strlen")),
     "manual" => isset($settings["manualAppdataSources"]) ? appdataCleanupPlusNormalizeManualAppdataSources($settings["manualAppdataSources"]) : array(),
     "effective" => getAppdataCleanupPlusConfiguredSourceRoots($settings),
-    "zfsPathMappings" => appdataCleanupPlusGetConfiguredZfsPathMappings($settings)
+    "zfsPathMappings" => appdataCleanupPlusGetConfiguredZfsPathMappings($settings),
+    "zfsPathMappingSuggestions" => appdataCleanupPlusBuildSuggestedZfsPathMappings($settings)
   );
 }
 

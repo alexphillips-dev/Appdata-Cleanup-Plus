@@ -228,6 +228,33 @@ function handleHydrateCandidateStats() {
   ));
 }
 
+function handleGetCandidateDetails() {
+  $token = getRequestedToken();
+  $candidateId = trim((string)getPostedString("candidateId"));
+  $resolvedCandidates = array();
+
+  if ( $candidateId === "" ) {
+    jsonResponse(array(
+      "ok" => false,
+      "message" => "No candidate was selected."
+    ), 400);
+  }
+
+  $resolvedCandidates = resolveSnapshotCandidates($token, array($candidateId));
+
+  if ( ! $resolvedCandidates["ok"] ) {
+    jsonResponse(array(
+      "ok" => false,
+      "message" => $resolvedCandidates["message"]
+    ), $resolvedCandidates["statusCode"]);
+  }
+
+  jsonResponse(array(
+    "ok" => true,
+    "row" => appdataCleanupPlusBuildCandidateDetailPayload($resolvedCandidates["candidates"][0], getAppdataCleanupPlusSafetySettings())
+  ));
+}
+
 function handleSaveSafetySettings() {
   $currentSettings = getAppdataCleanupPlusSafetySettings();
   $manualAppdataSources = isset($_POST["manualAppdataSources"])

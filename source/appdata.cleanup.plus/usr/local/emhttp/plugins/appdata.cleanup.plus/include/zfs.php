@@ -290,6 +290,77 @@ function appdataCleanupPlusGetZfsDatasetMountMap() {
   return $cache;
 }
 
+function appdataCleanupPlusFindMatchingZfsMappingsForVariants($variants, $settings=null) {
+  $matchedMappings = array();
+  $seen = array();
+
+  foreach ( appdataCleanupPlusGetConfiguredZfsPathMappings($settings) as $mapping ) {
+    $shareRoot = isset($mapping["shareRoot"]) ? appdataCleanupPlusCanonicalizeZfsPath($mapping["shareRoot"]) : "";
+    $datasetRoot = isset($mapping["datasetRoot"]) ? appdataCleanupPlusCanonicalizeZfsPath($mapping["datasetRoot"]) : "";
+    $mappingKey = $shareRoot . "=>" . $datasetRoot;
+
+    if ( $shareRoot === "" || $datasetRoot === "" || isset($seen[$mappingKey]) ) {
+      continue;
+    }
+
+    foreach ( (array)$variants as $variant ) {
+      if (
+        appdataCleanupPlusPathMatchesZfsRoot($variant, $shareRoot) ||
+        appdataCleanupPlusPathMatchesZfsRoot($variant, $datasetRoot)
+      ) {
+        $matchedMappings[] = array(
+          "shareRoot" => $shareRoot,
+          "datasetRoot" => $datasetRoot
+        );
+        $seen[$mappingKey] = true;
+        break;
+      }
+    }
+  }
+
+  return $matchedMappings;
+}
+
+function appdataCleanupPlusBuildZfsResolutionDetail($kind, $matchedMapping=array(), $variants=array(), $datasetMap=array()) {
+  $normalizedKind = trim((string)$kind);
+  $shareRoot = isset($matchedMapping["shareRoot"]) ? trim((string)$matchedMapping["shareRoot"]) : "";
+  $datasetRoot = isset($matchedMapping["datasetRoot"]) ? trim((string)$matchedMapping["datasetRoot"]) : "";
+  $variantHints = array();
+
+  foreach ( (array)$variants as $variant ) {
+    $normalizedVariant = appdataCleanupPlusCanonicalizeZfsPath($variant);
+    if ( $normalizedVariant === "" ) {
+      continue;
+    }
+
+    if ( $datasetRoot !== "" && appdataCleanupPlusPathMatchesZfsRoot($normalizedVariant, $datasetRoot) ) {
+      $variantHints[] = $normalizedVariant;
+    }
+  }
+
+  if ( $normalizedKind === "exact_dataset" ) {
+    return "This row resolves to an exact ZFS dataset mountpoint.";
+  }
+
+  if ( $normalizedKind === "zfs_unavailable" ) {
+    return "A configured ZFS mapping matched this path, but the zfs CLI could not be queried safely.";
+  }
+
+  if ( $normalizedKind === "mapped_no_exact_mountpoint" ) {
+    if ( $shareRoot !== "" && $datasetRoot !== "" ) {
+      if ( ! empty($variantHints) ) {
+        return "The configured mapping matched (" . $shareRoot . " => " . $datasetRoot . "), but none of the resolved dataset-side paths matched an exact ZFS dataset mountpoint. Exact mountpoint matches are required before dataset delete can be used.";
+      }
+
+      return "The configured mapping matched (" . $shareRoot . " => " . $datasetRoot . "), but this row does not resolve to an exact ZFS dataset mountpoint. Exact mountpoint matches are required before dataset delete can be used.";
+    }
+
+    return "A configured ZFS mapping matched this path, but it does not resolve to an exact ZFS dataset mountpoint.";
+  }
+
+  return "";
+}
+
 function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
   static $cache = array();
   $normalizedPath = appdataCleanupPlusCanonicalizeZfsPath($path);
@@ -297,6 +368,8 @@ function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
   $datasetMap = array();
   $variants = array();
   $mappingMatched = false;
+  $matchedMappings = array();
+  $matchedMapping = array();
 
   if ( isset($cache[$cacheKey]) ) {
     return $cache[$cacheKey];
@@ -309,6 +382,11 @@ function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
     "datasetName" => "",
     "datasetMountpoint" => "",
     "mappingMatched" => false,
+    "matchedMapping" => array(),
+    "matchedMappings" => array(),
+    "resolutionKind" => "filesystem",
+    "resolutionDetail" => "",
+    "resolutionVariants" => array(),
     "lockReason" => ""
   );
 
@@ -317,16 +395,22 @@ function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
   }
 
   $variants = appdataCleanupPlusBuildZfsResolutionPathVariants($normalizedPath, $settings);
-  foreach ( appdataCleanupPlusGetConfiguredZfsPathMappings($settings) as $mapping ) {
-    foreach ( $variants as $variant ) {
-      if (
-        appdataCleanupPlusPathMatchesZfsRoot($variant, $mapping["shareRoot"]) ||
-        appdataCleanupPlusPathMatchesZfsRoot($variant, $mapping["datasetRoot"])
-      ) {
-        $mappingMatched = true;
-        break 2;
-      }
-    }
+  $matchedMappings = appdataCleanupPlusFindMatchingZfsMappingsForVariants($variants, $settings);
+  $mappingMatched = ! empty($matchedMappings);
+  $matchedMapping = $mappingMatched ? $matchedMappings[0] : array();
+
+  $cache[$cacheKey]["mappingMatched"] = $mappingMatched;
+  $cache[$cacheKey]["matchedMapping"] = $matchedMapping;
+  $cache[$cacheKey]["matchedMappings"] = $matchedMappings;
+  $cache[$cacheKey]["resolutionVariants"] = array_values($variants);
+
+  if ( $mappingMatched ) {
+    $cache[$cacheKey]["resolutionKind"] = "mapped_no_exact_mountpoint";
+    $cache[$cacheKey]["resolutionDetail"] = appdataCleanupPlusBuildZfsResolutionDetail(
+      "mapped_no_exact_mountpoint",
+      $matchedMapping,
+      $variants
+    );
   }
 
   $datasetMap = appdataCleanupPlusGetZfsDatasetMountMap();
@@ -339,6 +423,11 @@ function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
         "datasetName" => "",
         "datasetMountpoint" => "",
         "mappingMatched" => true,
+        "matchedMapping" => $matchedMapping,
+        "matchedMappings" => $matchedMappings,
+        "resolutionKind" => "zfs_unavailable",
+        "resolutionDetail" => appdataCleanupPlusBuildZfsResolutionDetail("zfs_unavailable", $matchedMapping, $variants),
+        "resolutionVariants" => array_values($variants),
         "lockReason" => "A configured ZFS path mapping matched this path, but the zfs CLI could not be queried safely."
       );
     }
@@ -358,6 +447,11 @@ function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
       "datasetName" => (string)$datasetMap["mountMap"][$variant],
       "datasetMountpoint" => $variant,
       "mappingMatched" => $mappingMatched,
+      "matchedMapping" => $matchedMapping,
+      "matchedMappings" => $matchedMappings,
+      "resolutionKind" => "exact_dataset",
+      "resolutionDetail" => appdataCleanupPlusBuildZfsResolutionDetail("exact_dataset", $matchedMapping, $variants),
+      "resolutionVariants" => array_values($variants),
       "lockReason" => ""
     );
     return $cache[$cacheKey];

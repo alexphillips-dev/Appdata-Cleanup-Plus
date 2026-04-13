@@ -1659,7 +1659,19 @@ body[data-acp-host-theme="light"] #acp-app,
   gap: 8px;
 }
 
+.acp-zfs-suggestion-list {
+  display: grid;
+  gap: 8px;
+}
+
 .acp-zfs-mapping-item {
+  align-items: start;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.acp-zfs-suggestion-item {
   align-items: start;
   display: grid;
   gap: 8px;
@@ -1961,6 +1973,11 @@ body[data-acp-host-theme="light"] #acp-app,
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.acp-detail-stack {
+  display: grid;
+  gap: 6px;
 }
 
 .acp-modal-list {
@@ -2350,6 +2367,7 @@ body[data-acp-host-theme="light"] #acp-app,
   }
 
   .acp-zfs-mapping-item,
+  .acp-zfs-suggestion-item,
   .acp-zfs-mapping-draft-grid {
     grid-template-columns: 1fr;
   }

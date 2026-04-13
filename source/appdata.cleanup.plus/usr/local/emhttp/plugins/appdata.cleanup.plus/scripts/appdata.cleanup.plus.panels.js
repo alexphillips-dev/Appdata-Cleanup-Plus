@@ -325,11 +325,120 @@
         return;
       }
 
+      if ($.isArray(item.values)) {
+        var values = $.grep($.map(item.values, function(value) {
+          return $.trim(String(value || ""));
+        }), function(value) {
+          return !!value;
+        });
+
+        if (!values.length) {
+          html.push(buildModalFieldHtml(item.label, "", item));
+          return;
+        }
+
+        html.push(
+          '<div class="acp-detail-item">' +
+            '<div class="acp-detail-label">' + ACP.escapeHtml(item.label || "") + "</div>" +
+            '<div class="acp-detail-stack">' +
+              $.map(values, function(value) {
+                return item.code
+                  ? ('<code class="acp-modal-path' + (item.secondary ? ' acp-modal-path-secondary' : '') + '">' + ACP.escapeHtml(value) + "</code>")
+                  : ('<div class="acp-detail-value">' + ACP.escapeHtml(value) + "</div>");
+              }).join("") +
+            "</div>" +
+          "</div>"
+        );
+        return;
+      }
+
       html.push(buildModalFieldHtml(item.label, item.value, item));
     });
 
     html.push("</div>");
     return html.join("");
+  }
+
+  function getRowDetailsOutcome(strings, row) {
+    if (row.ignored) {
+      return ACP.t(strings, "rowDetailsOutcomeIgnored", "Ignored until restored");
+    }
+
+    if (row.securityLockReason || row.risk === "blocked") {
+      return ACP.t(strings, "rowDetailsOutcomeHardLocked", "Hard-locked by safety rules");
+    }
+
+    if (row.storageKind === "zfs" && row.policyLocked) {
+      if (!row.enableZfsDatasetDelete) {
+        return ACP.t(strings, "rowDetailsOutcomeZfsDisabled", "Blocked until ZFS dataset delete is enabled");
+      }
+
+      if (!row.enablePermanentDelete) {
+        return ACP.t(strings, "rowDetailsOutcomePermanentDeleteRequired", "Blocked until permanent delete mode is enabled");
+      }
+    }
+
+    if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
+      return ACP.t(strings, "rowDetailsOutcomePolicyLocked", "Locked by current safety policy");
+    }
+
+    if (row.lockOverridden) {
+      return ACP.t(strings, "rowDetailsOutcomeUnlocked", "Temporarily unlocked for this scan");
+    }
+
+    if (row.zfsMappingMatched && row.storageKind !== "zfs") {
+      return ACP.t(strings, "rowDetailsOutcomeMappedNoExactDataset", "Mapped share path did not resolve to an exact dataset");
+    }
+
+    if (row.storageKind === "zfs") {
+      return ACP.t(strings, "rowDetailsOutcomeZfsReady", "Ready for ZFS dataset destroy");
+    }
+
+    if (row.risk === "review") {
+      return ACP.t(strings, "rowDetailsOutcomeReview", "Review row is currently actionable");
+    }
+
+    return ACP.t(strings, "rowDetailsOutcomeReady", "Ready under current safety settings");
+  }
+
+  function getRowDetailsNextStep(strings, row) {
+    if (row.ignored) {
+      return ACP.t(strings, "rowDetailsNextStepIgnored", "Use Restore if you want this path to appear in cleanup scans again.");
+    }
+
+    if (row.securityLockReason || row.risk === "blocked") {
+      return ACP.t(strings, "rowDetailsNextStepHardLocked", "No action is available here. The path resolves to a managed or unsafe target.");
+    }
+
+    if (row.storageKind === "zfs" && !row.enableZfsDatasetDelete) {
+      return ACP.t(strings, "rowDetailsNextStepEnableZfs", "Turn on Enable ZFS dataset delete in Safety settings, then rescan if needed.");
+    }
+
+    if (row.storageKind === "zfs" && !row.enablePermanentDelete) {
+      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Turn on Enable permanent delete. ZFS-backed rows cannot be quarantined.");
+    }
+
+    if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
+      return ACP.t(strings, "rowDetailsNextStepUnlock", "Select this row and use Unlock selected if you want to act on it during this scan.");
+    }
+
+    if (row.lockOverridden) {
+      return ACP.t(strings, "rowDetailsNextStepUnlocked", "Proceed carefully. Rescanning will restore the normal policy lock.");
+    }
+
+    if (row.zfsMappingMatched && row.storageKind !== "zfs") {
+      return ACP.t(strings, "rowDetailsNextStepMappedNoExactDataset", "Correct the ZFS mapping so the dataset mount root matches exactly, or continue as a normal folder.");
+    }
+
+    if (row.storageKind === "zfs") {
+      return ACP.t(strings, "rowDetailsNextStepZfsReady", "Only permanent delete mode is supported for ZFS-backed rows. Review the destroy impact below before proceeding.");
+    }
+
+    if (row.risk === "review") {
+      return ACP.t(strings, "rowDetailsNextStepReview", "Confirm that this path really belongs to orphaned appdata before acting on it.");
+    }
+
+    return ACP.t(strings, "rowDetailsNextStepReady", "You can quarantine it now, or permanently delete it if that mode is enabled.");
   }
 
   ACP.buildToolsModalHtml = function(context) {
@@ -354,18 +463,33 @@
 
   ACP.buildRowDetailsModalHtml = function(context, row) {
     var strings = context.strings || {};
+    var settings = (context.state && context.state.settings) || {};
     var summaryStats = [];
     var templateRefs = $.isArray(row.templateRefs) ? row.templateRefs : [];
     var sourceNames = $.isArray(row.sourceNames) ? row.sourceNames : [];
     var targetPaths = $.isArray(row.targetPaths) ? row.targetPaths : [];
+    var childDatasets = $.isArray(row.zfsChildDatasets) ? row.zfsChildDatasets : [];
+    var snapshots = $.isArray(row.zfsSnapshots) ? row.zfsSnapshots : [];
+    var resolutionVariants = $.isArray(row.zfsResolutionVariants) ? row.zfsResolutionVariants : [];
     var riskTone = row.policyLocked || row.risk === "blocked"
       ? "is-blocked"
       : (row.risk === "review" ? "is-review" : "is-safe");
     var summaryMessage = row.policyReason || row.securityLockReason || row.riskReason || row.reason || "";
+    var nextStepMessage = getRowDetailsNextStep(strings, $.extend({}, row, settings));
+    var storageItems = [
+      { label: ACP.t(strings, "rowDetailsStorageKindLabel", "Storage kind"), value: row.storageLabel || row.storageKind || "" },
+      { label: ACP.t(strings, "rowDetailsDatasetLabel", "Dataset"), value: row.datasetName || "" },
+      { label: ACP.t(strings, "rowDetailsMountpointLabel", "Mountpoint"), value: row.datasetMountpoint || "", code: true },
+      { label: ACP.t(strings, "rowDetailsMatchedShareRootLabel", "Matched share root"), value: row.zfsMatchedShareRoot || "", code: true },
+      { label: ACP.t(strings, "rowDetailsMatchedDatasetRootLabel", "Matched dataset root"), value: row.zfsMatchedDatasetRoot || "", code: true },
+      { label: ACP.t(strings, "rowDetailsResolutionLabel", "Resolution"), value: row.zfsResolutionDetail || row.zfsResolutionMessage || (row.zfsMappingMatched ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No")) },
+      { label: ACP.t(strings, "rowDetailsCheckedPathsLabel", "Checked paths"), values: resolutionVariants, code: true }
+    ];
     var html = [
       '<div class="acp-modal-summary">',
       '<div class="acp-modal-copy">',
       '<div class="acp-modal-subcopy">' + ACP.escapeHtml(summaryMessage || ACP.t(strings, "rowDetailsSummaryTitle", "Why this row looks the way it does")) + "</div>",
+      '<div class="acp-modal-hint">' + ACP.escapeHtml(nextStepMessage) + "</div>",
       "</div>",
       '<div class="acp-modal-stats">'
     ];
@@ -378,6 +502,15 @@
       summaryStats.push('<span class="acp-modal-stat is-scheduled">' + ACP.escapeHtml(ACP.t(strings, "scanSummaryMappedLabel", "Mapped share path")) + "</span>");
     }
     html.push(summaryStats.join(""));
+    html.push("</div>");
+
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsExplanationTitle", "Current explanation")) + "</div>");
+    html.push(buildModalFieldListHtml([
+      { label: ACP.t(strings, "rowDetailsOutcomeLabel", "Current outcome"), value: getRowDetailsOutcome(strings, $.extend({}, row, settings)) },
+      { label: ACP.t(strings, "rowDetailsWhyLabel", "Why"), value: summaryMessage || row.reason || "" },
+      { label: ACP.t(strings, "rowDetailsNextStepLabel", "Next step"), value: nextStepMessage }
+    ]));
     html.push("</div>");
 
     html.push('<div class="acp-modal-panel">');
@@ -415,12 +548,38 @@
 
     html.push('<div class="acp-modal-panel">');
     html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsStorageTitle", "Storage")) + "</div>");
-    html.push(buildModalFieldListHtml([
-      { label: ACP.t(strings, "rowDetailsStorageKindLabel", "Storage kind"), value: row.storageLabel || row.storageKind || "" },
-      { label: ACP.t(strings, "rowDetailsDatasetLabel", "Dataset"), value: row.datasetName || "" },
-      { label: ACP.t(strings, "rowDetailsMountpointLabel", "Mountpoint"), value: row.datasetMountpoint || "", code: true },
-      { label: ACP.t(strings, "rowDetailsMappingLabel", "ZFS mapping"), value: row.zfsResolutionMessage || (row.zfsMappingMatched ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No")) }
-    ]));
+    if (row.storageKind === "zfs") {
+      storageItems.push({
+        label: ACP.t(strings, "rowDetailsDestroyModeLabel", "Destroy mode"),
+        value: row.detailLoading
+          ? ACP.t(strings, "rowDetailsLoadingLabel", "Loading latest ZFS detail...")
+          : (row.zfsPreviewError
+            ? row.zfsPreviewError
+            : (row.zfsPreviewLoaded
+              ? (row.zfsRecursiveDestroy ? ACP.t(strings, "zfsRecursiveDestroyValue", "Recursive destroy") : ACP.t(strings, "zfsStandardDestroyValue", "Standard destroy"))
+              : ACP.t(strings, "rowDetailsZfsPreviewPending", "Open details again if you need a fresh ZFS destroy preview.")))
+      });
+      storageItems.push({
+        label: ACP.t(strings, "rowDetailsImpactLabel", "Destroy impact"),
+        value: row.detailLoading
+          ? ACP.t(strings, "rowDetailsLoadingLabel", "Loading latest ZFS detail...")
+          : (row.zfsImpactSummary || (row.zfsPreviewLoaded ? ACP.t(strings, "rowDetailsNoImpactLabel", "No descendant datasets or snapshots are currently expected.") : ""))
+      });
+      storageItems.push({
+        label: ACP.t(strings, "zfsChildDatasetsLabel", "Child datasets"),
+        values: childDatasets.length ? childDatasets : [],
+        code: true
+      });
+      storageItems.push({
+        label: ACP.t(strings, "zfsSnapshotsLabel", "Snapshots"),
+        values: snapshots.length ? snapshots : [],
+        code: true
+      });
+    } else {
+      storageItems.push({ label: ACP.t(strings, "rowDetailsMappingLabel", "ZFS mapping"), value: row.zfsResolutionDetail || row.zfsResolutionMessage || (row.zfsMappingMatched ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No")) });
+    }
+
+    html.push(buildModalFieldListHtml(storageItems));
     html.push("</div>");
 
     html.push('<div class="acp-modal-panel">');
@@ -595,6 +754,7 @@
     var browser = state.zfsPathMappingBrowser || {};
     var mappings = $.isArray(browser.mappings) ? browser.mappings : ($.isArray(settings.zfsPathMappings) ? settings.zfsPathMappings : []);
     var savedMappings = $.isArray(settings.zfsPathMappings) ? settings.zfsPathMappings : [];
+    var suggestions = (state.appdataSources && $.isArray(state.appdataSources.zfsPathMappingSuggestions)) ? state.appdataSources.zfsPathMappingSuggestions : [];
     var draft = $.isPlainObject(browser.draft) ? browser.draft : {};
     var breadcrumbs = $.isArray(browser.breadcrumbs) ? browser.breadcrumbs : [];
     var entries = $.isArray(browser.entries) ? browser.entries : [];
@@ -607,6 +767,7 @@
       : ' role="button" tabindex="0"';
     var trailHtml = [];
     var mappingHtml = [];
+    var suggestionHtml = [];
     var browserListHtml = [];
     var shareRoot = String(draft.shareRoot || "");
     var datasetRoot = String(draft.datasetRoot || "");
@@ -698,6 +859,46 @@
       html.push('<div class="acp-zfs-mapping-list">' + mappingHtml.join("") + "</div>");
     }
 
+    html.push("</div>");
+
+    $.each(suggestions, function(_, suggestion) {
+      var share = String((suggestion && suggestion.shareRoot) || "");
+      var dataset = String((suggestion && suggestion.datasetRoot) || "");
+      var datasetName = String((suggestion && suggestion.datasetName) || "");
+      var suggestionKey = share + "=>" + dataset;
+
+      if (!share || !dataset || $.inArray(suggestionKey, currentMappingKeys) !== -1) {
+        return;
+      }
+
+      suggestionHtml.push(
+        '<div class="acp-zfs-suggestion-item">' +
+          '<div class="acp-zfs-mapping-paths">' +
+            '<div class="acp-modal-result-destination">' +
+              '<span class="acp-modal-result-label">' + ACP.escapeHtml(shareRootLabel) + '</span>' +
+              '<code class="acp-modal-path">' + ACP.escapeHtml(share) + "</code>" +
+            "</div>" +
+            '<div class="acp-modal-result-destination">' +
+              '<span class="acp-modal-result-label">' + ACP.escapeHtml(datasetRootLabel) + '</span>' +
+              '<code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(dataset) + "</code>" +
+            "</div>" +
+            (datasetName ? ('<div class="acp-modal-hint">' + ACP.escapeHtml(datasetName) + "</div>") : "") +
+          "</div>" +
+          '<button type="button" class="acp-button acp-button-secondary" data-action="use-zfs-path-mapping-suggestion" data-share-root="' + ACP.escapeHtml(share) + '" data-dataset-root="' + ACP.escapeHtml(dataset) + '"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsSuggestionUseLabel", "Use suggestion")) + "</button>" +
+        "</div>"
+      );
+    });
+
+    if (suggestionHtml.length) {
+      html.push(
+        '<div class="acp-modal-panel">',
+        '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsSuggestedTitle", "Suggested mappings")) + "</div>",
+        '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsSuggestedHint", "These pairings were inferred from your effective scan roots and detected ZFS mountpoints. Review them before saving.")) + "</div>",
+        '<div class="acp-zfs-suggestion-list">' + suggestionHtml.join("") + "</div>",
+        "</div>"
+      );
+    }
+
     $.each(breadcrumbs, function(_, crumb) {
       trailHtml.push('<span class="acp-appdata-browser-trail-part">' + ACP.escapeHtml(String((crumb && crumb.label) || "")) + "</span>");
     });
@@ -721,7 +922,6 @@
     });
 
     html.push(
-      "</div>",
       '<div class="acp-modal-panel">',
       '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsDraftTitle", "Add mapping")) + "</div>",
       '<div class="acp-zfs-mapping-draft-grid">',

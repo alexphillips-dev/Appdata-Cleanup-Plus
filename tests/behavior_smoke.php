@@ -603,10 +603,27 @@ behaviorSmokeAssertSame("", $browseManualRootPayload["browser"]["validationMessa
 $browseInvalidPayload = appdataCleanupPlusBuildManualSourceBrowsePayload("/boot/config");
 behaviorSmokeAssertSame(false, ! empty($browseInvalidPayload["ok"]), "Manual source browser should reject paths outside /mnt.");
 behaviorSmokeAssertSame(400, (int)$browseInvalidPayload["statusCode"], "Manual source browser should reject outside-root paths with a bad request status.");
+$suggestedSourceInfo = buildAppdataCleanupPlusSourceInfo(array(
+  "allowOutsideShareCleanup" => false,
+  "enablePermanentDelete" => false,
+  "enableZfsDatasetDelete" => false,
+  "manualAppdataSources" => array(
+    $manualAliasSourceRoot,
+    $manualCustomSourceRoot
+  ),
+  "zfsPathMappings" => array(),
+  "defaultQuarantinePurgeDays" => 0
+));
+behaviorSmokeAssertTrue(count(array_filter($suggestedSourceInfo["zfsPathMappingSuggestions"], function($mapping) use ($appdataShareRoot, $zfsDatasetRoot) {
+  return isset($mapping["shareRoot"], $mapping["datasetRoot"]) &&
+    $mapping["shareRoot"] === $appdataShareRoot &&
+    $mapping["datasetRoot"] === $zfsDatasetRoot;
+})) === 1, "Source info should suggest likely ZFS mappings inferred from detected dataset mountpoints.");
 $appdataSourceInfo = buildAppdataCleanupPlusSourceInfo(getAppdataCleanupPlusSafetySettings());
 behaviorSmokeAssertSame(1, count($appdataSourceInfo["detected"]), "Source info should expose the detected Docker appdata root.");
 behaviorSmokeAssertSame(2, count($appdataSourceInfo["effective"]), "Source info should include the default root plus distinct manual appdata roots.");
 behaviorSmokeAssertSame(1, count($appdataSourceInfo["zfsPathMappings"]), "Source info should expose configured ZFS path mappings.");
+behaviorSmokeAssertSame(0, count($appdataSourceInfo["zfsPathMappingSuggestions"]), "Configured ZFS mappings should suppress identical root suggestions.");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/templated-orphan.xml", "templated-orphan", $templatedOrphanPath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/sonarr-zfs.xml", "Sonarr", $zfsCaseSensitivePath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/nested-app.xml", "nested-app", $nestedTemplatePath, "/config");
@@ -841,6 +858,24 @@ behaviorSmokeAssertSame(1, (int)$zfsRecursivePreviewExecution["results"][0]["zfs
 behaviorSmokeAssertSame(2, (int)$zfsRecursivePreviewExecution["results"][0]["zfsSnapshotCount"], "Recursive ZFS previews should count affected snapshots.");
 behaviorSmokeAssertContains("library", implode(",", $zfsRecursivePreviewExecution["results"][0]["zfsChildDatasets"]), "Recursive ZFS previews should list child datasets.");
 behaviorSmokeAssertContains("@keep", implode(",", $zfsRecursivePreviewExecution["results"][0]["zfsSnapshots"]), "Recursive ZFS previews should list affected snapshots.");
+$zfsRecursiveDetailPayload = appdataCleanupPlusBuildCandidateDetailPayload(array(
+  "id" => "sonarr-zfs",
+  "path" => $zfsCaseSensitivePath,
+  "displayPath" => $zfsCaseSensitivePath
+), getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame(true, ! empty($zfsRecursiveDetailPayload["zfsPreviewLoaded"]), "Row detail payloads should preload the current ZFS destroy preview for dataset-backed rows.");
+behaviorSmokeAssertSame(true, ! empty($zfsRecursiveDetailPayload["zfsRecursiveDestroy"]), "Row detail payloads should surface when recursive destroy is required.");
+behaviorSmokeAssertSame(1, (int)$zfsRecursiveDetailPayload["zfsChildDatasetCount"], "Row detail payloads should surface child dataset counts.");
+behaviorSmokeAssertSame(2, (int)$zfsRecursiveDetailPayload["zfsSnapshotCount"], "Row detail payloads should surface snapshot counts.");
+$zfsMappedNonExactDetailPayload = appdataCleanupPlusBuildCandidateDetailPayload(array(
+  "id" => "nested-non-zfs",
+  "path" => $nestedTemplatePath,
+  "displayPath" => $nestedTemplatePath
+), getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame("mapped_no_exact_mountpoint", (string)$zfsMappedNonExactDetailPayload["zfsResolutionKind"], "Mapped non-ZFS rows should expose why they did not resolve to an exact dataset.");
+behaviorSmokeAssertSame($appdataShareRoot, (string)$zfsMappedNonExactDetailPayload["zfsMatchedShareRoot"], "Mapped non-ZFS row details should expose the matched share root.");
+behaviorSmokeAssertSame($zfsDatasetRoot, (string)$zfsMappedNonExactDetailPayload["zfsMatchedDatasetRoot"], "Mapped non-ZFS row details should expose the matched dataset root.");
+behaviorSmokeAssertContains($zfsDatasetRoot, implode(",", $zfsMappedNonExactDetailPayload["zfsResolutionVariants"]), "Mapped non-ZFS row details should expose the checked dataset-side paths.");
 $zfsDeleteExecution = executeCandidateOperation(array(array(
   "id" => "templated-zfs",
   "name" => "templated-orphan",

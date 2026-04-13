@@ -951,12 +951,16 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
       $storageMeta = appdataCleanupPlusResolveStorageForPath($resolvedPath, $settings);
       $zfsMappingMatched = ! empty($storageMeta["mappingMatched"]);
       $zfsResolutionMessage = "";
+      $zfsResolutionDetail = isset($storageMeta["resolutionDetail"]) ? trim((string)$storageMeta["resolutionDetail"]) : "";
+      $matchedZfsMapping = isset($storageMeta["matchedMapping"]) && is_array($storageMeta["matchedMapping"]) ? $storageMeta["matchedMapping"] : array();
       $securityLockReason = buildPathSecurityLockReason($resolvedPath, $settings, $storageMeta);
       $pathStats = buildCandidatePathStats($resolvedPath, $classification, $securityLockReason, $includeHeavyStats);
       $realPath = @realpath($resolvedPath);
 
       if ( $zfsMappingMatched && (! isset($storageMeta["kind"]) || $storageMeta["kind"] !== "zfs") ) {
-        $zfsResolutionMessage = "A configured ZFS mapping matched this path, but it does not resolve to an exact dataset mountpoint. It will be handled as a normal folder until the dataset mount root matches exactly.";
+        $zfsResolutionMessage = $zfsResolutionDetail !== ""
+          ? $zfsResolutionDetail
+          : "A configured ZFS mapping matched this path, but it does not resolve to an exact dataset mountpoint. It will be handled as a normal folder until the dataset mount root matches exactly.";
       }
 
       if ( ! $sourceDisplay ) {
@@ -993,7 +997,12 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
         "datasetName" => isset($storageMeta["datasetName"]) ? $storageMeta["datasetName"] : "",
         "datasetMountpoint" => isset($storageMeta["datasetMountpoint"]) ? $storageMeta["datasetMountpoint"] : "",
         "zfsMappingMatched" => $zfsMappingMatched,
+        "zfsResolutionKind" => isset($storageMeta["resolutionKind"]) ? $storageMeta["resolutionKind"] : "",
         "zfsResolutionMessage" => $zfsResolutionMessage,
+        "zfsResolutionDetail" => $zfsResolutionDetail,
+        "zfsMatchedShareRoot" => isset($matchedZfsMapping["shareRoot"]) ? $matchedZfsMapping["shareRoot"] : "",
+        "zfsMatchedDatasetRoot" => isset($matchedZfsMapping["datasetRoot"]) ? $matchedZfsMapping["datasetRoot"] : "",
+        "zfsResolutionVariants" => isset($storageMeta["resolutionVariants"]) && is_array($storageMeta["resolutionVariants"]) ? array_values($storageMeta["resolutionVariants"]) : array(),
         "path" => $resolvedPath,
         "displayPath" => $resolvedPath,
         "realPath" => $realPath ? $realPath : "",
@@ -1106,7 +1115,12 @@ function buildSnapshotCandidateMap($rows) {
       "datasetName" => isset($row["datasetName"]) ? $row["datasetName"] : "",
       "datasetMountpoint" => isset($row["datasetMountpoint"]) ? $row["datasetMountpoint"] : "",
       "zfsMappingMatched" => ! empty($row["zfsMappingMatched"]),
+      "zfsResolutionKind" => isset($row["zfsResolutionKind"]) ? $row["zfsResolutionKind"] : "",
       "zfsResolutionMessage" => isset($row["zfsResolutionMessage"]) ? $row["zfsResolutionMessage"] : "",
+      "zfsResolutionDetail" => isset($row["zfsResolutionDetail"]) ? $row["zfsResolutionDetail"] : "",
+      "zfsMatchedShareRoot" => isset($row["zfsMatchedShareRoot"]) ? $row["zfsMatchedShareRoot"] : "",
+      "zfsMatchedDatasetRoot" => isset($row["zfsMatchedDatasetRoot"]) ? $row["zfsMatchedDatasetRoot"] : "",
+      "zfsResolutionVariants" => isset($row["zfsResolutionVariants"]) && is_array($row["zfsResolutionVariants"]) ? $row["zfsResolutionVariants"] : array(),
       "sizeBytes" => $row["sizeBytes"],
       "risk" => isset($row["risk"]) ? $row["risk"] : "safe",
       "reason" => isset($row["reason"]) ? $row["reason"] : "",
@@ -1139,4 +1153,50 @@ function buildHydratedCandidateStatRow($candidate) {
     "lastModifiedExact" => $pathStats["lastModifiedExact"],
     "statsPending" => false
   );
+}
+
+function appdataCleanupPlusBuildCandidateDetailPayload($candidate, $settings=null) {
+  $resolvedPath = isset($candidate["path"]) ? (string)$candidate["path"] : (isset($candidate["displayPath"]) ? (string)$candidate["displayPath"] : "");
+  $storageMeta = appdataCleanupPlusResolveStorageForPath($resolvedPath, $settings);
+  $matchedMapping = isset($storageMeta["matchedMapping"]) && is_array($storageMeta["matchedMapping"]) ? $storageMeta["matchedMapping"] : array();
+  $payload = array(
+    "id" => isset($candidate["id"]) ? (string)$candidate["id"] : md5(appdataCleanupPlusCandidateKey($resolvedPath)),
+    "storageKind" => isset($storageMeta["kind"]) ? $storageMeta["kind"] : (isset($candidate["storageKind"]) ? (string)$candidate["storageKind"] : "filesystem"),
+    "storageLabel" => isset($storageMeta["label"]) ? $storageMeta["label"] : (isset($candidate["storageLabel"]) ? (string)$candidate["storageLabel"] : "Filesystem"),
+    "storageDetail" => isset($storageMeta["detail"]) ? (string)$storageMeta["detail"] : "",
+    "datasetName" => isset($storageMeta["datasetName"]) ? (string)$storageMeta["datasetName"] : "",
+    "datasetMountpoint" => isset($storageMeta["datasetMountpoint"]) ? (string)$storageMeta["datasetMountpoint"] : "",
+    "zfsMappingMatched" => ! empty($storageMeta["mappingMatched"]),
+    "zfsResolutionKind" => isset($storageMeta["resolutionKind"]) ? (string)$storageMeta["resolutionKind"] : "",
+    "zfsResolutionDetail" => isset($storageMeta["resolutionDetail"]) ? (string)$storageMeta["resolutionDetail"] : "",
+    "zfsMatchedShareRoot" => isset($matchedMapping["shareRoot"]) ? (string)$matchedMapping["shareRoot"] : "",
+    "zfsMatchedDatasetRoot" => isset($matchedMapping["datasetRoot"]) ? (string)$matchedMapping["datasetRoot"] : "",
+    "zfsResolutionVariants" => isset($storageMeta["resolutionVariants"]) && is_array($storageMeta["resolutionVariants"]) ? array_values($storageMeta["resolutionVariants"]) : array(),
+    "zfsPreviewLoaded" => false,
+    "zfsPreviewError" => "",
+    "zfsRecursiveDestroy" => false,
+    "zfsImpactSummary" => "",
+    "zfsChildDatasets" => array(),
+    "zfsSnapshots" => array(),
+    "zfsChildDatasetCount" => 0,
+    "zfsSnapshotCount" => 0
+  );
+
+  if ( $payload["storageKind"] === "zfs" && $payload["datasetName"] !== "" ) {
+    $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($payload["datasetName"]);
+
+    if ( ! empty($zfsPreview["ok"]) ) {
+      $payload["zfsPreviewLoaded"] = true;
+      $payload["zfsRecursiveDestroy"] = ! empty($zfsPreview["recursive"]);
+      $payload["zfsImpactSummary"] = isset($zfsPreview["impactSummary"]) ? (string)$zfsPreview["impactSummary"] : "";
+      $payload["zfsChildDatasets"] = isset($zfsPreview["childDatasets"]) && is_array($zfsPreview["childDatasets"]) ? array_values($zfsPreview["childDatasets"]) : array();
+      $payload["zfsSnapshots"] = isset($zfsPreview["snapshots"]) && is_array($zfsPreview["snapshots"]) ? array_values($zfsPreview["snapshots"]) : array();
+      $payload["zfsChildDatasetCount"] = isset($zfsPreview["childDatasetCount"]) ? (int)$zfsPreview["childDatasetCount"] : 0;
+      $payload["zfsSnapshotCount"] = isset($zfsPreview["snapshotCount"]) ? (int)$zfsPreview["snapshotCount"] : 0;
+    } else {
+      $payload["zfsPreviewError"] = isset($zfsPreview["message"]) ? (string)$zfsPreview["message"] : "The current ZFS destroy preview could not be loaded right now.";
+    }
+  }
+
+  return $payload;
 }

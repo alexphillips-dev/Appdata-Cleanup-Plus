@@ -51,6 +51,10 @@ try {
       handleHydrateCandidateStats();
       break;
 
+    case "getCandidateDetails":
+      handleGetCandidateDetails();
+      break;
+
     case "saveSafetySettings":
       handleSaveSafetySettings();
       break;

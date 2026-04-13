@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.13.07">
-<!ENTITY md5 "29ac60be80810db4afde7490889a8973">
+<!ENTITY version "2026.04.13.09">
+<!ENTITY md5 "660d6a67e50a4ef166da50d3d9010459">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.13.09
+- UX: Polish row details with clearer outcome and next-step explanations for locked, review, ignored, ZFS-backed, and manually unlocked rows
+- ZFS: Add row-level resolution context for mapped-but-nonexact paths, including the matched share root, matched dataset root, and checked dataset-side paths
+- ZFS: Load the current ZFS destroy preview into row details on demand so recursive destroy mode, impact summaries, child datasets, and snapshots are visible without running a delete preview first
+- ZFS: Suggest likely ZFS path mappings in the mappings modal by inferring dataset roots from detected ZFS mountpoints under the effective scan roots and keep the root labels explicit as `Unraid share root` and `ZFS dataset mount root`
+
 ###2026.04.13.07
 - UI: Remove the extra search-panel preset row so the bottom action bar remains the only preset control in the dashboard
 

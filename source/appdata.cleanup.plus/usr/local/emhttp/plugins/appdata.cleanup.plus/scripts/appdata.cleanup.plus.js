@@ -18,10 +18,16 @@
       detected: [],
       manual: [],
       effective: [],
-      zfsPathMappings: []
+      zfsPathMappings: [],
+      zfsPathMappingSuggestions: []
     },
     appdataSourceBrowser: defaultAppdataSourceBrowserState(),
     zfsPathMappingBrowser: defaultZfsPathMappingBrowserState(),
+    rowDetails: {
+      activeRowId: "",
+      requestToken: "",
+      cache: {}
+    },
     quarantine: {
       loading: false,
       loaded: false,
@@ -712,6 +718,15 @@
       }
     });
 
+    $(document).on("click.acpZfsMappings", ".sweet-alert [data-action='use-zfs-path-mapping-suggestion']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.zfsPathMappingBrowser.loading) {
+        applyZfsPathMappingSuggestion($(this).data("shareRoot"), $(this).data("datasetRoot"));
+      }
+    });
+
     $(document).on("click.acpQuarantine", ".sweet-alert [data-entry-action]", function(event) {
       var action = $(this).data("entry-action");
       var entryId = $(this).data("entry-id");
@@ -848,9 +863,10 @@
     state.auditHistory = [];
     state.scanWarningMessage = "";
     state.settings = ACP.defaultSafetySettings();
-    state.appdataSources = { detected: [], effective: [] };
+    state.appdataSources = { detected: [], manual: [], effective: [], zfsPathMappings: [], zfsPathMappingSuggestions: [] };
     state.appdataSourceBrowser = defaultAppdataSourceBrowserState();
     state.zfsPathMappingBrowser = defaultZfsPathMappingBrowserState();
+    state.rowDetails = { activeRowId: "", requestToken: "", cache: {} };
     state.quarantine.entries = [];
     state.quarantine.loaded = false;
     state.quarantine.selected = {};
@@ -880,6 +896,8 @@
     apiPost({
       action: "getOrphanAppdata"
     }).done(function(response) {
+      state.rowDetails.cache = {};
+      state.rowDetails.requestToken = "";
       state.rows = $.isArray(response.rows) ? response.rows : [];
       state.summary = response.summary || { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
       state.scanToken = String(response.scanToken || "");
@@ -1168,6 +1186,8 @@
       return;
     }
 
+    state.rowDetails.activeRowId = String(row.id || "");
+
     swal({
       title: ACP.t(strings, "rowDetailsTitle", "Row details"),
       text: "",
@@ -1178,15 +1198,15 @@
       closeOnConfirm: true
     }, function() {
       window.setTimeout(function() {
+        state.rowDetails.activeRowId = "";
+        state.rowDetails.requestToken = "";
         ACP.releaseModalScrollLock(false);
         renderPanels();
       }, 180);
     });
 
-    ACP.applyDeleteModalClass(
-      "acp-delete-modal acp-delete-results-modal acp-row-details-modal",
-      ACP.buildRowDetailsModalHtml(buildContext(), row)
-    );
+    renderOpenRowDetailsModal();
+    loadCandidateDetails(row);
   }
 
   function openAppdataSourcesModal() {
@@ -1251,7 +1271,8 @@
       detected: $.isArray(nextInfo.detected) ? nextInfo.detected : [],
       manual: $.isArray(nextInfo.manual) ? nextInfo.manual : [],
       effective: $.isArray(nextInfo.effective) ? nextInfo.effective : [],
-      zfsPathMappings: $.isArray(nextInfo.zfsPathMappings) ? nextInfo.zfsPathMappings : []
+      zfsPathMappings: $.isArray(nextInfo.zfsPathMappings) ? nextInfo.zfsPathMappings : [],
+      zfsPathMappingSuggestions: $.isArray(nextInfo.zfsPathMappingSuggestions) ? nextInfo.zfsPathMappingSuggestions : []
     };
   }
 
@@ -1434,6 +1455,137 @@
 
     nextBrowserState.mappings = normalizeZfsPathMappingsInput((state.settings || {}).zfsPathMappings || []);
     state.zfsPathMappingBrowser = nextBrowserState;
+  }
+
+  function applyZfsPathMappingSuggestion(shareRoot, datasetRoot) {
+    var normalizedShareRoot = normalizeZfsPathMapping(shareRoot || "");
+    var normalizedDatasetRoot = normalizeZfsPathMapping(datasetRoot || "");
+
+    if (!normalizedShareRoot || !normalizedDatasetRoot || normalizedShareRoot === normalizedDatasetRoot) {
+      return;
+    }
+
+    state.zfsPathMappingBrowser.draft = {
+      shareRoot: normalizedShareRoot,
+      datasetRoot: normalizedDatasetRoot
+    };
+    state.zfsPathMappingBrowser.activeField = "shareRoot";
+    setZfsPathMappingsFeedback(ACP.t(strings, "zfsPathMappingsSuggestionAppliedMessage", "Suggested roots loaded into the draft. Save mappings to apply them."));
+    renderZfsPathMappingsModal();
+  }
+
+  function getRowDetailsCacheEntry(rowId) {
+    return $.isPlainObject(state.rowDetails.cache[String(rowId || "")])
+      ? state.rowDetails.cache[String(rowId || "")]
+      : {};
+  }
+
+  function setRowDetailsCacheEntry(rowId, payload) {
+    var targetId = String(rowId || "");
+
+    if (!targetId) {
+      return;
+    }
+
+    state.rowDetails.cache[targetId] = $.extend(true, {}, getRowDetailsCacheEntry(targetId), $.isPlainObject(payload) ? payload : {});
+  }
+
+  function mergeRowDataById(rowId, payload) {
+    var targetId = String(rowId || "");
+    var nextPayload = $.isPlainObject(payload) ? payload : {};
+
+    state.rows = $.map(state.rows || [], function(row) {
+      if (!row || String((row && row.id) || "") !== targetId) {
+        return row;
+      }
+
+      return $.extend(true, {}, row, nextPayload);
+    });
+  }
+
+  function getRowDetailsModalRow() {
+    var rowId = String((state.rowDetails && state.rowDetails.activeRowId) || "");
+    var row = findRowById(rowId);
+
+    if (!row) {
+      return null;
+    }
+
+    return $.extend(true, {}, row, getRowDetailsCacheEntry(rowId));
+  }
+
+  function renderOpenRowDetailsModal() {
+    var row = getRowDetailsModalRow();
+
+    if (!row || !getActiveSweetAlertModal().hasClass("acp-row-details-modal")) {
+      return;
+    }
+
+    ACP.applyDeleteModalClass(
+      "acp-delete-modal acp-delete-results-modal acp-row-details-modal",
+      ACP.buildRowDetailsModalHtml(buildContext(), row)
+    );
+  }
+
+  function shouldLoadCandidateDetails(row) {
+    if (!row || !row.id || !state.scanToken) {
+      return false;
+    }
+
+    return row.storageKind === "zfs" || !!row.zfsMappingMatched;
+  }
+
+  function loadCandidateDetails(row) {
+    var rowId = String((row && row.id) || "");
+    var cacheEntry = getRowDetailsCacheEntry(rowId);
+    var requestToken;
+
+    if (!shouldLoadCandidateDetails(row) || cacheEntry.detailLoaded || cacheEntry.detailLoading) {
+      return;
+    }
+
+    requestToken = rowId + ":" + String(Date.now());
+    state.rowDetails.requestToken = requestToken;
+    setRowDetailsCacheEntry(rowId, {
+      detailLoading: true,
+      detailLoaded: false,
+      detailError: ""
+    });
+    renderOpenRowDetailsModal();
+
+    apiPost({
+      action: "getCandidateDetails",
+      scanToken: state.scanToken,
+      candidateId: rowId
+    }).done(function(response) {
+      var detailRow = $.isPlainObject(response && response.row) ? response.row : {};
+
+      if (state.rowDetails.requestToken !== requestToken) {
+        return;
+      }
+
+      state.rowDetails.requestToken = "";
+      setRowDetailsCacheEntry(rowId, $.extend(true, {}, detailRow, {
+        detailLoading: false,
+        detailLoaded: true,
+        detailError: ""
+      }));
+      mergeRowDataById(rowId, detailRow);
+      renderOpenRowDetailsModal();
+      renderResults();
+    }).fail(function(xhr) {
+      if (state.rowDetails.requestToken !== requestToken) {
+        return;
+      }
+
+      state.rowDetails.requestToken = "";
+      setRowDetailsCacheEntry(rowId, {
+        detailLoading: false,
+        detailLoaded: false,
+        detailError: ACP.extractErrorMessage(xhr, ACP.t(strings, "rowDetailsLoadFailedMessage", "The latest row details could not be loaded right now."))
+      });
+      renderOpenRowDetailsModal();
+    });
   }
 
   function loadAppdataSourceBrowser(path, options) {
@@ -2466,6 +2618,20 @@
     nextRow.datasetMountpoint = sanitizeDiagnosticsPath(nextRow.datasetMountpoint || "", redactor);
     nextRow.storageDetail = sanitizeDiagnosticsFreeText(nextRow.storageDetail || "", redactor);
     nextRow.zfsResolutionMessage = sanitizeDiagnosticsFreeText(nextRow.zfsResolutionMessage || "", redactor);
+    nextRow.zfsResolutionDetail = sanitizeDiagnosticsFreeText(nextRow.zfsResolutionDetail || "", redactor);
+    nextRow.zfsMatchedShareRoot = sanitizeDiagnosticsPath(nextRow.zfsMatchedShareRoot || "", redactor);
+    nextRow.zfsMatchedDatasetRoot = sanitizeDiagnosticsPath(nextRow.zfsMatchedDatasetRoot || "", redactor);
+    nextRow.zfsResolutionVariants = $.map($.isArray(nextRow.zfsResolutionVariants) ? nextRow.zfsResolutionVariants : [], function(path) {
+      return sanitizeDiagnosticsPath(path, redactor);
+    });
+    nextRow.zfsImpactSummary = sanitizeDiagnosticsFreeText(nextRow.zfsImpactSummary || "", redactor);
+    nextRow.zfsChildDatasets = $.map($.isArray(nextRow.zfsChildDatasets) ? nextRow.zfsChildDatasets : [], function(name) {
+      return sanitizeDiagnosticsName(name, redactor, "dataset");
+    });
+    nextRow.zfsSnapshots = $.map($.isArray(nextRow.zfsSnapshots) ? nextRow.zfsSnapshots : [], function(name) {
+      return sanitizeDiagnosticsName(name, redactor, "snapshot");
+    });
+    nextRow.zfsPreviewError = sanitizeDiagnosticsFreeText(nextRow.zfsPreviewError || "", redactor);
     nextRow.riskReason = sanitizeDiagnosticsFreeText(nextRow.riskReason || "", redactor);
     nextRow.reason = sanitizeDiagnosticsFreeText(nextRow.reason || "", redactor);
     nextRow.securityLockReason = sanitizeDiagnosticsFreeText(nextRow.securityLockReason || "", redactor);
@@ -2535,6 +2701,13 @@
       return {
         shareRoot: sanitizeDiagnosticsPath(mapping && mapping.shareRoot, redactor),
         datasetRoot: sanitizeDiagnosticsPath(mapping && mapping.datasetRoot, redactor)
+      };
+    });
+    nextInfo.zfsPathMappingSuggestions = $.map($.isArray(nextInfo.zfsPathMappingSuggestions) ? nextInfo.zfsPathMappingSuggestions : [], function(mapping) {
+      return {
+        shareRoot: sanitizeDiagnosticsPath(mapping && mapping.shareRoot, redactor),
+        datasetRoot: sanitizeDiagnosticsPath(mapping && mapping.datasetRoot, redactor),
+        datasetName: sanitizeDiagnosticsName(mapping && mapping.datasetName, redactor, "dataset")
       };
     });
 
@@ -2925,8 +3098,18 @@
       notes.push('<div class="acp-row-note is-warning">' + ACP.escapeHtml(row.policyReason) + "</div>");
     }
 
+    if (row.storageKind === "zfs" && row.zfsImpactSummary) {
+      notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.zfsImpactSummary) + "</div>");
+    } else if (row.storageKind === "zfs" && !row.policyReason) {
+      notes.push('<div class="acp-row-note">' + ACP.escapeHtml(ACP.t(strings, "selectionHintZfsMode", "ZFS dataset-backed rows require permanent delete mode and cannot be quarantined.")) + "</div>");
+    }
+
     if (row.zfsMappingMatched && row.storageKind !== "zfs" && row.zfsResolutionMessage) {
       notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.zfsResolutionMessage) + "</div>");
+    }
+
+    if (row.zfsPreviewError) {
+      notes.push('<div class="acp-row-note is-warning">' + ACP.escapeHtml(row.zfsPreviewError) + "</div>");
     }
 
     if (row.lockOverridden) {
