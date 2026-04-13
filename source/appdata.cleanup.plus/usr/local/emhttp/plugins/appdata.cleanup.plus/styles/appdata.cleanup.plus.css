@@ -635,7 +635,7 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-bottom-selection-tools {
-  align-items: end;
+  align-items: center;
   display: flex;
   gap: 6px;
   min-width: 0;
@@ -643,6 +643,14 @@ body[data-acp-host-theme="light"] #acp-app,
 
 .acp-bottom-selection-tools .acp-button {
   min-height: 34px;
+}
+
+.acp-selection-preset-field {
+  gap: 0;
+}
+
+.acp-selection-preset-field .acp-field-label {
+  display: none;
 }
 
 .acp-bottom-actions .acp-field {

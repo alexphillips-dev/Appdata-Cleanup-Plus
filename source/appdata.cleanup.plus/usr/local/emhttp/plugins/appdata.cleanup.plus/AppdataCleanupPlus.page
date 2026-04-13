@@ -190,7 +190,6 @@ $config = array(
     "selectedSingular" => _("folder selected"),
     "selectedPlural" => _("folders selected"),
     "selectionPresetLabel" => _("Select preset"),
-    "selectionPresetEmptyLabel" => _("Preset"),
     "selectionPresetApplyLabel" => _("Select"),
     "selectionPresetSafeLabel" => _("Ready rows"),
     "selectionPresetDiscoveryLabel" => _("Discovery only"),
@@ -569,8 +568,8 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
       <div class="acp-bottom-selection-tools">
         <label class="acp-field acp-selection-preset-field">
           <span class="acp-field-label"><?php echo _("Select preset"); ?></span>
-          <select id="acp-select-preset" class="acp-select">
-            <option value=""><?php echo _("Preset"); ?></option>
+          <select id="acp-select-preset" class="acp-select" aria-label="<?php echo _("Select preset"); ?>">
+            <option value="safe"><?php echo _("Ready rows"); ?></option>
           </select>
         </label>
         <button type="button" class="acp-button acp-button-secondary" id="acp-apply-select-preset" disabled><?php echo _("Select"); ?></button>

@@ -44,7 +44,7 @@
     badgeFilter: null,
     viewPresets: [],
     viewPresetSelection: "",
-    bulkSelectPreset: "",
+    bulkSelectPreset: "safe",
     busy: false
   };
   var els = {};
@@ -465,10 +465,10 @@
   }
 
   function syncBulkSelectionPresetControls() {
-    var html = [
-      '<option value="">' + ACP.escapeHtml(ACP.t(strings, "selectionPresetEmptyLabel", "Preset")) + "</option>"
-    ];
-    var presetValue = getBulkSelectionPresetDefinition(state.bulkSelectPreset) ? state.bulkSelectPreset : "";
+    var html = [];
+    var presetValue = getBulkSelectionPresetDefinition(state.bulkSelectPreset) ? state.bulkSelectPreset : "safe";
+
+    state.bulkSelectPreset = presetValue;
 
     $.each(buildBulkSelectionPresetDefinitions(), function(_, definition) {
       html.push('<option value="' + ACP.escapeHtml(String(definition.value || "")) + '">' + ACP.escapeHtml(String(definition.label || "")) + "</option>");
@@ -481,7 +481,7 @@
     }
 
     if (els.$applySelectPreset && els.$applySelectPreset.length) {
-      els.$applySelectPreset.prop("disabled", state.busy || !presetValue || !(state.rows || []).length);
+      els.$applySelectPreset.prop("disabled", state.busy || !(state.rows || []).length);
     }
   }
 

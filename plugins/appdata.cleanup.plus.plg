@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.13.05">
-<!ENTITY md5 "46b277546209c93b83c86050d740403f">
+<!ENTITY version "2026.04.13.06">
+<!ENTITY md5 "e1749d0525bb211f32a2a02619ffd4dc">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.13.06
+- UI: Align the bottom-bar selection preset control with the adjacent action buttons by flattening the field treatment in that bar
+- UX: Remove the inert `Preset` placeholder from the selection preset menu and default the control to `Ready rows`
+
 ###2026.04.13.05
 - Usability: Add bulk selection presets in the bottom action bar for ready rows, discovery-only rows, ZFS-backed rows, and rows older than 90 days
 - Usability: Add saved view presets in the filter panel so the current search term, risk filter, ignored visibility, badge filter, and sort order can be reused later from the same browser
