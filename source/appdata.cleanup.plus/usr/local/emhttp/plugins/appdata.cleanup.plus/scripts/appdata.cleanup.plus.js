@@ -604,6 +604,15 @@
       }
     });
 
+    $(document).on("click.acpTools", ".sweet-alert [data-action='copy-support-summary']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy) {
+        copySupportSummary();
+      }
+    });
+
     $(document).on("keydown.acpSources", ".sweet-alert .acp-appdata-browser-entry[data-action]", function(event) {
       var key = String(event.key || "");
 
@@ -2787,6 +2796,102 @@
     return "appdata-cleanup-plus-diagnostics-" + stamp + ".json";
   }
 
+  function buildSupportSummaryText() {
+    var insights = buildScanInsights();
+    var summary = state.summary || {};
+    var selectedRows = getSelectedRows();
+    var scanRoots = $.isArray(insights.scanRoots) ? insights.scanRoots : [];
+    var notices = $.map(buildLocalNotices(), function(notice) {
+      return $.trim(String((notice && notice.title) || ""));
+    });
+    var lines = [
+      "Appdata Cleanup Plus support summary",
+      "Version: " + String(config.pluginVersion || "unknown"),
+      "Docker: " + (state.dockerRunning ? "running" : "offline"),
+      "Rows: detected=" + String(Number(summary.total || 0)) +
+        " ready=" + String(Number(summary.deletable || 0)) +
+        " review=" + String(Number(summary.review || 0)) +
+        " locked=" + String(Number(summary.blocked || 0)) +
+        " ignored=" + String(Number(summary.ignored || 0)),
+      "Selection: " + String(selectedRows.length) + " selected",
+      "Safety: outside-share=" + (state.settings.allowOutsideShareCleanup ? "on" : "off") +
+        " permanent-delete=" + (state.settings.enablePermanentDelete ? "on" : "off") +
+        " zfs-delete=" + (state.settings.enableZfsDatasetDelete ? "on" : "off"),
+      "Sources: roots=" + String(scanRoots.length) +
+        " mappings=" + String($.isArray((state.appdataSources || {}).zfsPathMappings) ? state.appdataSources.zfsPathMappings.length : 0),
+      "ZFS: backed=" + String(Number(insights.zfsBackedCount || 0)) +
+        " mapped-share=" + String(Number(insights.mappedShareCount || 0)),
+      "Quarantine: count=" + String(Number(((state.quarantine || {}).summary || {}).count || 0)) +
+        " size=" + String((((state.quarantine || {}).summary || {}).sizeLabel || "0 B"))
+    ];
+
+    if (scanRoots.length) {
+      lines.push("Scan roots:");
+      $.each(scanRoots, function(_, rootPath) {
+        lines.push("- " + String(rootPath || ""));
+      });
+    }
+
+    if (notices.length) {
+      lines.push("Notices:");
+      $.each(notices, function(_, title) {
+        lines.push("- " + title);
+      });
+    }
+
+    return lines.join("\n");
+  }
+
+  function copyTextToClipboard(text) {
+    var deferred = $.Deferred();
+    var payload = String(text || "");
+
+    if (!payload) {
+      deferred.reject(new Error("empty"));
+      return deferred.promise();
+    }
+
+    function fallbackCopy() {
+      var textarea = document.createElement("textarea");
+      var success = false;
+
+      textarea.value = payload;
+      textarea.setAttribute("readonly", "readonly");
+      textarea.style.position = "fixed";
+      textarea.style.top = "-9999px";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      try {
+        success = document.execCommand("copy");
+      } catch (_copyError) {
+        success = false;
+      }
+
+      document.body.removeChild(textarea);
+
+      if (success) {
+        deferred.resolve();
+      } else {
+        deferred.reject(new Error("copy"));
+      }
+    }
+
+    if (window.navigator && window.navigator.clipboard && typeof window.navigator.clipboard.writeText === "function") {
+      window.navigator.clipboard.writeText(payload).then(function() {
+        deferred.resolve();
+      }).catch(function() {
+        fallbackCopy();
+      });
+    } else {
+      fallbackCopy();
+    }
+
+    return deferred.promise();
+  }
+
   function downloadJsonFile(filename, payload) {
     var blob = new window.Blob([JSON.stringify(payload, null, 2) + "\n"], { type: "application/json;charset=utf-8" });
     var url = window.URL.createObjectURL(blob);
@@ -2817,6 +2922,22 @@
         "error"
       );
     }
+  }
+
+  function copySupportSummary() {
+    copyTextToClipboard(buildSupportSummaryText()).done(function() {
+      swal(
+        ACP.t(strings, "toolsSupportSummaryDoneTitle", "Support summary copied"),
+        ACP.t(strings, "toolsSupportSummaryDoneMessage", "The support summary has been copied to the clipboard."),
+        "success"
+      );
+    }).fail(function() {
+      swal(
+        ACP.t(strings, "toolsSupportSummaryFailedTitle", "Support summary failed"),
+        ACP.t(strings, "toolsSupportSummaryFailedMessage", "The support summary could not be copied right now."),
+        "error"
+      );
+    });
   }
 
   function reconcileQuarantineSelection() {
@@ -3464,6 +3585,57 @@
         value: "outside_share",
         label: ACP.t(strings, "badgeReasonOutsideShare", "Outside share"),
         tone: "review",
+        title: policyReason || riskReason,
+        kindClass: "reason"
+      });
+    }
+
+    if (row.storageKind === "zfs" && /zfs dataset delete is disabled/i.test(policyReason)) {
+      pushBadgeDescriptor(descriptors, {
+        kind: "reason",
+        value: "zfs_delete_disabled",
+        label: ACP.t(strings, "badgeReasonZfsDeleteDisabled", "ZFS delete off"),
+        tone: "locked",
+        title: policyReason,
+        kindClass: "reason"
+      });
+    }
+
+    if (row.storageKind === "zfs" && /permanent delete/i.test(policyReason)) {
+      pushBadgeDescriptor(descriptors, {
+        kind: "reason",
+        value: "delete_mode_off",
+        label: ACP.t(strings, "badgeReasonDeleteModeOff", "Delete mode off"),
+        tone: "locked",
+        title: policyReason,
+        kindClass: "reason"
+      });
+    }
+
+    if (row.zfsMappingMatched && row.storageKind !== "zfs") {
+      pushBadgeDescriptor(descriptors, {
+        kind: "reason",
+        value: "no_exact_dataset",
+        label: ACP.t(strings, "badgeReasonNoExactDataset", "No exact dataset"),
+        tone: "review",
+        title: row.zfsResolutionMessage || row.zfsResolutionDetail || "",
+        kindClass: "reason"
+      });
+    }
+
+    if (
+      row.policyLocked &&
+      !securityReason &&
+      !row.lockOverridden &&
+      !/outside-share cleanup is disabled/i.test(policyReason) &&
+      !/zfs dataset delete is disabled/i.test(policyReason) &&
+      !/permanent delete/i.test(policyReason)
+    ) {
+      pushBadgeDescriptor(descriptors, {
+        kind: "reason",
+        value: "policy_lock",
+        label: ACP.t(strings, "badgeReasonPolicyLock", "Policy lock"),
+        tone: "locked",
         title: policyReason || riskReason,
         kindClass: "reason"
       });
