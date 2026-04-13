@@ -17,12 +17,20 @@ $hostThemeName = strtolower(trim((string)($display['theme'] ?? "")));
 $hostThemeClass = "";
 $csrfToken = getAppdataCleanupPlusCsrfToken();
 $pluginVersion = "";
-$installedManifest = appdataCleanupPlusConfigDir() . "/appdata.cleanup.plus.plg";
+$manifestPaths = array(
+  "/boot/config/plugins/appdata.cleanup.plus.plg",
+  appdataCleanupPlusConfigDir() . "/appdata.cleanup.plus.plg"
+);
 
-if ( is_file($installedManifest) ) {
-  $manifestContents = @file_get_contents($installedManifest);
+foreach ( $manifestPaths as $manifestPath ) {
+  if ( ! is_file($manifestPath) ) {
+    continue;
+  }
+
+  $manifestContents = @file_get_contents($manifestPath);
   if ( is_string($manifestContents) && preg_match('/<!ENTITY version "([^"]+)">/', $manifestContents, $versionMatches) ) {
     $pluginVersion = (string)$versionMatches[1];
+    break;
   }
 }
 
@@ -204,8 +212,8 @@ $config = array(
     "toolsTitle" => _("Tools"),
     "toolsSubtitle" => _("Support and maintainer utilities for exporting the current plugin state."),
     "toolsDiagnosticsTitle" => _("Export diagnostics"),
-    "toolsDiagnosticsMessage" => _("Downloads a JSON snapshot of the current scan, safety settings, source roots, notices, quarantine summary, audit history, and row metadata for troubleshooting."),
-    "toolsDiagnosticsPrivacyNote" => _("Diagnostics include app names and filesystem paths. Review before sharing."),
+    "toolsDiagnosticsMessage" => _("Downloads a redacted JSON snapshot of the current scan, safety settings, source roots, notices, quarantine summary, audit history, and row metadata for troubleshooting."),
+    "toolsDiagnosticsPrivacyNote" => _("App-specific names, template filenames, and full filesystem paths are aliased before export so the diagnostics stay safer to share."),
     "toolsDiagnosticsExportLabel" => _("Download diagnostics"),
     "toolsDiagnosticsEmptyMessage" => _("Run a scan first so the diagnostics export includes current plugin state."),
     "toolsDiagnosticsDoneTitle" => _("Diagnostics exported"),

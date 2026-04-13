@@ -2117,15 +2117,316 @@
     reconcileQuarantineSelection();
   }
 
+  function buildDiagnosticsRedactor() {
+    return {
+      aliases: {
+        name: {},
+        template: {},
+        mount: {},
+        share: {},
+        segment: {}
+      },
+      counters: {
+        name: 0,
+        template: 0,
+        mount: 0,
+        share: 0,
+        segment: 0
+      },
+      replacements: []
+    };
+  }
+
+  function getDiagnosticsAlias(redactor, kind, rawValue, tokenLabel, suffix) {
+    var value = $.trim(String(rawValue || ""));
+    var label = String(tokenLabel || kind || "item");
+    var extension = String(suffix || "");
+    var alias = "";
+
+    if (!value) {
+      return "";
+    }
+
+    if (!redactor.aliases[kind]) {
+      redactor.aliases[kind] = {};
+      redactor.counters[kind] = 0;
+    }
+
+    if (redactor.aliases[kind][value]) {
+      return redactor.aliases[kind][value];
+    }
+
+    redactor.counters[kind] += 1;
+    alias = "<" + label + "-" + String(redactor.counters[kind]) + ">" + extension;
+    redactor.aliases[kind][value] = alias;
+    return alias;
+  }
+
+  function registerDiagnosticsReplacement(redactor, rawValue, sanitizedValue) {
+    var raw = String(rawValue || "");
+    var sanitized = String(sanitizedValue || "");
+    var exists = false;
+
+    if (!raw || !sanitized || raw === sanitized) {
+      return;
+    }
+
+    $.each(redactor.replacements || [], function(_, replacement) {
+      if (replacement.raw === raw) {
+        exists = true;
+        return false;
+      }
+
+      return undefined;
+    });
+
+    if (!exists) {
+      redactor.replacements.push({
+        raw: raw,
+        sanitized: sanitized
+      });
+    }
+  }
+
+  function sanitizeDiagnosticsFreeText(value, redactor) {
+    var text = String(value || "");
+    var replacements = (redactor && $.isArray(redactor.replacements) ? redactor.replacements.slice(0) : []).sort(function(left, right) {
+      return String(right.raw || "").length - String(left.raw || "").length;
+    });
+
+    $.each(replacements, function(_, replacement) {
+      var raw = String((replacement && replacement.raw) || "");
+      var sanitized = String((replacement && replacement.sanitized) || "");
+
+      if (!raw || !sanitized) {
+        return;
+      }
+
+      text = text.split(raw).join(sanitized);
+    });
+
+    return text;
+  }
+
+  function sanitizeDiagnosticsName(value, redactor, tokenLabel) {
+    var raw = $.trim(String(value || ""));
+    var sanitized = "";
+
+    if (!raw) {
+      return "";
+    }
+
+    sanitized = getDiagnosticsAlias(redactor, "name", raw, tokenLabel || "name");
+    registerDiagnosticsReplacement(redactor, raw, sanitized);
+    return sanitized;
+  }
+
+  function sanitizeDiagnosticsTemplateFile(value, redactor) {
+    var raw = $.trim(String(value || ""));
+    var extension = "";
+    var sanitized = "";
+
+    if (!raw) {
+      return "";
+    }
+
+    extension = /\.xml$/i.test(raw) ? ".xml" : "";
+    sanitized = getDiagnosticsAlias(redactor, "template", raw, "template", extension);
+    registerDiagnosticsReplacement(redactor, raw, sanitized);
+    return sanitized;
+  }
+
+  function sanitizeDiagnosticsPath(value, redactor) {
+    var raw = $.trim(String(value || ""));
+    var segments;
+    var sanitizedSegments;
+    var sanitized = "";
+
+    if (!raw) {
+      return "";
+    }
+
+    if (raw.charAt(0) !== "/") {
+      return sanitizeDiagnosticsFreeText(raw, redactor);
+    }
+
+    if (/^\/(config|data|downloads|media|cache|tmp|temp|transcode|movies|tv|music|backup|backups)(\/|$)/i.test(raw)) {
+      return raw;
+    }
+
+    segments = raw.split("/");
+    sanitizedSegments = segments.slice(0);
+
+    if (raw.indexOf("/mnt/") === 0) {
+      if (segments[2] && !/^(user|user0|cache|disk\d+)$/i.test(segments[2])) {
+        sanitizedSegments[2] = getDiagnosticsAlias(redactor, "mount", segments[2], "mount");
+      }
+
+      if (segments[3] && !/^(appdata|system|domains|isos)$/i.test(segments[3])) {
+        sanitizedSegments[3] = getDiagnosticsAlias(redactor, "share", segments[3], "share");
+      }
+
+      $.each(sanitizedSegments, function(index, segment) {
+        if (index >= 4 && segment) {
+          sanitizedSegments[index] = getDiagnosticsAlias(redactor, "segment", segment, "path");
+        }
+      });
+
+      sanitized = sanitizedSegments.join("/");
+      registerDiagnosticsReplacement(redactor, raw, sanitized);
+      return sanitized;
+    }
+
+    if (raw.indexOf("/boot/") === 0) {
+      $.each(sanitizedSegments, function(index, segment) {
+        if (index >= 4 && segment) {
+          sanitizedSegments[index] = getDiagnosticsAlias(redactor, "segment", segment, "path");
+        }
+      });
+
+      sanitized = sanitizedSegments.join("/");
+      registerDiagnosticsReplacement(redactor, raw, sanitized);
+      return sanitized;
+    }
+
+    sanitized = getDiagnosticsAlias(redactor, "segment", raw, "path");
+    registerDiagnosticsReplacement(redactor, raw, sanitized);
+    return sanitized;
+  }
+
+  function sanitizeDiagnosticsTemplateRefs(templateRefs, redactor) {
+    return $.map($.isArray(templateRefs) ? templateRefs : [], function(ref) {
+      var record = $.isPlainObject(ref) ? $.extend({}, ref) : {};
+
+      record.name = sanitizeDiagnosticsName(record.name || "", redactor, "app");
+      record.file = sanitizeDiagnosticsTemplateFile(record.file || "", redactor);
+      record.target = String(record.target || "");
+      return record;
+    });
+  }
+
+  function sanitizeDiagnosticsRow(row, redactor) {
+    var nextRow = $.extend(true, {}, row || {});
+
+    nextRow.name = sanitizeDiagnosticsName(nextRow.name || "", redactor, "app");
+    nextRow.sourceRoot = sanitizeDiagnosticsPath(nextRow.sourceRoot || "", redactor);
+    nextRow.path = sanitizeDiagnosticsPath(nextRow.path || "", redactor);
+    nextRow.displayPath = sanitizeDiagnosticsPath(nextRow.displayPath || "", redactor);
+    nextRow.realPath = sanitizeDiagnosticsPath(nextRow.realPath || "", redactor);
+    nextRow.targetPaths = $.map($.isArray(nextRow.targetPaths) ? nextRow.targetPaths : [], function(path) {
+      return sanitizeDiagnosticsPath(path, redactor);
+    });
+    nextRow.sourceNames = $.map($.isArray(nextRow.sourceNames) ? nextRow.sourceNames : [], function(name) {
+      return sanitizeDiagnosticsName(name, redactor, "app");
+    });
+    nextRow.templateRefs = sanitizeDiagnosticsTemplateRefs(nextRow.templateRefs, redactor);
+    nextRow.sourceDisplay = sanitizeDiagnosticsFreeText(nextRow.sourceDisplay || "", redactor);
+    nextRow.sourceSummary = sanitizeDiagnosticsFreeText(nextRow.sourceSummary || "", redactor);
+    nextRow.targetSummary = sanitizeDiagnosticsFreeText(nextRow.targetSummary || "", redactor);
+    nextRow.datasetName = sanitizeDiagnosticsName(nextRow.datasetName || "", redactor, "dataset");
+    nextRow.datasetMountpoint = sanitizeDiagnosticsPath(nextRow.datasetMountpoint || "", redactor);
+    nextRow.storageDetail = sanitizeDiagnosticsFreeText(nextRow.storageDetail || "", redactor);
+    nextRow.zfsResolutionMessage = sanitizeDiagnosticsFreeText(nextRow.zfsResolutionMessage || "", redactor);
+    nextRow.riskReason = sanitizeDiagnosticsFreeText(nextRow.riskReason || "", redactor);
+    nextRow.reason = sanitizeDiagnosticsFreeText(nextRow.reason || "", redactor);
+    nextRow.securityLockReason = sanitizeDiagnosticsFreeText(nextRow.securityLockReason || "", redactor);
+    nextRow.policyReason = sanitizeDiagnosticsFreeText(nextRow.policyReason || "", redactor);
+    nextRow.ignoredReason = sanitizeDiagnosticsFreeText(nextRow.ignoredReason || "", redactor);
+
+    if (nextRow.shareName && !/^(appdata|system|domains|isos)$/i.test(String(nextRow.shareName))) {
+      nextRow.shareName = getDiagnosticsAlias(redactor, "share", nextRow.shareName, "share");
+    }
+
+    return nextRow;
+  }
+
+  function sanitizeDiagnosticsAuditHistory(history, redactor) {
+    return $.map($.isArray(history) ? history : [], function(entry) {
+      var nextEntry = $.extend(true, {}, entry || {});
+
+      nextEntry.results = $.map($.isArray(nextEntry.results) ? nextEntry.results : [], function(result) {
+        var nextResult = $.extend(true, {}, result || {});
+
+        nextResult.name = sanitizeDiagnosticsName(nextResult.name || "", redactor, "app");
+        nextResult.sourcePath = sanitizeDiagnosticsPath(nextResult.sourcePath || "", redactor);
+        nextResult.destination = sanitizeDiagnosticsPath(nextResult.destination || "", redactor);
+        nextResult.restoredPath = sanitizeDiagnosticsPath(nextResult.restoredPath || "", redactor);
+        nextResult.displayPath = sanitizeDiagnosticsPath(nextResult.displayPath || nextResult.path || "", redactor);
+        nextResult.path = sanitizeDiagnosticsPath(nextResult.path || "", redactor);
+        nextResult.message = sanitizeDiagnosticsFreeText(nextResult.message || "", redactor);
+        delete nextResult.row;
+        return nextResult;
+      });
+      nextEntry.message = sanitizeDiagnosticsFreeText(nextEntry.message || "", redactor);
+
+      return nextEntry;
+    });
+  }
+
+  function sanitizeDiagnosticsSettings(settings, redactor) {
+    var nextSettings = $.extend(true, {}, settings || {});
+
+    nextSettings.quarantineRoot = sanitizeDiagnosticsPath(nextSettings.quarantineRoot || "", redactor);
+    nextSettings.manualAppdataSources = $.map($.isArray(nextSettings.manualAppdataSources) ? nextSettings.manualAppdataSources : [], function(path) {
+      return sanitizeDiagnosticsPath(path, redactor);
+    });
+    nextSettings.zfsPathMappings = $.map($.isArray(nextSettings.zfsPathMappings) ? nextSettings.zfsPathMappings : [], function(mapping) {
+      return {
+        shareRoot: sanitizeDiagnosticsPath(mapping && mapping.shareRoot, redactor),
+        datasetRoot: sanitizeDiagnosticsPath(mapping && mapping.datasetRoot, redactor)
+      };
+    });
+
+    return nextSettings;
+  }
+
+  function sanitizeDiagnosticsSourceInfo(info, redactor) {
+    var nextInfo = $.extend(true, {}, info || {});
+
+    nextInfo.detected = $.map($.isArray(nextInfo.detected) ? nextInfo.detected : [], function(path) {
+      return sanitizeDiagnosticsPath(path, redactor);
+    });
+    nextInfo.manual = $.map($.isArray(nextInfo.manual) ? nextInfo.manual : [], function(path) {
+      return sanitizeDiagnosticsPath(path, redactor);
+    });
+    nextInfo.effective = $.map($.isArray(nextInfo.effective) ? nextInfo.effective : [], function(path) {
+      return sanitizeDiagnosticsPath(path, redactor);
+    });
+    nextInfo.zfsPathMappings = $.map($.isArray(nextInfo.zfsPathMappings) ? nextInfo.zfsPathMappings : [], function(mapping) {
+      return {
+        shareRoot: sanitizeDiagnosticsPath(mapping && mapping.shareRoot, redactor),
+        datasetRoot: sanitizeDiagnosticsPath(mapping && mapping.datasetRoot, redactor)
+      };
+    });
+
+    return nextInfo;
+  }
+
   function buildDiagnosticsPayload() {
     var generatedAt = new Date();
     var visibleRows = getVisibleRows();
     var selectedRows = getSelectedRows();
     var notices = buildLocalNotices();
+    var redactor = buildDiagnosticsRedactor();
+    var sanitizedInsights = $.extend(true, {}, buildScanInsights());
+    var sanitizedRows = $.map(state.rows || [], function(row) {
+      return sanitizeDiagnosticsRow(row, redactor);
+    });
+    var sanitizedSettings = sanitizeDiagnosticsSettings(state.settings || {}, redactor);
+    var sanitizedSourceInfo = sanitizeDiagnosticsSourceInfo(state.appdataSources || {}, redactor);
+    var sanitizedAuditHistory = sanitizeDiagnosticsAuditHistory(($.isArray(state.auditHistory) ? state.auditHistory : []).slice(0, 25), redactor);
+
+    sanitizedInsights.scanRoots = $.map($.isArray(sanitizedInsights.scanRoots) ? sanitizedInsights.scanRoots : [], function(path) {
+      return sanitizeDiagnosticsPath(path, redactor);
+    });
 
     return {
       generatedAt: generatedAt.toISOString(),
       pluginVersion: String(config.pluginVersion || ""),
+      redaction: {
+        sanitized: true,
+        strategy: "Paths keep structural roots while app-specific segments, names, and template filenames are aliased."
+      },
       hostTheme: {
         name: ACP.resolveHostThemeName ? ACP.resolveHostThemeName() : "",
         themeClass: ACP.inferThemeClass ? ACP.inferThemeClass(ACP.resolveHostThemeName ? ACP.resolveHostThemeName() : "") : ""
@@ -2141,25 +2442,25 @@
       scan: {
         dockerRunning: !!state.dockerRunning,
         scanTokenPresent: !!state.scanToken,
-        scanWarningMessage: String(state.scanWarningMessage || ""),
+        scanWarningMessage: sanitizeDiagnosticsFreeText(String(state.scanWarningMessage || ""), redactor),
         summary: $.extend({}, state.summary || {}),
-        insights: buildScanInsights(),
+        insights: sanitizedInsights,
         visibleRowCount: visibleRows.length,
         selectedRowCount: selectedRows.length,
         pendingStatCount: $.grep(state.rows || [], function(row) {
           return !!(row && row.statsPending);
         }).length
       },
-      settings: $.extend(true, {}, state.settings || {}),
-      appdataSources: $.extend(true, {}, state.appdataSources || {}),
+      settings: sanitizedSettings,
+      appdataSources: sanitizedSourceInfo,
       quarantine: {
         loaded: !!(state.quarantine && state.quarantine.loaded),
         loading: !!(state.quarantine && state.quarantine.loading),
         summary: $.extend({}, (state.quarantine && state.quarantine.summary) || {})
       },
       notices: notices,
-      auditHistory: ($.isArray(state.auditHistory) ? state.auditHistory : []).slice(0, 25),
-      rows: $.extend(true, [], state.rows || []),
+      auditHistory: sanitizedAuditHistory,
+      rows: sanitizedRows,
       visibleRowIds: $.map(visibleRows, function(row) {
         return row && row.id ? String(row.id) : null;
       }),

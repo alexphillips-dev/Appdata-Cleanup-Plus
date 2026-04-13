@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.13.03">
-<!ENTITY md5 "b25157947239181af15e43f013d2d839">
+<!ENTITY version "2026.04.13.04">
+<!ENTITY md5 "9390611fc033a13794a47c788612e622">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,10 +13,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
-###2026.04.13.03
+###2026.04.13.04
 - Support: Add a `Tools` action with one-click diagnostics export so users can download the current scan state, safety settings, source roots, notices, quarantine summary, audit history, and row metadata for troubleshooting
 - UX: Add a dedicated `Scan summary` panel that surfaces current scan-root coverage plus template, discovery, review, locked, ZFS-backed, mapped-share, and ignored row counts without needing to infer them from the grouped results
 - UX: Add per-row `Details` dialogs so each orphaned path can explain its current path, canonical path, source evidence, safety state, storage metadata, and key stats before the user decides what to do
+- Privacy: Redact diagnostics by default so exported app names, template filenames, and filesystem paths are replaced with stable aliases while preserving enough structure for support review
+- Privacy: Extend diagnostics redaction to cover exported target paths and audit-summary text that only references app names or paths from audit entries
+- Fix: Populate the diagnostics plugin version from the installed plugin manifest instead of leaving the exported `pluginVersion` field blank
 
 ###2026.04.13.02
 - Release: Promote the full `2026.04.09.02` through `2026.04.13.01` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
