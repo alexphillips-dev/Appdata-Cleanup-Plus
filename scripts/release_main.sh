@@ -27,6 +27,35 @@ Options:
 EOF
 }
 
+bootstrap_gh_command() {
+    local candidate=""
+
+    if command -v gh >/dev/null 2>&1; then
+        return 0
+    fi
+
+    if command -v gh.exe >/dev/null 2>&1; then
+        gh() {
+            gh.exe "$@"
+        }
+        return 0
+    fi
+
+    for candidate in \
+        "/mnt/c/Program Files/GitHub CLI/gh.exe" \
+        "/c/Program Files/GitHub CLI/gh.exe"
+    do
+        if [ -x "${candidate}" ]; then
+            gh() {
+                "${candidate}" "$@"
+            }
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 require_commands() {
     local missing=()
     local cmd=""
@@ -106,6 +135,48 @@ extract_remote_slug() {
     fi
 
     echo "ERROR: Could not determine the GitHub slug from origin: ${remote_url}" >&2
+    exit 1
+}
+
+resolve_github_token_from_git_credentials() {
+    if ! command -v git >/dev/null 2>&1; then
+        return 1
+    fi
+
+    printf 'protocol=https\nhost=github.com\n\n' |
+        git credential fill 2>/dev/null |
+        sed -n 's/^password=//p' |
+        head -n1
+}
+
+gh_can_access_api() {
+    gh api user >/dev/null 2>&1
+}
+
+ensure_gh_auth() {
+    local token=""
+
+    if gh_can_access_api; then
+        return 0
+    fi
+
+    if [ -n "${GH_TOKEN:-}" ] || [ -n "${GITHUB_TOKEN:-}" ]; then
+        export GH_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+        if gh_can_access_api; then
+            return 0
+        fi
+    fi
+
+    token="$(resolve_github_token_from_git_credentials || true)"
+    if [ -n "${token}" ]; then
+        export GH_TOKEN="${token}"
+        if gh_can_access_api; then
+            return 0
+        fi
+    fi
+
+    echo "ERROR: GitHub CLI is not authenticated." >&2
+    echo "Run 'gh auth login' or configure github.com credentials that Git can resolve via 'git credential fill'." >&2
     exit 1
 }
 
@@ -208,6 +279,7 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+bootstrap_gh_command || true
 require_commands git gh bash grep sed awk mktemp curl
 cd "${ROOT_DIR}"
 
@@ -238,7 +310,7 @@ if [ "${DRY_RUN}" = true ]; then
 fi
 
 require_clean_worktree
-gh auth status >/dev/null
+ensure_gh_auth
 START_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
 
 ensure_local_branch "${SOURCE_BRANCH}"
