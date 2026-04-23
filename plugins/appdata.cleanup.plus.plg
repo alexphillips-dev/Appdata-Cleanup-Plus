@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.13.11">
-<!ENTITY md5 "470ac7b771cb6867e48a50b68b06cec9">
+<!ENTITY version "2026.04.23.01">
+<!ENTITY md5 "8d79e7db112067b4ae86534cb47fe5cb">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.23.01
+- Maintenance: Refresh package metadata and build artifacts
+
 ###2026.04.13.11
 - Support: Add `Copy support summary` under `Tools` so the current version, scan counts, safety toggles, scan roots, ZFS state, notices, and quarantine totals can be copied into forum posts quickly
 - UX: Surface more row-level blocker context inline by adding badges for ZFS delete disabled, permanent delete mode disabled, generic policy locks, and mapped-but-nonexact ZFS paths
