@@ -256,10 +256,12 @@ registerAppdataCleanupPlusQuarantineRecord(array(
   "sizeBytes" => null
 ));
 $summaryOnlyPayload = buildQuarantineManagerPayload(false);
+$dashboardQuarantineSummary = buildDashboardQuarantineSummaryPayload();
 $summaryOnlyRegistry = getAppdataCleanupPlusQuarantineRegistry();
 behaviorSmokeAssertSame(2, (int)$summaryOnlyPayload["summary"]["count"], "Summary-only quarantine payload should count tracked entries without loading full entries.");
 behaviorSmokeAssertSame(0, (int)$summaryOnlyPayload["summary"]["sizeBytes"], "Summary-only quarantine payload should not force uncached size scans.");
 behaviorSmokeAssertSame(null, $summaryOnlyRegistry["entry-summary-only"]["sizeBytes"], "Summary-only quarantine payload should leave uncached quarantine sizes untouched.");
+behaviorSmokeAssertSame((int)$summaryOnlyPayload["summary"]["count"], (int)$dashboardQuarantineSummary["count"], "Deferred dashboard quarantine summaries should match the summary-only manager count.");
 removeAppdataCleanupPlusQuarantineRecord("entry-summary-only");
 $scheduleSetResult = updateTrackedQuarantinePurgeSchedule($activeEntries, "set", 0, "2030-01-01T12:00:00+00:00");
 behaviorSmokeAssertSame("scheduled", $scheduleSetResult["results"][0]["status"], "Purge scheduling should mark selected quarantine entries as scheduled.");
@@ -470,10 +472,13 @@ appendAppdataCleanupPlusAuditEntry(array(
   )
 ));
 $auditRows = buildAuditHistoryRows();
+$auditPreviewPayload = buildAuditHistoryPayload(1);
 behaviorSmokeAssertSame(2, count($auditRows), "Audit history rows should include both entries.");
 behaviorSmokeAssertSame("restore", $auditRows[0]["operation"], "Audit history should be newest-first.");
 behaviorSmokeAssertSame("quarantine", $auditRows[1]["operation"], "Audit history should preserve older entries.");
 behaviorSmokeAssertTrue($auditRows[0]["message"] !== "", "Audit rows should include a summary message.");
+behaviorSmokeAssertSame(1, count($auditPreviewPayload["auditHistory"]), "Deferred audit history payloads should honor the requested background limit.");
+behaviorSmokeAssertSame(true, ! empty($auditPreviewPayload["hasMore"]), "Deferred audit history payloads should report when more history is available.");
 
 $scheduledPurgeQuarantineRoot = $stateRoot . "/scheduled-purge-quarantine";
 $scheduledPurgeDestination = $scheduledPurgeQuarantineRoot . "/20260330-121000/mnt/user/appdata/scheduled-purge";
@@ -654,6 +659,8 @@ behaviorSmokeAssertTrue(! isset($filteredVolumes[$liveAppPath]), "Installed cont
 behaviorSmokeAssertTrue(isset($filteredVolumes[$templatedOrphanPath]), "Unmatched candidate paths should remain after Docker volume filtering.");
 $dashboard = buildDashboardPayload();
 behaviorSmokeAssertTrue(is_array($dashboard) && ! empty($dashboard["ok"]), "Dashboard build should survive DockerClient warnings and output.");
+behaviorSmokeAssertSame(false, array_key_exists("auditHistory", $dashboard["payload"]), "Initial dashboard scan payloads should defer audit history until after the main scan returns.");
+behaviorSmokeAssertSame(false, array_key_exists("quarantineSummary", $dashboard["payload"]), "Initial dashboard scan payloads should defer quarantine summary loading until after the main scan returns.");
 $dashboardRows = isset($dashboard["payload"]["rows"]) && is_array($dashboard["payload"]["rows"]) ? $dashboard["payload"]["rows"] : array();
 $templatedRow = behaviorSmokeFindRowByPath($dashboardRows, $templatedOrphanPath);
 $zfsCaseRow = behaviorSmokeFindRowByPath($dashboardRows, $zfsCaseSensitivePath);
@@ -726,6 +733,31 @@ behaviorSmokeAssertContains("empty parent folder", $staleNestedEmptyParentRow["r
 behaviorSmokeAssertContains($manualCustomSourceRoot, $manualCustomFilesystemRow["reason"], "Manual-source discovery rows should describe the source root that surfaced them.");
 behaviorSmokeAssertSame($slashLivePath, normalizeUserPath($slashTemplatePath), "Path normalization should collapse trailing slashes on saved template paths.");
 behaviorSmokeAssertTrue(! empty($templatedRow["statsPending"]), "Initial dashboard rows should mark heavy stats as pending for progressive hydration.");
+$indexedStaleParentPath = $manualCustomSourceRoot . "/indexed-stale-parent";
+$indexedLiveParentPath = $manualCustomSourceRoot . "/indexed-live-parent";
+$indexedExactParentPath = $manualCustomSourceRoot . "/indexed-exact-parent";
+$indexedTemplateVolumes = array();
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($indexedStaleParentPath), "Indexed stale-parent fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($indexedLiveParentPath . "/nested-0"), "Indexed live-parent nested fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($indexedExactParentPath), "Indexed exact-parent fixture should be created.");
+for ( $index = 0; $index < 120; $index++ ) {
+  $indexedTemplateVolumes["indexed-stale-" . $index] = array(
+    "HostDir" => $indexedStaleParentPath . "/missing-" . $index
+  );
+  $indexedTemplateVolumes["indexed-live-" . $index] = array(
+    "HostDir" => $indexedLiveParentPath . "/nested-" . $index
+  );
+}
+$indexedTemplateVolumes["indexed-exact"] = array(
+  "HostDir" => $indexedExactParentPath
+);
+$indexedFilesystemVolumes = buildFilesystemCandidateMap($indexedTemplateVolumes, array(), getAppdataCleanupPlusSafetySettings(), true);
+behaviorSmokeAssertTrue(isset($indexedFilesystemVolumes[appdataCleanupPlusPathComparisonKey($indexedStaleParentPath)]), "Indexed filesystem discovery should still surface empty stale parents even with many nested references.");
+behaviorSmokeAssertSame(false, isset($indexedFilesystemVolumes[appdataCleanupPlusPathComparisonKey($indexedLiveParentPath)]), "Indexed filesystem discovery should still hide parents that contain an existing nested reference.");
+behaviorSmokeAssertSame(false, isset($indexedFilesystemVolumes[appdataCleanupPlusPathComparisonKey($indexedExactParentPath)]), "Indexed filesystem discovery should still hide direct-child folders that are referenced exactly.");
+behaviorSmokeRemoveTree($indexedStaleParentPath);
+behaviorSmokeRemoveTree($indexedLiveParentPath);
+behaviorSmokeRemoveTree($indexedExactParentPath);
 $outsideShareActionResolution = resolveCandidateForAction(array(
   "path" => $outsideShareReviewPath,
   "displayPath" => $outsideShareReviewPath,

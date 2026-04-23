@@ -1,43 +1,54 @@
 <?php
 
-function appdataCleanupPlusBuildDashboardFallbackPayload($dockerRunning, $settings, $rows, $summary, $scanToken, $scanWarningMessage="") {
-  $auditHistory = array();
-  $quarantineSummary = array(
-    "count" => 0,
-    "sizeBytes" => 0,
-    "sizeLabel" => "0 B"
-  );
-
-  try {
-    $auditHistory = buildAuditHistoryRows();
-  } catch ( Throwable $throwable ) {
-    error_log("Appdata Cleanup Plus audit history failed during dashboard build: " . $throwable->getMessage());
-  }
-
-  try {
-    $quarantineManager = buildQuarantineManagerPayload(false);
-    if ( ! empty($quarantineManager["summary"]) && is_array($quarantineManager["summary"]) ) {
-      $quarantineSummary = $quarantineManager["summary"];
-    }
-  } catch ( Throwable $throwable ) {
-    error_log("Appdata Cleanup Plus quarantine summary failed during dashboard build: " . $throwable->getMessage());
-  }
-
+function appdataCleanupPlusBuildDashboardPayload($dockerRunning, $settings, $rows, $summary, $scanToken, $scanWarningMessage="") {
   return array(
     "ok" => true,
     "payload" => array(
       "ok" => true,
       "dockerRunning" => $dockerRunning,
       "summary" => $summary,
-      "auditHistory" => $auditHistory,
       "rows" => $rows,
       "scanToken" => $scanToken,
       "scanWarningMessage" => $scanWarningMessage,
       "settings" => $settings,
-      "appdataSourceInfo" => buildAppdataCleanupPlusSourceInfo($settings),
-      "quarantineSummary" => $quarantineSummary
+      "appdataSourceInfo" => buildAppdataCleanupPlusSourceInfo($settings)
     )
   );
+}
+
+function buildAuditHistoryPayload($limit=0) {
+  $effectiveLimit = max(0, (int)$limit);
+  $history = getAppdataCleanupPlusAuditHistory($effectiveLimit > 0 ? ($effectiveLimit + 1) : 0);
+  $hasMore = false;
+
+  if ( $effectiveLimit > 0 && count($history) > $effectiveLimit ) {
+    $history = array_slice($history, 0, $effectiveLimit);
+    $hasMore = true;
+  }
+
+  return array(
+    "auditHistory" => buildAuditHistoryRowsFromEntries($history),
+    "hasMore" => $hasMore
+  );
+}
+
+function buildDashboardQuarantineSummaryPayload() {
+  $summary = array(
+    "count" => 0,
+    "sizeBytes" => 0,
+    "sizeLabel" => "0 B"
+  );
+
+  try {
+    $quarantineManager = buildQuarantineManagerPayload(false);
+    if ( ! empty($quarantineManager["summary"]) && is_array($quarantineManager["summary"]) ) {
+      $summary = $quarantineManager["summary"];
+    }
+  } catch ( Throwable $throwable ) {
+    error_log("Appdata Cleanup Plus quarantine summary failed during dashboard load: " . $throwable->getMessage());
+  }
+
+  return $summary;
 }
 
 function resolveSnapshotCandidates($token, $candidateIds) {
@@ -173,7 +184,7 @@ function buildDashboardPayload() {
     $scanWarningMessage = "Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.";
   }
 
-  return appdataCleanupPlusBuildDashboardFallbackPayload(
+  return appdataCleanupPlusBuildDashboardPayload(
     $dockerRunning,
     $settings,
     $rows,
@@ -194,6 +205,24 @@ function handleGetOrphanAppdata() {
   }
 
   jsonResponse($dashboard["payload"]);
+}
+
+function handleGetAuditHistory() {
+  $limit = (int)getPostedString("limit");
+  $payload = buildAuditHistoryPayload($limit);
+
+  jsonResponse(array(
+    "ok" => true,
+    "auditHistory" => $payload["auditHistory"],
+    "hasMore" => ! empty($payload["hasMore"])
+  ));
+}
+
+function handleGetQuarantineSummary() {
+  jsonResponse(array(
+    "ok" => true,
+    "quarantineSummary" => buildDashboardQuarantineSummaryPayload()
+  ));
 }
 
 function handleHydrateCandidateStats() {
@@ -448,7 +477,7 @@ function handleExecuteCandidateAction() {
     "preview" => $execution["preview"],
     "results" => $execution["results"],
     "summary" => $execution["summary"],
-    "quarantineSummary" => buildQuarantineManagerPayload(false)["summary"]
+    "quarantineSummary" => buildDashboardQuarantineSummaryPayload()
   ));
 }
 

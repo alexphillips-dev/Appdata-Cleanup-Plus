@@ -47,6 +47,14 @@ try {
       handleGetOrphanAppdata();
       break;
 
+    case "getAuditHistory":
+      handleGetAuditHistory();
+      break;
+
+    case "getQuarantineSummary":
+      handleGetQuarantineSummary();
+      break;
+
     case "hydrateCandidateStats":
       handleHydrateCandidateStats();
       break;

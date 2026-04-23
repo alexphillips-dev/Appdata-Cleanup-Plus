@@ -11,7 +11,12 @@
     scanToken: "",
     dockerRunning: true,
     auditHistory: [],
+    auditHistoryLoading: false,
+    auditHistoryLoaded: false,
+    auditHistoryHasMore: false,
+    auditHistoryRequestToken: "",
     auditOpen: false,
+    deferredDataRequestToken: "",
     scanWarningMessage: "",
     settings: ACP.defaultSafetySettings(),
     appdataSources: {
@@ -34,6 +39,7 @@
       entries: [],
       selected: {},
       summary: { count: 0, sizeLabel: "0 B" },
+      summaryRequestToken: "",
       purgeAtInput: "",
       restoreConflict: null
     },
@@ -870,6 +876,11 @@
     state.scanToken = "";
     state.dockerRunning = true;
     state.auditHistory = [];
+    state.auditHistoryLoading = false;
+    state.auditHistoryLoaded = false;
+    state.auditHistoryHasMore = false;
+    state.auditHistoryRequestToken = "";
+    state.deferredDataRequestToken = "";
     state.scanWarningMessage = "";
     state.settings = ACP.defaultSafetySettings();
     state.appdataSources = { detected: [], manual: [], effective: [], zfsPathMappings: [], zfsPathMappingSuggestions: [] };
@@ -880,6 +891,7 @@
     state.quarantine.loaded = false;
     state.quarantine.selected = {};
     state.quarantine.summary = { count: 0, sizeLabel: "0 B" };
+    state.quarantine.summaryRequestToken = "";
     state.quarantine.purgeAtInput = "";
     state.quarantine.restoreConflict = null;
     state.scanHydration.active = false;
@@ -889,10 +901,12 @@
 
   function loadScan() {
     var shouldHydrate = false;
+    var deferredDataRequestToken = String(Date.now()) + ":" + String(Math.random());
     var previousBrowserState = $.extend(true, {}, state.appdataSourceBrowser || defaultAppdataSourceBrowserState());
     var previousZfsBrowserState = $.extend(true, {}, state.zfsPathMappingBrowser || defaultZfsPathMappingBrowserState());
 
     stopScanStatHydration();
+    state.deferredDataRequestToken = deferredDataRequestToken;
     setBusy(true);
     renderLoadingState();
     if (isAppdataSourcesModalVisible()) {
@@ -911,13 +925,18 @@
       state.summary = response.summary || { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
       state.scanToken = String(response.scanToken || "");
       state.dockerRunning = response.dockerRunning !== false;
-      state.auditHistory = $.isArray(response.auditHistory) ? response.auditHistory : [];
+      state.auditHistory = [];
+      state.auditHistoryLoading = false;
+      state.auditHistoryLoaded = false;
+      state.auditHistoryHasMore = false;
+      state.auditHistoryRequestToken = "";
       state.scanWarningMessage = String(response.scanWarningMessage || "");
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || {});
       setAppdataSourceInfo(response.appdataSourceInfo || {});
       state.appdataSourceBrowser.manual = normalizeManualAppdataSourcesInput((state.settings || {}).manualAppdataSources || []);
       syncZfsPathMappingBrowserFromSettings();
-      state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary || {});
+      state.quarantine.summary = { count: 0, sizeLabel: "0 B" };
+      state.quarantine.summaryRequestToken = "";
       syncQuarantinePurgeInputDefaults(true);
       syncSafetyControls();
       applyLocalSafetyState();
@@ -930,6 +949,7 @@
       if (isZfsPathMappingsModalVisible()) {
         renderZfsPathMappingsModal();
       }
+      loadDeferredDashboardData(deferredDataRequestToken);
     }).fail(function(xhr) {
       resetDashboardState();
       state.appdataSourceBrowser = previousBrowserState;
@@ -959,6 +979,92 @@
       if (shouldHydrate) {
         startScanStatHydration();
       }
+    });
+  }
+
+  function isActiveDeferredDataRequest(requestToken) {
+    return !!requestToken && String(state.deferredDataRequestToken || "") === String(requestToken || "");
+  }
+
+  function loadDeferredDashboardData(requestToken) {
+    loadAuditHistory(requestToken, false, 25);
+    loadQuarantineSummary(requestToken, false);
+  }
+
+  function loadAuditHistory(requestToken, forceRefresh, limit) {
+    var effectiveLimit = Number(limit || 0) > 0 ? Number(limit || 0) : "";
+    var historyRequestToken = String(Date.now()) + ":" + String(Math.random());
+
+    if (!isActiveDeferredDataRequest(requestToken)) {
+      return;
+    }
+
+    if (state.auditHistoryLoading && !forceRefresh) {
+      return;
+    }
+
+    if (!forceRefresh && state.auditHistoryLoaded && !state.auditHistoryHasMore && effectiveLimit !== "") {
+      return;
+    }
+
+    state.auditHistoryLoading = true;
+    state.auditHistoryRequestToken = historyRequestToken;
+    renderPanels();
+    if (state.auditOpen) {
+      renderAuditHistoryModal();
+    }
+
+    apiPost({
+      action: "getAuditHistory",
+      limit: effectiveLimit
+    }).done(function(response) {
+      if (!isActiveDeferredDataRequest(requestToken) || String(state.auditHistoryRequestToken || "") !== historyRequestToken) {
+        return;
+      }
+
+      state.auditHistory = $.isArray(response.auditHistory) ? response.auditHistory : [];
+      state.auditHistoryLoaded = true;
+      state.auditHistoryHasMore = !!response.hasMore;
+      state.auditHistoryLoading = false;
+      renderPanels();
+      if (state.auditOpen) {
+        renderAuditHistoryModal();
+      }
+    }).fail(function() {
+      if (!isActiveDeferredDataRequest(requestToken) || String(state.auditHistoryRequestToken || "") !== historyRequestToken) {
+        return;
+      }
+
+      state.auditHistoryLoading = false;
+      renderPanels();
+      if (state.auditOpen) {
+        renderAuditHistoryModal();
+      }
+    });
+  }
+
+  function loadQuarantineSummary(requestToken, forceRefresh) {
+    var summaryRequestToken = String(Date.now()) + ":" + String(Math.random());
+
+    if (!isActiveDeferredDataRequest(requestToken)) {
+      return;
+    }
+
+    if (state.quarantine.loading && !forceRefresh) {
+      return;
+    }
+
+    state.quarantine.summaryRequestToken = summaryRequestToken;
+
+    apiPost({
+      action: "getQuarantineSummary"
+    }).done(function(response) {
+      if (!isActiveDeferredDataRequest(requestToken) || String(state.quarantine.summaryRequestToken || "") !== summaryRequestToken) {
+        return;
+      }
+
+      state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary || {});
+      renderPanels();
     });
   }
 
@@ -1174,6 +1280,10 @@
     ensureAuditHistoryModal();
     renderPanels();
     renderAuditHistoryModal();
+
+    if (!state.auditHistoryLoaded || state.auditHistoryHasMore) {
+      loadAuditHistory(state.deferredDataRequestToken, true, 0);
+    }
   }
 
   function openToolsModal() {
@@ -4918,10 +5028,13 @@
       if (!context.preview) {
         state.selected = {};
         applyLocalOperationResults(results);
+        loadAuditHistory(state.deferredDataRequestToken, true, 25);
       }
 
       if (response.quarantineSummary) {
         state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary);
+      } else if (!context.preview) {
+        loadQuarantineSummary(state.deferredDataRequestToken, true);
       }
 
       if (!context.preview && context.baseOperation === "quarantine") {
@@ -5370,6 +5483,7 @@
       if (isRestore) {
         applyRestoredRows(results);
       }
+      loadAuditHistory(state.deferredDataRequestToken, true, 25);
       setBusy(false);
       renderAll();
 

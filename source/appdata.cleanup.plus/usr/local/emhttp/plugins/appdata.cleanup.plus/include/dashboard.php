@@ -506,7 +506,10 @@ function buildLatestAuditMessage($entry) {
 }
 
 function buildAuditHistoryRows($limit=0) {
-  $history = getAppdataCleanupPlusAuditHistory($limit);
+  return buildAuditHistoryRowsFromEntries(getAppdataCleanupPlusAuditHistory($limit));
+}
+
+function buildAuditHistoryRowsFromEntries($history) {
   $rows = array();
 
   foreach ( $history as $index => $entry ) {
@@ -647,11 +650,103 @@ function appdataCleanupPlusBuildEmptyParentRemnantReason($sourceRoot) {
   return $sourceLead . " found this empty parent folder after nested appdata mount paths under it were removed.";
 }
 
+function appdataCleanupPlusResolveDirectChildPathForSourceRoot($sourceRoot, $referencePath) {
+  $normalizedSourceRoot = appdataCleanupPlusCanonicalizePath($sourceRoot);
+
+  if ( $normalizedSourceRoot === "" ) {
+    return "";
+  }
+
+  foreach ( appdataCleanupPlusPathComparisonVariants($normalizedSourceRoot) as $sourceVariant ) {
+    $sourcePrefix = rtrim($sourceVariant, "/");
+
+    if ( $sourcePrefix === "" ) {
+      continue;
+    }
+
+    foreach ( appdataCleanupPlusPathComparisonVariants($referencePath) as $referenceVariant ) {
+      $relativePath = "";
+      $segments = array();
+
+      if ( $referenceVariant === "" ) {
+        continue;
+      }
+
+      if ( $referenceVariant === $sourcePrefix ) {
+        return $normalizedSourceRoot;
+      }
+
+      if ( ! startsWith($referenceVariant . "/", $sourcePrefix . "/") ) {
+        continue;
+      }
+
+      $relativePath = ltrim(substr($referenceVariant, strlen($sourcePrefix)), "/");
+      if ( $relativePath === "" ) {
+        return $normalizedSourceRoot;
+      }
+
+      $segments = array_values(array_filter(explode("/", $relativePath), "strlen"));
+      if ( empty($segments) ) {
+        return $normalizedSourceRoot;
+      }
+
+      return appdataCleanupPlusCanonicalizePath($normalizedSourceRoot . "/" . $segments[0]);
+    }
+  }
+
+  return "";
+}
+
+function appdataCleanupPlusBuildSourceRootReferenceIndex($sourceRoot, $referencePaths) {
+  $index = array();
+  $normalizedSourceRoot = appdataCleanupPlusCanonicalizePath($sourceRoot);
+
+  if ( $normalizedSourceRoot === "" ) {
+    return $index;
+  }
+
+  foreach ( $referencePaths as $referencePath ) {
+    $candidatePath = appdataCleanupPlusResolveDirectChildPathForSourceRoot($normalizedSourceRoot, $referencePath);
+    $candidateKey = "";
+
+    if ( $candidatePath === "" || appdataCleanupPlusPathsEquivalent($candidatePath, $normalizedSourceRoot) ) {
+      continue;
+    }
+
+    $candidateKey = appdataCleanupPlusPathComparisonKey($candidatePath);
+    if ( $candidateKey === "" ) {
+      continue;
+    }
+
+    if ( ! isset($index[$candidateKey]) ) {
+      $index[$candidateKey] = array(
+        "skipCandidate" => false,
+        "hasStaleNestedReference" => false
+      );
+    }
+
+    if ( appdataCleanupPlusPathsEquivalent($candidatePath, $referencePath) ) {
+      $index[$candidateKey]["skipCandidate"] = true;
+      continue;
+    }
+
+    if ( appdataCleanupPlusResolveExistingNestedReferencePath($candidatePath, $referencePath) !== "" ) {
+      $index[$candidateKey]["skipCandidate"] = true;
+      continue;
+    }
+
+    $index[$candidateKey]["hasStaleNestedReference"] = true;
+  }
+
+  return $index;
+}
+
 function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning) {
   $availableVolumes = array();
   $templatePaths = array();
   $installedHostPaths = appdataCleanupPlusExtractDockerVolumeHostPaths($containers);
   $nestedReferencePaths = array();
+  $referenceIndexBySourceRoot = array();
   $excludedRoots = array();
   $configuredSourceRoots = getAppdataCleanupPlusConfiguredSourceRoots($settings);
 
@@ -681,6 +776,8 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
 
   foreach ( $configuredSourceRoots as $sourceRoot ) {
     $entries = array();
+    $referenceIndexKey = "";
+    $sourceRootReferenceIndex = array();
 
     if ( ! $sourceRoot || ! is_dir($sourceRoot) ) {
       continue;
@@ -692,6 +789,11 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
     }
 
     $excludedRoots[appdataCleanupPlusPathComparisonKey(rtrim($sourceRoot, "/") . "/.appdata-cleanup-plus-quarantine")] = true;
+    $referenceIndexKey = appdataCleanupPlusPathComparisonKey($sourceRoot);
+    if ( ! isset($referenceIndexBySourceRoot[$referenceIndexKey]) ) {
+      $referenceIndexBySourceRoot[$referenceIndexKey] = appdataCleanupPlusBuildSourceRootReferenceIndex($sourceRoot, $nestedReferencePaths);
+    }
+    $sourceRootReferenceIndex = $referenceIndexBySourceRoot[$referenceIndexKey];
 
     foreach ( array_diff($entries, array(".", "..")) as $entryName ) {
       $candidatePath = "";
@@ -719,22 +821,9 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
         continue;
       }
 
-      foreach ( $nestedReferencePaths as $referencePath ) {
-        if ( appdataCleanupPlusPathsEquivalent($candidatePath, $referencePath) ) {
-          $skipCandidate = true;
-          break;
-        }
-
-        if ( ! pathIsDescendant($candidatePath, $referencePath) ) {
-          continue;
-        }
-
-        if ( appdataCleanupPlusResolveExistingNestedReferencePath($candidatePath, $referencePath) !== "" ) {
-          $skipCandidate = true;
-          break;
-        }
-
-        $hasStaleNestedReference = true;
+      if ( isset($sourceRootReferenceIndex[$candidateKey]) ) {
+        $skipCandidate = ! empty($sourceRootReferenceIndex[$candidateKey]["skipCandidate"]);
+        $hasStaleNestedReference = ! empty($sourceRootReferenceIndex[$candidateKey]["hasStaleNestedReference"]);
       }
 
       if ( $skipCandidate || isset($availableVolumes[$candidateKey]) ) {

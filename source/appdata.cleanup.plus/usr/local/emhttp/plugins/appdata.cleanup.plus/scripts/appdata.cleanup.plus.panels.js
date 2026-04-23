@@ -230,9 +230,11 @@
     var state = context.state || {};
     var strings = context.strings || {};
     var auditHistory = $.isArray(state.auditHistory) ? state.auditHistory : [];
-    var subtitle = auditHistory.length
+    var subtitle = state.auditHistoryLoading
+      ? ACP.t(strings, "auditHistoryLoadingMessage", "Loading cleanup history.")
+      : (auditHistory.length
       ? (auditHistory.length + " " + ACP.t(strings, "auditHistoryEntriesLabel", "entries available"))
-      : ACP.t(strings, "auditHistoryEmptySummary", "No cleanup history has been recorded yet.");
+      : ACP.t(strings, "auditHistoryEmptySummary", "No cleanup history has been recorded yet."));
     var html = [
       '<div class="acp-modal-summary">',
       '<div class="acp-modal-copy">',
@@ -242,7 +244,9 @@
       '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryTitle", "Audit history")) + "</div>"
     ];
 
-    if (!auditHistory.length) {
+    if (state.auditHistoryLoading && !auditHistory.length) {
+      html.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryLoadingMessage", "Loading cleanup history.")) + "</div>");
+    } else if (!auditHistory.length) {
       html.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryEmptyMessage", "No cleanup, restore, or purge actions have been recorded yet.")) + "</div>");
     } else {
       html.push('<div class="acp-audit-list">');

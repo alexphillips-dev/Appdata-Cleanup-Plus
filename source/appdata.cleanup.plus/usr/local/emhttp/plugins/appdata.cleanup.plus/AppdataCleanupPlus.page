@@ -380,6 +380,7 @@ $config = array(
     "auditHistoryTitle" => _("Audit history"),
     "auditHistoryEntriesLabel" => _("entries available"),
     "auditHistoryOpenLabel" => _("Show history"),
+    "auditHistoryLoadingMessage" => _("Loading cleanup history."),
     "auditHistoryEmptySummary" => _("No cleanup history has been recorded yet."),
     "auditHistoryEmptyMessage" => _("No cleanup, restore, or purge actions have been recorded yet."),
     "auditRequestedLabel" => _("items submitted"),
