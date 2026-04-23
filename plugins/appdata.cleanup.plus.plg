@@ -13,8 +13,21 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.04.23.02
+- Release: Promote the full `2026.04.13.04` through `2026.04.23.01` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
+- Support: Add a `Tools` workflow with redacted diagnostics export plus `Copy support summary` so current version, scan counts, safety toggles, scan roots, ZFS state, notices, and quarantine totals can be shared quickly in issue reports and forum posts
+- UX: Add a dedicated `Scan summary` panel, richer empty-state guidance, per-row `Details` dialogs, saved view presets, and bulk selection presets for ready rows, discovery-only rows, ZFS-backed rows, and rows older than 90 days
+- UI: Refine the dashboard controls by removing the extra search preset row, flattening and polishing the bottom-bar preset control, and surfacing clearer inline blocker badges for ZFS delete disabled, permanent delete mode disabled, mapped-but-nonexact ZFS paths, and generic policy locks
+- ZFS: Expand row-level ZFS guidance with matched share-root and dataset-root context, checked dataset-side paths, and on-demand destroy previews that surface recursive impact, child datasets, and snapshots directly in row details
+- Fix: Reduce large-scan WebUI hangs and gateway timeouts by keeping the initial scan request focused on orphan discovery, deferring audit-history and quarantine-summary loading until after the scan renders, and indexing nested reference checks so filesystem discovery no longer walks every template and live mount for every candidate folder
+
 ###2026.04.23.01
-- Maintenance: Refresh package metadata and build artifacts
+- Release: Promote the full `2026.04.13.04` through `2026.04.23.01` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
+- Support: Add a `Tools` workflow with redacted diagnostics export plus `Copy support summary` so current version, scan counts, safety toggles, scan roots, ZFS state, notices, and quarantine totals can be shared quickly in issue reports and forum posts
+- UX: Add a dedicated `Scan summary` panel, richer empty-state guidance, per-row `Details` dialogs, saved view presets, and bulk selection presets for ready rows, discovery-only rows, ZFS-backed rows, and rows older than 90 days
+- UI: Refine the dashboard controls by removing the extra search preset row, flattening and polishing the bottom-bar preset control, and surfacing clearer inline blocker badges for ZFS delete disabled, permanent delete mode disabled, mapped-but-nonexact ZFS paths, and generic policy locks
+- ZFS: Expand row-level ZFS guidance with matched share-root and dataset-root context, checked dataset-side paths, and on-demand destroy previews that surface recursive impact, child datasets, and snapshots directly in row details
+- Fix: Reduce large-scan WebUI hangs and gateway timeouts by keeping the initial scan request focused on orphan discovery, deferring audit-history and quarantine-summary loading until after the scan renders, and indexing nested reference checks so filesystem discovery no longer walks every template and live mount for every candidate folder
 
 ###2026.04.13.11
 - Support: Add `Copy support summary` under `Tools` so the current version, scan counts, safety toggles, scan roots, ZFS state, notices, and quarantine totals can be copied into forum posts quickly
