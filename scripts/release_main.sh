@@ -71,7 +71,20 @@ require_commands() {
 }
 
 require_clean_worktree() {
-    if ! git diff --quiet || ! git diff --cached --quiet; then
+    local unstaged_dirty=0
+    local staged_dirty=0
+
+    git update-index -q --refresh || true
+
+    # Shared Windows/WSL checkouts can surface CRLF-only noise in `git status`.
+    if ! git diff --quiet --ignore-cr-at-eol --ignore-space-at-eol; then
+        unstaged_dirty=1
+    fi
+    if ! git diff --cached --quiet --ignore-cr-at-eol --ignore-space-at-eol; then
+        staged_dirty=1
+    fi
+
+    if [ "${unstaged_dirty}" -ne 0 ] || [ "${staged_dirty}" -ne 0 ]; then
         echo "ERROR: Working tree has uncommitted changes. Commit or stash them first." >&2
         exit 1
     fi
