@@ -820,6 +820,20 @@
     });
   }
 
+  function isPluginBusyResponse(xhr) {
+    return !!xhr && Number(xhr.status || 0) === 429;
+  }
+
+  function getRetryAfterDelayMs(xhr) {
+    var retryAfter = xhr && typeof xhr.getResponseHeader === "function" ? Number(xhr.getResponseHeader("Retry-After") || 0) : 0;
+
+    if (!retryAfter || retryAfter < 1) {
+      retryAfter = 3;
+    }
+
+    return Math.max(1000, Math.min(10000, retryAfter * 1000));
+  }
+
   function syncSafetyControls() {
     var settings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
 
@@ -1065,6 +1079,18 @@
 
       state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary || {});
       renderPanels();
+    }).fail(function(xhr) {
+      if (!isActiveDeferredDataRequest(requestToken) || String(state.quarantine.summaryRequestToken || "") !== summaryRequestToken) {
+        return;
+      }
+
+      if (isPluginBusyResponse(xhr)) {
+        window.setTimeout(function() {
+          if (isActiveDeferredDataRequest(requestToken)) {
+            loadQuarantineSummary(requestToken, forceRefresh);
+          }
+        }, getRetryAfterDelayMs(xhr));
+      }
     });
   }
 
@@ -2315,8 +2341,16 @@
       window.setTimeout(function() {
         requestNextScanStatBatch(requestToken);
       }, 0);
-    }).fail(function() {
+    }).fail(function(xhr) {
       if (!state.scanHydration.active || state.scanHydration.requestToken !== requestToken) {
+        return;
+      }
+
+      if (isPluginBusyResponse(xhr)) {
+        state.scanHydration.queue = batchIds.concat(state.scanHydration.queue);
+        window.setTimeout(function() {
+          requestNextScanStatBatch(requestToken);
+        }, getRetryAfterDelayMs(xhr));
         return;
       }
 

@@ -200,6 +200,12 @@ behaviorSmokeAssertSame(PHP_SESSION_NONE, session_status(), "Session close helpe
 session_id("acp-behavior-primary");
 session_start();
 
+behaviorSmokeAssertTrue(acquireAppdataCleanupPlusRuntimeLock("expensive-operation", array("action" => "smoke")), "Runtime lock should be acquired.");
+behaviorSmokeAssertSame(false, acquireAppdataCleanupPlusRuntimeLock("expensive-operation", array("action" => "duplicate")), "Duplicate runtime lock acquisition should fail fast.");
+behaviorSmokeAssertTrue(releaseAppdataCleanupPlusRuntimeLock("expensive-operation"), "Runtime lock should release cleanly.");
+behaviorSmokeAssertTrue(acquireAppdataCleanupPlusRuntimeLock("expensive-operation", array("action" => "reacquire")), "Runtime lock should be acquirable after release.");
+releaseAllAppdataCleanupPlusRuntimeLocks();
+
 $statsPath = "/mnt/user/appdata/cache-target";
 clearCachedAppdataCleanupPlusPathStats($statsPath);
 behaviorSmokeAssertSame(null, getCachedAppdataCleanupPlusPathStats($statsPath), "Stats cache should start empty for the test path.");

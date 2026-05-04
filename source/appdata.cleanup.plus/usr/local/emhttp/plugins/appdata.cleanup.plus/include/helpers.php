@@ -993,6 +993,25 @@ function appdataCleanupPlusStateFile($filename) {
   return appdataCleanupPlusConfigDir() . "/" . ltrim($filename, "/");
 }
 
+function appdataCleanupPlusRuntimeDir() {
+  $override = trim(str_replace("\\", "/", (string)getenv("APPDATA_CLEANUP_PLUS_RUNTIME_ROOT")));
+  $configuredRoot = appdataCleanupPlusConfiguredStateRoot();
+
+  if ( $override !== "" ) {
+    return rtrim($override, "/");
+  }
+
+  if ( $configuredRoot !== "" ) {
+    return $configuredRoot . "/runtime";
+  }
+
+  return "/var/tmp/appdata.cleanup.plus";
+}
+
+function appdataCleanupPlusRuntimeLockFile($name) {
+  return appdataCleanupPlusRuntimeDir() . "/locks/" . appdataCleanupPlusSanitizeStateKey($name) . ".lock";
+}
+
 function appdataCleanupPlusSanitizeStateKey($value) {
   return preg_replace('/[^A-Za-z0-9._-]+/', '', (string)$value);
 }
@@ -1028,6 +1047,74 @@ function ensureAppdataCleanupPlusDirectory($path) {
 
 function ensureAppdataCleanupPlusConfigDir() {
   return ensureAppdataCleanupPlusDirectory(appdataCleanupPlusConfigDir());
+}
+
+function acquireAppdataCleanupPlusRuntimeLock($name, $metadata=array()) {
+  $lockName = appdataCleanupPlusSanitizeStateKey($name);
+  $lockFile = appdataCleanupPlusRuntimeLockFile($lockName);
+  $handle = false;
+  $store =& appdataCleanupPlusRuntimeStore();
+
+  if ( $lockName === "" || ! ensureAppdataCleanupPlusDirectory(dirname($lockFile)) ) {
+    return false;
+  }
+
+  if ( ! empty($store["runtimeLocks"][$lockName]) ) {
+    return false;
+  }
+
+  $handle = @fopen($lockFile, "c+");
+  if ( ! $handle ) {
+    return false;
+  }
+
+  if ( ! @flock($handle, LOCK_EX | LOCK_NB) ) {
+    @fclose($handle);
+    return false;
+  }
+
+  @ftruncate($handle, 0);
+  @rewind($handle);
+  @fwrite($handle, appdataCleanupPlusJsonEncode(array(
+    "name" => $lockName,
+    "pid" => function_exists("getmypid") ? getmypid() : null,
+    "startedAt" => date("c"),
+    "metadata" => is_array($metadata) ? $metadata : array()
+  )) . "\n");
+  @fflush($handle);
+
+  if ( ! isset($store["runtimeLocks"]) || ! is_array($store["runtimeLocks"]) ) {
+    $store["runtimeLocks"] = array();
+  }
+
+  $store["runtimeLocks"][$lockName] = $handle;
+  return true;
+}
+
+function releaseAppdataCleanupPlusRuntimeLock($name) {
+  $lockName = appdataCleanupPlusSanitizeStateKey($name);
+  $store =& appdataCleanupPlusRuntimeStore();
+
+  if ( $lockName === "" || empty($store["runtimeLocks"][$lockName]) ) {
+    return false;
+  }
+
+  @flock($store["runtimeLocks"][$lockName], LOCK_UN);
+  @fclose($store["runtimeLocks"][$lockName]);
+  unset($store["runtimeLocks"][$lockName]);
+  return true;
+}
+
+function releaseAllAppdataCleanupPlusRuntimeLocks() {
+  $store =& appdataCleanupPlusRuntimeStore();
+
+  if ( empty($store["runtimeLocks"]) || ! is_array($store["runtimeLocks"]) ) {
+    return;
+  }
+
+  foreach ( array_keys($store["runtimeLocks"]) as $lockName ) {
+    releaseAppdataCleanupPlusRuntimeLock($lockName);
+  }
 }
 
 function readAppdataCleanupPlusTemplateFile($path) {
