@@ -1,6 +1,6 @@
 <?php
 
-function appdataCleanupPlusBuildDashboardPayload($dockerRunning, $settings, $rows, $summary, $scanToken, $scanWarningMessage="") {
+function appdataCleanupPlusBuildDashboardPayload($dockerRunning, $settings, $rows, $summary, $scanToken, $scanWarningMessage="", $scanMetrics=array()) {
   return array(
     "ok" => true,
     "payload" => array(
@@ -10,10 +10,62 @@ function appdataCleanupPlusBuildDashboardPayload($dockerRunning, $settings, $row
       "rows" => $rows,
       "scanToken" => $scanToken,
       "scanWarningMessage" => $scanWarningMessage,
+      "scanMetrics" => is_array($scanMetrics) ? $scanMetrics : array(),
       "settings" => $settings,
       "appdataSourceInfo" => buildAppdataCleanupPlusSourceInfo($settings)
     )
   );
+}
+
+function appdataCleanupPlusCreateScanMetrics() {
+  $started = microtime(true);
+
+  return array(
+    "startedAt" => date("c"),
+    "startedMicrotime" => $started,
+    "lastMicrotime" => $started,
+    "phases" => array()
+  );
+}
+
+function appdataCleanupPlusMarkScanPhase(&$metrics, $name, $extra=array()) {
+  $now = microtime(true);
+  $started = isset($metrics["startedMicrotime"]) ? (float)$metrics["startedMicrotime"] : $now;
+  $last = isset($metrics["lastMicrotime"]) ? (float)$metrics["lastMicrotime"] : $started;
+  $phase = array(
+    "name" => (string)$name,
+    "durationMs" => (int)round(($now - $last) * 1000),
+    "elapsedMs" => (int)round(($now - $started) * 1000)
+  );
+
+  foreach ( is_array($extra) ? $extra : array() as $key => $value ) {
+    if ( is_scalar($value) || $value === null ) {
+      $phase[$key] = $value;
+    }
+  }
+
+  $metrics["phases"][] = $phase;
+  $metrics["lastMicrotime"] = $now;
+}
+
+function appdataCleanupPlusFinalizeScanMetrics($metrics) {
+  $now = microtime(true);
+  $started = isset($metrics["startedMicrotime"]) ? (float)$metrics["startedMicrotime"] : $now;
+  $phases = isset($metrics["phases"]) && is_array($metrics["phases"]) ? $metrics["phases"] : array();
+
+  return array(
+    "startedAt" => isset($metrics["startedAt"]) ? (string)$metrics["startedAt"] : "",
+    "totalMs" => (int)round(($now - $started) * 1000),
+    "phases" => $phases
+  );
+}
+
+function appdataCleanupPlusPersistLatestScanMetrics($metrics) {
+  if ( ! is_array($metrics) || empty($metrics["phases"]) ) {
+    return false;
+  }
+
+  return writeAppdataCleanupPlusJsonFile(appdataCleanupPlusLatestScanMetricsFile(), $metrics);
 }
 
 function buildAuditHistoryPayload($limit=0) {
@@ -49,6 +101,383 @@ function buildDashboardQuarantineSummaryPayload() {
   }
 
   return $summary;
+}
+
+function appdataCleanupPlusDiagnosticsString($value) {
+  return is_scalar($value) || $value === null ? (string)$value : "";
+}
+
+function appdataCleanupPlusDiagnosticsRedactPath($path) {
+  $raw = trim(str_replace("\\", "/", (string)$path));
+  $segments = array();
+
+  if ( $raw === "" || $raw[0] !== "/" ) {
+    return $raw;
+  }
+
+  $segments = explode("/", $raw);
+
+  if ( strpos($raw, "/mnt/") === 0 ) {
+    if ( isset($segments[2]) && $segments[2] !== "" && ! preg_match('/^(user|user0|cache|disk\d+)$/i', $segments[2]) ) {
+      $segments[2] = "<mount>";
+    }
+
+    if ( isset($segments[3]) && $segments[3] !== "" && ! preg_match('/^(appdata|system|domains|isos)$/i', $segments[3]) ) {
+      $segments[3] = "<share>";
+    }
+
+    for ( $index = 4; $index < count($segments); $index++ ) {
+      if ( $segments[$index] !== "" ) {
+        $segments[$index] = "<path>";
+      }
+    }
+
+    return implode("/", $segments);
+  }
+
+  if ( strpos($raw, "/boot/") === 0 ) {
+    for ( $index = 4; $index < count($segments); $index++ ) {
+      if ( $segments[$index] !== "" ) {
+        $segments[$index] = "<path>";
+      }
+    }
+
+    return implode("/", $segments);
+  }
+
+  return "<path>";
+}
+
+function appdataCleanupPlusDiagnosticsRedactText($value) {
+  $text = appdataCleanupPlusDiagnosticsString($value);
+
+  if ( $text === "" ) {
+    return "";
+  }
+
+  $text = preg_replace_callback('#/(?:mnt|boot|var|tmp|etc|usr)(?:/[^\\s\'"<>\\[\\](),;]+)+#', function($matches) {
+    return appdataCleanupPlusDiagnosticsRedactPath($matches[0]);
+  }, $text);
+  $text = preg_replace('/([?&](?:csrf|token|key|password|passwd|pass|secret|session|auth)[^=\\s]*=)[^\\s&]+/i', '$1<redacted>', $text);
+  $text = preg_replace('/\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b/i', '<email>', $text);
+  $text = preg_replace('/\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b/', '<ipv4>', $text);
+  $text = preg_replace('/\\b(?:[A-F0-9]{2}:){5}[A-F0-9]{2}\\b/i', '<mac>', $text);
+  $text = preg_replace('/\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b/i', '<uuid>', $text);
+  $text = preg_replace('/\\b[0-9a-f]{32,}\\b/i', '<hex>', $text);
+  $text = preg_replace('/^([A-Z][a-z]{2}\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2}\\s+)\\S+/', '$1<host>', $text);
+
+  return $text;
+}
+
+function appdataCleanupPlusDiagnosticsRedactValue($value) {
+  if ( is_array($value) ) {
+    $redacted = array();
+
+    foreach ( $value as $key => $item ) {
+      $redacted[$key] = appdataCleanupPlusDiagnosticsRedactValue($item);
+    }
+
+    return $redacted;
+  }
+
+  if ( is_string($value) ) {
+    return appdataCleanupPlusDiagnosticsRedactText($value);
+  }
+
+  return $value;
+}
+
+function appdataCleanupPlusDiagnosticsLogPaths() {
+  $paths = array();
+  $override = trim((string)getenv("APPDATA_CLEANUP_PLUS_SYSLOG_PATH"));
+
+  if ( $override !== "" ) {
+    foreach ( explode(PATH_SEPARATOR, $override) as $path ) {
+      $path = trim(str_replace("\\", "/", (string)$path));
+      if ( $path !== "" ) {
+        $paths[] = $path;
+      }
+    }
+  }
+
+  $paths[] = "/var/log/syslog";
+  $paths[] = "/var/log/nginx/error.log";
+  $paths[] = "/boot/logs/syslog";
+
+  return array_values(array_unique($paths));
+}
+
+function appdataCleanupPlusDiagnosticsLineMatches($line) {
+  $normalized = strtolower((string)$line);
+
+  if (
+    strpos($normalized, "appdata cleanup plus") !== false ||
+    strpos($normalized, "appdata.cleanup.plus") !== false ||
+    strpos($normalized, "php-fpm") !== false ||
+    strpos($normalized, "max children") !== false ||
+    strpos($normalized, "gateway timeout") !== false ||
+    strpos($normalized, "upstream timed out") !== false ||
+    preg_match('/\\b504\\b/', $normalized)
+  ) {
+    return true;
+  }
+
+  if (
+    preg_match('/\\bemhttpd?:/', $normalized) &&
+    preg_match('/\\b(?:appdata cleanup plus|appdata\\.cleanup\\.plus|cmd:|error|warning|php|php-fpm|nginx|plugin|timeout|timed out|gateway|upstream|update_version|504)\\b/', $normalized)
+  ) {
+    return true;
+  }
+
+  if (
+    strpos($normalized, "nginx") !== false &&
+    preg_match('/\\b(?:504|gateway|upstream|timeout|timed out|error|crit|emerg|alert)\\b/', $normalized)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function appdataCleanupPlusDiagnosticsRedactAuditHistory($history) {
+  $entries = array();
+
+  foreach ( is_array($history) ? $history : array() as $entry ) {
+    $nextEntry = is_array($entry) ? $entry : array();
+    $nextResults = array();
+
+    foreach ( isset($nextEntry["results"]) && is_array($nextEntry["results"]) ? $nextEntry["results"] : array() as $result ) {
+      $nextResult = is_array($result) ? $result : array();
+
+      if ( isset($nextResult["name"]) ) {
+        $nextResult["name"] = "<app>";
+      }
+
+      foreach ( array("sourcePath", "destination", "restoredPath", "displayPath", "path") as $pathKey ) {
+        if ( isset($nextResult[$pathKey]) ) {
+          $nextResult[$pathKey] = appdataCleanupPlusDiagnosticsRedactPath($nextResult[$pathKey]);
+        }
+      }
+
+      if ( isset($nextResult["message"]) ) {
+        $message = appdataCleanupPlusDiagnosticsRedactText($nextResult["message"]);
+        if ( isset($result["name"]) && trim((string)$result["name"]) !== "" ) {
+          $message = str_replace((string)$result["name"], "<app>", $message);
+        }
+        $nextResult["message"] = $message;
+      }
+
+      unset($nextResult["row"]);
+      $nextResults[] = appdataCleanupPlusDiagnosticsRedactValue($nextResult);
+    }
+
+    $nextEntry["results"] = $nextResults;
+    if ( isset($nextEntry["message"]) ) {
+      $nextEntry["message"] = appdataCleanupPlusDiagnosticsRedactText($nextEntry["message"]);
+    }
+
+    $entries[] = appdataCleanupPlusDiagnosticsRedactValue($nextEntry);
+  }
+
+  return $entries;
+}
+
+function appdataCleanupPlusDiagnosticsReadMatchingLogTail($path, $matchLimit=500, $scanLimit=5000) {
+  $matches = array();
+  $file = null;
+  $lineNumber = 0;
+  $scanned = 0;
+
+  if ( ! is_file($path) || ! is_readable($path) ) {
+    return array(
+      "path" => appdataCleanupPlusDiagnosticsRedactPath($path),
+      "available" => false,
+      "lines" => array(),
+      "matchedLineCount" => 0,
+      "scannedLineLimit" => (int)$scanLimit
+    );
+  }
+
+  try {
+    $file = new SplFileObject($path, "r");
+    $file->seek(PHP_INT_MAX);
+    $lineNumber = (int)$file->key();
+
+    for ( ; $lineNumber >= 0 && count($matches) < $matchLimit && $scanned < $scanLimit; $lineNumber--, $scanned++ ) {
+      $file->seek($lineNumber);
+      $line = trim((string)$file->current());
+
+      if ( $line === "" || ! appdataCleanupPlusDiagnosticsLineMatches($line) ) {
+        continue;
+      }
+
+      $matches[] = appdataCleanupPlusDiagnosticsRedactText($line);
+    }
+  } catch ( Exception $exception ) {
+    return array(
+      "path" => appdataCleanupPlusDiagnosticsRedactPath($path),
+      "available" => false,
+      "error" => appdataCleanupPlusDiagnosticsRedactText($exception->getMessage()),
+      "lines" => array(),
+      "matchedLineCount" => 0,
+      "scannedLineLimit" => (int)$scanLimit
+    );
+  }
+
+  $matches = array_reverse($matches);
+
+  return array(
+    "path" => appdataCleanupPlusDiagnosticsRedactPath($path),
+    "available" => true,
+    "lines" => $matches,
+    "matchedLineCount" => count($matches),
+    "scannedLineLimit" => (int)$scanLimit,
+    "matchLimit" => (int)$matchLimit
+  );
+}
+
+function appdataCleanupPlusDiagnosticsReadOptionalJsonFile($path, $limit=50) {
+  $payload = readAppdataCleanupPlusJsonFile($path, array());
+  $count = is_array($payload) ? count($payload) : 0;
+
+  if ( is_array($payload) && $limit > 0 && count($payload) > $limit ) {
+    $payload = array_slice($payload, 0, $limit, true);
+  }
+
+  return array(
+    "path" => appdataCleanupPlusDiagnosticsRedactPath($path),
+    "exists" => is_file($path),
+    "count" => $count,
+    "truncated" => $limit > 0 && $count > $limit,
+    "data" => appdataCleanupPlusDiagnosticsRedactValue($payload)
+  );
+}
+
+function appdataCleanupPlusDiagnosticsSnapshotSummary() {
+  $snapshotFiles = glob(appdataCleanupPlusSnapshotStorageDir() . "/*/*.json");
+  $snapshots = array();
+
+  if ( ! is_array($snapshotFiles) ) {
+    $snapshotFiles = array();
+  }
+
+  rsort($snapshotFiles);
+
+  foreach ( array_slice($snapshotFiles, 0, 10) as $snapshotFile ) {
+    $snapshot = readAppdataCleanupPlusJsonFile($snapshotFile, array());
+    $snapshots[] = array(
+      "file" => appdataCleanupPlusDiagnosticsRedactPath($snapshotFile),
+      "issuedAt" => isset($snapshot["issuedAt"]) ? (string)$snapshot["issuedAt"] : "",
+      "expiresAt" => isset($snapshot["expiresAt"]) ? (string)$snapshot["expiresAt"] : "",
+      "candidateCount" => isset($snapshot["candidates"]) && is_array($snapshot["candidates"]) ? count($snapshot["candidates"]) : 0
+    );
+  }
+
+  return array(
+    "count" => count($snapshotFiles),
+    "recent" => $snapshots
+  );
+}
+
+function appdataCleanupPlusDiagnosticsRuntimeLockSummary() {
+  $locks = array();
+
+  foreach ( appdataCleanupPlusListRuntimeLocks() as $lock ) {
+    $metadata = isset($lock["metadata"]) && is_array($lock["metadata"]) ? $lock["metadata"] : array();
+    $locks[] = array(
+      "name" => isset($lock["name"]) ? (string)$lock["name"] : "",
+      "path" => isset($lock["path"]) ? appdataCleanupPlusDiagnosticsRedactPath($lock["path"]) : "",
+      "held" => isset($lock["held"]) ? $lock["held"] : null,
+      "pidPresent" => ! empty($lock["pid"]),
+      "pidRunning" => isset($lock["pidRunning"]) ? $lock["pidRunning"] : null,
+      "startedAt" => isset($lock["startedAt"]) ? (string)$lock["startedAt"] : "",
+      "ageSeconds" => isset($lock["ageSeconds"]) ? $lock["ageSeconds"] : null,
+      "stale" => ! empty($lock["stale"]),
+      "action" => isset($metadata["action"]) ? appdataCleanupPlusDiagnosticsRedactText($metadata["action"]) : ""
+    );
+  }
+
+  return array(
+    "count" => count($locks),
+    "staleSeconds" => appdataCleanupPlusRuntimeLockStaleSeconds(),
+    "locks" => $locks
+  );
+}
+
+function appdataCleanupPlusDiagnosticsPluginVersion() {
+  $paths = array(
+    "/boot/config/plugins/appdata.cleanup.plus.plg",
+    dirname(__DIR__, 6) . "/plugins/appdata.cleanup.plus.plg"
+  );
+
+  foreach ( $paths as $path ) {
+    if ( ! is_file($path) ) {
+      continue;
+    }
+
+    $contents = @file_get_contents($path);
+    if ( is_string($contents) && preg_match('/<!ENTITY version "([^"]+)">/', $contents, $matches) ) {
+      return (string)$matches[1];
+    }
+  }
+
+  return "";
+}
+
+function appdataCleanupPlusDiagnosticsUnraidVersion() {
+  foreach ( array("/etc/unraid-version", "/var/local/emhttp/var.ini") as $path ) {
+    if ( ! is_file($path) || ! is_readable($path) ) {
+      continue;
+    }
+
+    $contents = @file_get_contents($path, false, null, 0, 2048);
+    if ( is_string($contents) && trim($contents) !== "" ) {
+      return appdataCleanupPlusDiagnosticsRedactText(trim($contents));
+    }
+  }
+
+  return "";
+}
+
+function buildAppdataCleanupPlusDiagnosticsBundle() {
+  $logs = array();
+
+  foreach ( appdataCleanupPlusDiagnosticsLogPaths() as $path ) {
+    $logs[] = appdataCleanupPlusDiagnosticsReadMatchingLogTail($path);
+  }
+
+  return array(
+    "ok" => true,
+    "generatedAt" => date("c"),
+    "redaction" => array(
+      "enabled" => true,
+      "strategy" => "Server diagnostics redact paths, IP addresses, emails, MAC addresses, tokens, UUIDs, long hex values, and syslog hostnames. Review before sharing."
+    ),
+    "runtime" => array(
+      "pluginVersion" => appdataCleanupPlusDiagnosticsPluginVersion(),
+      "phpVersion" => PHP_VERSION,
+      "phpSapi" => PHP_SAPI,
+      "unraidVersion" => appdataCleanupPlusDiagnosticsUnraidVersion(),
+      "configDir" => appdataCleanupPlusDiagnosticsRedactPath(appdataCleanupPlusConfigDir()),
+      "runtimeDir" => appdataCleanupPlusDiagnosticsRedactPath(appdataCleanupPlusRuntimeDir()),
+      "dockerRuntimeExists" => is_dir(appdataCleanupPlusDockerRuntimePath())
+    ),
+    "state" => array(
+      "safetySettings" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusSafetySettingsFile(), 0),
+      "quarantineRegistry" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusQuarantineRegistryFile(), 50),
+      "ignoredCandidates" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusIgnoreListFile(), 50),
+      "auditHistory" => appdataCleanupPlusDiagnosticsRedactAuditHistory(getAppdataCleanupPlusAuditHistory(50)),
+      "runtimeLocks" => appdataCleanupPlusDiagnosticsRuntimeLockSummary(),
+      "statsCache" => array(
+        "path" => appdataCleanupPlusDiagnosticsRedactPath(appdataCleanupPlusStatsCacheFile()),
+        "exists" => is_file(appdataCleanupPlusStatsCacheFile()),
+        "entryCount" => count(readAppdataCleanupPlusJsonFile(appdataCleanupPlusStatsCacheFile(), array()))
+      ),
+      "latestScanMetrics" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusLatestScanMetricsFile(), 0),
+      "snapshots" => appdataCleanupPlusDiagnosticsSnapshotSummary()
+    ),
+    "logs" => $logs
+  );
 }
 
 function resolveSnapshotCandidates($token, $candidateIds) {
@@ -153,36 +582,84 @@ function updateSnapshotCandidateLockOverrideState($token, $candidateIds, $intent
 }
 
 function buildDashboardPayload() {
+  $scanMetrics = appdataCleanupPlusCreateScanMetrics();
+  $filesystemDiscoveryMeta = array();
   $settings = getAppdataCleanupPlusSafetySettings();
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "settings");
+
   $allFiles = glob(appdataCleanupPlusDockerTemplateDir() . "/*.xml");
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "template_glob", array(
+    "templateFileCount" => is_array($allFiles) ? count($allFiles) : 0
+  ));
+
   $dockerRunning = is_dir(appdataCleanupPlusDockerRuntimePath());
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "docker_state", array(
+    "dockerRunning" => $dockerRunning
+  ));
+
   $containers = getDockerContainersSafe();
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "docker_query", array(
+    "containerCount" => is_array($containers) ? count($containers) : 0
+  ));
 
   if ( ! is_array($allFiles) ) {
     $allFiles = array();
   }
 
   $templateVolumes = buildCandidateMap($allFiles, $settings);
-  $filesystemVolumes = buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "template_scan", array(
+    "templateVolumeCount" => count($templateVolumes)
+  ));
+
+  $filesystemVolumes = buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning, $filesystemDiscoveryMeta);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "filesystem_discovery", array(
+    "filesystemVolumeCount" => count($filesystemVolumes),
+    "directChildDirectoryCount" => isset($filesystemDiscoveryMeta["directChildDirectoryCount"]) ? (int)$filesystemDiscoveryMeta["directChildDirectoryCount"] : 0,
+    "truncated" => ! empty($filesystemDiscoveryMeta["truncated"])
+  ));
+
   $availableVolumes = $templateVolumes + $filesystemVolumes;
+  $preFilterCount = count($availableVolumes);
 
   $availableVolumes = removeInstalledVolumeMatches($availableVolumes, $containers);
   $availableVolumes = filterToExistingCandidates($availableVolumes);
   $availableVolumes = removeParentCandidates($availableVolumes);
   $availableVolumes = removeParentsUsedByInstalledContainers($availableVolumes, $containers);
   $availableVolumes = removeVmManagerManagedCandidates($availableVolumes);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "candidate_filtering", array(
+    "beforeCount" => $preFilterCount,
+    "afterCount" => count($availableVolumes)
+  ));
 
   $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings, false);
   $summary = buildSummary($rows);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "row_build", array(
+    "rowCount" => count($rows)
+  ));
+
   $snapshot = writeAppdataCleanupPlusSnapshot(buildSnapshotCandidateMap($rows));
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "snapshot_write", array(
+    "snapshotWritten" => (bool)$snapshot
+  ));
+
   $scanWarningMessage = "";
+
+  if ( ! empty($filesystemDiscoveryMeta["truncated"]) ) {
+    $scanWarningMessage = "Filesystem discovery reached the safety limit of " . (int)$filesystemDiscoveryMeta["candidateLimit"] . " direct appdata candidates. Partial results are shown; narrow Appdata sources and rescan if expected folders are missing.";
+  }
 
   if ( ! $snapshot ) {
     error_log("Appdata Cleanup Plus could not persist a scan snapshot. Returning read-only dashboard payload.");
     $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings, true);
     $summary = buildSummary($rows);
-    $scanWarningMessage = "Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.";
+    $scanWarningMessage = trim($scanWarningMessage . " Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.");
+    appdataCleanupPlusMarkScanPhase($scanMetrics, "fallback_heavy_row_build", array(
+      "rowCount" => count($rows)
+    ));
   }
+
+  $finalScanMetrics = appdataCleanupPlusFinalizeScanMetrics($scanMetrics);
+  appdataCleanupPlusPersistLatestScanMetrics($finalScanMetrics);
 
   return appdataCleanupPlusBuildDashboardPayload(
     $dockerRunning,
@@ -190,7 +667,8 @@ function buildDashboardPayload() {
     $rows,
     $summary,
     $snapshot ? (string)$snapshot["token"] : "",
-    $scanWarningMessage
+    $scanWarningMessage,
+    $finalScanMetrics
   );
 }
 
@@ -222,6 +700,13 @@ function handleGetQuarantineSummary() {
   jsonResponse(array(
     "ok" => true,
     "quarantineSummary" => buildDashboardQuarantineSummaryPayload()
+  ));
+}
+
+function handleGetDiagnosticsBundle() {
+  jsonResponse(array(
+    "ok" => true,
+    "bundle" => buildAppdataCleanupPlusDiagnosticsBundle()
   ));
 }
 

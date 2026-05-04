@@ -18,6 +18,7 @@
     auditOpen: false,
     deferredDataRequestToken: "",
     scanWarningMessage: "",
+    scanMetrics: {},
     settings: ACP.defaultSafetySettings(),
     appdataSources: {
       detected: [],
@@ -820,6 +821,60 @@
     });
   }
 
+  function apiPostWithPluginBusyRetry(data, options) {
+    var normalizedOptions = $.isPlainObject(options) ? options : {};
+    var retriesRemaining = Math.max(0, Number(normalizedOptions.retries || 0));
+    var deferred = $.Deferred();
+
+    function attempt() {
+      apiPost(data).done(function(response, textStatus, xhr) {
+        deferred.resolveWith(this, [response, textStatus, xhr]);
+      }).fail(function(xhr, textStatus, errorThrown) {
+        if (isPluginBusyResponse(xhr) && retriesRemaining > 0) {
+          retriesRemaining--;
+          window.setTimeout(attempt, getRetryAfterDelayMs(xhr));
+          return;
+        }
+
+        deferred.rejectWith(this, [xhr, textStatus, errorThrown]);
+      });
+    }
+
+    attempt();
+    return deferred.promise();
+  }
+
+  function apiPostForUserAction(data, options) {
+    pauseScanStatHydrationForUserRequest();
+    return apiPostWithPluginBusyRetry(data, $.extend({ retries: 2 }, $.isPlainObject(options) ? options : {}));
+  }
+
+  function isPluginBusyResponse(xhr) {
+    return !!xhr && Number(xhr.status || 0) === 429;
+  }
+
+  function getRetryAfterDelayMs(xhr) {
+    var retryAfter = xhr && typeof xhr.getResponseHeader === "function" ? Number(xhr.getResponseHeader("Retry-After") || 0) : 0;
+
+    if (!retryAfter || retryAfter < 1) {
+      retryAfter = 3;
+    }
+
+    return Math.max(1000, Math.min(10000, retryAfter * 1000));
+  }
+
+  function getPluginBusyMessage(xhr) {
+    var retryAfter = xhr && typeof xhr.getResponseHeader === "function" ? Number(xhr.getResponseHeader("Retry-After") || 0) : 0;
+    var fallback = ACP.t(strings, "backendBusyMessage", "Another Appdata Cleanup Plus operation is still running. Wait a few seconds, then try again.");
+    var message = ACP.extractErrorMessage(xhr, fallback);
+
+    if (retryAfter > 0 && message.indexOf("Retry after") === -1) {
+      message += " Retry after about " + String(retryAfter) + " seconds.";
+    }
+
+    return message;
+  }
+
   function syncSafetyControls() {
     var settings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
 
@@ -931,6 +986,7 @@
       state.auditHistoryHasMore = false;
       state.auditHistoryRequestToken = "";
       state.scanWarningMessage = String(response.scanWarningMessage || "");
+      state.scanMetrics = $.extend(true, {}, response.scanMetrics || {});
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || {});
       setAppdataSourceInfo(response.appdataSourceInfo || {});
       state.appdataSourceBrowser.manual = normalizeManualAppdataSourcesInput((state.settings || {}).manualAppdataSources || []);
@@ -951,6 +1007,8 @@
       }
       loadDeferredDashboardData(deferredDataRequestToken);
     }).fail(function(xhr) {
+      var pluginBusy = isPluginBusyResponse(xhr);
+
       resetDashboardState();
       state.appdataSourceBrowser = previousBrowserState;
       state.zfsPathMappingBrowser = previousZfsBrowserState;
@@ -961,8 +1019,8 @@
       renderNotices([]);
       renderResultsMeta();
       renderStateMessage(
-        ACP.t(strings, "scanFailedTitle", "Scan failed"),
-        ACP.extractErrorMessage(xhr, ACP.t(strings, "scanFailedMessage", "The orphaned appdata scan could not be completed right now.")),
+        pluginBusy ? ACP.t(strings, "backendBusyTitle", "Backend busy") : ACP.t(strings, "scanFailedTitle", "Scan failed"),
+        pluginBusy ? getPluginBusyMessage(xhr) : ACP.extractErrorMessage(xhr, ACP.t(strings, "scanFailedMessage", "The orphaned appdata scan could not be completed right now.")),
         "rescan",
         ACP.t(strings, "rescanLabel", "Rescan")
       );
@@ -1065,6 +1123,18 @@
 
       state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary || {});
       renderPanels();
+    }).fail(function(xhr) {
+      if (!isActiveDeferredDataRequest(requestToken) || String(state.quarantine.summaryRequestToken || "") !== summaryRequestToken) {
+        return;
+      }
+
+      if (isPluginBusyResponse(xhr)) {
+        window.setTimeout(function() {
+          if (isActiveDeferredDataRequest(requestToken)) {
+            loadQuarantineSummary(requestToken, forceRefresh);
+          }
+        }, getRetryAfterDelayMs(xhr));
+      }
     });
   }
 
@@ -1079,7 +1149,7 @@
     }
     renderPanels();
 
-    apiPost({
+    apiPostForUserAction({
       action: "getQuarantineEntries"
     }).done(function(response) {
       var quarantine = response.quarantine || {};
@@ -1672,11 +1742,11 @@
     });
     renderOpenRowDetailsModal();
 
-    apiPost({
+    apiPostWithPluginBusyRetry({
       action: "getCandidateDetails",
       scanToken: state.scanToken,
       candidateId: rowId
-    }).done(function(response) {
+    }, { retries: 2 }).done(function(response) {
       var detailRow = $.isPlainObject(response && response.row) ? response.row : {};
 
       if (state.rowDetails.requestToken !== requestToken) {
@@ -2279,6 +2349,13 @@
     state.scanHydration.active = false;
     state.scanHydration.queue = [];
     state.scanHydration.requestToken = "";
+    state.scanMetrics = {};
+  }
+
+  function pauseScanStatHydrationForUserRequest() {
+    if (state.scanHydration.active) {
+      stopScanStatHydration();
+    }
   }
 
   function requestNextScanStatBatch(requestToken) {
@@ -2315,8 +2392,16 @@
       window.setTimeout(function() {
         requestNextScanStatBatch(requestToken);
       }, 0);
-    }).fail(function() {
+    }).fail(function(xhr) {
       if (!state.scanHydration.active || state.scanHydration.requestToken !== requestToken) {
+        return;
+      }
+
+      if (isPluginBusyResponse(xhr)) {
+        state.scanHydration.queue = batchIds.concat(state.scanHydration.queue);
+        window.setTimeout(function() {
+          requestNextScanStatBatch(requestToken);
+        }, getRetryAfterDelayMs(xhr));
         return;
       }
 
@@ -2875,6 +2960,7 @@
         scanTokenPresent: !!state.scanToken,
         scanWarningMessage: sanitizeDiagnosticsFreeText(String(state.scanWarningMessage || ""), redactor),
         summary: $.extend({}, state.summary || {}),
+        metrics: $.extend(true, {}, state.scanMetrics || {}),
         insights: sanitizedInsights,
         visibleRowCount: visibleRows.length,
         selectedRowCount: selectedRows.length,
@@ -2904,6 +2990,17 @@
   function buildDiagnosticsFilename() {
     var stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+$/, "").replace("T", "-");
     return "appdata-cleanup-plus-diagnostics-" + stamp + ".json";
+  }
+
+  function extractServerLatestScanMetrics(bundle) {
+    var metricsFile = bundle && bundle.state && bundle.state.latestScanMetrics;
+    var metrics = metricsFile && metricsFile.data;
+
+    if (metrics && $.isArray(metrics.phases) && metrics.phases.length) {
+      return $.extend(true, {}, metrics);
+    }
+
+    return {};
   }
 
   function buildSupportSummaryText() {
@@ -3018,20 +3115,30 @@
   }
 
   function exportDiagnostics() {
-    try {
-      downloadJsonFile(buildDiagnosticsFilename(), buildDiagnosticsPayload());
+    apiPostForUserAction({
+      action: "getDiagnosticsBundle"
+    }).done(function(response) {
+      var payload = buildDiagnosticsPayload();
+      var serverMetrics;
+
+      payload.serverDiagnostics = response && response.bundle ? response.bundle : {};
+      serverMetrics = extractServerLatestScanMetrics(payload.serverDiagnostics);
+      if ((!payload.scan.metrics || !$.isArray(payload.scan.metrics.phases) || !payload.scan.metrics.phases.length) && !$.isEmptyObject(serverMetrics)) {
+        payload.scan.metrics = serverMetrics;
+      }
       swal(
         ACP.t(strings, "toolsDiagnosticsDoneTitle", "Diagnostics exported"),
         ACP.t(strings, "toolsDiagnosticsDoneMessage", "The diagnostics JSON has been downloaded."),
         "success"
       );
-    } catch (_error) {
+      downloadJsonFile(buildDiagnosticsFilename(), payload);
+    }).fail(function(xhr) {
       swal(
         ACP.t(strings, "toolsDiagnosticsFailedTitle", "Diagnostics export failed"),
-        ACP.t(strings, "toolsDiagnosticsFailedMessage", "The diagnostics file could not be created right now."),
+        ACP.extractErrorMessage(xhr, ACP.t(strings, "toolsDiagnosticsFailedMessage", "The diagnostics file could not be created right now.")),
         "error"
       );
-    }
+    });
   }
 
   function copySupportSummary() {
@@ -3262,7 +3369,7 @@
     setBusy(true);
     renderOpenQuarantineManagerModal();
 
-    apiPost({
+    apiPostForUserAction({
       action: "updateQuarantinePurgeSchedule",
       entryIds: JSON.stringify(entryIds),
       purgeScheduleMode: mode,
@@ -4233,7 +4340,7 @@
       requestData.scanToken = state.scanToken;
     }
 
-    apiPost(requestData).done(function(response) {
+    apiPostForUserAction(requestData).done(function(response) {
       var quarantine = response.quarantine || null;
       var zfsModalWasVisible = isZfsPathMappingsModalVisible();
 
@@ -4888,7 +4995,7 @@
           allowOutsideClick: false
         });
 
-        apiPost({
+        apiPostForUserAction({
           action: "executeCandidateAction",
           scanToken: state.scanToken,
           candidateIds: JSON.stringify($.map(selectedRows, function(row) {
@@ -5009,7 +5116,7 @@
       allowOutsideClick: false
     });
 
-    apiPost({
+    apiPostForUserAction({
       action: "executeCandidateAction",
       scanToken: state.scanToken,
       candidateIds: JSON.stringify($.map(selectedRows, function(row) {
@@ -5128,7 +5235,7 @@
       allowOutsideClick: false
     });
 
-    apiPost({
+    apiPostForUserAction({
       action: "inspectQuarantineRestore",
       entryIds: JSON.stringify(entryIds)
     }).done(function(response) {
@@ -5455,7 +5562,7 @@
       allowOutsideClick: false
     });
 
-    apiPost({
+    apiPostForUserAction({
       action: "quarantineManagerAction",
       managerAction: action,
       entryIds: JSON.stringify(entryIds),

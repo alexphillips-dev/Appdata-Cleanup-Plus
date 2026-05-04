@@ -993,6 +993,34 @@ function appdataCleanupPlusStateFile($filename) {
   return appdataCleanupPlusConfigDir() . "/" . ltrim($filename, "/");
 }
 
+function appdataCleanupPlusRuntimeDir() {
+  $override = trim(str_replace("\\", "/", (string)getenv("APPDATA_CLEANUP_PLUS_RUNTIME_ROOT")));
+  $configuredRoot = appdataCleanupPlusConfiguredStateRoot();
+
+  if ( $override !== "" ) {
+    return rtrim($override, "/");
+  }
+
+  if ( $configuredRoot !== "" ) {
+    return $configuredRoot . "/runtime";
+  }
+
+  return "/var/tmp/appdata.cleanup.plus";
+}
+
+function appdataCleanupPlusRuntimeLockFile($name) {
+  return appdataCleanupPlusRuntimeDir() . "/locks/" . appdataCleanupPlusSanitizeStateKey($name) . ".lock";
+}
+
+function appdataCleanupPlusRuntimeLockDir() {
+  return appdataCleanupPlusRuntimeDir() . "/locks";
+}
+
+function appdataCleanupPlusRuntimeLockStaleSeconds() {
+  $override = (int)getenv("APPDATA_CLEANUP_PLUS_STALE_LOCK_SECONDS");
+  return $override > 0 ? $override : 1800;
+}
+
 function appdataCleanupPlusSanitizeStateKey($value) {
   return preg_replace('/[^A-Za-z0-9._-]+/', '', (string)$value);
 }
@@ -1028,6 +1056,181 @@ function ensureAppdataCleanupPlusDirectory($path) {
 
 function ensureAppdataCleanupPlusConfigDir() {
   return ensureAppdataCleanupPlusDirectory(appdataCleanupPlusConfigDir());
+}
+
+function acquireAppdataCleanupPlusRuntimeLock($name, $metadata=array()) {
+  $lockName = appdataCleanupPlusSanitizeStateKey($name);
+  $lockFile = appdataCleanupPlusRuntimeLockFile($lockName);
+  $handle = false;
+  $store =& appdataCleanupPlusRuntimeStore();
+
+  if ( $lockName === "" || ! ensureAppdataCleanupPlusDirectory(dirname($lockFile)) ) {
+    return false;
+  }
+
+  if ( ! empty($store["runtimeLocks"][$lockName]) ) {
+    return false;
+  }
+
+  recoverAppdataCleanupPlusStaleRuntimeLockFile($lockFile);
+
+  $handle = @fopen($lockFile, "c+");
+  if ( ! $handle ) {
+    return false;
+  }
+
+  if ( ! @flock($handle, LOCK_EX | LOCK_NB) ) {
+    @fclose($handle);
+    return false;
+  }
+
+  @ftruncate($handle, 0);
+  @rewind($handle);
+  @fwrite($handle, appdataCleanupPlusJsonEncode(array(
+    "name" => $lockName,
+    "pid" => function_exists("getmypid") ? getmypid() : null,
+    "startedAt" => date("c"),
+    "metadata" => is_array($metadata) ? $metadata : array()
+  )) . "\n");
+  @fflush($handle);
+
+  if ( ! isset($store["runtimeLocks"]) || ! is_array($store["runtimeLocks"]) ) {
+    $store["runtimeLocks"] = array();
+  }
+
+  $store["runtimeLocks"][$lockName] = $handle;
+  return true;
+}
+
+function releaseAppdataCleanupPlusRuntimeLock($name) {
+  $lockName = appdataCleanupPlusSanitizeStateKey($name);
+  $store =& appdataCleanupPlusRuntimeStore();
+
+  if ( $lockName === "" || empty($store["runtimeLocks"][$lockName]) ) {
+    return false;
+  }
+
+  @flock($store["runtimeLocks"][$lockName], LOCK_UN);
+  @fclose($store["runtimeLocks"][$lockName]);
+  unset($store["runtimeLocks"][$lockName]);
+  return true;
+}
+
+function releaseAllAppdataCleanupPlusRuntimeLocks() {
+  $store =& appdataCleanupPlusRuntimeStore();
+
+  if ( empty($store["runtimeLocks"]) || ! is_array($store["runtimeLocks"]) ) {
+    return;
+  }
+
+  foreach ( array_keys($store["runtimeLocks"]) as $lockName ) {
+    releaseAppdataCleanupPlusRuntimeLock($lockName);
+  }
+}
+
+function appdataCleanupPlusParseRuntimeLockPayload($path) {
+  $payload = readAppdataCleanupPlusJsonFile($path, array());
+
+  if ( ! is_array($payload) ) {
+    return array();
+  }
+
+  return $payload;
+}
+
+function appdataCleanupPlusRuntimeLockStartedTimestamp($payload, $fallbackPath="") {
+  $startedAt = isset($payload["startedAt"]) ? trim((string)$payload["startedAt"]) : "";
+  $timestamp = $startedAt !== "" ? strtotime($startedAt) : false;
+
+  if ( $timestamp !== false ) {
+    return (int)$timestamp;
+  }
+
+  if ( $fallbackPath !== "" && is_file($fallbackPath) ) {
+    $mtime = @filemtime($fallbackPath);
+    if ( $mtime !== false ) {
+      return (int)$mtime;
+    }
+  }
+
+  return 0;
+}
+
+function appdataCleanupPlusIsPidRunning($pid) {
+  $pid = (int)$pid;
+
+  if ( $pid <= 0 ) {
+    return null;
+  }
+
+  if ( function_exists("posix_kill") ) {
+    return @posix_kill($pid, 0);
+  }
+
+  return is_dir("/proc/" . $pid);
+}
+
+function appdataCleanupPlusInspectRuntimeLockFile($path) {
+  $payload = appdataCleanupPlusParseRuntimeLockPayload($path);
+  $name = isset($payload["name"]) ? appdataCleanupPlusSanitizeStateKey($payload["name"]) : basename((string)$path, ".lock");
+  $startedTimestamp = appdataCleanupPlusRuntimeLockStartedTimestamp($payload, $path);
+  $ageSeconds = $startedTimestamp > 0 ? max(0, time() - $startedTimestamp) : null;
+  $handle = @fopen($path, "c");
+  $held = null;
+
+  if ( $handle ) {
+    if ( @flock($handle, LOCK_EX | LOCK_NB) ) {
+      $held = false;
+      @flock($handle, LOCK_UN);
+    } else {
+      $held = true;
+    }
+    @fclose($handle);
+  }
+
+  return array(
+    "name" => $name,
+    "path" => $path,
+    "held" => $held,
+    "pid" => isset($payload["pid"]) ? (int)$payload["pid"] : null,
+    "pidRunning" => isset($payload["pid"]) ? appdataCleanupPlusIsPidRunning($payload["pid"]) : null,
+    "startedAt" => isset($payload["startedAt"]) ? (string)$payload["startedAt"] : "",
+    "ageSeconds" => $ageSeconds,
+    "stale" => $held === false && $ageSeconds !== null && $ageSeconds >= appdataCleanupPlusRuntimeLockStaleSeconds(),
+    "metadata" => isset($payload["metadata"]) && is_array($payload["metadata"]) ? $payload["metadata"] : array()
+  );
+}
+
+function recoverAppdataCleanupPlusStaleRuntimeLockFile($path) {
+  if ( ! is_file($path) ) {
+    return false;
+  }
+
+  $lock = appdataCleanupPlusInspectRuntimeLockFile($path);
+
+  if ( empty($lock["stale"]) ) {
+    return false;
+  }
+
+  return @unlink($path);
+}
+
+function appdataCleanupPlusListRuntimeLocks() {
+  $lockDir = appdataCleanupPlusRuntimeLockDir();
+  $lockFiles = is_dir($lockDir) ? glob($lockDir . "/*.lock") : array();
+  $locks = array();
+
+  if ( ! is_array($lockFiles) ) {
+    $lockFiles = array();
+  }
+
+  sort($lockFiles);
+
+  foreach ( $lockFiles as $lockFile ) {
+    $locks[] = appdataCleanupPlusInspectRuntimeLockFile($lockFile);
+  }
+
+  return $locks;
 }
 
 function readAppdataCleanupPlusTemplateFile($path) {
@@ -1164,6 +1367,10 @@ function appdataCleanupPlusSnapshotStorageDir() {
 
 function appdataCleanupPlusStatsCacheFile() {
   return appdataCleanupPlusStateFile("path-stats-cache.json");
+}
+
+function appdataCleanupPlusLatestScanMetricsFile() {
+  return appdataCleanupPlusStateFile("latest-scan-metrics.json");
 }
 
 function appdataCleanupPlusQuarantineRegistryFile() {
@@ -1376,46 +1583,61 @@ function appendAppdataCleanupPlusAuditEntry($entry) {
   return @file_put_contents(appdataCleanupPlusAuditLogFile(), $encoded . "\n", FILE_APPEND | LOCK_EX) !== false;
 }
 
+function appdataCleanupPlusDefaultAuditHistoryLimit() {
+  return 200;
+}
+
+function readAppdataCleanupPlusAuditLogTailLines($path, $limit) {
+  $maxLines = max(1, (int)$limit);
+  $lines = array();
+  $file = null;
+  $lineNumber = 0;
+
+  if ( ! is_file($path) ) {
+    return $lines;
+  }
+
+  try {
+    $file = new SplFileObject($path, "r");
+    $file->seek(PHP_INT_MAX);
+    $lineNumber = (int)$file->key();
+
+    for ( ; $lineNumber >= 0 && count($lines) < $maxLines; $lineNumber-- ) {
+      $file->seek($lineNumber);
+      $line = trim((string)$file->current());
+
+      if ( $line !== "" ) {
+        $lines[] = $line;
+      }
+    }
+  } catch ( Exception $exception ) {
+    return array();
+  }
+
+  return $lines;
+}
+
 function getLatestAppdataCleanupPlusAuditEntry() {
-  $auditPath = appdataCleanupPlusAuditLogFile();
+  $lines = readAppdataCleanupPlusAuditLogTailLines(appdataCleanupPlusAuditLogFile(), 1);
 
-  if ( ! is_file($auditPath) ) {
+  if ( empty($lines) ) {
     return null;
   }
 
-  $lines = @file($auditPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-  if ( ! is_array($lines) || empty($lines) ) {
-    return null;
-  }
-
-  $decoded = json_decode($lines[count($lines) - 1], true);
+  $decoded = json_decode($lines[0], true);
   return is_array($decoded) ? $decoded : null;
 }
 
 function getAppdataCleanupPlusAuditHistory($limit=0) {
-  $auditPath = appdataCleanupPlusAuditLogFile();
+  $effectiveLimit = (int)$limit > 0 ? (int)$limit : appdataCleanupPlusDefaultAuditHistoryLimit();
+  $lines = readAppdataCleanupPlusAuditLogTailLines(appdataCleanupPlusAuditLogFile(), $effectiveLimit);
   $entries = array();
-
-  if ( ! is_file($auditPath) ) {
-    return $entries;
-  }
-
-  $lines = @file($auditPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-  if ( ! is_array($lines) || empty($lines) ) {
-    return $entries;
-  }
-
-  $lines = array_reverse($lines);
 
   foreach ( $lines as $line ) {
     $decoded = json_decode($line, true);
 
     if ( is_array($decoded) ) {
       $entries[] = $decoded;
-    }
-
-    if ( $limit > 0 && count($entries) >= $limit ) {
-      break;
     }
   }
 

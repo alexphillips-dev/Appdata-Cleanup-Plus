@@ -2,17 +2,54 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.04.23.02">
-<!ENTITY md5 "be94e005ca8159ab35982aeae9ad7f3e">
+<!ENTITY version "2026.05.04.06">
+<!ENTITY md5 "794cd6c39ca1c76312076eababc77f82">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.05.04.06
+- Support: Persist the latest backend scan timing metrics server-side so diagnostics exports can include phase timings even when browser page state misses them
+- Fix: Backfill exported `scan.metrics` from server diagnostics when the frontend scan state has an empty metrics object
+- Test: Extend behavior smoke coverage to verify scan metrics are persisted for diagnostics fallback
+
+###2026.05.04.05
+- Support: Add runtime-lock diagnostics to the Tools export so active lock name, action, age, PID state, held state, and stale status are visible during troubleshooting
+- Fix: Recover old unheld runtime lock metadata safely before acquiring a new operation lock, while leaving active `flock`-held operations untouched
+- Support: Add per-phase scan timing metrics for settings load, Docker state/query, template scan, filesystem discovery, filtering, row build, and snapshot write
+- Support: Tighten diagnostics log matching so unrelated `emhttpd` startup/pool noise is excluded while plugin, PHP-FPM, nginx, timeout, and error context stays included
+- UX: Show a distinct `Backend busy` scan state when a guarded request returns HTTP 429 instead of presenting it as a generic scan failure
+- Safety: Add a filesystem discovery size guard with bounded partial results and a warning when direct appdata candidate discovery reaches the safety limit
+- Test: Cover stale-lock recovery, scan timing metrics, diagnostics log filtering, and filesystem discovery truncation in the behavior smoke suite
+
+###2026.05.04.04
+- Privacy: Tighten server diagnostics audit export so nested action row payloads are omitted and restored app names inside audit results are redacted
+- Support: Reduce diagnostics log noise by matching `emhttpd` process lines instead of every unrelated log line that only references an `emhttp` filesystem path
+- Test: Extend diagnostics smoke coverage to block unrelated flash-backup log noise and nested audit app-name leakage
+
+###2026.05.04.03
+- Support: Add a backend-generated diagnostics bundle so Tools exports include redacted plugin state files, audit history, snapshot summaries, runtime context, and bounded support log excerpts
+- Privacy: Redact filesystem paths, share/app-specific path segments, syslog hostnames, IP addresses, emails, query tokens, UUIDs, MAC addresses, and long hex tokens before diagnostics are downloaded
+- UX: Update the Tools diagnostics copy to clarify that exported diagnostics include redacted server-side log context and should still be reviewed before sharing
+- Test: Cover diagnostics log inclusion and redaction with a synthetic syslog containing sensitive host, path, email, IP, and token data
+
+###2026.05.04.02
+- Fix: Include safety-setting saves in the expensive-operation guard so quarantine rebuilds and settings writes cannot overlap with scan or hydration requests
+- UX: Pause background row-stat hydration before user-triggered operations and retry plugin-busy responses so healthy guarded requests do not show as false failures
+- Performance: Read audit history from the tail of the audit log with a bounded default instead of loading the full audit file on long-lived installs
+- Performance: Replace the parent-candidate O(n²) pruning pass with a path-prefix index while preserving parent, child, and sibling behavior
+- Test: Cover parent-candidate pruning behavior in the smoke suite
+
+###2026.05.04.01
+- Fix: Prevent Appdata Cleanup Plus from exhausting Unraid PHP-FPM workers by allowing only one filesystem-heavy scan, hydration, quarantine, or cleanup request to run at a time and returning a fast retry response for overlapping requests
+- UX: Retry deferred row-stat hydration and quarantine-summary refreshes after plugin-busy responses so the dashboard can finish background updates without stacking PHP workers
+- Test: Cover runtime lock acquire, duplicate-acquire rejection, release, and reacquire behavior in the behavior smoke suite
+
 ###2026.04.23.02
 - Release: Promote the full `2026.04.13.04` through `2026.04.23.01` development cycle to the stable `main` channel while keeping the manifest, CA feed, and package metadata pointed at `main`
 - Support: Add a `Tools` workflow with redacted diagnostics export plus `Copy support summary` so current version, scan counts, safety toggles, scan roots, ZFS state, notices, and quarantine totals can be shared quickly in issue reports and forum posts
@@ -657,7 +694,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 

@@ -10,12 +10,26 @@ require_once(__DIR__ . "/http.php");
 require_once(__DIR__ . "/api.php");
 
 register_shutdown_function("appdataCleanupPlusRespondToFatalShutdown");
+register_shutdown_function("releaseAllAppdataCleanupPlusRuntimeLocks");
 
 libxml_use_internal_errors(true);
 
 $requestMethod = strtoupper((string)($_SERVER["REQUEST_METHOD"] ?? ""));
 $action = getPostedString("action");
 $csrfToken = getRequestedCsrfToken();
+$expensiveActions = array(
+  "getOrphanAppdata",
+  "getQuarantineSummary",
+  "getDiagnosticsBundle",
+  "hydrateCandidateStats",
+  "getCandidateDetails",
+  "saveSafetySettings",
+  "getQuarantineEntries",
+  "executeCandidateAction",
+  "updateQuarantinePurgeSchedule",
+  "inspectQuarantineRestore",
+  "quarantineManagerAction"
+);
 
 if ( $requestMethod !== "POST" ) {
   header("Allow: POST");
@@ -41,6 +55,16 @@ if ( ! validateAppdataCleanupPlusCsrfToken($csrfToken) ) {
 
 closeAppdataCleanupPlusSession();
 
+if ( in_array($action, $expensiveActions, true) ) {
+  if ( ! acquireAppdataCleanupPlusRuntimeLock("expensive-operation", array("action" => $action)) ) {
+    header("Retry-After: 5");
+    jsonResponse(array(
+      "ok" => false,
+      "message" => "Appdata Cleanup Plus is already running a scan or cleanup operation. Wait a few seconds, then try again."
+    ), 429);
+  }
+}
+
 try {
   switch ( $action ) {
     case "getOrphanAppdata":
@@ -53,6 +77,10 @@ try {
 
     case "getQuarantineSummary":
       handleGetQuarantineSummary();
+      break;
+
+    case "getDiagnosticsBundle":
+      handleGetDiagnosticsBundle();
       break;
 
     case "hydrateCandidateStats":

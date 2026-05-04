@@ -650,6 +650,11 @@ function appdataCleanupPlusBuildEmptyParentRemnantReason($sourceRoot) {
   return $sourceLead . " found this empty parent folder after nested appdata mount paths under it were removed.";
 }
 
+function appdataCleanupPlusFilesystemDiscoveryCandidateLimit() {
+  $override = (int)getenv("APPDATA_CLEANUP_PLUS_FILESYSTEM_CANDIDATE_LIMIT");
+  return $override > 0 ? $override : 1000;
+}
+
 function appdataCleanupPlusResolveDirectChildPathForSourceRoot($sourceRoot, $referencePath) {
   $normalizedSourceRoot = appdataCleanupPlusCanonicalizePath($sourceRoot);
 
@@ -741,7 +746,7 @@ function appdataCleanupPlusBuildSourceRootReferenceIndex($sourceRoot, $reference
   return $index;
 }
 
-function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning) {
+function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning, &$discoveryMeta=null) {
   $availableVolumes = array();
   $templatePaths = array();
   $installedHostPaths = appdataCleanupPlusExtractDockerVolumeHostPaths($containers);
@@ -749,6 +754,17 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
   $referenceIndexBySourceRoot = array();
   $excludedRoots = array();
   $configuredSourceRoots = getAppdataCleanupPlusConfiguredSourceRoots($settings);
+  $candidateLimit = appdataCleanupPlusFilesystemDiscoveryCandidateLimit();
+  $directChildDirectoryCount = 0;
+  $stopDiscovery = false;
+
+  $discoveryMeta = array(
+    "candidateLimit" => $candidateLimit,
+    "candidateCount" => 0,
+    "directChildDirectoryCount" => 0,
+    "truncated" => false,
+    "truncatedAtSourceRoot" => ""
+  );
 
   if ( ! $dockerRunning ) {
     return $availableVolumes;
@@ -778,6 +794,10 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
     $entries = array();
     $referenceIndexKey = "";
     $sourceRootReferenceIndex = array();
+
+    if ( $stopDiscovery ) {
+      break;
+    }
 
     if ( ! $sourceRoot || ! is_dir($sourceRoot) ) {
       continue;
@@ -811,6 +831,8 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
         continue;
       }
 
+      $directChildDirectoryCount++;
+
       $candidateKey = appdataCleanupPlusPathComparisonKey($candidatePath);
 
       if ( $candidateKey === "" || isset($excludedRoots[$candidateKey]) ) {
@@ -834,6 +856,13 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
         continue;
       }
 
+      if ( count($availableVolumes) >= $candidateLimit ) {
+        $discoveryMeta["truncated"] = true;
+        $discoveryMeta["truncatedAtSourceRoot"] = $sourceRoot;
+        $stopDiscovery = true;
+        break;
+      }
+
       $availableVolumes[$candidateKey] = appdataCleanupPlusCreateCandidateVolume($candidatePath, "filesystem", $sourceRoot, $sourceRoot);
 
       if ( $hasStaleNestedReference ) {
@@ -842,6 +871,9 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
       }
     }
   }
+
+  $discoveryMeta["candidateCount"] = count($availableVolumes);
+  $discoveryMeta["directChildDirectoryCount"] = $directChildDirectoryCount;
 
   return $availableVolumes;
 }
@@ -887,18 +919,48 @@ function filterToExistingCandidates($availableVolumes) {
 
 function removeParentCandidates($availableVolumes) {
   $filtered = $availableVolumes;
+  $variantOwners = array();
+  $removeKeys = array();
 
   foreach ( $availableVolumes as $volumeKey => $volume ) {
-    foreach ( $availableVolumes as $testVolumeKey => $testVolume ) {
-      if ( $testVolume["HostDir"] === $volume["HostDir"] ) {
+    foreach ( appdataCleanupPlusPathComparisonVariants($volume["HostDir"]) as $variant ) {
+      $variant = rtrim(appdataCleanupPlusCanonicalizePath($variant), "/");
+
+      if ( $variant === "" ) {
         continue;
       }
 
-      if ( pathIsDescendant($volume["HostDir"], $testVolume["HostDir"]) ) {
-        unset($filtered[$volumeKey]);
-        break;
+      if ( ! isset($variantOwners[$variant]) ) {
+        $variantOwners[$variant] = array();
+      }
+
+      $variantOwners[$variant][$volumeKey] = true;
+    }
+  }
+
+  foreach ( $variantOwners as $variant => $owners ) {
+    $segments = array_values(array_filter(explode("/", trim($variant, "/")), "strlen"));
+    $prefix = "";
+
+    for ( $index = 0; $index < count($segments) - 1; $index++ ) {
+      $prefix .= "/" . $segments[$index];
+
+      if ( empty($variantOwners[$prefix]) ) {
+        continue;
+      }
+
+      foreach ( array_keys($variantOwners[$prefix]) as $parentKey ) {
+        foreach ( array_keys($owners) as $childKey ) {
+          if ( $parentKey !== $childKey ) {
+            $removeKeys[$parentKey] = true;
+          }
+        }
       }
     }
+  }
+
+  foreach ( array_keys($removeKeys) as $removeKey ) {
+    unset($filtered[$removeKey]);
   }
 
   return $filtered;
