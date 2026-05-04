@@ -10,6 +10,7 @@ $dockerConfigFixture = $stateRoot . "/boot/config/docker.cfg";
 $vmConfigFixture = $stateRoot . "/boot/config/domain.cfg";
 $shareConfigFixtureDir = $stateRoot . "/boot/config/shares";
 $templateFixtureDir = $stateRoot . "/boot/config/plugins/dockerMan/templates-user";
+$syslogFixture = $stateRoot . "/var/log/syslog";
 $zfsClientFixture = $repoRoot . "/tests/fixtures/zfs_client_fixture.php";
 $appdataShareName = "acp-smoke-share-" . getmypid();
 $appdataShareRoot = "/mnt/user/" . $appdataShareName;
@@ -26,6 +27,7 @@ putenv("APPDATA_CLEANUP_PLUS_DOCKER_CONFIG_PATH=" . $dockerConfigFixture);
 putenv("APPDATA_CLEANUP_PLUS_VM_CONFIG_PATH=" . $vmConfigFixture);
 putenv("APPDATA_CLEANUP_PLUS_SHARE_CONFIG_DIR=" . $shareConfigFixtureDir);
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_TEMPLATE_DIR=" . $templateFixtureDir);
+putenv("APPDATA_CLEANUP_PLUS_SYSLOG_PATH=" . $syslogFixture);
 putenv("APPDATA_CLEANUP_PLUS_ZFS_CLIENT_COMMAND=php \"" . str_replace("\\", "/", $zfsClientFixture) . "\"");
 putenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_SHARE_ROOT=" . $appdataShareRoot);
 putenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_DATASET_ROOT=" . $zfsDatasetRoot);
@@ -67,6 +69,12 @@ function behaviorSmokeAssertSame($expected, $actual, $message) {
 
 function behaviorSmokeAssertContains($needle, $haystack, $message) {
   if ( strpos((string)$haystack, (string)$needle) === false ) {
+    behaviorSmokeFail($message . " needle=" . var_export($needle, true) . " actual=" . var_export($haystack, true));
+  }
+}
+
+function behaviorSmokeAssertNotContains($needle, $haystack, $message) {
+  if ( strpos((string)$haystack, (string)$needle) !== false ) {
     behaviorSmokeFail($message . " needle=" . var_export($needle, true) . " actual=" . var_export($haystack, true));
   }
 }
@@ -495,6 +503,23 @@ $filteredParentCandidateMap = removeParentCandidates($parentCandidateMap);
 behaviorSmokeAssertSame(false, isset($filteredParentCandidateMap["parent"]), "Parent candidate pruning should drop less-specific parent paths.");
 behaviorSmokeAssertSame(true, isset($filteredParentCandidateMap["child"]), "Parent candidate pruning should keep child paths.");
 behaviorSmokeAssertSame(true, isset($filteredParentCandidateMap["sibling"]), "Parent candidate pruning should keep unrelated sibling paths.");
+
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($syslogFixture)), "Syslog fixture directory should be created.");
+file_put_contents(
+  $syslogFixture,
+  "May  4 10:00:00 PrivateTower php-fpm[123]: server reached max children setting while scanning /mnt/user/SecretShare/private-app token=0123456789abcdef0123456789abcdef from admin@example.com at 192.168.1.22\n" .
+  "May  4 10:00:01 PrivateTower nginx: 504 gateway timeout for /Settings/AppdataCleanupPlus?csrf_token=abcdefabcdefabcdefabcdefabcdefabcdef\n"
+);
+$diagnosticsBundle = buildAppdataCleanupPlusDiagnosticsBundle();
+$diagnosticsJson = appdataCleanupPlusJsonEncode($diagnosticsBundle);
+behaviorSmokeAssertContains("max children", $diagnosticsJson, "Diagnostics bundle should include matching php-fpm log context.");
+behaviorSmokeAssertContains("gateway timeout", $diagnosticsJson, "Diagnostics bundle should include matching nginx timeout context.");
+behaviorSmokeAssertNotContains("PrivateTower", $diagnosticsJson, "Diagnostics bundle should redact syslog hostnames.");
+behaviorSmokeAssertNotContains("SecretShare", $diagnosticsJson, "Diagnostics bundle should redact share names from paths.");
+behaviorSmokeAssertNotContains("private-app", $diagnosticsJson, "Diagnostics bundle should redact app-specific path segments.");
+behaviorSmokeAssertNotContains("admin@example.com", $diagnosticsJson, "Diagnostics bundle should redact email addresses.");
+behaviorSmokeAssertNotContains("192.168.1.22", $diagnosticsJson, "Diagnostics bundle should redact IP addresses.");
+behaviorSmokeAssertNotContains("0123456789abcdef0123456789abcdef", $diagnosticsJson, "Diagnostics bundle should redact token-like hex strings.");
 
 $scheduledPurgeQuarantineRoot = $stateRoot . "/scheduled-purge-quarantine";
 $scheduledPurgeDestination = $scheduledPurgeQuarantineRoot . "/20260330-121000/mnt/user/appdata/scheduled-purge";

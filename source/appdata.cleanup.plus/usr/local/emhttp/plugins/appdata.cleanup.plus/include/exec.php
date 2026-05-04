@@ -20,6 +20,7 @@ $csrfToken = getRequestedCsrfToken();
 $expensiveActions = array(
   "getOrphanAppdata",
   "getQuarantineSummary",
+  "getDiagnosticsBundle",
   "hydrateCandidateStats",
   "getCandidateDetails",
   "saveSafetySettings",
@@ -76,6 +77,10 @@ try {
 
     case "getQuarantineSummary":
       handleGetQuarantineSummary();
+      break;
+
+    case "getDiagnosticsBundle":
+      handleGetDiagnosticsBundle();
       break;
 
     case "hydrateCandidateStats":

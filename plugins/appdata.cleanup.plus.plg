@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.05.04.02">
-<!ENTITY md5 "a70ea3083a9427ba52cd25044d1de29f">
+<!ENTITY version "2026.05.04.03">
+<!ENTITY md5 "990b2fd2080804c28e7efae79bd308b7">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.05.04.03
+- Support: Add a backend-generated diagnostics bundle so Tools exports include redacted plugin state files, audit history, snapshot summaries, runtime context, and bounded support log excerpts
+- Privacy: Redact filesystem paths, share/app-specific path segments, syslog hostnames, IP addresses, emails, query tokens, UUIDs, MAC addresses, and long hex tokens before diagnostics are downloaded
+- UX: Update the Tools diagnostics copy to clarify that exported diagnostics include redacted server-side log context and should still be reviewed before sharing
+- Test: Cover diagnostics log inclusion and redaction with a synthetic syslog containing sensitive host, path, email, IP, and token data
+
 ###2026.05.04.02
 - Fix: Include safety-setting saves in the expensive-operation guard so quarantine rebuilds and settings writes cannot overlap with scan or hydration requests
 - UX: Pause background row-stat hydration before user-triggered operations and retry plugin-busy responses so healthy guarded requests do not show as false failures

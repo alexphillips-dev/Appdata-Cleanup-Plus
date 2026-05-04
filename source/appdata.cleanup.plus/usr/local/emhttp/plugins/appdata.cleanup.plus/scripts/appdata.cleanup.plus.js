@@ -3086,20 +3086,25 @@
   }
 
   function exportDiagnostics() {
-    try {
-      downloadJsonFile(buildDiagnosticsFilename(), buildDiagnosticsPayload());
+    apiPostForUserAction({
+      action: "getDiagnosticsBundle"
+    }).done(function(response) {
+      var payload = buildDiagnosticsPayload();
+
+      payload.serverDiagnostics = response && response.bundle ? response.bundle : {};
       swal(
         ACP.t(strings, "toolsDiagnosticsDoneTitle", "Diagnostics exported"),
         ACP.t(strings, "toolsDiagnosticsDoneMessage", "The diagnostics JSON has been downloaded."),
         "success"
       );
-    } catch (_error) {
+      downloadJsonFile(buildDiagnosticsFilename(), payload);
+    }).fail(function(xhr) {
       swal(
         ACP.t(strings, "toolsDiagnosticsFailedTitle", "Diagnostics export failed"),
-        ACP.t(strings, "toolsDiagnosticsFailedMessage", "The diagnostics file could not be created right now."),
+        ACP.extractErrorMessage(xhr, ACP.t(strings, "toolsDiagnosticsFailedMessage", "The diagnostics file could not be created right now.")),
         "error"
       );
-    }
+    });
   }
 
   function copySupportSummary() {
