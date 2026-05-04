@@ -1369,6 +1369,10 @@ function appdataCleanupPlusStatsCacheFile() {
   return appdataCleanupPlusStateFile("path-stats-cache.json");
 }
 
+function appdataCleanupPlusLatestScanMetricsFile() {
+  return appdataCleanupPlusStateFile("latest-scan-metrics.json");
+}
+
 function appdataCleanupPlusQuarantineRegistryFile() {
   return appdataCleanupPlusStateFile("quarantine-records.json");
 }

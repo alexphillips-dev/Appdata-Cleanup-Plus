@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.05.04.05">
-<!ENTITY md5 "71655985b123cb8e960dbafe01d6ff24">
+<!ENTITY version "2026.05.04.06">
+<!ENTITY md5 "794cd6c39ca1c76312076eababc77f82">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.05.04.06
+- Support: Persist the latest backend scan timing metrics server-side so diagnostics exports can include phase timings even when browser page state misses them
+- Fix: Backfill exported `scan.metrics` from server diagnostics when the frontend scan state has an empty metrics object
+- Test: Extend behavior smoke coverage to verify scan metrics are persisted for diagnostics fallback
+
 ###2026.05.04.05
 - Support: Add runtime-lock diagnostics to the Tools export so active lock name, action, age, PID state, held state, and stale status are visible during troubleshooting
 - Fix: Recover old unheld runtime lock metadata safely before acquiring a new operation lock, while leaving active `flock`-held operations untouched

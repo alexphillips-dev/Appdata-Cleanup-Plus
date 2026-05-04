@@ -744,6 +744,8 @@ behaviorSmokeAssertSame(false, array_key_exists("auditHistory", $dashboard["payl
 behaviorSmokeAssertSame(false, array_key_exists("quarantineSummary", $dashboard["payload"]), "Initial dashboard scan payloads should defer quarantine summary loading until after the main scan returns.");
 behaviorSmokeAssertTrue(! empty($dashboard["payload"]["scanMetrics"]["phases"]), "Dashboard scan payloads should include per-phase timing metrics.");
 behaviorSmokeAssertTrue(isset($dashboard["payload"]["scanMetrics"]["totalMs"]), "Dashboard scan payloads should include total scan time.");
+$persistedScanMetrics = readAppdataCleanupPlusJsonFile(appdataCleanupPlusLatestScanMetricsFile(), array());
+behaviorSmokeAssertTrue(! empty($persistedScanMetrics["phases"]), "Dashboard scan should persist latest scan metrics for diagnostics export fallback.");
 $guardSourceRoot = $stateRoot . "/filesystem-guard-source";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($guardSourceRoot . "/first"), "Filesystem guard fixture should create the first candidate.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($guardSourceRoot . "/second"), "Filesystem guard fixture should create the second candidate.");

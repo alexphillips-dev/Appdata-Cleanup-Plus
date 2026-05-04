@@ -60,6 +60,14 @@ function appdataCleanupPlusFinalizeScanMetrics($metrics) {
   );
 }
 
+function appdataCleanupPlusPersistLatestScanMetrics($metrics) {
+  if ( ! is_array($metrics) || empty($metrics["phases"]) ) {
+    return false;
+  }
+
+  return writeAppdataCleanupPlusJsonFile(appdataCleanupPlusLatestScanMetricsFile(), $metrics);
+}
+
 function buildAuditHistoryPayload($limit=0) {
   $effectiveLimit = max(0, (int)$limit);
   $history = getAppdataCleanupPlusAuditHistory($effectiveLimit > 0 ? ($effectiveLimit + 1) : 0);
@@ -465,6 +473,7 @@ function buildAppdataCleanupPlusDiagnosticsBundle() {
         "exists" => is_file(appdataCleanupPlusStatsCacheFile()),
         "entryCount" => count(readAppdataCleanupPlusJsonFile(appdataCleanupPlusStatsCacheFile(), array()))
       ),
+      "latestScanMetrics" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusLatestScanMetricsFile(), 0),
       "snapshots" => appdataCleanupPlusDiagnosticsSnapshotSummary()
     ),
     "logs" => $logs
@@ -649,6 +658,9 @@ function buildDashboardPayload() {
     ));
   }
 
+  $finalScanMetrics = appdataCleanupPlusFinalizeScanMetrics($scanMetrics);
+  appdataCleanupPlusPersistLatestScanMetrics($finalScanMetrics);
+
   return appdataCleanupPlusBuildDashboardPayload(
     $dockerRunning,
     $settings,
@@ -656,7 +668,7 @@ function buildDashboardPayload() {
     $summary,
     $snapshot ? (string)$snapshot["token"] : "",
     $scanWarningMessage,
-    appdataCleanupPlusFinalizeScanMetrics($scanMetrics)
+    $finalScanMetrics
   );
 }
 

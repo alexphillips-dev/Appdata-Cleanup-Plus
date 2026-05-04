@@ -2992,6 +2992,17 @@
     return "appdata-cleanup-plus-diagnostics-" + stamp + ".json";
   }
 
+  function extractServerLatestScanMetrics(bundle) {
+    var metricsFile = bundle && bundle.state && bundle.state.latestScanMetrics;
+    var metrics = metricsFile && metricsFile.data;
+
+    if (metrics && $.isArray(metrics.phases) && metrics.phases.length) {
+      return $.extend(true, {}, metrics);
+    }
+
+    return {};
+  }
+
   function buildSupportSummaryText() {
     var insights = buildScanInsights();
     var summary = state.summary || {};
@@ -3108,8 +3119,13 @@
       action: "getDiagnosticsBundle"
     }).done(function(response) {
       var payload = buildDiagnosticsPayload();
+      var serverMetrics;
 
       payload.serverDiagnostics = response && response.bundle ? response.bundle : {};
+      serverMetrics = extractServerLatestScanMetrics(payload.serverDiagnostics);
+      if ((!payload.scan.metrics || !$.isArray(payload.scan.metrics.phases) || !payload.scan.metrics.phases.length) && !$.isEmptyObject(serverMetrics)) {
+        payload.scan.metrics = serverMetrics;
+      }
       swal(
         ACP.t(strings, "toolsDiagnosticsDoneTitle", "Diagnostics exported"),
         ACP.t(strings, "toolsDiagnosticsDoneMessage", "The diagnostics JSON has been downloaded."),
