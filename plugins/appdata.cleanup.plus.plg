@@ -2,17 +2,36 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.05.04.06">
-<!ENTITY md5 "794cd6c39ca1c76312076eababc77f82">
+<!ENTITY version "2026.05.04.07">
+<!ENTITY md5 "bf3c1a2662acaf05a8014ac7e9e35fbe">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.05.04.07
+- Release: Promote the full `2026.05.04.01` through `2026.05.04.06` development cycle to the stable `main` channel while keeping the manifest, CA feed, package archive, and plugin install link pointed at `main`
+- Fix: Prevent Appdata Cleanup Plus from exhausting Unraid PHP-FPM workers by allowing only one filesystem-heavy scan, hydration, quarantine, diagnostics, or cleanup request to run at a time and returning a fast retry response for overlapping requests
+- Fix: Include safety-setting saves in the expensive-operation guard so quarantine rebuilds and settings writes cannot overlap with scan or hydration requests
+- Fix: Recover old unheld runtime lock metadata safely before acquiring a new operation lock, while leaving active `flock`-held operations untouched
+- Fix: Backfill exported `scan.metrics` from persisted server diagnostics when browser scan state has an empty metrics object
+- Support: Add backend-generated diagnostics exports with redacted plugin state files, safety settings, quarantine registry, ignore list, audit history, snapshot summaries, stats-cache counts, runtime context, runtime-lock state, latest scan metrics, and bounded support log excerpts
+- Support: Add per-phase scan timing metrics for settings load, template glob, Docker state/query, template scan, filesystem discovery, candidate filtering, row build, and snapshot write
+- Support: Persist latest backend scan timing metrics server-side so diagnostics exports can include phase timings even when browser page state misses them
+- Support: Add runtime-lock diagnostics to the Tools export so active lock name, action, age, PID state, held state, and stale status are visible during troubleshooting
+- Privacy: Redact filesystem paths, share/app-specific path segments, syslog hostnames, IP addresses, emails, query tokens, UUIDs, MAC addresses, long hex tokens, nested audit row payloads, restored app names, and audit result paths before diagnostics are downloaded
+- Support: Tighten diagnostics log matching so unrelated `emhttpd`, flash-backup, startup, and pool noise is excluded while plugin, PHP-FPM, nginx, timeout, and error context stays included
+- UX: Pause background row-stat hydration before user-triggered operations, retry plugin-busy responses, and show a distinct `Backend busy` scan state for HTTP 429 instead of presenting guarded requests as generic scan failures
+- UX: Update Tools diagnostics copy to clarify that exported diagnostics include redacted server-side log context and should still be reviewed before sharing
+- Performance: Read audit history from the tail of the audit log with a bounded default instead of loading the full audit file on long-lived installs
+- Performance: Replace parent-candidate O(n²) pruning with a path-prefix index while preserving parent, child, and sibling behavior
+- Safety: Add a filesystem discovery size guard with bounded partial results and a warning when direct appdata candidate discovery reaches the safety limit
+- Test: Extend behavior smoke coverage for runtime locks, duplicate lock rejection, stale-lock recovery, parent-candidate pruning, diagnostics redaction, diagnostics log filtering, scan timing metrics, persisted scan metrics, and filesystem discovery truncation
+
 ###2026.05.04.06
 - Support: Persist the latest backend scan timing metrics server-side so diagnostics exports can include phase timings even when browser page state misses them
 - Fix: Backfill exported `scan.metrics` from server diagnostics when the frontend scan state has an empty metrics object
@@ -694,7 +713,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
