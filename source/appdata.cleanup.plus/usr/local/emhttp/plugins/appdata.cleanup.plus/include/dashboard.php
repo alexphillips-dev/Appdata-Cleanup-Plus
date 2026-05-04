@@ -887,18 +887,48 @@ function filterToExistingCandidates($availableVolumes) {
 
 function removeParentCandidates($availableVolumes) {
   $filtered = $availableVolumes;
+  $variantOwners = array();
+  $removeKeys = array();
 
   foreach ( $availableVolumes as $volumeKey => $volume ) {
-    foreach ( $availableVolumes as $testVolumeKey => $testVolume ) {
-      if ( $testVolume["HostDir"] === $volume["HostDir"] ) {
+    foreach ( appdataCleanupPlusPathComparisonVariants($volume["HostDir"]) as $variant ) {
+      $variant = rtrim(appdataCleanupPlusCanonicalizePath($variant), "/");
+
+      if ( $variant === "" ) {
         continue;
       }
 
-      if ( pathIsDescendant($volume["HostDir"], $testVolume["HostDir"]) ) {
-        unset($filtered[$volumeKey]);
-        break;
+      if ( ! isset($variantOwners[$variant]) ) {
+        $variantOwners[$variant] = array();
+      }
+
+      $variantOwners[$variant][$volumeKey] = true;
+    }
+  }
+
+  foreach ( $variantOwners as $variant => $owners ) {
+    $segments = array_values(array_filter(explode("/", trim($variant, "/")), "strlen"));
+    $prefix = "";
+
+    for ( $index = 0; $index < count($segments) - 1; $index++ ) {
+      $prefix .= "/" . $segments[$index];
+
+      if ( empty($variantOwners[$prefix]) ) {
+        continue;
+      }
+
+      foreach ( array_keys($variantOwners[$prefix]) as $parentKey ) {
+        foreach ( array_keys($owners) as $childKey ) {
+          if ( $parentKey !== $childKey ) {
+            $removeKeys[$parentKey] = true;
+          }
+        }
       }
     }
+  }
+
+  foreach ( array_keys($removeKeys) as $removeKey ) {
+    unset($filtered[$removeKey]);
   }
 
   return $filtered;

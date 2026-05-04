@@ -1463,46 +1463,61 @@ function appendAppdataCleanupPlusAuditEntry($entry) {
   return @file_put_contents(appdataCleanupPlusAuditLogFile(), $encoded . "\n", FILE_APPEND | LOCK_EX) !== false;
 }
 
+function appdataCleanupPlusDefaultAuditHistoryLimit() {
+  return 200;
+}
+
+function readAppdataCleanupPlusAuditLogTailLines($path, $limit) {
+  $maxLines = max(1, (int)$limit);
+  $lines = array();
+  $file = null;
+  $lineNumber = 0;
+
+  if ( ! is_file($path) ) {
+    return $lines;
+  }
+
+  try {
+    $file = new SplFileObject($path, "r");
+    $file->seek(PHP_INT_MAX);
+    $lineNumber = (int)$file->key();
+
+    for ( ; $lineNumber >= 0 && count($lines) < $maxLines; $lineNumber-- ) {
+      $file->seek($lineNumber);
+      $line = trim((string)$file->current());
+
+      if ( $line !== "" ) {
+        $lines[] = $line;
+      }
+    }
+  } catch ( Exception $exception ) {
+    return array();
+  }
+
+  return $lines;
+}
+
 function getLatestAppdataCleanupPlusAuditEntry() {
-  $auditPath = appdataCleanupPlusAuditLogFile();
+  $lines = readAppdataCleanupPlusAuditLogTailLines(appdataCleanupPlusAuditLogFile(), 1);
 
-  if ( ! is_file($auditPath) ) {
+  if ( empty($lines) ) {
     return null;
   }
 
-  $lines = @file($auditPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-  if ( ! is_array($lines) || empty($lines) ) {
-    return null;
-  }
-
-  $decoded = json_decode($lines[count($lines) - 1], true);
+  $decoded = json_decode($lines[0], true);
   return is_array($decoded) ? $decoded : null;
 }
 
 function getAppdataCleanupPlusAuditHistory($limit=0) {
-  $auditPath = appdataCleanupPlusAuditLogFile();
+  $effectiveLimit = (int)$limit > 0 ? (int)$limit : appdataCleanupPlusDefaultAuditHistoryLimit();
+  $lines = readAppdataCleanupPlusAuditLogTailLines(appdataCleanupPlusAuditLogFile(), $effectiveLimit);
   $entries = array();
-
-  if ( ! is_file($auditPath) ) {
-    return $entries;
-  }
-
-  $lines = @file($auditPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-  if ( ! is_array($lines) || empty($lines) ) {
-    return $entries;
-  }
-
-  $lines = array_reverse($lines);
 
   foreach ( $lines as $line ) {
     $decoded = json_decode($line, true);
 
     if ( is_array($decoded) ) {
       $entries[] = $decoded;
-    }
-
-    if ( $limit > 0 && count($entries) >= $limit ) {
-      break;
     }
   }
 

@@ -486,6 +486,16 @@ behaviorSmokeAssertTrue($auditRows[0]["message"] !== "", "Audit rows should incl
 behaviorSmokeAssertSame(1, count($auditPreviewPayload["auditHistory"]), "Deferred audit history payloads should honor the requested background limit.");
 behaviorSmokeAssertSame(true, ! empty($auditPreviewPayload["hasMore"]), "Deferred audit history payloads should report when more history is available.");
 
+$parentCandidateMap = array(
+  "parent" => appdataCleanupPlusCreateCandidateVolume("/mnt/user/appdata/parent"),
+  "child" => appdataCleanupPlusCreateCandidateVolume("/mnt/user/appdata/parent/child"),
+  "sibling" => appdataCleanupPlusCreateCandidateVolume("/mnt/user/appdata/sibling")
+);
+$filteredParentCandidateMap = removeParentCandidates($parentCandidateMap);
+behaviorSmokeAssertSame(false, isset($filteredParentCandidateMap["parent"]), "Parent candidate pruning should drop less-specific parent paths.");
+behaviorSmokeAssertSame(true, isset($filteredParentCandidateMap["child"]), "Parent candidate pruning should keep child paths.");
+behaviorSmokeAssertSame(true, isset($filteredParentCandidateMap["sibling"]), "Parent candidate pruning should keep unrelated sibling paths.");
+
 $scheduledPurgeQuarantineRoot = $stateRoot . "/scheduled-purge-quarantine";
 $scheduledPurgeDestination = $scheduledPurgeQuarantineRoot . "/20260330-121000/mnt/user/appdata/scheduled-purge";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($scheduledPurgeDestination), "Scheduled purge quarantine fixture should be created.");

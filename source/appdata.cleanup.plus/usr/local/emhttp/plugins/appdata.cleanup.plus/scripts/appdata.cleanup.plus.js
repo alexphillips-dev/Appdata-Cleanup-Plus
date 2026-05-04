@@ -820,6 +820,34 @@
     });
   }
 
+  function apiPostWithPluginBusyRetry(data, options) {
+    var normalizedOptions = $.isPlainObject(options) ? options : {};
+    var retriesRemaining = Math.max(0, Number(normalizedOptions.retries || 0));
+    var deferred = $.Deferred();
+
+    function attempt() {
+      apiPost(data).done(function(response, textStatus, xhr) {
+        deferred.resolveWith(this, [response, textStatus, xhr]);
+      }).fail(function(xhr, textStatus, errorThrown) {
+        if (isPluginBusyResponse(xhr) && retriesRemaining > 0) {
+          retriesRemaining--;
+          window.setTimeout(attempt, getRetryAfterDelayMs(xhr));
+          return;
+        }
+
+        deferred.rejectWith(this, [xhr, textStatus, errorThrown]);
+      });
+    }
+
+    attempt();
+    return deferred.promise();
+  }
+
+  function apiPostForUserAction(data, options) {
+    pauseScanStatHydrationForUserRequest();
+    return apiPostWithPluginBusyRetry(data, $.extend({ retries: 2 }, $.isPlainObject(options) ? options : {}));
+  }
+
   function isPluginBusyResponse(xhr) {
     return !!xhr && Number(xhr.status || 0) === 429;
   }
@@ -1105,7 +1133,7 @@
     }
     renderPanels();
 
-    apiPost({
+    apiPostForUserAction({
       action: "getQuarantineEntries"
     }).done(function(response) {
       var quarantine = response.quarantine || {};
@@ -1698,11 +1726,11 @@
     });
     renderOpenRowDetailsModal();
 
-    apiPost({
+    apiPostWithPluginBusyRetry({
       action: "getCandidateDetails",
       scanToken: state.scanToken,
       candidateId: rowId
-    }).done(function(response) {
+    }, { retries: 2 }).done(function(response) {
       var detailRow = $.isPlainObject(response && response.row) ? response.row : {};
 
       if (state.rowDetails.requestToken !== requestToken) {
@@ -2305,6 +2333,12 @@
     state.scanHydration.active = false;
     state.scanHydration.queue = [];
     state.scanHydration.requestToken = "";
+  }
+
+  function pauseScanStatHydrationForUserRequest() {
+    if (state.scanHydration.active) {
+      stopScanStatHydration();
+    }
   }
 
   function requestNextScanStatBatch(requestToken) {
@@ -3296,7 +3330,7 @@
     setBusy(true);
     renderOpenQuarantineManagerModal();
 
-    apiPost({
+    apiPostForUserAction({
       action: "updateQuarantinePurgeSchedule",
       entryIds: JSON.stringify(entryIds),
       purgeScheduleMode: mode,
@@ -4267,7 +4301,7 @@
       requestData.scanToken = state.scanToken;
     }
 
-    apiPost(requestData).done(function(response) {
+    apiPostForUserAction(requestData).done(function(response) {
       var quarantine = response.quarantine || null;
       var zfsModalWasVisible = isZfsPathMappingsModalVisible();
 
@@ -4922,7 +4956,7 @@
           allowOutsideClick: false
         });
 
-        apiPost({
+        apiPostForUserAction({
           action: "executeCandidateAction",
           scanToken: state.scanToken,
           candidateIds: JSON.stringify($.map(selectedRows, function(row) {
@@ -5043,7 +5077,7 @@
       allowOutsideClick: false
     });
 
-    apiPost({
+    apiPostForUserAction({
       action: "executeCandidateAction",
       scanToken: state.scanToken,
       candidateIds: JSON.stringify($.map(selectedRows, function(row) {
@@ -5162,7 +5196,7 @@
       allowOutsideClick: false
     });
 
-    apiPost({
+    apiPostForUserAction({
       action: "inspectQuarantineRestore",
       entryIds: JSON.stringify(entryIds)
     }).done(function(response) {
@@ -5489,7 +5523,7 @@
       allowOutsideClick: false
     });
 
-    apiPost({
+    apiPostForUserAction({
       action: "quarantineManagerAction",
       managerAction: action,
       entryIds: JSON.stringify(entryIds),

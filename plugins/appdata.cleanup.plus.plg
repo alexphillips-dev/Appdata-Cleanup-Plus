@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.05.04.01">
-<!ENTITY md5 "82130e09bded0a83e6a4d8fd60136331">
+<!ENTITY version "2026.05.04.02">
+<!ENTITY md5 "a70ea3083a9427ba52cd25044d1de29f">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.05.04.02
+- Fix: Include safety-setting saves in the expensive-operation guard so quarantine rebuilds and settings writes cannot overlap with scan or hydration requests
+- UX: Pause background row-stat hydration before user-triggered operations and retry plugin-busy responses so healthy guarded requests do not show as false failures
+- Performance: Read audit history from the tail of the audit log with a bounded default instead of loading the full audit file on long-lived installs
+- Performance: Replace the parent-candidate O(n²) pruning pass with a path-prefix index while preserving parent, child, and sibling behavior
+- Test: Cover parent-candidate pruning behavior in the smoke suite
+
 ###2026.05.04.01
 - Fix: Prevent Appdata Cleanup Plus from exhausting Unraid PHP-FPM workers by allowing only one filesystem-heavy scan, hydration, quarantine, or cleanup request to run at a time and returning a fast retry response for overlapping requests
 - UX: Retry deferred row-stat hydration and quarantine-summary refreshes after plugin-busy responses so the dashboard can finish background updates without stacking PHP workers

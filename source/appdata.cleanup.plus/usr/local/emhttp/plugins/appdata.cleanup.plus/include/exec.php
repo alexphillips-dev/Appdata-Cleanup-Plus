@@ -22,6 +22,7 @@ $expensiveActions = array(
   "getQuarantineSummary",
   "hydrateCandidateStats",
   "getCandidateDetails",
+  "saveSafetySettings",
   "getQuarantineEntries",
   "executeCandidateAction",
   "updateQuarantinePurgeSchedule",
