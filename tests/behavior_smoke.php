@@ -508,8 +508,30 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($syslogFixture
 file_put_contents(
   $syslogFixture,
   "May  4 10:00:00 PrivateTower php-fpm[123]: server reached max children setting while scanning /mnt/user/SecretShare/private-app token=0123456789abcdef0123456789abcdef from admin@example.com at 192.168.1.22\n" .
-  "May  4 10:00:01 PrivateTower nginx: 504 gateway timeout for /Settings/AppdataCleanupPlus?csrf_token=abcdefabcdefabcdefabcdefabcdefabcdef\n"
+  "May  4 10:00:01 PrivateTower nginx: 504 gateway timeout for /Settings/AppdataCleanupPlus?csrf_token=abcdefabcdefabcdefabcdefabcdefabcdef\n" .
+  "May  4 10:00:02 PrivateTower flash_backup: adding task: /var/local/emhttp/plugins/unrelated/update\n"
 );
+appendAppdataCleanupPlusAuditEntry(array(
+  "timestamp" => date("c"),
+  "operation" => "restore",
+  "requestedCount" => 1,
+  "requestedIds" => array("sensitive-audit-id"),
+  "summary" => array("restored" => 1),
+  "results" => array(
+    array(
+      "id" => "sensitive-audit-id",
+      "name" => "SensitiveAppName",
+      "sourcePath" => "/mnt/user/appdata/SensitiveAppName",
+      "destination" => "/mnt/user/appdata/SensitiveAppName",
+      "status" => "restored",
+      "message" => "Restored SensitiveAppName to /mnt/user/appdata/SensitiveAppName.",
+      "row" => array(
+        "name" => "SensitiveAppName",
+        "displayPath" => "/mnt/user/appdata/SensitiveAppName"
+      )
+    )
+  )
+));
 $diagnosticsBundle = buildAppdataCleanupPlusDiagnosticsBundle();
 $diagnosticsJson = appdataCleanupPlusJsonEncode($diagnosticsBundle);
 behaviorSmokeAssertContains("max children", $diagnosticsJson, "Diagnostics bundle should include matching php-fpm log context.");
@@ -520,6 +542,9 @@ behaviorSmokeAssertNotContains("private-app", $diagnosticsJson, "Diagnostics bun
 behaviorSmokeAssertNotContains("admin@example.com", $diagnosticsJson, "Diagnostics bundle should redact email addresses.");
 behaviorSmokeAssertNotContains("192.168.1.22", $diagnosticsJson, "Diagnostics bundle should redact IP addresses.");
 behaviorSmokeAssertNotContains("0123456789abcdef0123456789abcdef", $diagnosticsJson, "Diagnostics bundle should redact token-like hex strings.");
+behaviorSmokeAssertNotContains("flash_backup", $diagnosticsJson, "Diagnostics bundle should not include unrelated emhttp path noise.");
+behaviorSmokeAssertNotContains("SensitiveAppName", $diagnosticsJson, "Diagnostics bundle should redact nested audit app names.");
+behaviorSmokeAssertNotContains("\"row\"", $diagnosticsJson, "Diagnostics bundle should omit nested audit row payloads.");
 
 $scheduledPurgeQuarantineRoot = $stateRoot . "/scheduled-purge-quarantine";
 $scheduledPurgeDestination = $scheduledPurgeQuarantineRoot . "/20260330-121000/mnt/user/appdata/scheduled-purge";

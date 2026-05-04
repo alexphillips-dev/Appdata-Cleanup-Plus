@@ -135,21 +135,6 @@ function appdataCleanupPlusDiagnosticsRedactValue($value) {
   return $value;
 }
 
-function appdataCleanupPlusDiagnosticsLogKeywords() {
-  return array(
-    "appdata cleanup plus",
-    "appdata.cleanup.plus",
-    "php-fpm",
-    "php-fpm:",
-    "max children",
-    "nginx",
-    "504",
-    "gateway timeout",
-    "upstream timed out",
-    "emhttp"
-  );
-}
-
 function appdataCleanupPlusDiagnosticsLogPaths() {
   $paths = array();
   $override = trim((string)getenv("APPDATA_CLEANUP_PLUS_SYSLOG_PATH"));
@@ -173,13 +158,70 @@ function appdataCleanupPlusDiagnosticsLogPaths() {
 function appdataCleanupPlusDiagnosticsLineMatches($line) {
   $normalized = strtolower((string)$line);
 
-  foreach ( appdataCleanupPlusDiagnosticsLogKeywords() as $keyword ) {
-    if ( $keyword !== "" && strpos($normalized, $keyword) !== false ) {
-      return true;
-    }
+  if (
+    strpos($normalized, "appdata cleanup plus") !== false ||
+    strpos($normalized, "appdata.cleanup.plus") !== false ||
+    strpos($normalized, "php-fpm") !== false ||
+    strpos($normalized, "max children") !== false ||
+    strpos($normalized, "gateway timeout") !== false ||
+    strpos($normalized, "upstream timed out") !== false ||
+    preg_match('/\\b504\\b/', $normalized) ||
+    preg_match('/\\bemhttpd?:/', $normalized)
+  ) {
+    return true;
+  }
+
+  if (
+    strpos($normalized, "nginx") !== false &&
+    preg_match('/\\b(?:504|gateway|upstream|timeout|timed out|error|crit|emerg|alert)\\b/', $normalized)
+  ) {
+    return true;
   }
 
   return false;
+}
+
+function appdataCleanupPlusDiagnosticsRedactAuditHistory($history) {
+  $entries = array();
+
+  foreach ( is_array($history) ? $history : array() as $entry ) {
+    $nextEntry = is_array($entry) ? $entry : array();
+    $nextResults = array();
+
+    foreach ( isset($nextEntry["results"]) && is_array($nextEntry["results"]) ? $nextEntry["results"] : array() as $result ) {
+      $nextResult = is_array($result) ? $result : array();
+
+      if ( isset($nextResult["name"]) ) {
+        $nextResult["name"] = "<app>";
+      }
+
+      foreach ( array("sourcePath", "destination", "restoredPath", "displayPath", "path") as $pathKey ) {
+        if ( isset($nextResult[$pathKey]) ) {
+          $nextResult[$pathKey] = appdataCleanupPlusDiagnosticsRedactPath($nextResult[$pathKey]);
+        }
+      }
+
+      if ( isset($nextResult["message"]) ) {
+        $message = appdataCleanupPlusDiagnosticsRedactText($nextResult["message"]);
+        if ( isset($result["name"]) && trim((string)$result["name"]) !== "" ) {
+          $message = str_replace((string)$result["name"], "<app>", $message);
+        }
+        $nextResult["message"] = $message;
+      }
+
+      unset($nextResult["row"]);
+      $nextResults[] = appdataCleanupPlusDiagnosticsRedactValue($nextResult);
+    }
+
+    $nextEntry["results"] = $nextResults;
+    if ( isset($nextEntry["message"]) ) {
+      $nextEntry["message"] = appdataCleanupPlusDiagnosticsRedactText($nextEntry["message"]);
+    }
+
+    $entries[] = appdataCleanupPlusDiagnosticsRedactValue($nextEntry);
+  }
+
+  return $entries;
 }
 
 function appdataCleanupPlusDiagnosticsReadMatchingLogTail($path, $matchLimit=500, $scanLimit=5000) {
@@ -341,7 +383,7 @@ function buildAppdataCleanupPlusDiagnosticsBundle() {
       "safetySettings" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusSafetySettingsFile(), 0),
       "quarantineRegistry" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusQuarantineRegistryFile(), 50),
       "ignoredCandidates" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusIgnoreListFile(), 50),
-      "auditHistory" => appdataCleanupPlusDiagnosticsRedactValue(getAppdataCleanupPlusAuditHistory(50)),
+      "auditHistory" => appdataCleanupPlusDiagnosticsRedactAuditHistory(getAppdataCleanupPlusAuditHistory(50)),
       "statsCache" => array(
         "path" => appdataCleanupPlusDiagnosticsRedactPath(appdataCleanupPlusStatsCacheFile()),
         "exists" => is_file(appdataCleanupPlusStatsCacheFile()),
