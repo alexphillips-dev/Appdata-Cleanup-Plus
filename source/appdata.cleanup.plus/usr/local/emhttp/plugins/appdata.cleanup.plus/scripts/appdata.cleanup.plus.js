@@ -18,6 +18,7 @@
     auditOpen: false,
     deferredDataRequestToken: "",
     scanWarningMessage: "",
+    scanMetrics: {},
     settings: ACP.defaultSafetySettings(),
     appdataSources: {
       detected: [],
@@ -862,6 +863,18 @@
     return Math.max(1000, Math.min(10000, retryAfter * 1000));
   }
 
+  function getPluginBusyMessage(xhr) {
+    var retryAfter = xhr && typeof xhr.getResponseHeader === "function" ? Number(xhr.getResponseHeader("Retry-After") || 0) : 0;
+    var fallback = ACP.t(strings, "backendBusyMessage", "Another Appdata Cleanup Plus operation is still running. Wait a few seconds, then try again.");
+    var message = ACP.extractErrorMessage(xhr, fallback);
+
+    if (retryAfter > 0 && message.indexOf("Retry after") === -1) {
+      message += " Retry after about " + String(retryAfter) + " seconds.";
+    }
+
+    return message;
+  }
+
   function syncSafetyControls() {
     var settings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
 
@@ -973,6 +986,7 @@
       state.auditHistoryHasMore = false;
       state.auditHistoryRequestToken = "";
       state.scanWarningMessage = String(response.scanWarningMessage || "");
+      state.scanMetrics = $.extend(true, {}, response.scanMetrics || {});
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || {});
       setAppdataSourceInfo(response.appdataSourceInfo || {});
       state.appdataSourceBrowser.manual = normalizeManualAppdataSourcesInput((state.settings || {}).manualAppdataSources || []);
@@ -993,6 +1007,8 @@
       }
       loadDeferredDashboardData(deferredDataRequestToken);
     }).fail(function(xhr) {
+      var pluginBusy = isPluginBusyResponse(xhr);
+
       resetDashboardState();
       state.appdataSourceBrowser = previousBrowserState;
       state.zfsPathMappingBrowser = previousZfsBrowserState;
@@ -1003,8 +1019,8 @@
       renderNotices([]);
       renderResultsMeta();
       renderStateMessage(
-        ACP.t(strings, "scanFailedTitle", "Scan failed"),
-        ACP.extractErrorMessage(xhr, ACP.t(strings, "scanFailedMessage", "The orphaned appdata scan could not be completed right now.")),
+        pluginBusy ? ACP.t(strings, "backendBusyTitle", "Backend busy") : ACP.t(strings, "scanFailedTitle", "Scan failed"),
+        pluginBusy ? getPluginBusyMessage(xhr) : ACP.extractErrorMessage(xhr, ACP.t(strings, "scanFailedMessage", "The orphaned appdata scan could not be completed right now.")),
         "rescan",
         ACP.t(strings, "rescanLabel", "Rescan")
       );
@@ -2333,6 +2349,7 @@
     state.scanHydration.active = false;
     state.scanHydration.queue = [];
     state.scanHydration.requestToken = "";
+    state.scanMetrics = {};
   }
 
   function pauseScanStatHydrationForUserRequest() {
@@ -2943,6 +2960,7 @@
         scanTokenPresent: !!state.scanToken,
         scanWarningMessage: sanitizeDiagnosticsFreeText(String(state.scanWarningMessage || ""), redactor),
         summary: $.extend({}, state.summary || {}),
+        metrics: $.extend(true, {}, state.scanMetrics || {}),
         insights: sanitizedInsights,
         visibleRowCount: visibleRows.length,
         selectedRowCount: selectedRows.length,

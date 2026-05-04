@@ -214,6 +214,17 @@ behaviorSmokeAssertTrue(releaseAppdataCleanupPlusRuntimeLock("expensive-operatio
 behaviorSmokeAssertTrue(acquireAppdataCleanupPlusRuntimeLock("expensive-operation", array("action" => "reacquire")), "Runtime lock should be acquirable after release.");
 releaseAllAppdataCleanupPlusRuntimeLocks();
 
+$staleLockFile = appdataCleanupPlusRuntimeLockFile("stale-smoke");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($staleLockFile)), "Runtime lock directory should be created.");
+file_put_contents($staleLockFile, appdataCleanupPlusJsonEncode(array(
+  "name" => "stale-smoke",
+  "pid" => 999999,
+  "startedAt" => "2000-01-01T00:00:00+00:00",
+  "metadata" => array("action" => "stale")
+)) . "\n");
+behaviorSmokeAssertTrue(recoverAppdataCleanupPlusStaleRuntimeLockFile($staleLockFile), "Unheld stale runtime lock metadata should be recoverable.");
+behaviorSmokeAssertSame(false, is_file($staleLockFile), "Recovered stale runtime lock metadata should be removed.");
+
 $statsPath = "/mnt/user/appdata/cache-target";
 clearCachedAppdataCleanupPlusPathStats($statsPath);
 behaviorSmokeAssertSame(null, getCachedAppdataCleanupPlusPathStats($statsPath), "Stats cache should start empty for the test path.");
@@ -509,7 +520,9 @@ file_put_contents(
   $syslogFixture,
   "May  4 10:00:00 PrivateTower php-fpm[123]: server reached max children setting while scanning /mnt/user/SecretShare/private-app token=0123456789abcdef0123456789abcdef from admin@example.com at 192.168.1.22\n" .
   "May  4 10:00:01 PrivateTower nginx: 504 gateway timeout for /Settings/AppdataCleanupPlus?csrf_token=abcdefabcdefabcdefabcdefabcdefabcdef\n" .
-  "May  4 10:00:02 PrivateTower flash_backup: adding task: /var/local/emhttp/plugins/unrelated/update\n"
+  "May  4 10:00:02 PrivateTower flash_backup: adding task: /var/local/emhttp/plugins/unrelated/update\n" .
+  "May  4 10:00:03 PrivateTower emhttpd: shcmd (123): zpool import oldpool\n" .
+  "May  4 10:00:04 PrivateTower emhttpd: plugin appdata.cleanup.plus update_version complete\n"
 );
 appendAppdataCleanupPlusAuditEntry(array(
   "timestamp" => date("c"),
@@ -536,6 +549,7 @@ $diagnosticsBundle = buildAppdataCleanupPlusDiagnosticsBundle();
 $diagnosticsJson = appdataCleanupPlusJsonEncode($diagnosticsBundle);
 behaviorSmokeAssertContains("max children", $diagnosticsJson, "Diagnostics bundle should include matching php-fpm log context.");
 behaviorSmokeAssertContains("gateway timeout", $diagnosticsJson, "Diagnostics bundle should include matching nginx timeout context.");
+behaviorSmokeAssertContains("update_version", $diagnosticsJson, "Diagnostics bundle should include relevant emhttpd plugin context.");
 behaviorSmokeAssertNotContains("PrivateTower", $diagnosticsJson, "Diagnostics bundle should redact syslog hostnames.");
 behaviorSmokeAssertNotContains("SecretShare", $diagnosticsJson, "Diagnostics bundle should redact share names from paths.");
 behaviorSmokeAssertNotContains("private-app", $diagnosticsJson, "Diagnostics bundle should redact app-specific path segments.");
@@ -543,6 +557,7 @@ behaviorSmokeAssertNotContains("admin@example.com", $diagnosticsJson, "Diagnosti
 behaviorSmokeAssertNotContains("192.168.1.22", $diagnosticsJson, "Diagnostics bundle should redact IP addresses.");
 behaviorSmokeAssertNotContains("0123456789abcdef0123456789abcdef", $diagnosticsJson, "Diagnostics bundle should redact token-like hex strings.");
 behaviorSmokeAssertNotContains("flash_backup", $diagnosticsJson, "Diagnostics bundle should not include unrelated emhttp path noise.");
+behaviorSmokeAssertNotContains("zpool import", $diagnosticsJson, "Diagnostics bundle should not include unrelated emhttpd startup noise.");
 behaviorSmokeAssertNotContains("SensitiveAppName", $diagnosticsJson, "Diagnostics bundle should redact nested audit app names.");
 behaviorSmokeAssertNotContains("\"row\"", $diagnosticsJson, "Diagnostics bundle should omit nested audit row payloads.");
 
@@ -727,6 +742,19 @@ $dashboard = buildDashboardPayload();
 behaviorSmokeAssertTrue(is_array($dashboard) && ! empty($dashboard["ok"]), "Dashboard build should survive DockerClient warnings and output.");
 behaviorSmokeAssertSame(false, array_key_exists("auditHistory", $dashboard["payload"]), "Initial dashboard scan payloads should defer audit history until after the main scan returns.");
 behaviorSmokeAssertSame(false, array_key_exists("quarantineSummary", $dashboard["payload"]), "Initial dashboard scan payloads should defer quarantine summary loading until after the main scan returns.");
+behaviorSmokeAssertTrue(! empty($dashboard["payload"]["scanMetrics"]["phases"]), "Dashboard scan payloads should include per-phase timing metrics.");
+behaviorSmokeAssertTrue(isset($dashboard["payload"]["scanMetrics"]["totalMs"]), "Dashboard scan payloads should include total scan time.");
+$guardSourceRoot = $stateRoot . "/filesystem-guard-source";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($guardSourceRoot . "/first"), "Filesystem guard fixture should create the first candidate.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($guardSourceRoot . "/second"), "Filesystem guard fixture should create the second candidate.");
+putenv("APPDATA_CLEANUP_PLUS_FILESYSTEM_CANDIDATE_LIMIT=1");
+$filesystemGuardMeta = array();
+$guardedFilesystemMap = buildFilesystemCandidateMap(array(), array(), array(
+  "manualAppdataSources" => array($guardSourceRoot)
+), true, $filesystemGuardMeta);
+putenv("APPDATA_CLEANUP_PLUS_FILESYSTEM_CANDIDATE_LIMIT");
+behaviorSmokeAssertSame(1, count($guardedFilesystemMap), "Filesystem discovery guard should return bounded partial results.");
+behaviorSmokeAssertSame(true, ! empty($filesystemGuardMeta["truncated"]), "Filesystem discovery guard should report truncation.");
 $dashboardRows = isset($dashboard["payload"]["rows"]) && is_array($dashboard["payload"]["rows"]) ? $dashboard["payload"]["rows"] : array();
 $templatedRow = behaviorSmokeFindRowByPath($dashboardRows, $templatedOrphanPath);
 $zfsCaseRow = behaviorSmokeFindRowByPath($dashboardRows, $zfsCaseSensitivePath);

@@ -650,6 +650,11 @@ function appdataCleanupPlusBuildEmptyParentRemnantReason($sourceRoot) {
   return $sourceLead . " found this empty parent folder after nested appdata mount paths under it were removed.";
 }
 
+function appdataCleanupPlusFilesystemDiscoveryCandidateLimit() {
+  $override = (int)getenv("APPDATA_CLEANUP_PLUS_FILESYSTEM_CANDIDATE_LIMIT");
+  return $override > 0 ? $override : 1000;
+}
+
 function appdataCleanupPlusResolveDirectChildPathForSourceRoot($sourceRoot, $referencePath) {
   $normalizedSourceRoot = appdataCleanupPlusCanonicalizePath($sourceRoot);
 
@@ -741,7 +746,7 @@ function appdataCleanupPlusBuildSourceRootReferenceIndex($sourceRoot, $reference
   return $index;
 }
 
-function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning) {
+function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning, &$discoveryMeta=null) {
   $availableVolumes = array();
   $templatePaths = array();
   $installedHostPaths = appdataCleanupPlusExtractDockerVolumeHostPaths($containers);
@@ -749,6 +754,17 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
   $referenceIndexBySourceRoot = array();
   $excludedRoots = array();
   $configuredSourceRoots = getAppdataCleanupPlusConfiguredSourceRoots($settings);
+  $candidateLimit = appdataCleanupPlusFilesystemDiscoveryCandidateLimit();
+  $directChildDirectoryCount = 0;
+  $stopDiscovery = false;
+
+  $discoveryMeta = array(
+    "candidateLimit" => $candidateLimit,
+    "candidateCount" => 0,
+    "directChildDirectoryCount" => 0,
+    "truncated" => false,
+    "truncatedAtSourceRoot" => ""
+  );
 
   if ( ! $dockerRunning ) {
     return $availableVolumes;
@@ -778,6 +794,10 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
     $entries = array();
     $referenceIndexKey = "";
     $sourceRootReferenceIndex = array();
+
+    if ( $stopDiscovery ) {
+      break;
+    }
 
     if ( ! $sourceRoot || ! is_dir($sourceRoot) ) {
       continue;
@@ -811,6 +831,8 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
         continue;
       }
 
+      $directChildDirectoryCount++;
+
       $candidateKey = appdataCleanupPlusPathComparisonKey($candidatePath);
 
       if ( $candidateKey === "" || isset($excludedRoots[$candidateKey]) ) {
@@ -834,6 +856,13 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
         continue;
       }
 
+      if ( count($availableVolumes) >= $candidateLimit ) {
+        $discoveryMeta["truncated"] = true;
+        $discoveryMeta["truncatedAtSourceRoot"] = $sourceRoot;
+        $stopDiscovery = true;
+        break;
+      }
+
       $availableVolumes[$candidateKey] = appdataCleanupPlusCreateCandidateVolume($candidatePath, "filesystem", $sourceRoot, $sourceRoot);
 
       if ( $hasStaleNestedReference ) {
@@ -842,6 +871,9 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
       }
     }
   }
+
+  $discoveryMeta["candidateCount"] = count($availableVolumes);
+  $discoveryMeta["directChildDirectoryCount"] = $directChildDirectoryCount;
 
   return $availableVolumes;
 }

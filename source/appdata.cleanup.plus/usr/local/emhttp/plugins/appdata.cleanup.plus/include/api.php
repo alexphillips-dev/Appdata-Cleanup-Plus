@@ -1,6 +1,6 @@
 <?php
 
-function appdataCleanupPlusBuildDashboardPayload($dockerRunning, $settings, $rows, $summary, $scanToken, $scanWarningMessage="") {
+function appdataCleanupPlusBuildDashboardPayload($dockerRunning, $settings, $rows, $summary, $scanToken, $scanWarningMessage="", $scanMetrics=array()) {
   return array(
     "ok" => true,
     "payload" => array(
@@ -10,9 +10,53 @@ function appdataCleanupPlusBuildDashboardPayload($dockerRunning, $settings, $row
       "rows" => $rows,
       "scanToken" => $scanToken,
       "scanWarningMessage" => $scanWarningMessage,
+      "scanMetrics" => is_array($scanMetrics) ? $scanMetrics : array(),
       "settings" => $settings,
       "appdataSourceInfo" => buildAppdataCleanupPlusSourceInfo($settings)
     )
+  );
+}
+
+function appdataCleanupPlusCreateScanMetrics() {
+  $started = microtime(true);
+
+  return array(
+    "startedAt" => date("c"),
+    "startedMicrotime" => $started,
+    "lastMicrotime" => $started,
+    "phases" => array()
+  );
+}
+
+function appdataCleanupPlusMarkScanPhase(&$metrics, $name, $extra=array()) {
+  $now = microtime(true);
+  $started = isset($metrics["startedMicrotime"]) ? (float)$metrics["startedMicrotime"] : $now;
+  $last = isset($metrics["lastMicrotime"]) ? (float)$metrics["lastMicrotime"] : $started;
+  $phase = array(
+    "name" => (string)$name,
+    "durationMs" => (int)round(($now - $last) * 1000),
+    "elapsedMs" => (int)round(($now - $started) * 1000)
+  );
+
+  foreach ( is_array($extra) ? $extra : array() as $key => $value ) {
+    if ( is_scalar($value) || $value === null ) {
+      $phase[$key] = $value;
+    }
+  }
+
+  $metrics["phases"][] = $phase;
+  $metrics["lastMicrotime"] = $now;
+}
+
+function appdataCleanupPlusFinalizeScanMetrics($metrics) {
+  $now = microtime(true);
+  $started = isset($metrics["startedMicrotime"]) ? (float)$metrics["startedMicrotime"] : $now;
+  $phases = isset($metrics["phases"]) && is_array($metrics["phases"]) ? $metrics["phases"] : array();
+
+  return array(
+    "startedAt" => isset($metrics["startedAt"]) ? (string)$metrics["startedAt"] : "",
+    "totalMs" => (int)round(($now - $started) * 1000),
+    "phases" => $phases
   );
 }
 
@@ -165,8 +209,14 @@ function appdataCleanupPlusDiagnosticsLineMatches($line) {
     strpos($normalized, "max children") !== false ||
     strpos($normalized, "gateway timeout") !== false ||
     strpos($normalized, "upstream timed out") !== false ||
-    preg_match('/\\b504\\b/', $normalized) ||
-    preg_match('/\\bemhttpd?:/', $normalized)
+    preg_match('/\\b504\\b/', $normalized)
+  ) {
+    return true;
+  }
+
+  if (
+    preg_match('/\\bemhttpd?:/', $normalized) &&
+    preg_match('/\\b(?:appdata cleanup plus|appdata\\.cleanup\\.plus|cmd:|error|warning|php|php-fpm|nginx|plugin|timeout|timed out|gateway|upstream|update_version|504)\\b/', $normalized)
   ) {
     return true;
   }
@@ -321,6 +371,31 @@ function appdataCleanupPlusDiagnosticsSnapshotSummary() {
   );
 }
 
+function appdataCleanupPlusDiagnosticsRuntimeLockSummary() {
+  $locks = array();
+
+  foreach ( appdataCleanupPlusListRuntimeLocks() as $lock ) {
+    $metadata = isset($lock["metadata"]) && is_array($lock["metadata"]) ? $lock["metadata"] : array();
+    $locks[] = array(
+      "name" => isset($lock["name"]) ? (string)$lock["name"] : "",
+      "path" => isset($lock["path"]) ? appdataCleanupPlusDiagnosticsRedactPath($lock["path"]) : "",
+      "held" => isset($lock["held"]) ? $lock["held"] : null,
+      "pidPresent" => ! empty($lock["pid"]),
+      "pidRunning" => isset($lock["pidRunning"]) ? $lock["pidRunning"] : null,
+      "startedAt" => isset($lock["startedAt"]) ? (string)$lock["startedAt"] : "",
+      "ageSeconds" => isset($lock["ageSeconds"]) ? $lock["ageSeconds"] : null,
+      "stale" => ! empty($lock["stale"]),
+      "action" => isset($metadata["action"]) ? appdataCleanupPlusDiagnosticsRedactText($metadata["action"]) : ""
+    );
+  }
+
+  return array(
+    "count" => count($locks),
+    "staleSeconds" => appdataCleanupPlusRuntimeLockStaleSeconds(),
+    "locks" => $locks
+  );
+}
+
 function appdataCleanupPlusDiagnosticsPluginVersion() {
   $paths = array(
     "/boot/config/plugins/appdata.cleanup.plus.plg",
@@ -384,6 +459,7 @@ function buildAppdataCleanupPlusDiagnosticsBundle() {
       "quarantineRegistry" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusQuarantineRegistryFile(), 50),
       "ignoredCandidates" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusIgnoreListFile(), 50),
       "auditHistory" => appdataCleanupPlusDiagnosticsRedactAuditHistory(getAppdataCleanupPlusAuditHistory(50)),
+      "runtimeLocks" => appdataCleanupPlusDiagnosticsRuntimeLockSummary(),
       "statsCache" => array(
         "path" => appdataCleanupPlusDiagnosticsRedactPath(appdataCleanupPlusStatsCacheFile()),
         "exists" => is_file(appdataCleanupPlusStatsCacheFile()),
@@ -497,35 +573,80 @@ function updateSnapshotCandidateLockOverrideState($token, $candidateIds, $intent
 }
 
 function buildDashboardPayload() {
+  $scanMetrics = appdataCleanupPlusCreateScanMetrics();
+  $filesystemDiscoveryMeta = array();
   $settings = getAppdataCleanupPlusSafetySettings();
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "settings");
+
   $allFiles = glob(appdataCleanupPlusDockerTemplateDir() . "/*.xml");
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "template_glob", array(
+    "templateFileCount" => is_array($allFiles) ? count($allFiles) : 0
+  ));
+
   $dockerRunning = is_dir(appdataCleanupPlusDockerRuntimePath());
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "docker_state", array(
+    "dockerRunning" => $dockerRunning
+  ));
+
   $containers = getDockerContainersSafe();
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "docker_query", array(
+    "containerCount" => is_array($containers) ? count($containers) : 0
+  ));
 
   if ( ! is_array($allFiles) ) {
     $allFiles = array();
   }
 
   $templateVolumes = buildCandidateMap($allFiles, $settings);
-  $filesystemVolumes = buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "template_scan", array(
+    "templateVolumeCount" => count($templateVolumes)
+  ));
+
+  $filesystemVolumes = buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning, $filesystemDiscoveryMeta);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "filesystem_discovery", array(
+    "filesystemVolumeCount" => count($filesystemVolumes),
+    "directChildDirectoryCount" => isset($filesystemDiscoveryMeta["directChildDirectoryCount"]) ? (int)$filesystemDiscoveryMeta["directChildDirectoryCount"] : 0,
+    "truncated" => ! empty($filesystemDiscoveryMeta["truncated"])
+  ));
+
   $availableVolumes = $templateVolumes + $filesystemVolumes;
+  $preFilterCount = count($availableVolumes);
 
   $availableVolumes = removeInstalledVolumeMatches($availableVolumes, $containers);
   $availableVolumes = filterToExistingCandidates($availableVolumes);
   $availableVolumes = removeParentCandidates($availableVolumes);
   $availableVolumes = removeParentsUsedByInstalledContainers($availableVolumes, $containers);
   $availableVolumes = removeVmManagerManagedCandidates($availableVolumes);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "candidate_filtering", array(
+    "beforeCount" => $preFilterCount,
+    "afterCount" => count($availableVolumes)
+  ));
 
   $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings, false);
   $summary = buildSummary($rows);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "row_build", array(
+    "rowCount" => count($rows)
+  ));
+
   $snapshot = writeAppdataCleanupPlusSnapshot(buildSnapshotCandidateMap($rows));
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "snapshot_write", array(
+    "snapshotWritten" => (bool)$snapshot
+  ));
+
   $scanWarningMessage = "";
+
+  if ( ! empty($filesystemDiscoveryMeta["truncated"]) ) {
+    $scanWarningMessage = "Filesystem discovery reached the safety limit of " . (int)$filesystemDiscoveryMeta["candidateLimit"] . " direct appdata candidates. Partial results are shown; narrow Appdata sources and rescan if expected folders are missing.";
+  }
 
   if ( ! $snapshot ) {
     error_log("Appdata Cleanup Plus could not persist a scan snapshot. Returning read-only dashboard payload.");
     $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings, true);
     $summary = buildSummary($rows);
-    $scanWarningMessage = "Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.";
+    $scanWarningMessage = trim($scanWarningMessage . " Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.");
+    appdataCleanupPlusMarkScanPhase($scanMetrics, "fallback_heavy_row_build", array(
+      "rowCount" => count($rows)
+    ));
   }
 
   return appdataCleanupPlusBuildDashboardPayload(
@@ -534,7 +655,8 @@ function buildDashboardPayload() {
     $rows,
     $summary,
     $snapshot ? (string)$snapshot["token"] : "",
-    $scanWarningMessage
+    $scanWarningMessage,
+    appdataCleanupPlusFinalizeScanMetrics($scanMetrics)
   );
 }
 

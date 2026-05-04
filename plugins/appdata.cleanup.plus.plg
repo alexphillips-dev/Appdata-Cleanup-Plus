@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.05.04.04">
-<!ENTITY md5 "b4ad043bbdd871ea48f1e7b63de81c4f">
+<!ENTITY version "2026.05.04.05">
+<!ENTITY md5 "71655985b123cb8e960dbafe01d6ff24">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,15 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.05.04.05
+- Support: Add runtime-lock diagnostics to the Tools export so active lock name, action, age, PID state, held state, and stale status are visible during troubleshooting
+- Fix: Recover old unheld runtime lock metadata safely before acquiring a new operation lock, while leaving active `flock`-held operations untouched
+- Support: Add per-phase scan timing metrics for settings load, Docker state/query, template scan, filesystem discovery, filtering, row build, and snapshot write
+- Support: Tighten diagnostics log matching so unrelated `emhttpd` startup/pool noise is excluded while plugin, PHP-FPM, nginx, timeout, and error context stays included
+- UX: Show a distinct `Backend busy` scan state when a guarded request returns HTTP 429 instead of presenting it as a generic scan failure
+- Safety: Add a filesystem discovery size guard with bounded partial results and a warning when direct appdata candidate discovery reaches the safety limit
+- Test: Cover stale-lock recovery, scan timing metrics, diagnostics log filtering, and filesystem discovery truncation in the behavior smoke suite
+
 ###2026.05.04.04
 - Privacy: Tighten server diagnostics audit export so nested action row payloads are omitted and restored app names inside audit results are redacted
 - Support: Reduce diagnostics log noise by matching `emhttpd` process lines instead of every unrelated log line that only references an `emhttp` filesystem path

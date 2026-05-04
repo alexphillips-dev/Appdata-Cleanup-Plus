@@ -1012,6 +1012,15 @@ function appdataCleanupPlusRuntimeLockFile($name) {
   return appdataCleanupPlusRuntimeDir() . "/locks/" . appdataCleanupPlusSanitizeStateKey($name) . ".lock";
 }
 
+function appdataCleanupPlusRuntimeLockDir() {
+  return appdataCleanupPlusRuntimeDir() . "/locks";
+}
+
+function appdataCleanupPlusRuntimeLockStaleSeconds() {
+  $override = (int)getenv("APPDATA_CLEANUP_PLUS_STALE_LOCK_SECONDS");
+  return $override > 0 ? $override : 1800;
+}
+
 function appdataCleanupPlusSanitizeStateKey($value) {
   return preg_replace('/[^A-Za-z0-9._-]+/', '', (string)$value);
 }
@@ -1062,6 +1071,8 @@ function acquireAppdataCleanupPlusRuntimeLock($name, $metadata=array()) {
   if ( ! empty($store["runtimeLocks"][$lockName]) ) {
     return false;
   }
+
+  recoverAppdataCleanupPlusStaleRuntimeLockFile($lockFile);
 
   $handle = @fopen($lockFile, "c+");
   if ( ! $handle ) {
@@ -1115,6 +1126,111 @@ function releaseAllAppdataCleanupPlusRuntimeLocks() {
   foreach ( array_keys($store["runtimeLocks"]) as $lockName ) {
     releaseAppdataCleanupPlusRuntimeLock($lockName);
   }
+}
+
+function appdataCleanupPlusParseRuntimeLockPayload($path) {
+  $payload = readAppdataCleanupPlusJsonFile($path, array());
+
+  if ( ! is_array($payload) ) {
+    return array();
+  }
+
+  return $payload;
+}
+
+function appdataCleanupPlusRuntimeLockStartedTimestamp($payload, $fallbackPath="") {
+  $startedAt = isset($payload["startedAt"]) ? trim((string)$payload["startedAt"]) : "";
+  $timestamp = $startedAt !== "" ? strtotime($startedAt) : false;
+
+  if ( $timestamp !== false ) {
+    return (int)$timestamp;
+  }
+
+  if ( $fallbackPath !== "" && is_file($fallbackPath) ) {
+    $mtime = @filemtime($fallbackPath);
+    if ( $mtime !== false ) {
+      return (int)$mtime;
+    }
+  }
+
+  return 0;
+}
+
+function appdataCleanupPlusIsPidRunning($pid) {
+  $pid = (int)$pid;
+
+  if ( $pid <= 0 ) {
+    return null;
+  }
+
+  if ( function_exists("posix_kill") ) {
+    return @posix_kill($pid, 0);
+  }
+
+  return is_dir("/proc/" . $pid);
+}
+
+function appdataCleanupPlusInspectRuntimeLockFile($path) {
+  $payload = appdataCleanupPlusParseRuntimeLockPayload($path);
+  $name = isset($payload["name"]) ? appdataCleanupPlusSanitizeStateKey($payload["name"]) : basename((string)$path, ".lock");
+  $startedTimestamp = appdataCleanupPlusRuntimeLockStartedTimestamp($payload, $path);
+  $ageSeconds = $startedTimestamp > 0 ? max(0, time() - $startedTimestamp) : null;
+  $handle = @fopen($path, "c");
+  $held = null;
+
+  if ( $handle ) {
+    if ( @flock($handle, LOCK_EX | LOCK_NB) ) {
+      $held = false;
+      @flock($handle, LOCK_UN);
+    } else {
+      $held = true;
+    }
+    @fclose($handle);
+  }
+
+  return array(
+    "name" => $name,
+    "path" => $path,
+    "held" => $held,
+    "pid" => isset($payload["pid"]) ? (int)$payload["pid"] : null,
+    "pidRunning" => isset($payload["pid"]) ? appdataCleanupPlusIsPidRunning($payload["pid"]) : null,
+    "startedAt" => isset($payload["startedAt"]) ? (string)$payload["startedAt"] : "",
+    "ageSeconds" => $ageSeconds,
+    "stale" => $held === false && $ageSeconds !== null && $ageSeconds >= appdataCleanupPlusRuntimeLockStaleSeconds(),
+    "metadata" => isset($payload["metadata"]) && is_array($payload["metadata"]) ? $payload["metadata"] : array()
+  );
+}
+
+function recoverAppdataCleanupPlusStaleRuntimeLockFile($path) {
+  if ( ! is_file($path) ) {
+    return false;
+  }
+
+  $lock = appdataCleanupPlusInspectRuntimeLockFile($path);
+
+  if ( empty($lock["stale"]) ) {
+    return false;
+  }
+
+  return @unlink($path);
+}
+
+function appdataCleanupPlusListRuntimeLocks() {
+  $lockDir = appdataCleanupPlusRuntimeLockDir();
+  $lockFiles = is_dir($lockDir) ? glob($lockDir . "/*.lock") : array();
+  $locks = array();
+
+  if ( ! is_array($lockFiles) ) {
+    $lockFiles = array();
+  }
+
+  sort($lockFiles);
+
+  foreach ( $lockFiles as $lockFile ) {
+    $locks[] = appdataCleanupPlusInspectRuntimeLockFile($lockFile);
+  }
+
+  return $locks;
 }
 
 function readAppdataCleanupPlusTemplateFile($path) {
