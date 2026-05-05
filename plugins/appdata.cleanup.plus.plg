@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.05.05.01">
-<!ENTITY md5 "851eca277cfe680c883e69449272730a">
+<!ENTITY version "2026.05.05.02">
+<!ENTITY md5 "e9ec4db635ba5e25713f67fbdb5ea825">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.05.05.02
+- Support: Add `Copy diagnostics text` in Tools so users can copy a redacted plain-text diagnostics summary for forum posts
+- Support: Include scan summary, safety toggles, source roots, quarantine totals, scan timing phases, runtime-lock state, server runtime context, support log counts, visible/selected row counts, and diagnostics export errors in the copied text
+- Fix: If JSON diagnostics export fails, the text diagnostics copy still falls back to local browser state and includes the export failure message
+
 ###2026.05.05.01
 - Support: Allow diagnostics export to run even when a scan, hydration, quarantine, or cleanup operation is holding the expensive-operation lock, so users can still capture troubleshooting data after a failed or stuck operation
 - Fix: Return the underlying filesystem `rename()` error when quarantine moves fail, while preserving the source folder in place

@@ -620,6 +620,15 @@
       }
     });
 
+    $(document).on("click.acpTools", ".sweet-alert [data-action='copy-diagnostics-text']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy) {
+        copyDiagnosticsText();
+      }
+    });
+
     $(document).on("keydown.acpSources", ".sweet-alert .acp-appdata-browser-entry[data-action]", function(event) {
       var key = String(event.key || "");
 
@@ -3049,6 +3058,94 @@
     return lines.join("\n");
   }
 
+  function summarizeScanMetrics(metrics) {
+    var summary = [];
+
+    if (!metrics || !$.isArray(metrics.phases) || !metrics.phases.length) {
+      return summary;
+    }
+
+    summary.push("Scan timing: totalMs=" + String(Number(metrics.totalMs || 0)));
+    $.each(metrics.phases, function(_, phase) {
+      var parts = [
+        "- " + String((phase && phase.name) || "phase") +
+          ": durationMs=" + String(Number((phase && phase.durationMs) || 0)) +
+          " elapsedMs=" + String(Number((phase && phase.elapsedMs) || 0))
+      ];
+
+      $.each(["templateFileCount", "containerCount", "templateVolumeCount", "filesystemVolumeCount", "directChildDirectoryCount", "beforeCount", "afterCount", "rowCount"], function(__, key) {
+        if (phase && phase[key] !== undefined && phase[key] !== null) {
+          parts.push(key + "=" + String(phase[key]));
+        }
+      });
+
+      if (phase && phase.truncated !== undefined) {
+        parts.push("truncated=" + (phase.truncated ? "true" : "false"));
+      }
+
+      summary.push(parts.join(" "));
+    });
+
+    return summary;
+  }
+
+  function buildDiagnosticsTextPayload(serverBundle, exportErrorMessage) {
+    var payload = buildDiagnosticsPayload();
+    var serverMetrics = extractServerLatestScanMetrics(serverBundle || {});
+    var diagnostics = [];
+    var runtime = (serverBundle && serverBundle.runtime) || {};
+    var locks = serverBundle && serverBundle.state && serverBundle.state.runtimeLocks;
+    var logs = $.isArray(serverBundle && serverBundle.logs) ? serverBundle.logs : [];
+
+    if ((!payload.scan.metrics || !$.isArray(payload.scan.metrics.phases) || !payload.scan.metrics.phases.length) && !$.isEmptyObject(serverMetrics)) {
+      payload.scan.metrics = serverMetrics;
+    }
+
+    diagnostics.push(buildSupportSummaryText());
+    diagnostics.push("");
+    diagnostics.push("Diagnostics text");
+    diagnostics.push("Generated: " + String(payload.generatedAt || ""));
+    diagnostics.push("Diagnostics export: " + (exportErrorMessage ? "failed - " + String(exportErrorMessage || "") : "server bundle included"));
+
+    if (runtime.pluginVersion || runtime.phpVersion || runtime.unraidVersion) {
+      diagnostics.push("Server: plugin=" + String(runtime.pluginVersion || "unknown") +
+        " php=" + String(runtime.phpVersion || "unknown") +
+        " sapi=" + String(runtime.phpSapi || "unknown") +
+        " unraid=" + String(runtime.unraidVersion || "unknown") +
+        " dockerRuntime=" + (runtime.dockerRuntimeExists === false ? "missing" : "present"));
+    }
+
+    if (locks && $.isArray(locks.locks)) {
+      diagnostics.push("Runtime locks: count=" + String(Number(locks.count || 0)) + " staleSeconds=" + String(Number(locks.staleSeconds || 0)));
+      $.each(locks.locks, function(_, lock) {
+        diagnostics.push("- " + String((lock && lock.name) || "lock") +
+          " action=" + String((lock && lock.action) || "") +
+          " held=" + String(lock && lock.held) +
+          " pidRunning=" + String(lock && lock.pidRunning) +
+          " ageSeconds=" + String((lock && lock.ageSeconds) || 0) +
+          " stale=" + String(!!(lock && lock.stale)));
+      });
+    }
+
+    diagnostics = diagnostics.concat(summarizeScanMetrics(payload.scan.metrics));
+
+    if (logs.length) {
+      diagnostics.push("Support logs:");
+      $.each(logs, function(_, log) {
+        diagnostics.push("- path=" + String((log && log.path) || "") +
+          " available=" + String(!!(log && log.available)) +
+          " matched=" + String(Number((log && log.matchedLineCount) || 0)) +
+          " scannedLimit=" + String(Number((log && log.scannedLineLimit) || 0)));
+      });
+    }
+
+    diagnostics.push("Rows exported: total=" + String((payload.rows || []).length) +
+      " visible=" + String((payload.visibleRowIds || []).length) +
+      " selected=" + String((payload.selectedRowIds || []).length));
+
+    return diagnostics.join("\n");
+  }
+
   function copyTextToClipboard(text) {
     var deferred = $.Deferred();
     var payload = String(text || "");
@@ -3154,6 +3251,42 @@
         ACP.t(strings, "toolsSupportSummaryFailedMessage", "The support summary could not be copied right now."),
         "error"
       );
+    });
+  }
+
+  function copyDiagnosticsText() {
+    apiPostForUserAction({
+      action: "getDiagnosticsBundle"
+    }).done(function(response) {
+      copyTextToClipboard(buildDiagnosticsTextPayload(response && response.bundle ? response.bundle : {}, "")).done(function() {
+        swal(
+          ACP.t(strings, "toolsDiagnosticsCopyDoneTitle", "Diagnostics text copied"),
+          ACP.t(strings, "toolsDiagnosticsCopyDoneMessage", "The diagnostics text has been copied to the clipboard."),
+          "success"
+        );
+      }).fail(function() {
+        swal(
+          ACP.t(strings, "toolsDiagnosticsCopyFailedTitle", "Diagnostics text failed"),
+          ACP.t(strings, "toolsDiagnosticsCopyFailedMessage", "The diagnostics text could not be copied right now."),
+          "error"
+        );
+      });
+    }).fail(function(xhr) {
+      var errorMessage = ACP.extractErrorMessage(xhr, ACP.t(strings, "toolsDiagnosticsFailedMessage", "The diagnostics file could not be created right now."));
+
+      copyTextToClipboard(buildDiagnosticsTextPayload({}, errorMessage)).done(function() {
+        swal(
+          ACP.t(strings, "toolsDiagnosticsCopyDoneTitle", "Diagnostics text copied"),
+          ACP.t(strings, "toolsDiagnosticsCopyDoneMessage", "The diagnostics text has been copied to the clipboard."),
+          "success"
+        );
+      }).fail(function() {
+        swal(
+          ACP.t(strings, "toolsDiagnosticsCopyFailedTitle", "Diagnostics text failed"),
+          ACP.t(strings, "toolsDiagnosticsCopyFailedMessage", "The diagnostics text could not be copied right now."),
+          "error"
+        );
+      });
     });
   }
 
