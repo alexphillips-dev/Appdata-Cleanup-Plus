@@ -3079,6 +3079,12 @@
         }
       });
 
+      $.each(["dockerRunning", "snapshotWritten"], function(__, key) {
+        if (phase && phase[key] !== undefined && phase[key] !== null) {
+          parts.push(key + "=" + (phase[key] ? "true" : "false"));
+        }
+      });
+
       if (phase && phase.truncated !== undefined) {
         parts.push("truncated=" + (phase.truncated ? "true" : "false"));
       }
@@ -3116,9 +3122,14 @@
     }
 
     if (locks && $.isArray(locks.locks)) {
-      diagnostics.push("Runtime locks: count=" + String(Number(locks.count || 0)) + " staleSeconds=" + String(Number(locks.staleSeconds || 0)));
+      var activeLockCount = $.grep(locks.locks, function(lock) {
+        return !!(lock && lock.held);
+      }).length;
+
+      diagnostics.push("Runtime lock metadata: count=" + String(Number(locks.count || 0)) + " active=" + String(activeLockCount) + " staleSeconds=" + String(Number(locks.staleSeconds || 0)));
       $.each(locks.locks, function(_, lock) {
-        diagnostics.push("- " + String((lock && lock.name) || "lock") +
+        diagnostics.push("- " + (lock && lock.held ? "active" : "inactive") +
+          " " + String((lock && lock.name) || "lock") +
           " action=" + String((lock && lock.action) || "") +
           " held=" + String(lock && lock.held) +
           " pidRunning=" + String(lock && lock.pidRunning) +

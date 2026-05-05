@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.05.05.02">
-<!ENTITY md5 "e9ec4db635ba5e25713f67fbdb5ea825">
+<!ENTITY version "2026.05.05.03">
+<!ENTITY md5 "bd44d3796311a89ec06f490434e8704f">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.05.05.03
+- Support: Clarify copied diagnostics text by reporting runtime lock metadata separately from active held locks
+- Support: Mark each copied runtime lock row as active or inactive and include active lock counts
+- Support: Include boolean scan phase details such as Docker runtime state and snapshot write success in copied diagnostics text
+
 ###2026.05.05.02
 - Support: Add `Copy diagnostics text` in Tools so users can copy a redacted plain-text diagnostics summary for forum posts
 - Support: Include scan summary, safety toggles, source roots, quarantine totals, scan timing phases, runtime-lock state, server runtime context, support log counts, visible/selected row counts, and diagnostics export errors in the copied text
