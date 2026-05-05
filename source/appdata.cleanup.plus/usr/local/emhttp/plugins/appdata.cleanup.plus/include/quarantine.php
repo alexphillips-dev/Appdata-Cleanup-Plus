@@ -1622,6 +1622,7 @@ function quarantineCandidatePath($candidate, $displayPath, $settings) {
   $quarantineRoot = buildCandidateQuarantineRoot($displayPath, $settings);
   $quarantinedAt = date("c");
   $defaultPurgeAt = buildAppdataCleanupPlusDefaultPurgeAtForTimestamp($settings, strtotime($quarantinedAt));
+  $renameError = "";
 
   if ( ! $destination ) {
     return array(
@@ -1639,6 +1640,7 @@ function quarantineCandidatePath($candidate, $displayPath, $settings) {
     );
   }
 
+  error_clear_last();
   if ( @rename($displayPath, $destination) ) {
     $quarantineRecord = array(
       "id" => appdataCleanupPlusRandomToken(),
@@ -1672,9 +1674,16 @@ function quarantineCandidatePath($candidate, $displayPath, $settings) {
     );
   }
 
+  $lastError = error_get_last();
+  if ( is_array($lastError) && ! empty($lastError["message"]) ) {
+    $renameError = trim(preg_replace('/\s+/', ' ', (string)$lastError["message"]));
+  }
+
   return array(
     "ok" => false,
-    "message" => "Quarantine move failed. The source folder was left in place.",
+    "message" => $renameError !== ""
+      ? "Quarantine move failed: " . $renameError . ". The source folder was left in place."
+      : "Quarantine move failed. The source folder was left in place.",
     "destination" => $destination
   );
 }

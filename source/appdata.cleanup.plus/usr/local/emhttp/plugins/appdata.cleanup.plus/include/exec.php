@@ -20,7 +20,6 @@ $csrfToken = getRequestedCsrfToken();
 $expensiveActions = array(
   "getOrphanAppdata",
   "getQuarantineSummary",
-  "getDiagnosticsBundle",
   "hydrateCandidateStats",
   "getCandidateDetails",
   "saveSafetySettings",
