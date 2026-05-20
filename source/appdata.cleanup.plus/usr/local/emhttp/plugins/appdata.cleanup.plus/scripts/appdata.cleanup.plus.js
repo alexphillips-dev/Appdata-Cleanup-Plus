@@ -2084,6 +2084,14 @@
     });
   }
 
+  function buildTemplateActionLockReason(row) {
+    var sourceSummary = String(row.sourceSummary || row.sourceDisplay || "Saved Docker templates");
+    var targetSummary = String(row.targetSummary || "tracked container paths");
+    var sourceLabel = /^saved docker templates$/i.test(sourceSummary) ? sourceSummary : "Saved templates " + sourceSummary;
+
+    return sourceLabel + " still reference this folder at " + targetSummary + ". Remove or update the saved template before quarantining or deleting this appdata path.";
+  }
+
   function applyLocalSafetyStateToRow(row) {
     var nextRow = $.extend({}, row);
 
@@ -2105,6 +2113,22 @@
       nextRow.policyReason = nextRow.securityLockReason;
       nextRow.lockOverrideAllowed = false;
       nextRow.lockOverridden = false;
+      return nextRow;
+    }
+
+    if (nextRow.sourceKind === "template") {
+      nextRow.canDelete = false;
+      nextRow.policyLocked = true;
+      nextRow.policyReason = buildTemplateActionLockReason(nextRow);
+      nextRow.riskReason = nextRow.policyReason;
+      nextRow.lockOverrideAllowed = false;
+      nextRow.lockOverridden = false;
+
+      if (nextRow.risk === "review" && nextRow.insideConfiguredSource) {
+        nextRow.risk = "safe";
+        nextRow.riskLabel = "Ready";
+      }
+
       return nextRow;
     }
 
@@ -2185,6 +2209,7 @@
     var discoveryRows = 0;
     var zfsRows = 0;
     var mappedRows = 0;
+    var outsideShareReviewRows = 0;
 
     $.each(rows, function(_, row) {
       if (!row || row.ignored) {
@@ -2202,6 +2227,10 @@
       } else if (row.zfsMappingMatched) {
         mappedRows += 1;
       }
+
+      if (row.risk === "review" && String(row.sourceKind || "template") !== "template") {
+        outsideShareReviewRows += 1;
+      }
     });
 
     return {
@@ -2209,7 +2238,7 @@
       scanRootCount: effectiveRoots.length,
       templateRowCount: templateRows,
       discoveryRowCount: discoveryRows,
-      reviewCount: Number(summary.review || 0),
+      reviewCount: outsideShareReviewRows,
       lockedCount: Number(summary.blocked || 0),
       zfsBackedCount: zfsRows,
       mappedShareCount: mappedRows,
@@ -2223,6 +2252,9 @@
     var hasZfsRows = $.grep(state.rows || [], function(row) {
       return row && row.storageKind === "zfs";
     }).length > 0;
+    var outsideShareReviewCount = $.grep(state.rows || [], function(row) {
+      return row && !row.ignored && row.risk === "review" && String(row.sourceKind || "template") !== "template";
+    }).length;
 
     if (!state.dockerRunning) {
       notices.push({
@@ -2248,7 +2280,7 @@
       });
     }
 
-    if (Number(summary.review || 0) > 0) {
+    if (outsideShareReviewCount > 0) {
       if (!state.settings.allowOutsideShareCleanup) {
         notices.push({
           type: "info",
@@ -3940,7 +3972,18 @@
       });
     }
 
-    if (row.risk === "review" || /outside-share cleanup is disabled/i.test(policyReason)) {
+    if (row.sourceKind === "template" && policyReason) {
+      pushBadgeDescriptor(descriptors, {
+        kind: "reason",
+        value: "template_reference",
+        label: ACP.t(strings, "badgeReasonTemplateReference", "Template reference"),
+        tone: "review",
+        title: policyReason,
+        kindClass: "reason"
+      });
+    }
+
+    if ((row.risk === "review" && row.sourceKind !== "template") || /outside-share cleanup is disabled/i.test(policyReason)) {
       pushBadgeDescriptor(descriptors, {
         kind: "reason",
         value: "outside_share",

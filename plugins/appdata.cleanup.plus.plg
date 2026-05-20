@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.05.20.01">
-<!ENTITY md5 "62bf8f54d645c579e9e15806a66f3d75">
+<!ENTITY version "2026.05.20.02">
+<!ENTITY md5 "3b25c57edf3d1dcbe39d5deca59e90d2">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.05.20.02
+- Fix: Keep saved-template rows inside configured appdata sources from being mislabeled as outside-share review rows while preserving the template-reference safety lock
+- UI: Show a `Template reference` lock badge for saved-template rows instead of the outside-share badge when the path is already under a configured appdata source
+- Test: Cover template-backed rows under configured appdata sources so they stay locked without inflating outside-share review counts
+
 ###2026.05.20.01
 - Fix: Stop quarantine manager and dashboard summary loads from running scheduled purge side effects, so expired or failing purge entries no longer keep the backend busy while users are trying to review quarantine
 - Fix: Allow quarantine purge to remove symlink entries inside already-quarantined folders without following them, while continuing to block mount points, top-level symlinks, and special filesystem entries

@@ -870,7 +870,7 @@ behaviorSmokeAssertSame("safe", $staleNestedEmptyParentRow["risk"], "Empty stale
 behaviorSmokeAssertSame("safe", $manualCustomFilesystemRow["risk"], "Manual appdata source rows should be treated as inside-source candidates.");
 behaviorSmokeAssertSame(true, ! empty($manualCustomFilesystemRow["canDelete"]), "Manual appdata source rows should remain actionable without outside-share cleanup.");
 behaviorSmokeAssertSame(true, ! empty($staleNestedEmptyParentRow["canDelete"]), "Empty stale parent remnants should remain actionable.");
-behaviorSmokeAssertSame("review", $manualAliasTemplateRow["risk"], "Template-backed rows under manual appdata sources should require review because saved templates still reference them.");
+behaviorSmokeAssertSame("safe", $manualAliasTemplateRow["risk"], "Template-backed rows under configured appdata sources should not be mislabeled as outside-share review.");
 behaviorSmokeAssertSame(false, ! empty($manualAliasTemplateRow["canDelete"]), "Template-backed rows under manual appdata sources should not be actionable by default.");
 behaviorSmokeAssertSame("review", $outsideShareReviewRow["risk"], "Outside-share template rows should be marked for review.");
 behaviorSmokeAssertSame(true, ! empty($outsideShareReviewRow["policyLocked"]), "Outside-share review rows should start locked when outside-share cleanup is disabled.");

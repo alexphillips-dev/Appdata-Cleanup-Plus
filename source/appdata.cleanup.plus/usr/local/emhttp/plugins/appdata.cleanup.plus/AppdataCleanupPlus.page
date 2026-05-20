@@ -170,6 +170,7 @@ $config = array(
     "badgeReasonUnsafePath" => _("Unsafe path"),
     "badgeReasonSafetyLock" => _("Safety lock"),
     "badgeReasonPolicyLock" => _("Policy lock"),
+    "badgeReasonTemplateReference" => _("Template reference"),
     "badgeReasonZfsDeleteDisabled" => _("ZFS delete off"),
     "badgeReasonDeleteModeOff" => _("Delete mode off"),
     "badgeReasonNoExactDataset" => _("No exact dataset"),

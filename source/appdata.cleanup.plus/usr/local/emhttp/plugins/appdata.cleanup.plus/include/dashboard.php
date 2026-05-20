@@ -1108,11 +1108,12 @@ function applySafetyPolicyToRow($row, $settings) {
     $row["lockOverrideAllowed"] = false;
     $row["lockOverridden"] = false;
 
-    if ( $row["risk"] !== "blocked" ) {
+    if ( $row["risk"] !== "blocked" && empty($row["insideConfiguredSource"]) ) {
       $row["risk"] = "review";
       $row["riskLabel"] = "Review";
-      $row["riskReason"] = $templateLockReason;
     }
+
+    $row["riskReason"] = $templateLockReason;
 
     return $row;
   }
