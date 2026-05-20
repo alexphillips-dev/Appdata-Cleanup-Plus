@@ -1490,7 +1490,7 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
-  if ( isset($candidate["sourceKind"]) && (string)$candidate["sourceKind"] === "template" ) {
+  if ( isset($candidate["sourceKind"]) && (string)$candidate["sourceKind"] === "template" && empty($settings["allowTemplateReferencedCleanup"]) ) {
     return array(
       "ok" => false,
       "path" => $candidatePath,

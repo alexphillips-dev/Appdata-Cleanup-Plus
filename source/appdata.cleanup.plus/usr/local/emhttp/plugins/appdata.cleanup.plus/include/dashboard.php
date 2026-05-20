@@ -1097,7 +1097,7 @@ function applySafetyPolicyToRow($row, $settings) {
     return $row;
   }
 
-  if ( isset($row["sourceKind"]) && $row["sourceKind"] === "template" ) {
+  if ( isset($row["sourceKind"]) && $row["sourceKind"] === "template" && empty($settings["allowTemplateReferencedCleanup"]) ) {
     $templateLockReason = appdataCleanupPlusTemplateActionLockReason(
       isset($row["sourceNames"]) ? $row["sourceNames"] : array(),
       isset($row["targetPaths"]) ? $row["targetPaths"] : array()

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.05.20.02">
-<!ENTITY md5 "3b25c57edf3d1dcbe39d5deca59e90d2">
+<!ENTITY version "2026.05.20.03">
+<!ENTITY md5 "eb724e300dfb8928b94e29c775785a4e">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.05.20.03
+- Safety: Add an `Allow saved-template cleanup` checkbox that bypasses only the saved-template policy lock for template-referenced rows
+- Safety: Keep outside-share, ZFS dataset delete, permanent-delete, hard-lock, and Docker inventory locks enforced when saved-template cleanup is enabled
+- Test: Cover saved-template cleanup persistence, dashboard actionability, action-time validation, and outside-share lock preservation
+
 ###2026.05.20.02
 - Fix: Keep saved-template rows inside configured appdata sources from being mislabeled as outside-share review rows while preserving the template-reference safety lock
 - UI: Show a `Template reference` lock badge for saved-template rows instead of the outside-share badge when the path is already under a configured appdata source

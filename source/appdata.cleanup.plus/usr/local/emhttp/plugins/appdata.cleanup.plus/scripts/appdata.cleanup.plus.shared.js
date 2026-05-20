@@ -49,6 +49,7 @@
       allowOutsideShareCleanup: false,
       enablePermanentDelete: false,
       enableZfsDatasetDelete: false,
+      allowTemplateReferencedCleanup: false,
       quarantineRoot: "",
       defaultQuarantinePurgeDays: 0,
       manualAppdataSources: [],

@@ -142,11 +142,13 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusConfigDir(), "State root should 
 $defaultSafetySettings = getAppdataCleanupPlusSafetySettings();
 behaviorSmokeAssertSame(0, (int)$defaultSafetySettings["defaultQuarantinePurgeDays"], "Default safety settings should start with no quarantine purge timer.");
 behaviorSmokeAssertSame(false, ! empty($defaultSafetySettings["enableZfsDatasetDelete"]), "Default safety settings should start with ZFS dataset delete disabled.");
+behaviorSmokeAssertSame(false, ! empty($defaultSafetySettings["allowTemplateReferencedCleanup"]), "Default safety settings should start with saved-template cleanup disabled.");
 behaviorSmokeAssertSame(array(), $defaultSafetySettings["zfsPathMappings"], "Default safety settings should start without ZFS path mappings.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "allowOutsideShareCleanup" => false,
   "enablePermanentDelete" => false,
   "enableZfsDatasetDelete" => true,
+  "allowTemplateReferencedCleanup" => true,
   "manualAppdataSources" => array(
     "/mnt/fcache/test-appdata/",
     "",
@@ -164,6 +166,7 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
 $persistedSafetySettings = getAppdataCleanupPlusSafetySettings();
 behaviorSmokeAssertSame(21, (int)$persistedSafetySettings["defaultQuarantinePurgeDays"], "Safety settings should persist the default quarantine purge days value.");
 behaviorSmokeAssertSame(true, ! empty($persistedSafetySettings["enableZfsDatasetDelete"]), "Safety settings should persist the ZFS dataset delete toggle.");
+behaviorSmokeAssertSame(true, ! empty($persistedSafetySettings["allowTemplateReferencedCleanup"]), "Safety settings should persist the saved-template cleanup toggle.");
 behaviorSmokeAssertSame(array(
   "/mnt/fcache/test-appdata",
   "/mnt/fcache/second-appdata"
@@ -178,6 +181,7 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "allowOutsideShareCleanup" => false,
   "enablePermanentDelete" => false,
   "enableZfsDatasetDelete" => false,
+  "allowTemplateReferencedCleanup" => false,
   "manualAppdataSources" => array(),
   "zfsPathMappings" => array(),
   "defaultQuarantinePurgeDays" => 0
@@ -710,6 +714,7 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "allowOutsideShareCleanup" => false,
   "enablePermanentDelete" => false,
   "enableZfsDatasetDelete" => false,
+  "allowTemplateReferencedCleanup" => false,
   "manualAppdataSources" => array(
     $manualAliasSourceRoot,
     $manualCustomSourceRoot
@@ -893,6 +898,30 @@ $templateActionResolution = resolveCandidateForAction(array(
 ), getAppdataCleanupPlusSafetySettings(), "quarantine");
 behaviorSmokeAssertSame(false, ! empty($templateActionResolution["ok"]), "Action-time validation should block template-backed rows even if a stale snapshot is submitted.");
 behaviorSmokeAssertContains("Remove or update the saved template", $templateActionResolution["message"], "Template-backed action blocks should explain the saved-template requirement.");
+$templateBypassSettings = getAppdataCleanupPlusSafetySettings();
+$templateBypassSettings["allowTemplateReferencedCleanup"] = true;
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings($templateBypassSettings), "Saved-template cleanup bypass setting should save for action validation.");
+$templateBypassDashboard = buildDashboardPayload();
+$templateBypassDashboardRows = isset($templateBypassDashboard["payload"]["rows"]) && is_array($templateBypassDashboard["payload"]["rows"]) ? $templateBypassDashboard["payload"]["rows"] : array();
+$templateBypassDashboardRow = behaviorSmokeFindRowByPath($templateBypassDashboardRows, $manualAliasTemplatePath);
+$outsideShareTemplateBypassRow = behaviorSmokeFindRowByPath($templateBypassDashboardRows, $outsideShareReviewPath);
+behaviorSmokeAssertTrue(is_array($templateBypassDashboardRow), "Saved-template cleanup bypass dashboard should still include inside-source template rows.");
+behaviorSmokeAssertSame(false, ! empty($templateBypassDashboardRow["policyLocked"]), "Saved-template cleanup bypass should remove the template policy lock for inside-source rows.");
+behaviorSmokeAssertSame(true, ! empty($templateBypassDashboardRow["canDelete"]), "Inside-source template rows should become actionable when saved-template cleanup bypass is enabled.");
+behaviorSmokeAssertTrue(is_array($outsideShareTemplateBypassRow), "Saved-template cleanup bypass dashboard should still include outside-share template rows.");
+behaviorSmokeAssertSame(true, ! empty($outsideShareTemplateBypassRow["policyLocked"]), "Saved-template cleanup bypass should still respect outside-share safety locks.");
+behaviorSmokeAssertContains("Outside-share cleanup is disabled", $outsideShareTemplateBypassRow["policyReason"], "Outside-share template rows should keep the outside-share safety reason after template bypass.");
+$templateBypassActionResolution = resolveCandidateForAction(array(
+  "path" => $manualAliasTemplatePath,
+  "displayPath" => $manualAliasTemplatePath,
+  "realPath" => (string)@realpath($manualAliasTemplatePath),
+  "sourceKind" => "template",
+  "sourceNames" => array("manual-template-only"),
+  "targetPaths" => array("/opt/manual")
+), getAppdataCleanupPlusSafetySettings(), "quarantine");
+behaviorSmokeAssertSame(true, ! empty($templateBypassActionResolution["ok"]), "Action-time validation should allow inside-source template rows when saved-template cleanup bypass is enabled.");
+$templateBypassSettings["allowTemplateReferencedCleanup"] = false;
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings($templateBypassSettings), "Saved-template cleanup bypass setting should reset for later safety tests.");
 $unverifiedRows = appdataCleanupPlusApplyDockerInventorySafetyToRows(array($filesystemRow));
 behaviorSmokeAssertSame(true, appdataCleanupPlusDockerInventoryUnverified(true, array(), array("template" => array("HostDir" => $templatedOrphanPath))), "Docker inventory should be treated as unverified when Docker is running, no containers are returned, and templates exist.");
 behaviorSmokeAssertSame(false, ! empty($unverifiedRows[0]["canDelete"]), "Unverified Docker inventory scans should disable filesystem cleanup actions.");

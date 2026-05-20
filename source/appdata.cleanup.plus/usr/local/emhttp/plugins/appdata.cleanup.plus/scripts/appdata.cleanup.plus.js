@@ -224,6 +224,7 @@
     els.$allowExternal = $("#acp-allow-external");
     els.$enableDelete = $("#acp-enable-delete");
     els.$enableZfsDelete = $("#acp-enable-zfs-delete");
+    els.$allowTemplateCleanup = $("#acp-allow-template-cleanup");
     els.$sort = $("#acp-sort");
     els.$rescan = $("#acp-rescan");
     els.$selectVisible = $("#acp-select-visible");
@@ -299,6 +300,7 @@
     els.$allowExternal.on("change", saveSafetySettings);
     els.$enableDelete.on("change", saveSafetySettings);
     els.$enableZfsDelete.on("change", saveSafetySettings);
+    els.$allowTemplateCleanup.on("change", saveSafetySettings);
 
     els.$results.on("click", ".acp-row", function(event) {
       if ($(event.target).closest(".acp-row-checkbox, .acp-button, a, button, input, select, textarea").length) {
@@ -890,6 +892,7 @@
     els.$allowExternal.prop("checked", !!settings.allowOutsideShareCleanup);
     els.$enableDelete.prop("checked", !!settings.enablePermanentDelete);
     els.$enableZfsDelete.prop("checked", !!settings.enableZfsDatasetDelete);
+    els.$allowTemplateCleanup.prop("checked", !!settings.allowTemplateReferencedCleanup);
   }
 
   function getPrimaryOperation() {
@@ -928,6 +931,7 @@
     els.$allowExternal.prop("disabled", state.busy);
     els.$enableDelete.prop("disabled", state.busy);
     els.$enableZfsDelete.prop("disabled", state.busy);
+    els.$allowTemplateCleanup.prop("disabled", state.busy);
     els.$sort.prop("disabled", state.busy);
     syncBulkSelectionPresetControls();
     updateActionBar();
@@ -2116,7 +2120,7 @@
       return nextRow;
     }
 
-    if (nextRow.sourceKind === "template") {
+    if (nextRow.sourceKind === "template" && !state.settings.allowTemplateReferencedCleanup) {
       nextRow.canDelete = false;
       nextRow.policyLocked = true;
       nextRow.policyReason = buildTemplateActionLockReason(nextRow);
@@ -3064,7 +3068,8 @@
       "Selection: " + String(selectedRows.length) + " selected",
       "Safety: outside-share=" + (state.settings.allowOutsideShareCleanup ? "on" : "off") +
         " permanent-delete=" + (state.settings.enablePermanentDelete ? "on" : "off") +
-        " zfs-delete=" + (state.settings.enableZfsDatasetDelete ? "on" : "off"),
+        " zfs-delete=" + (state.settings.enableZfsDatasetDelete ? "on" : "off") +
+        " saved-template-cleanup=" + (state.settings.allowTemplateReferencedCleanup ? "on" : "off"),
       "Sources: roots=" + String(scanRoots.length) +
         " mappings=" + String($.isArray((state.appdataSources || {}).zfsPathMappings) ? state.appdataSources.zfsPathMappings.length : 0),
       "ZFS: backed=" + String(Number(insights.zfsBackedCount || 0)) +
@@ -4490,7 +4495,8 @@
     var nextSettings = $.extend({}, previousSettings, {
       allowOutsideShareCleanup: !!els.$allowExternal.prop("checked"),
       enablePermanentDelete: !!els.$enableDelete.prop("checked"),
-      enableZfsDatasetDelete: !!els.$enableZfsDelete.prop("checked")
+      enableZfsDatasetDelete: !!els.$enableZfsDelete.prop("checked"),
+      allowTemplateReferencedCleanup: !!els.$allowTemplateCleanup.prop("checked")
     }, normalizedOverrides);
     var nextDefaultPurgeDays = normalizeDefaultQuarantinePurgeDaysValue(nextSettings.defaultQuarantinePurgeDays);
 
@@ -4518,6 +4524,7 @@
       allowOutsideShareCleanup: nextSettings.allowOutsideShareCleanup ? "1" : "0",
       enablePermanentDelete: nextSettings.enablePermanentDelete ? "1" : "0",
       enableZfsDatasetDelete: nextSettings.enableZfsDatasetDelete ? "1" : "0",
+      allowTemplateReferencedCleanup: nextSettings.allowTemplateReferencedCleanup ? "1" : "0",
       defaultQuarantinePurgeDays: String(Number(nextSettings.defaultQuarantinePurgeDays || 0)),
       manualAppdataSources: ($.isArray(nextSettings.manualAppdataSources) ? nextSettings.manualAppdataSources : []).join("\n"),
       zfsPathMappings: JSON.stringify($.isArray(nextSettings.zfsPathMappings) ? nextSettings.zfsPathMappings : [])

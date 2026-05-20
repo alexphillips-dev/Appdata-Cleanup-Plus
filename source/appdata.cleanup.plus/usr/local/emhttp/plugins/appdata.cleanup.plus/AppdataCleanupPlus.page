@@ -137,6 +137,7 @@ $config = array(
     "showExternalLabel" => _("Allow outside-share cleanup"),
     "enablePermanentDeleteLabel" => _("Enable permanent delete"),
     "enableZfsDatasetDeleteLabel" => _("Enable ZFS dataset delete"),
+    "allowTemplateReferencedCleanupLabel" => _("Allow saved-template cleanup"),
     "sourceLabel" => _("Source"),
     "storageLabel" => _("Storage"),
     "zfsDatasetLabel" => _("ZFS dataset"),
@@ -569,6 +570,10 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
             <label class="acp-toggle">
               <input type="checkbox" id="acp-enable-zfs-delete">
               <span><?php echo _("Enable ZFS dataset delete"); ?></span>
+            </label>
+            <label class="acp-toggle">
+              <input type="checkbox" id="acp-allow-template-cleanup">
+              <span><?php echo _("Allow saved-template cleanup"); ?></span>
             </label>
           </div>
           <div class="acp-toolbar-actions acp-control-actions">
