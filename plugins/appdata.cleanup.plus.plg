@@ -2,17 +2,29 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.05.20.03">
-<!ENTITY md5 "eb724e300dfb8928b94e29c775785a4e">
+<!ENTITY version "2026.05.20.04">
+<!ENTITY md5 "c53154e6b55225d59eba310b9ee01896">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.05.20.04
+- Release: Promote the full `2026.05.05.01` through `2026.05.20.03` development cycle to the stable `main` channel while keeping the manifest, CA feed, package archive, and plugin install link pointed at `main`
+- Support: Keep diagnostics available during failed or stuck operations, add a redacted `Copy diagnostics text` fallback, and include clearer runtime-lock state, scan timing details, safety toggles, source roots, quarantine totals, and export failure context for troubleshooting
+- Fix: Return the underlying filesystem move error when quarantine fails instead of hiding it behind a generic failure message
+- Fix: Stop quarantine manager and dashboard summary loads from running scheduled purge side effects, so expired or protected quarantine entries no longer keep the backend busy while users are trying to review quarantine
+- Fix: Allow quarantine purge to remove symlink entries inside already-quarantined folders without following them, while continuing to block mount points, top-level symlinks, and special filesystem entries
+- Fix: Pause failed scheduled purge timers and retain the failure reason so protected quarantine entries are not retried on every page refresh
+- Safety: Lock saved-template appdata candidates by default, keep template-referenced rows under configured appdata roots out of outside-share review counts, and show a `Template reference` badge for that policy lock
+- Safety: Disable cleanup actions when Docker appears to be running but installed containers cannot be verified while saved templates are present
+- Safety: Add an `Allow saved-template cleanup` checkbox that bypasses only the saved-template policy lock while preserving outside-share, ZFS dataset delete, permanent-delete, hard-lock, ignored-row, and Docker inventory safeguards
+- Test: Extend behavior smoke coverage for diagnostics fallback, quarantine load/purge behavior, failed purge suppression, saved-template locks and bypass, template row labeling, and unverified Docker inventory locks
+
 ###2026.05.20.03
 - Safety: Add an `Allow saved-template cleanup` checkbox that bypasses only the saved-template policy lock for template-referenced rows
 - Safety: Keep outside-share, ZFS dataset delete, permanent-delete, hard-lock, and Docker inventory locks enforced when saved-template cleanup is enabled
@@ -745,7 +757,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
