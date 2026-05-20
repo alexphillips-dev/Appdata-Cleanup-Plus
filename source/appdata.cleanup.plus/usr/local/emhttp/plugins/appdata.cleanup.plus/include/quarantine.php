@@ -198,6 +198,8 @@ function normalizeAppdataCleanupPlusQuarantineRecord($record) {
       isset($record["purgeScheduleSource"]) ? $record["purgeScheduleSource"] : "",
       isset($record["purgeAt"]) ? $record["purgeAt"] : ""
     ),
+    "purgeErrorAt" => isset($record["purgeErrorAt"]) ? trim((string)$record["purgeErrorAt"]) : "",
+    "purgeErrorMessage" => isset($record["purgeErrorMessage"]) ? trim((string)$record["purgeErrorMessage"]) : "",
     "sourceKind" => isset($record["sourceKind"]) ? trim((string)$record["sourceKind"]) : "template",
     "sourceLabel" => isset($record["sourceLabel"]) ? trim((string)$record["sourceLabel"]) : "",
     "sourceDisplay" => isset($record["sourceDisplay"]) ? trim((string)$record["sourceDisplay"]) : "",
@@ -634,6 +636,8 @@ function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false) {
       "purgeBadgeLabel" => $scheduledPurge["purgeBadgeLabel"],
       "purgeBadgeTone" => $scheduledPurge["purgeBadgeTone"],
       "purgeDue" => $scheduledPurge["purgeDue"],
+      "purgeErrorAt" => $normalized["purgeErrorAt"],
+      "purgeErrorMessage" => $normalized["purgeErrorMessage"],
       "sourceKind" => $normalized["sourceKind"],
       "sourceLabel" => $normalized["sourceLabel"],
       "sourceDisplay" => $normalized["sourceDisplay"],
@@ -783,8 +787,6 @@ function buildQuarantineManagerPayload($includeEntries=true) {
     "sizeBytes" => 0,
     "sizeLabel" => "0 B"
   );
-
-  sweepExpiredAppdataCleanupPlusQuarantineEntries();
 
   if ( $includeEntries ) {
     $entries = getActiveAppdataCleanupPlusQuarantineEntries(true);
@@ -1241,8 +1243,11 @@ function restoreTrackedQuarantineEntry($entry, $options=array()) {
   );
 }
 
-function nativeDeleteDirectory($path) {
-  $unsafeReason = inspectDirectoryTreeForUnsafeEntries($path);
+function nativeDeleteDirectory($path, $options=array()) {
+  $allowSymlinkEntries = ! empty($options["allowSymlinkEntries"]);
+  $unsafeReason = inspectDirectoryTreeForUnsafeEntries($path, array(
+    "allowSymlinkEntries" => $allowSymlinkEntries
+  ));
 
   if ( $unsafeReason ) {
     return array(
@@ -1259,6 +1264,16 @@ function nativeDeleteDirectory($path) {
 
     foreach ( $iterator as $item ) {
       $itemPath = $item->getPathname();
+
+      if ( $item->isLink() ) {
+        if ( ! @unlink($itemPath) ) {
+          return array(
+            "ok" => false,
+            "message" => "A symlink entry could not be removed cleanly."
+          );
+        }
+        continue;
+      }
 
       if ( $item->isDir() ) {
         if ( ! @rmdir($itemPath) ) {
@@ -1311,7 +1326,9 @@ function purgeTrackedQuarantineEntry($entry, $options=array()) {
     );
   }
 
-  $deleteResult = nativeDeleteDirectory($destination);
+  $deleteResult = nativeDeleteDirectory($destination, array(
+    "allowSymlinkEntries" => true
+  ));
 
   if ( ! $deleteResult["ok"] ) {
     return array(
@@ -1400,6 +1417,29 @@ function sweepExpiredAppdataCleanupPlusQuarantineEntries() {
   ));
   $execution["action"] = "scheduled-purge";
 
+  $registry = getAppdataCleanupPlusQuarantineRegistry();
+  $registryDirty = false;
+  foreach ( $execution["results"] as $result ) {
+    if ( ! isset($result["status"], $result["id"]) || $result["status"] !== "error" ) {
+      continue;
+    }
+
+    $recordId = (string)$result["id"];
+    if ( ! isset($registry[$recordId]) || ! is_array($registry[$recordId]) ) {
+      continue;
+    }
+
+    $registry[$recordId]["purgeAt"] = "";
+    $registry[$recordId]["purgeScheduleSource"] = "";
+    $registry[$recordId]["purgeErrorAt"] = date("c");
+    $registry[$recordId]["purgeErrorMessage"] = isset($result["message"]) ? (string)$result["message"] : "Scheduled purge failed.";
+    $registryDirty = true;
+  }
+
+  if ( $registryDirty ) {
+    setAppdataCleanupPlusQuarantineRegistry($registry);
+  }
+
   appendAppdataCleanupPlusAuditEntry(array(
     "timestamp" => date("c"),
     "operation" => "scheduled-purge",
@@ -1437,6 +1477,29 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
       "displayPath" => $candidateDisplayPath,
       "status" => "blocked",
       "message" => "Ignored paths must be restored before acting on them."
+    );
+  }
+
+  if ( ! empty($candidate["scanVerificationLocked"]) ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $candidateDisplayPath,
+      "status" => "blocked",
+      "message" => appdataCleanupPlusDockerInventoryUnverifiedMessage()
+    );
+  }
+
+  if ( isset($candidate["sourceKind"]) && (string)$candidate["sourceKind"] === "template" ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $candidateDisplayPath,
+      "status" => "blocked",
+      "message" => appdataCleanupPlusTemplateActionLockReason(
+        isset($candidate["sourceNames"]) && is_array($candidate["sourceNames"]) ? $candidate["sourceNames"] : array(),
+        isset($candidate["targetPaths"]) && is_array($candidate["targetPaths"]) ? $candidate["targetPaths"] : array()
+      )
     );
   }
 

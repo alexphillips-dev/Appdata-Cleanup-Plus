@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.05.05.03">
-<!ENTITY md5 "bd44d3796311a89ec06f490434e8704f">
+<!ENTITY version "2026.05.20.01">
+<!ENTITY md5 "62bf8f54d645c579e9e15806a66f3d75">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,14 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.05.20.01
+- Fix: Stop quarantine manager and dashboard summary loads from running scheduled purge side effects, so expired or failing purge entries no longer keep the backend busy while users are trying to review quarantine
+- Fix: Allow quarantine purge to remove symlink entries inside already-quarantined folders without following them, while continuing to block mount points, top-level symlinks, and special filesystem entries
+- Fix: Pause failed scheduled purge timers and preserve the failure reason so the same protected quarantine entry is not retried on every page refresh
+- Safety: Lock saved-template appdata candidates by default and require the saved Docker template to be removed or updated before quarantine or delete actions are allowed
+- Safety: Disable cleanup actions for a scan when Docker appears to be running but no installed containers can be verified while saved templates are present
+- Test: Cover read-only quarantine loads, symlink-containing quarantine purge, failed purge retry suppression, template-backed action locks, and unverified Docker inventory scan locks
+
 ###2026.05.05.03
 - Support: Clarify copied diagnostics text by reporting runtime lock metadata separately from active held locks
 - Support: Mark each copied runtime lock row as active or inactive and include active lock counts

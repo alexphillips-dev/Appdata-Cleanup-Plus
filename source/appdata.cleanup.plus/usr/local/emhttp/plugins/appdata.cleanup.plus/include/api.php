@@ -610,6 +610,7 @@ function buildDashboardPayload() {
   appdataCleanupPlusMarkScanPhase($scanMetrics, "template_scan", array(
     "templateVolumeCount" => count($templateVolumes)
   ));
+  $dockerInventoryUnverified = appdataCleanupPlusDockerInventoryUnverified($dockerRunning, $containers, $templateVolumes);
 
   $filesystemVolumes = buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning, $filesystemDiscoveryMeta);
   appdataCleanupPlusMarkScanPhase($scanMetrics, "filesystem_discovery", array(
@@ -632,9 +633,13 @@ function buildDashboardPayload() {
   ));
 
   $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings, false);
+  if ( $dockerInventoryUnverified ) {
+    $rows = appdataCleanupPlusApplyDockerInventorySafetyToRows($rows);
+  }
   $summary = buildSummary($rows);
   appdataCleanupPlusMarkScanPhase($scanMetrics, "row_build", array(
-    "rowCount" => count($rows)
+    "rowCount" => count($rows),
+    "dockerInventoryUnverified" => $dockerInventoryUnverified
   ));
 
   $snapshot = writeAppdataCleanupPlusSnapshot(buildSnapshotCandidateMap($rows));
@@ -648,9 +653,16 @@ function buildDashboardPayload() {
     $scanWarningMessage = "Filesystem discovery reached the safety limit of " . (int)$filesystemDiscoveryMeta["candidateLimit"] . " direct appdata candidates. Partial results are shown; narrow Appdata sources and rescan if expected folders are missing.";
   }
 
+  if ( $dockerInventoryUnverified ) {
+    $scanWarningMessage = trim(appdataCleanupPlusDockerInventoryUnverifiedMessage() . " " . $scanWarningMessage);
+  }
+
   if ( ! $snapshot ) {
     error_log("Appdata Cleanup Plus could not persist a scan snapshot. Returning read-only dashboard payload.");
     $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings, true);
+    if ( $dockerInventoryUnverified ) {
+      $rows = appdataCleanupPlusApplyDockerInventorySafetyToRows($rows);
+    }
     $summary = buildSummary($rows);
     $scanWarningMessage = trim($scanWarningMessage . " Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.");
     appdataCleanupPlusMarkScanPhase($scanMetrics, "fallback_heavy_row_build", array(

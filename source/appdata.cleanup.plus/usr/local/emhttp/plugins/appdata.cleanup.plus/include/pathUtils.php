@@ -27,6 +27,10 @@ function pathIsMountPoint($path) {
     return false;
   }
 
+  if ( isset($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"]) && is_array($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"]) ) {
+    return ! empty($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"][$path]);
+  }
+
   $parentPath = dirname($path);
   if ( $parentPath === $path ) {
     return true;
@@ -136,13 +140,19 @@ function pathHasSymlinkSegment($path) {
   return getPathSymlinkSegment($path) !== "";
 }
 
-function inspectDirectoryTreeForUnsafeEntries($path) {
+function inspectDirectoryTreeForUnsafeEntries($path, $options=array()) {
+  $allowSymlinkEntries = ! empty($options["allowSymlinkEntries"]);
+
   if ( @is_link($path) ) {
     return buildSymlinkLockReason($path, "Folder");
   }
 
   if ( ! is_dir($path) ) {
     return "Path no longer exists.";
+  }
+
+  if ( pathIsMountPoint($path) ) {
+    return "Mount-point folders are locked for safety.";
   }
 
   try {
@@ -154,7 +164,7 @@ function inspectDirectoryTreeForUnsafeEntries($path) {
     foreach ( $iterator as $item ) {
       $itemPath = $item->getPathname();
 
-      if ( $item->isLink() ) {
+      if ( $item->isLink() && ! $allowSymlinkEntries ) {
         return buildSymlinkLockReason($itemPath, "Folder entry");
       }
 

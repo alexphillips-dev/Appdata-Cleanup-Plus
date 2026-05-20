@@ -404,6 +404,59 @@ function buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRu
   return $sourceLabel . " still reference this folder at " . $targetSummary . ", but no installed container currently maps this host path.";
 }
 
+function appdataCleanupPlusTemplateActionLockReason($sourceNames=array(), $targetPaths=array()) {
+  $sourceSummary = summarizeCandidateValues(is_array($sourceNames) ? $sourceNames : array());
+  $targetSummary = summarizeCandidateValues(is_array($targetPaths) ? $targetPaths : array());
+  $sourceLabel = $sourceSummary ? "Saved templates " . $sourceSummary : "Saved Docker templates";
+
+  if ( ! $targetSummary ) {
+    $targetSummary = "tracked container paths";
+  }
+
+  return $sourceLabel . " still reference this folder at " . $targetSummary . ". Remove or update the saved template before quarantining or deleting this appdata path.";
+}
+
+function appdataCleanupPlusDockerInventoryUnverified($dockerRunning, $containers, $templateVolumes) {
+  return ! empty($dockerRunning) &&
+    is_array($containers) &&
+    count($containers) === 0 &&
+    is_array($templateVolumes) &&
+    count($templateVolumes) > 0;
+}
+
+function appdataCleanupPlusDockerInventoryUnverifiedMessage() {
+  return "Docker appears to be running, but Appdata Cleanup Plus could not verify any installed containers while saved Docker templates are present. Cleanup actions are disabled for this scan; refresh Docker state and rescan before quarantining or deleting folders.";
+}
+
+function appdataCleanupPlusApplyDockerInventorySafetyToRows($rows, $message="") {
+  $lockedRows = array();
+  $lockMessage = $message !== "" ? $message : appdataCleanupPlusDockerInventoryUnverifiedMessage();
+
+  foreach ( is_array($rows) ? $rows : array() as $row ) {
+    if ( ! empty($row["ignored"]) ) {
+      $lockedRows[] = $row;
+      continue;
+    }
+
+    $row["scanVerificationLocked"] = true;
+    $row["policyLocked"] = true;
+    $row["policyReason"] = $lockMessage;
+    $row["canDelete"] = false;
+    $row["lockOverrideAllowed"] = false;
+    $row["lockOverridden"] = false;
+
+    if ( ! isset($row["risk"]) || $row["risk"] !== "blocked" ) {
+      $row["risk"] = "review";
+      $row["riskLabel"] = "Review";
+      $row["riskReason"] = $lockMessage;
+    }
+
+    $lockedRows[] = $row;
+  }
+
+  return $lockedRows;
+}
+
 function buildAuditOperationLabel($operation) {
   $normalized = strtolower(trim((string)$operation));
 
@@ -1044,6 +1097,26 @@ function applySafetyPolicyToRow($row, $settings) {
     return $row;
   }
 
+  if ( isset($row["sourceKind"]) && $row["sourceKind"] === "template" ) {
+    $templateLockReason = appdataCleanupPlusTemplateActionLockReason(
+      isset($row["sourceNames"]) ? $row["sourceNames"] : array(),
+      isset($row["targetPaths"]) ? $row["targetPaths"] : array()
+    );
+    $row["policyLocked"] = true;
+    $row["policyReason"] = $templateLockReason;
+    $row["canDelete"] = false;
+    $row["lockOverrideAllowed"] = false;
+    $row["lockOverridden"] = false;
+
+    if ( $row["risk"] !== "blocked" ) {
+      $row["risk"] = "review";
+      $row["riskLabel"] = "Review";
+      $row["riskReason"] = $templateLockReason;
+    }
+
+    return $row;
+  }
+
   if ( isset($row["storageKind"]) && $row["storageKind"] === "zfs" && empty($settings["enableZfsDatasetDelete"]) ) {
     $row["policyLocked"] = true;
     $row["policyReason"] = "ZFS dataset delete is disabled in Safety settings.";
@@ -1260,6 +1333,7 @@ function buildSnapshotCandidateMap($rows) {
       "targetPaths" => isset($row["targetPaths"]) ? $row["targetPaths"] : array(),
       "targetSummary" => $row["targetSummary"],
       "templateRefs" => isset($row["templateRefs"]) ? $row["templateRefs"] : array(),
+      "scanVerificationLocked" => ! empty($row["scanVerificationLocked"]),
       "storageKind" => isset($row["storageKind"]) ? $row["storageKind"] : "filesystem",
       "storageLabel" => isset($row["storageLabel"]) ? $row["storageLabel"] : "Filesystem",
       "storageDetail" => isset($row["storageDetail"]) ? $row["storageDetail"] : "",

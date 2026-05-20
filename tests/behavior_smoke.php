@@ -564,6 +564,7 @@ behaviorSmokeAssertNotContains("\"row\"", $diagnosticsJson, "Diagnostics bundle 
 $scheduledPurgeQuarantineRoot = $stateRoot . "/scheduled-purge-quarantine";
 $scheduledPurgeDestination = $scheduledPurgeQuarantineRoot . "/20260330-121000/mnt/user/appdata/scheduled-purge";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($scheduledPurgeDestination), "Scheduled purge quarantine fixture should be created.");
+file_put_contents($scheduledPurgeDestination . "/config.json", "{}");
 registerAppdataCleanupPlusQuarantineRecord(array(
   "id" => "scheduled-purge-entry",
   "name" => "scheduled-purge",
@@ -575,12 +576,62 @@ registerAppdataCleanupPlusQuarantineRecord(array(
   "sourceSummary" => "scheduled-purge",
   "targetSummary" => "/config"
 ));
+$scheduledPurgeReadOnlyPayload = buildQuarantineManagerPayload(false);
+behaviorSmokeAssertSame(1, (int)$scheduledPurgeReadOnlyPayload["summary"]["count"], "Read-only quarantine summaries should count expired scheduled purge entries without purging them.");
+behaviorSmokeAssertTrue(is_dir($scheduledPurgeDestination), "Read-only quarantine summaries should not run scheduled purge side effects.");
+$scheduledPurgeReadOnlyManager = buildQuarantineManagerPayload(true);
+behaviorSmokeAssertSame(1, (int)$scheduledPurgeReadOnlyManager["summary"]["count"], "Quarantine manager loads should show expired scheduled purge entries without purging them.");
+behaviorSmokeAssertTrue(is_dir($scheduledPurgeDestination), "Quarantine manager loads should not run scheduled purge side effects.");
 $scheduledPurgeExecution = sweepExpiredAppdataCleanupPlusQuarantineEntries();
 behaviorSmokeAssertSame("scheduled-purge", $scheduledPurgeExecution["action"], "Scheduled purge sweeps should report their action label.");
-behaviorSmokeAssertTrue(! is_dir($scheduledPurgeDestination), "Expired scheduled purge entries should be auto-purged when the quarantine payload is loaded.");
+behaviorSmokeAssertTrue(! is_dir($scheduledPurgeDestination), "Explicit expired scheduled purge sweeps should purge due entries.");
 $latestAuditEntry = getLatestAppdataCleanupPlusAuditEntry();
 behaviorSmokeAssertSame("scheduled-purge", isset($latestAuditEntry["operation"]) ? $latestAuditEntry["operation"] : "", "Scheduled purge sweeps should append an audit entry.");
 behaviorSmokeAssertSame(1, isset($latestAuditEntry["summary"]["purged"]) ? (int)$latestAuditEntry["summary"]["purged"] : 0, "Scheduled purge sweeps should report purged entries in the audit summary.");
+
+$scheduledPurgeSymlinkRoot = $stateRoot . "/scheduled-purge-symlink-quarantine";
+$scheduledPurgeSymlinkDestination = $scheduledPurgeSymlinkRoot . "/20260330-121500/mnt/user/appdata/scheduled-purge-symlink";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($scheduledPurgeSymlinkDestination . "/letsencrypt/live/npm-1"), "Scheduled purge symlink fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($scheduledPurgeSymlinkDestination . "/letsencrypt/archive/npm-1"), "Scheduled purge symlink target fixture should be created.");
+file_put_contents($scheduledPurgeSymlinkDestination . "/letsencrypt/archive/npm-1/cert18.pem", "cert");
+if ( function_exists("symlink") && @symlink("../../archive/npm-1/cert18.pem", $scheduledPurgeSymlinkDestination . "/letsencrypt/live/npm-1/cert.pem") ) {
+  registerAppdataCleanupPlusQuarantineRecord(array(
+    "id" => "scheduled-purge-symlink-entry",
+    "name" => "scheduled-purge-symlink",
+    "sourcePath" => "/mnt/user/appdata/scheduled-purge-symlink",
+    "destination" => $scheduledPurgeSymlinkDestination,
+    "quarantineRoot" => $scheduledPurgeSymlinkRoot,
+    "quarantinedAt" => "2026-03-30T12:15:00+00:00",
+    "purgeAt" => "2000-01-01T00:00:00+00:00",
+    "sourceSummary" => "scheduled-purge-symlink",
+    "targetSummary" => "/config"
+  ));
+  $scheduledPurgeSymlinkExecution = sweepExpiredAppdataCleanupPlusQuarantineEntries();
+  behaviorSmokeAssertSame(1, isset($scheduledPurgeSymlinkExecution["summary"]["purged"]) ? (int)$scheduledPurgeSymlinkExecution["summary"]["purged"] : 0, "Scheduled purge should unlink symlink entries inside quarantined folders without following them.");
+  behaviorSmokeAssertTrue(! is_dir($scheduledPurgeSymlinkDestination), "Scheduled purge should remove quarantined folders that contain symlink entries.");
+}
+
+$scheduledPurgeMountRoot = $stateRoot . "/scheduled-purge-mount-quarantine";
+$scheduledPurgeMountDestination = $scheduledPurgeMountRoot . "/20260330-122000/mnt/user/appdata/scheduled-purge-mount";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($scheduledPurgeMountDestination), "Scheduled purge failure fixture should be created.");
+registerAppdataCleanupPlusQuarantineRecord(array(
+  "id" => "scheduled-purge-failed-entry",
+  "name" => "scheduled-purge-failed",
+  "sourcePath" => "/mnt/user/appdata/scheduled-purge-failed",
+  "destination" => $scheduledPurgeMountDestination,
+  "quarantineRoot" => $scheduledPurgeMountRoot,
+  "quarantinedAt" => "2026-03-30T12:20:00+00:00",
+  "purgeAt" => "2000-01-01T00:00:00+00:00",
+  "sourceSummary" => "scheduled-purge-failed",
+  "targetSummary" => "/config"
+));
+$GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"] = array($scheduledPurgeMountDestination => true);
+$scheduledPurgeFailureExecution = sweepExpiredAppdataCleanupPlusQuarantineEntries();
+unset($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"]);
+behaviorSmokeAssertSame(1, isset($scheduledPurgeFailureExecution["summary"]["errors"]) ? (int)$scheduledPurgeFailureExecution["summary"]["errors"] : 0, "Scheduled purge failures should be reported in the sweep summary.");
+$scheduledPurgeFailureRegistry = getAppdataCleanupPlusQuarantineRegistry();
+behaviorSmokeAssertSame("", isset($scheduledPurgeFailureRegistry["scheduled-purge-failed-entry"]["purgeAt"]) ? (string)$scheduledPurgeFailureRegistry["scheduled-purge-failed-entry"]["purgeAt"] : "missing", "Failed scheduled purge entries should have their due timer paused.");
+behaviorSmokeAssertContains("locked for safety", isset($scheduledPurgeFailureRegistry["scheduled-purge-failed-entry"]["purgeErrorMessage"]) ? (string)$scheduledPurgeFailureRegistry["scheduled-purge-failed-entry"]["purgeErrorMessage"] : "", "Failed scheduled purge entries should preserve the purge error message.");
 
 $dockerRuntimeFixture = $stateRoot . "/docker-runtime";
 $dockerClientFixture = $stateRoot . "/DockerClient.php";
@@ -807,8 +858,9 @@ behaviorSmokeAssertSame(null, $quarantineRow, "The plugin quarantine root should
 behaviorSmokeAssertSame("template", $templatedRow["sourceKind"], "Template-backed rows should preserve their source kind.");
 behaviorSmokeAssertSame("zfs", $templatedRow["storageKind"], "Mapped template-backed rows should resolve to ZFS dataset storage.");
 behaviorSmokeAssertSame("docker_vm_nvme/" . $appdataShareName . "/templated-orphan", $templatedRow["datasetName"], "Mapped template-backed rows should expose the resolved ZFS dataset name.");
-behaviorSmokeAssertSame(true, ! empty($templatedRow["policyLocked"]), "ZFS-backed rows should start locked while ZFS dataset delete is disabled.");
-behaviorSmokeAssertSame(false, ! empty($templatedRow["canDelete"]), "ZFS-backed rows should not be actionable until ZFS dataset delete is enabled.");
+behaviorSmokeAssertSame(true, ! empty($templatedRow["policyLocked"]), "Template-backed rows should start locked even when no installed container maps them.");
+behaviorSmokeAssertSame(false, ! empty($templatedRow["canDelete"]), "Template-backed rows should not be actionable from the dashboard.");
+behaviorSmokeAssertContains("Remove or update the saved template", $templatedRow["policyReason"], "Template-backed row locks should explain that saved templates must be handled first.");
 behaviorSmokeAssertSame("docker_vm_nvme/" . $appdataShareName . "/Sonarr", $zfsCaseRow["datasetName"], "ZFS dataset resolution should preserve case-sensitive dataset names.");
 behaviorSmokeAssertSame("filesystem", $filesystemRow["sourceKind"], "Filesystem-only rows should be marked as discovery candidates.");
 behaviorSmokeAssertSame("filesystem", $staleNestedEmptyParentRow["sourceKind"], "Empty stale parent remnants should be surfaced as discovery candidates.");
@@ -818,17 +870,34 @@ behaviorSmokeAssertSame("safe", $staleNestedEmptyParentRow["risk"], "Empty stale
 behaviorSmokeAssertSame("safe", $manualCustomFilesystemRow["risk"], "Manual appdata source rows should be treated as inside-source candidates.");
 behaviorSmokeAssertSame(true, ! empty($manualCustomFilesystemRow["canDelete"]), "Manual appdata source rows should remain actionable without outside-share cleanup.");
 behaviorSmokeAssertSame(true, ! empty($staleNestedEmptyParentRow["canDelete"]), "Empty stale parent remnants should remain actionable.");
-behaviorSmokeAssertSame("safe", $manualAliasTemplateRow["risk"], "Template-backed rows under manual appdata sources should be treated as inside-source candidates.");
+behaviorSmokeAssertSame("review", $manualAliasTemplateRow["risk"], "Template-backed rows under manual appdata sources should require review because saved templates still reference them.");
+behaviorSmokeAssertSame(false, ! empty($manualAliasTemplateRow["canDelete"]), "Template-backed rows under manual appdata sources should not be actionable by default.");
 behaviorSmokeAssertSame("review", $outsideShareReviewRow["risk"], "Outside-share template rows should be marked for review.");
 behaviorSmokeAssertSame(true, ! empty($outsideShareReviewRow["policyLocked"]), "Outside-share review rows should start locked when outside-share cleanup is disabled.");
-behaviorSmokeAssertSame(true, ! empty($outsideShareReviewRow["lockOverrideAllowed"]), "Outside-share review rows should allow a manual lock override.");
+behaviorSmokeAssertSame(false, ! empty($outsideShareReviewRow["lockOverrideAllowed"]), "Template-backed outside-share review rows should not allow a manual lock override.");
 behaviorSmokeAssertSame(false, ! empty($outsideShareReviewRow["canDelete"]), "Outside-share review rows should not be actionable before manual unlock.");
 behaviorSmokeAssertContains("Saved templates", $templatedRow["reason"], "Template-backed rows should explain their saved-template reference.");
+behaviorSmokeAssertContains("Saved templates", $templatedRow["policyReason"], "Template-backed rows should surface the saved-template action lock reason.");
 behaviorSmokeAssertContains("no saved Docker template or installed container currently references it", $filesystemRow["reason"], "Filesystem-only rows should explain that they are unreferenced.");
 behaviorSmokeAssertContains("empty parent folder", $staleNestedEmptyParentRow["reason"], "Empty stale parent remnants should explain why the direct child folder is now actionable.");
 behaviorSmokeAssertContains($manualCustomSourceRoot, $manualCustomFilesystemRow["reason"], "Manual-source discovery rows should describe the source root that surfaced them.");
 behaviorSmokeAssertSame($slashLivePath, normalizeUserPath($slashTemplatePath), "Path normalization should collapse trailing slashes on saved template paths.");
 behaviorSmokeAssertTrue(! empty($templatedRow["statsPending"]), "Initial dashboard rows should mark heavy stats as pending for progressive hydration.");
+$templateActionResolution = resolveCandidateForAction(array(
+  "path" => $manualAliasTemplatePath,
+  "displayPath" => $manualAliasTemplatePath,
+  "realPath" => (string)@realpath($manualAliasTemplatePath),
+  "sourceKind" => "template",
+  "sourceNames" => array("manual-template-only"),
+  "targetPaths" => array("/opt/manual")
+), getAppdataCleanupPlusSafetySettings(), "quarantine");
+behaviorSmokeAssertSame(false, ! empty($templateActionResolution["ok"]), "Action-time validation should block template-backed rows even if a stale snapshot is submitted.");
+behaviorSmokeAssertContains("Remove or update the saved template", $templateActionResolution["message"], "Template-backed action blocks should explain the saved-template requirement.");
+$unverifiedRows = appdataCleanupPlusApplyDockerInventorySafetyToRows(array($filesystemRow));
+behaviorSmokeAssertSame(true, appdataCleanupPlusDockerInventoryUnverified(true, array(), array("template" => array("HostDir" => $templatedOrphanPath))), "Docker inventory should be treated as unverified when Docker is running, no containers are returned, and templates exist.");
+behaviorSmokeAssertSame(false, ! empty($unverifiedRows[0]["canDelete"]), "Unverified Docker inventory scans should disable filesystem cleanup actions.");
+behaviorSmokeAssertSame(true, ! empty($unverifiedRows[0]["scanVerificationLocked"]), "Unverified Docker inventory scans should mark rows with a scan verification lock.");
+behaviorSmokeAssertContains("could not verify any installed containers", $unverifiedRows[0]["policyReason"], "Unverified Docker inventory locks should explain the inventory problem.");
 $indexedStaleParentPath = $manualCustomSourceRoot . "/indexed-stale-parent";
 $indexedLiveParentPath = $manualCustomSourceRoot . "/indexed-live-parent";
 $indexedExactParentPath = $manualCustomSourceRoot . "/indexed-exact-parent";
@@ -863,17 +932,30 @@ $outsideShareActionResolution = resolveCandidateForAction(array(
 ), getAppdataCleanupPlusSafetySettings(), "quarantine");
 behaviorSmokeAssertSame(false, ! empty($outsideShareActionResolution["ok"]), "Outside-share review rows should remain blocked before a manual unlock.");
 behaviorSmokeAssertContains("Outside-share cleanup is disabled", $outsideShareActionResolution["message"], "Outside-share action blocks should explain the policy lock.");
-$lockOverrideUpdate = updateSnapshotCandidateLockOverrideState($dashboard["payload"]["scanToken"], array($outsideShareReviewRow["id"]), "unlock");
+$outsideShareOverrideCandidateId = "outside-share-override";
+$outsideShareOverrideSnapshot = writeAppdataCleanupPlusSnapshot(array(
+  $outsideShareOverrideCandidateId => array(
+    "id" => $outsideShareOverrideCandidateId,
+    "name" => "outside-share-override",
+    "path" => $outsideShareReviewPath,
+    "displayPath" => $outsideShareReviewPath,
+    "realPath" => (string)@realpath($outsideShareReviewPath),
+    "sourceKind" => "filesystem",
+    "lockOverrideAllowed" => true,
+    "lockOverridden" => false
+  )
+));
+$lockOverrideUpdate = updateSnapshotCandidateLockOverrideState($outsideShareOverrideSnapshot["token"], array($outsideShareOverrideCandidateId), "unlock");
 behaviorSmokeAssertSame(true, ! empty($lockOverrideUpdate["ok"]), "Outside-share review rows should support snapshot-scoped manual unlock updates.");
-behaviorSmokeAssertTrue($lockOverrideUpdate["scanToken"] !== $dashboard["payload"]["scanToken"], "Manual unlock updates should rotate the scan token.");
-$unlockedOutsideShareCandidate = resolveSnapshotCandidates($lockOverrideUpdate["scanToken"], array($outsideShareReviewRow["id"]));
+behaviorSmokeAssertTrue($lockOverrideUpdate["scanToken"] !== $outsideShareOverrideSnapshot["token"], "Manual unlock updates should rotate the scan token.");
+$unlockedOutsideShareCandidate = resolveSnapshotCandidates($lockOverrideUpdate["scanToken"], array($outsideShareOverrideCandidateId));
 behaviorSmokeAssertSame(true, ! empty($unlockedOutsideShareCandidate["ok"]), "The updated scan token should resolve unlocked review candidates.");
 behaviorSmokeAssertSame(true, ! empty($unlockedOutsideShareCandidate["candidates"][0]["lockOverridden"]), "Unlocked review candidates should persist their override state in the snapshot.");
 $unlockedOutsideShareResolution = resolveCandidateForAction($unlockedOutsideShareCandidate["candidates"][0], getAppdataCleanupPlusSafetySettings(), "quarantine");
 behaviorSmokeAssertSame(true, ! empty($unlockedOutsideShareResolution["ok"]), "Unlocked outside-share review rows should become actionable without enabling outside-share cleanup.");
-$relockedOutsideShareUpdate = updateSnapshotCandidateLockOverrideState($lockOverrideUpdate["scanToken"], array($outsideShareReviewRow["id"]), "relock");
+$relockedOutsideShareUpdate = updateSnapshotCandidateLockOverrideState($lockOverrideUpdate["scanToken"], array($outsideShareOverrideCandidateId), "relock");
 behaviorSmokeAssertSame(true, ! empty($relockedOutsideShareUpdate["ok"]), "Unlocked review rows should be able to return to their locked state.");
-$relockedOutsideShareCandidate = resolveSnapshotCandidates($relockedOutsideShareUpdate["scanToken"], array($outsideShareReviewRow["id"]));
+$relockedOutsideShareCandidate = resolveSnapshotCandidates($relockedOutsideShareUpdate["scanToken"], array($outsideShareOverrideCandidateId));
 behaviorSmokeAssertSame(false, ! empty($relockedOutsideShareCandidate["candidates"][0]["lockOverridden"]), "Relocked review candidates should clear the override flag in the snapshot.");
 $relockedOutsideShareResolution = resolveCandidateForAction($relockedOutsideShareCandidate["candidates"][0], getAppdataCleanupPlusSafetySettings(), "quarantine");
 behaviorSmokeAssertSame(false, ! empty($relockedOutsideShareResolution["ok"]), "Relocking should restore the outside-share policy block.");
