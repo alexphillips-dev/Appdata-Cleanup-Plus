@@ -1490,7 +1490,12 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
-  if ( isset($candidate["sourceKind"]) && (string)$candidate["sourceKind"] === "template" && empty($settings["allowTemplateReferencedCleanup"]) ) {
+  if (
+    isset($candidate["sourceKind"]) &&
+    (string)$candidate["sourceKind"] === "template" &&
+    empty($settings["allowTemplateReferencedCleanup"]) &&
+    ! appdataCleanupPlusCandidateHasLockOverride($candidate)
+  ) {
     return array(
       "ok" => false,
       "path" => $candidatePath,

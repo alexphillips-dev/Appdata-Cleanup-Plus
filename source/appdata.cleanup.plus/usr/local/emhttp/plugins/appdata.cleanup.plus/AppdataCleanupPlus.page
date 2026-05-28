@@ -135,6 +135,16 @@ $config = array(
     "settingsSaveFailedMessage" => _("The new safety settings could not be saved right now."),
     "showIgnoredLabel" => _("Show ignored"),
     "showExternalLabel" => _("Allow outside-share cleanup"),
+    "advancedSafetyOpenLabel" => _("Advanced safety"),
+    "advancedSafetyTitle" => _("Advanced safety"),
+    "advancedSafetySubtitle" => _("Persistent switches for riskier cleanup modes. Normal review rows can be unlocked for the current scan from the results instead."),
+    "advancedSafetySaveLabel" => _("Save safety settings"),
+    "advancedSafetySavedMessage" => _("Advanced safety settings saved."),
+    "advancedSafetyFailedMessage" => _("Advanced safety settings could not be saved right now."),
+    "advancedSafetyPermanentDeleteHelp" => _("Changes the primary action from quarantine to permanent delete and requires typed confirmation."),
+    "advancedSafetyZfsHelp" => _("Allows exact ZFS dataset-backed rows to use dataset destroy. ZFS rows still require permanent delete mode."),
+    "advancedSafetyOutsideShareHelp" => _("Makes outside-appdata review rows actionable without a per-scan unlock. Per-scan unlock is safer for normal use."),
+    "advancedSafetyTemplateHelp" => _("Makes saved-template reference rows actionable without a per-scan unlock. Per-scan unlock is safer for normal use."),
     "enablePermanentDeleteLabel" => _("Enable permanent delete"),
     "enableZfsDatasetDeleteLabel" => _("Enable ZFS dataset delete"),
     "allowTemplateReferencedCleanupLabel" => _("Allow saved-template cleanup"),
@@ -147,6 +157,12 @@ $config = array(
     "zfsDestroyImpactLabel" => _("Impact"),
     "zfsChildDatasetsLabel" => _("Child datasets"),
     "zfsSnapshotsLabel" => _("Snapshots"),
+    "readySectionTitle" => _("Ready to clean"),
+    "readySectionMessage" => _("These look like orphaned appdata folders inside configured appdata roots. Quarantine is the recommended action."),
+    "reviewSectionTitle" => _("Needs review"),
+    "reviewSectionMessage" => _("These may be safe, but they need explicit confirmation first. Unlock them for this scan after checking the details."),
+    "protectedSectionTitle" => _("Protected"),
+    "protectedSectionMessage" => _("These are blocked by safety rules and cannot be cleaned from the normal workflow."),
     "templateSectionTitle" => _("Saved template references"),
     "templateSectionMessage" => _("Paths still referenced by saved Docker templates but not by installed containers."),
     "discoverySectionTitle" => _("Appdata source discovery"),
@@ -187,11 +203,11 @@ $config = array(
     "selectionPresetOlderLabel" => _("Older than 90 days"),
     "selectionPresetEmptyTitle" => _("Nothing matched"),
     "selectionPresetEmptyMessage" => _("No selectable rows matched that preset in the current scan."),
-    "selectionHintIdle" => _("Click rows to select. Outside-share review rows can be selected for manual unlock, but hard-locked paths stay blocked."),
+    "selectionHintIdle" => _("Select ready rows to quarantine them. Review rows can be unlocked for this scan after checking details. Protected paths stay blocked."),
     "selectionHintReadOnly" => _("Scan results are read-only right now because the secure action snapshot could not be created."),
     "selectionHintReview" => _("Review rows still need extra scrutiny before permanent delete."),
-    "selectionHintSafety" => _("Outside-share cleanup is disabled. Select review rows and use Unlock selected to allow them for this scan."),
-    "selectionHintUnlock" => _("Selected review rows are locked by outside-share safety. Use Unlock selected to allow them for this scan."),
+    "selectionHintSafety" => _("Review rows need confirmation first. Select them and use Unlock selected to allow them for this scan."),
+    "selectionHintUnlock" => _("Selected review rows need confirmation. Use Unlock selected to allow them for this scan."),
     "selectionHintDeleteMode" => _("Permanent delete requires typed confirmation."),
     "selectionHintQuarantineMode" => _("Selected folders will be moved into quarantine instead of being permanently deleted."),
     "selectionHintZfsMode" => _("ZFS dataset-backed rows require permanent delete mode and cannot be quarantined."),
@@ -202,29 +218,29 @@ $config = array(
     "noticeZfsDatasetTitle" => _("ZFS dataset candidates found"),
     "noticeZfsDatasetMessage" => _("ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows."),
     "noticeZfsDeleteDisabledTitle" => _("ZFS dataset delete is disabled"),
-    "noticeZfsDeleteDisabledMessage" => _("ZFS-backed rows stay visible but blocked until ZFS dataset delete is enabled in Safety settings."),
+    "noticeZfsDeleteDisabledMessage" => _("ZFS-backed rows stay visible but protected until ZFS dataset delete is enabled in Advanced safety."),
     "noticeDockerOfflineTitle" => _("Docker is offline"),
     "noticeDockerOfflineMessage" => _("Results are based only on saved Docker templates. Review every path before acting on anything."),
     "noticeIgnoredTitle" => _("Ignore list active"),
-    "noticeOutsideShareDisabledTitle" => _("Outside-share cleanup is disabled"),
-    "noticeOutsideShareDisabledMessage" => _("Review paths stay visible and start locked. Select them and use Unlock selected to allow them for this scan."),
-    "noticeOutsideShareEnabledTitle" => _("Outside-share cleanup is enabled"),
-    "noticeOutsideShareEnabledMessage" => _("Review paths sit outside the configured appdata sources. Confirm each one carefully before acting."),
-    "noticeLockedPathsTitle" => _("Locked paths stay blocked"),
-    "noticeLockedPathsMessage" => _("Any path that resolves to a share root, mount point, symlinked location, or other unsafe target cannot be unlocked or acted on here."),
+    "noticeOutsideShareDisabledTitle" => _("Review items need confirmation"),
+    "noticeOutsideShareDisabledMessage" => _("Review paths stay visible and start locked. Unlock them for this scan after checking details."),
+    "noticeOutsideShareEnabledTitle" => _("Review bypass is enabled"),
+    "noticeOutsideShareEnabledMessage" => _("Some review paths may already be actionable because an advanced bypass is enabled. Confirm each one carefully before acting."),
+    "noticeLockedPathsTitle" => _("Protected paths stay blocked"),
+    "noticeLockedPathsMessage" => _("Any path that resolves to a share root, mount point, symlinked location, managed Docker/VM path, or other unsafe target cannot be unlocked here."),
     "visibleSummary" => _("visible"),
     "detectedSummary" => _("detected"),
     "cardTotal" => _("Detected"),
     "cardReview" => _("Needs review"),
-    "cardBlocked" => _("Locked"),
+    "cardBlocked" => _("Protected"),
     "cardSelected" => _("Selected"),
     "scanSummaryTitle" => _("Scan summary"),
     "scanSummarySubtitle" => _("A quick view of how the current scan is distributed across sources, safety states, and storage types."),
     "scanSummaryRootsLabel" => _("Scan roots"),
     "scanSummaryTemplateLabel" => _("Template rows"),
     "scanSummaryDiscoveryLabel" => _("Discovery rows"),
-    "scanSummaryReviewLabel" => _("Outside-share review"),
-    "scanSummaryLockedLabel" => _("Hard locked"),
+    "scanSummaryReviewLabel" => _("Needs review"),
+    "scanSummaryLockedLabel" => _("Protected"),
     "scanSummaryZfsLabel" => _("ZFS-backed"),
     "scanSummaryMappedLabel" => _("Mapped share path"),
     "scanSummaryIgnoredLabel" => _("Ignored"),
@@ -296,10 +312,10 @@ $config = array(
     "rowDetailsNoImpactLabel" => _("No descendant datasets or snapshots are currently expected."),
     "rowDetailsZfsPreviewPending" => _("Open details again if you need a fresh ZFS destroy preview."),
     "rowDetailsOutcomeIgnored" => _("Ignored until restored"),
-    "rowDetailsOutcomeHardLocked" => _("Hard-locked by safety rules"),
+    "rowDetailsOutcomeHardLocked" => _("Protected by safety rules"),
     "rowDetailsOutcomeZfsDisabled" => _("Blocked until ZFS dataset delete is enabled"),
     "rowDetailsOutcomePermanentDeleteRequired" => _("Blocked until permanent delete mode is enabled"),
-    "rowDetailsOutcomePolicyLocked" => _("Locked by current safety policy"),
+    "rowDetailsOutcomePolicyLocked" => _("Needs review before cleanup"),
     "rowDetailsOutcomeUnlocked" => _("Temporarily unlocked for this scan"),
     "rowDetailsOutcomeMappedNoExactDataset" => _("Mapped share path did not resolve to an exact dataset"),
     "rowDetailsOutcomeZfsReady" => _("Ready for ZFS dataset destroy"),
@@ -307,22 +323,24 @@ $config = array(
     "rowDetailsOutcomeReady" => _("Ready under current safety settings"),
     "rowDetailsNextStepIgnored" => _("Use Restore if you want this path to appear in cleanup scans again."),
     "rowDetailsNextStepHardLocked" => _("No action is available here. The path resolves to a managed or unsafe target."),
-    "rowDetailsNextStepEnableZfs" => _("Turn on Enable ZFS dataset delete in Safety settings, then rescan if needed."),
-    "rowDetailsNextStepEnablePermanentDelete" => _("Turn on Enable permanent delete. ZFS-backed rows cannot be quarantined."),
-    "rowDetailsNextStepUnlock" => _("Select this row and use Unlock selected if you want to act on it during this scan."),
+    "rowDetailsNextStepEnableZfs" => _("Open Advanced safety and enable ZFS dataset delete, then review the dataset details."),
+    "rowDetailsNextStepEnablePermanentDelete" => _("Open Advanced safety and enable permanent delete. ZFS-backed rows cannot be quarantined."),
+    "rowDetailsNextStepUnlock" => _("Use Unlock for this scan if you have checked the details and want to act on this review item."),
     "rowDetailsNextStepUnlocked" => _("Proceed carefully. Rescanning will restore the normal policy lock."),
     "rowDetailsNextStepMappedNoExactDataset" => _("Correct the ZFS mapping so the dataset mount root matches exactly, or continue as a normal folder."),
     "rowDetailsNextStepZfsReady" => _("Only permanent delete mode is supported for ZFS-backed rows. Review the destroy impact below before proceeding."),
     "rowDetailsNextStepReview" => _("Confirm that this path really belongs to orphaned appdata before acting on it."),
-    "rowDetailsNextStepReady" => _("You can quarantine it now, or permanently delete it if that mode is enabled."),
+    "rowDetailsNextStepReady" => _("Quarantine is recommended. Permanent delete is available only from Advanced safety."),
     "rowDetailsYesLabel" => _("Yes"),
     "rowDetailsNoLabel" => _("No"),
     "rowDetailsNoneLabel" => _("None"),
     "lockOverrideUnlockLabel" => _("Unlock selected"),
+    "lockOverrideRowUnlockLabel" => _("Unlock for this scan"),
+    "lockOverrideRowRelockLabel" => _("Relock"),
     "lockOverrideRelockLabel" => _("Relock selected"),
     "lockOverrideUnlockTitle" => _("Unlock selected review folders?"),
     "lockOverrideUnlockMessage" => _("The selected review folders will be manually unlocked for this scan only."),
-    "lockOverrideUnlockDetail" => _("This bypass only applies to outside-share policy locks. Hard safety locks stay blocked."),
+    "lockOverrideUnlockDetail" => _("This bypass only applies to review locks for the current scan. Protected paths stay blocked."),
     "lockOverrideUnlockListTitle" => _("Folders to unlock"),
     "lockOverrideUnlockButton" => _("Unlock"),
     "lockOverrideRelockTitle" => _("Relock selected review folders?"),
@@ -331,7 +349,7 @@ $config = array(
     "lockOverrideRelockListTitle" => _("Folders to relock"),
     "lockOverrideRelockButton" => _("Relock"),
     "lockOverrideEmptyTitle" => _("Nothing to update"),
-    "lockOverrideEmptyMessage" => _("Select at least one outside-share review row before using the lock override control."),
+    "lockOverrideEmptyMessage" => _("Select at least one review row before using the unlock control."),
     "lockOverrideFailedTitle" => _("Lock override failed"),
     "lockOverrideFailedMessage" => _("The selected review folders could not be updated right now."),
     "lockOverrideNote" => _("Manual unlock override is active for this scan only."),
@@ -527,8 +545,8 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
             <select id="acp-risk-filter" class="acp-select">
               <option value="all"><?php echo _("All"); ?></option>
               <option value="safe"><?php echo _("Ready"); ?></option>
-              <option value="review"><?php echo _("Review"); ?></option>
-              <option value="blocked"><?php echo _("Locked"); ?></option>
+              <option value="review"><?php echo _("Needs review"); ?></option>
+              <option value="blocked"><?php echo _("Protected"); ?></option>
             </select>
           </label>
         </div>
@@ -558,27 +576,11 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
       <section class="acp-toolbar acp-toolbar-panel acp-control-panel">
         <div class="acp-panel-title"><?php echo _("Controls"); ?></div>
         <div class="acp-control-grid">
-          <div class="acp-safety-strip">
-            <label class="acp-toggle">
-              <input type="checkbox" id="acp-allow-external">
-              <span><?php echo _("Allow outside-share cleanup"); ?></span>
-            </label>
-            <label class="acp-toggle">
-              <input type="checkbox" id="acp-enable-delete">
-              <span><?php echo _("Enable permanent delete"); ?></span>
-            </label>
-            <label class="acp-toggle">
-              <input type="checkbox" id="acp-enable-zfs-delete">
-              <span><?php echo _("Enable ZFS dataset delete"); ?></span>
-            </label>
-            <label class="acp-toggle">
-              <input type="checkbox" id="acp-allow-template-cleanup">
-              <span><?php echo _("Allow saved-template cleanup"); ?></span>
-            </label>
-          </div>
+          <div class="acp-control-copy"><?php echo _("Quarantine ready items first. Use Advanced safety only for permanent delete, ZFS dataset destroy, or persistent review bypasses."); ?></div>
           <div class="acp-toolbar-actions acp-control-actions">
             <button type="button" class="acp-button acp-button-secondary" id="acp-rescan"><?php echo _("Rescan"); ?></button>
-            <button type="button" class="acp-button acp-button-secondary" id="acp-select-visible"><?php echo _("Select visible"); ?></button>
+            <button type="button" class="acp-button acp-button-secondary" id="acp-select-visible"><?php echo _("Select ready"); ?></button>
+            <button type="button" class="acp-button acp-button-secondary" id="acp-advanced-safety"><?php echo _("Advanced safety"); ?></button>
             <button type="button" class="acp-button acp-button-secondary" id="acp-clear-selection"><?php echo _("Clear"); ?></button>
           </div>
         </div>
@@ -594,7 +596,7 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
   <section class="acp-bottom-bar" id="acp-bottom-bar">
     <div class="acp-bottom-copy">
       <strong id="acp-selection-summary">0 <?php echo _("folders selected"); ?></strong>
-      <span id="acp-selection-detail"><?php echo _("Click rows to select. Locked paths stay visible but cannot be selected."); ?></span>
+      <span id="acp-selection-detail"><?php echo _("Select ready rows to quarantine them. Review rows can be unlocked for this scan."); ?></span>
     </div>
     <div class="acp-bottom-actions">
       <div class="acp-bottom-selection-tools">
@@ -606,7 +608,7 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
         </label>
         <button type="button" class="acp-button acp-button-secondary" id="acp-apply-select-preset" disabled><?php echo _("Select"); ?></button>
       </div>
-      <button type="button" class="acp-button acp-button-secondary" id="acp-select-all" disabled><?php echo _("Select all"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary" id="acp-select-all" disabled><?php echo _("Select ready"); ?></button>
       <button type="button" class="acp-button acp-button-secondary" id="acp-dry-run" disabled><?php echo _("Dry run"); ?></button>
       <button type="button" class="acp-button acp-button-primary" id="acp-primary-action" disabled><?php echo _("Quarantine selected"); ?></button>
     </div>

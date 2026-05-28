@@ -96,6 +96,7 @@
     var zfsPathMappingsButtonLabel = ACP.t(strings, "zfsPathMappingsOpenLabel", "ZFS mappings");
     var auditButtonLabel = ACP.t(strings, "auditHistoryOpenLabel", "Show history");
     var toolsButtonLabel = ACP.t(strings, "toolsOpenLabel", "Tools");
+    var advancedSafetyButtonLabel = ACP.t(strings, "advancedSafetyOpenLabel", "Advanced safety");
     var html = [
       '<div class="acp-mode-strip-grid">',
       '<article class="acp-mode-card ' + (isDeleteMode ? "is-delete-mode" : "is-safe-mode") + '">',
@@ -116,6 +117,7 @@
         ? ('<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings">' + ACP.escapeHtml(zfsPathMappingsButtonLabel) + "</button>")
         : "",
       '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(quarantineButtonLabel) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="open-advanced-safety">' + ACP.escapeHtml(advancedSafetyButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history">' + ACP.escapeHtml(auditButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-tools">' + ACP.escapeHtml(toolsButtonLabel) + "</button>",
       "</div>",
@@ -369,7 +371,7 @@
     }
 
     if (row.securityLockReason || row.risk === "blocked") {
-      return ACP.t(strings, "rowDetailsOutcomeHardLocked", "Hard-locked by safety rules");
+      return ACP.t(strings, "rowDetailsOutcomeHardLocked", "Protected by safety rules");
     }
 
     if (row.storageKind === "zfs" && row.policyLocked) {
@@ -383,7 +385,7 @@
     }
 
     if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsOutcomePolicyLocked", "Locked by current safety policy");
+      return ACP.t(strings, "rowDetailsOutcomePolicyLocked", "Needs review before cleanup");
     }
 
     if (row.lockOverridden) {
@@ -415,15 +417,15 @@
     }
 
     if (row.storageKind === "zfs" && !row.enableZfsDatasetDelete) {
-      return ACP.t(strings, "rowDetailsNextStepEnableZfs", "Turn on Enable ZFS dataset delete in Safety settings, then rescan if needed.");
+      return ACP.t(strings, "rowDetailsNextStepEnableZfs", "Open Advanced safety and enable ZFS dataset delete, then review the dataset details.");
     }
 
     if (row.storageKind === "zfs" && !row.enablePermanentDelete) {
-      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Turn on Enable permanent delete. ZFS-backed rows cannot be quarantined.");
+      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Open Advanced safety and enable permanent delete. ZFS-backed rows cannot be quarantined.");
     }
 
     if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsNextStepUnlock", "Select this row and use Unlock selected if you want to act on it during this scan.");
+      return ACP.t(strings, "rowDetailsNextStepUnlock", "Use Unlock for this scan if you have checked the details and want to act on this review item.");
     }
 
     if (row.lockOverridden) {

@@ -555,7 +555,7 @@ function updateSnapshotCandidateLockOverrideState($token, $candidateIds, $intent
     if ( ! appdataCleanupPlusCandidateSupportsLockOverride($candidateMap[$candidateId]) ) {
       return array(
         "ok" => false,
-        "message" => "Only outside-share review locks can be manually unlocked.",
+        "message" => "Only review locks can be manually unlocked.",
         "statusCode" => 400
       );
     }
