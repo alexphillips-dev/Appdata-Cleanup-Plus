@@ -169,6 +169,8 @@
     var $modal = $(".sweet-alert:visible").last();
     var $baseText;
     var $existingHost;
+    var $anchor;
+    var $buttonContainer;
 
     if (!$modal.length) {
       $modal = $(".sweet-alert.showSweetAlert").last();
@@ -192,6 +194,17 @@
       if ($baseText.length) {
         $baseText.addClass("acp-modal-hidden");
         $baseText.after('<div class="acp-modal-host">' + htmlContent + "</div>");
+      } else {
+        $anchor = $modal.children("h2").first();
+        $buttonContainer = $modal.children(".sa-button-container, .sa-confirm-button-container").first();
+
+        if ($anchor.length) {
+          $anchor.after('<div class="acp-modal-host">' + htmlContent + "</div>");
+        } else if ($buttonContainer.length) {
+          $buttonContainer.before('<div class="acp-modal-host">' + htmlContent + "</div>");
+        } else {
+          $modal.append('<div class="acp-modal-host">' + htmlContent + "</div>");
+        }
       }
     } else if ($baseText.length) {
       $baseText.removeClass("acp-modal-hidden");
