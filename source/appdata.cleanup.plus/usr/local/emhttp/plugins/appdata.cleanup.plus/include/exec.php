@@ -106,6 +106,10 @@ try {
       handleExecuteCandidateAction();
       break;
 
+    case "getOperationProgress":
+      handleGetOperationProgress();
+      break;
+
     case "getQuarantineEntries":
       handleGetQuarantineEntries();
       break;

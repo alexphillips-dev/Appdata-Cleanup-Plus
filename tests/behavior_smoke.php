@@ -1295,6 +1295,23 @@ if ( function_exists("symlink") && @symlink($symlinkTargetPath, $symlinkLinkPath
   behaviorSmokeAssertContains($symlinkLinkPath, $symlinkReason, "Symlink lock reasons should identify the exact offending path segment.");
 }
 
+$progressDeletePath = $stateRoot . "/progress-delete";
+$progressDeleteId = "smoke-progress-delete";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($progressDeletePath . "/nested"), "Progress delete fixture should be created.");
+file_put_contents($progressDeletePath . "/root.txt", "root");
+file_put_contents($progressDeletePath . "/nested/child.txt", "child");
+appdataCleanupPlusInitializeOperationProgress($progressDeleteId, "delete", 1);
+$progressDeleteResult = nativeDeleteDirectory($progressDeletePath, array(
+  "operationProgressId" => $progressDeleteId
+));
+$progressPayload = appdataCleanupPlusReadOperationProgress($progressDeleteId);
+behaviorSmokeAssertSame(true, ! empty($progressDeleteResult["ok"]), "Progress-tracked native deletes should succeed.");
+behaviorSmokeAssertSame(false, is_dir($progressDeletePath), "Progress-tracked native deletes should remove the target folder.");
+behaviorSmokeAssertSame(4, (int)$progressPayload["totalItems"], "Progress tracking should count root, nested directories, and files.");
+behaviorSmokeAssertSame(4, (int)$progressPayload["processedItems"], "Progress tracking should record each deleted filesystem entry.");
+behaviorSmokeAssertTrue(! empty($progressPayload["recent"]) && count($progressPayload["recent"]) >= 2, "Progress tracking should retain recently deleted paths.");
+behaviorSmokeAssertContains("progress-delete", appdataCleanupPlusJsonEncode($progressPayload["recent"]), "Progress tracking should include deleted path names.");
+
 behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);
 behaviorSmokeRemoveTree($zfsDatasetRoot);

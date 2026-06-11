@@ -50,6 +50,12 @@
       batchSize: 8,
       requestToken: ""
     },
+    operationProgress: {
+      activeId: "",
+      pollTimer: null,
+      pendingResult: null,
+      latest: null
+    },
     riskFilter: "all",
     sortMode: "risk",
     showIgnored: false,
@@ -658,6 +664,12 @@
       event.preventDefault();
       event.stopPropagation();
       $(this).trigger("click");
+    });
+
+    $(document).on("click.acpOperationProgress", ".sweet-alert [data-action='view-operation-results']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      showPendingOperationResults();
     });
 
     $(document).on("click.acpSources", ".sweet-alert [data-action='add-current-appdata-source']", function(event) {
@@ -5370,6 +5382,246 @@
     return html.join("");
   }
 
+  function createOperationProgressId() {
+    return "op-" + String(Date.now()) + "-" + String(Math.random()).replace(/[^0-9]/g, "").slice(0, 10);
+  }
+
+  function getOperationProgressRatio(progress) {
+    var totalItems = Number((progress && progress.totalItems) || 0);
+    var processedItems = Number((progress && progress.processedItems) || 0);
+    var totalRoots = Number((progress && progress.totalRoots) || 0);
+    var completedRoots = Number((progress && progress.completedRoots) || 0);
+
+    if (totalItems > 0) {
+      return Math.max(0, Math.min(1, processedItems / totalItems));
+    }
+
+    if (totalRoots > 0) {
+      return Math.max(0, Math.min(1, completedRoots / totalRoots));
+    }
+
+    return 0;
+  }
+
+  function buildOperationProgressHtml(progress, context, readyForResults) {
+    var currentProgress = $.isPlainObject(progress) ? progress : {};
+    var ratio = readyForResults ? 1 : getOperationProgressRatio(currentProgress);
+    var percent = Math.round(ratio * 100);
+    var processedItems = Number(currentProgress.processedItems || 0);
+    var totalItems = Number(currentProgress.totalItems || 0);
+    var completedRoots = Number(currentProgress.completedRoots || 0);
+    var totalRoots = Number(currentProgress.totalRoots || currentProgress.requestedCount || 0);
+    var recent = $.isArray(currentProgress.recent) ? currentProgress.recent.slice(-50).reverse() : [];
+    var message = readyForResults
+      ? ACP.t(strings, "deleteProgressComplete", "Delete finished. Review the results before leaving this screen.")
+      : (currentProgress.message || ACP.t(strings, "deleteProgressRunning", "Removing files now."));
+    var html = [
+      '<div class="acp-modal-summary acp-delete-progress-summary">',
+      '<div class="acp-modal-copy">',
+      '<div class="acp-modal-lead">' + ACP.escapeHtml(message) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(context.detailMessage || ACP.t(strings, "deletingMessage", "Large folders can take a moment to remove.")) + "</div>",
+      "</div>",
+      '<div class="acp-delete-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + ACP.escapeHtml(String(percent)) + '">',
+      '<span style="width:' + ACP.escapeHtml(String(percent)) + '%"></span>',
+      "</div>",
+      '<div class="acp-modal-stats">',
+      '<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(String(percent)) + "%</span>",
+      '<span class="acp-modal-stat">' + ACP.escapeHtml(String(processedItems)) + (totalItems > 0 ? (" / " + ACP.escapeHtml(String(totalItems))) : "") + " " + ACP.escapeHtml(ACP.t(strings, "deleteProgressFilesLabel", "items")) + "</span>",
+      '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(String(completedRoots)) + (totalRoots > 0 ? (" / " + ACP.escapeHtml(String(totalRoots))) : "") + " " + ACP.escapeHtml(ACP.t(strings, "deleteFolderPlural", "folders")) + "</span>",
+      "</div>"
+    ];
+
+    if (currentProgress.currentPath) {
+      html.push(
+        '<div class="acp-modal-result-destination">' +
+          '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "deleteProgressCurrentLabel", "Current")) + "</span>" +
+          '<code class="acp-modal-path">' + ACP.escapeHtml(currentProgress.currentPath) + "</code>" +
+        "</div>"
+      );
+    }
+
+    html.push(
+      '<div class="acp-modal-panel acp-delete-progress-panel">',
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "deleteProgressRecentLabel", "Recently deleted")) + "</div>"
+    );
+
+    if (recent.length) {
+      html.push('<ul class="acp-modal-list acp-delete-progress-list">');
+      $.each(recent, function(_, item) {
+        html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(item.path || "") + "</code></li>");
+      });
+      html.push("</ul>");
+    } else {
+      html.push('<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "deleteProgressNoRecent", "Deleted paths will appear here as the operation runs.")) + "</div>");
+    }
+
+    html.push("</div>");
+
+    if (readyForResults) {
+      html.push(
+        '<div class="acp-modal-actions-row">' +
+          '<button type="button" class="acp-button acp-button-primary" data-action="view-operation-results">' + ACP.escapeHtml(ACP.t(strings, "deleteProgressViewResults", "View results")) + "</button>" +
+        "</div>"
+      );
+    }
+
+    html.push("</div>");
+    return html.join("");
+  }
+
+  function renderOperationProgressModal(progress, context, readyForResults) {
+    ACP.applyDeleteModalClass(
+      "acp-delete-modal acp-delete-results-modal",
+      buildOperationProgressHtml(progress, context, readyForResults)
+    );
+  }
+
+  function stopOperationProgressPolling() {
+    if (state.operationProgress.pollTimer) {
+      window.clearTimeout(state.operationProgress.pollTimer);
+      state.operationProgress.pollTimer = null;
+    }
+  }
+
+  function pollOperationProgress(operationProgressId, context) {
+    if (!operationProgressId || state.operationProgress.activeId !== operationProgressId) {
+      return;
+    }
+
+    apiPost({
+      action: "getOperationProgress",
+      operationProgressId: operationProgressId
+    }).done(function(response) {
+      var progress = $.isPlainObject(response && response.progress) ? response.progress : {};
+      var readyForResults = !!state.operationProgress.pendingResult;
+
+      state.operationProgress.latest = progress;
+      renderOperationProgressModal(progress, context, readyForResults);
+
+      if (!readyForResults) {
+        state.operationProgress.pollTimer = window.setTimeout(function() {
+          pollOperationProgress(operationProgressId, context);
+        }, 500);
+      }
+    }).fail(function() {
+      if (state.operationProgress.activeId === operationProgressId && !state.operationProgress.pendingResult) {
+        state.operationProgress.pollTimer = window.setTimeout(function() {
+          pollOperationProgress(operationProgressId, context);
+        }, 1000);
+      }
+    });
+  }
+
+  function startOperationProgressModal(operationProgressId, context) {
+    state.operationProgress.activeId = operationProgressId;
+    state.operationProgress.pendingResult = null;
+    state.operationProgress.latest = {
+      id: operationProgressId,
+      status: "running",
+      message: ACP.t(strings, "deleteProgressPreparing", "Preparing delete progress."),
+      requestedCount: context.rows ? context.rows.length : 0,
+      totalRoots: context.rows ? context.rows.length : 0,
+      completedRoots: 0,
+      totalItems: 0,
+      processedItems: 0,
+      recent: []
+    };
+
+    stopOperationProgressPolling();
+    swal({
+      title: ACP.t(strings, "deleteProgressTitle", "Deleting files"),
+      text: "",
+      type: "info",
+      html: true,
+      showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false
+    });
+    renderOperationProgressModal(state.operationProgress.latest, context, false);
+    state.operationProgress.pollTimer = window.setTimeout(function() {
+      pollOperationProgress(operationProgressId, context);
+    }, 350);
+  }
+
+  function finalizeOperationProgressModal(response, context) {
+    var latest = state.operationProgress.latest || {};
+    var operationProgressId = state.operationProgress.activeId;
+
+    stopOperationProgressPolling();
+    state.operationProgress.pendingResult = {
+      response: response,
+      context: context
+    };
+    latest.status = response && response.ok === false ? "warning" : "complete";
+    latest.message = ACP.t(strings, "deleteProgressComplete", "Delete finished. Review the results before leaving this screen.");
+    latest.summary = response ? response.summary : null;
+    state.operationProgress.latest = latest;
+    renderOperationProgressModal(latest, context, true);
+
+    if (operationProgressId) {
+      apiPost({
+        action: "getOperationProgress",
+        operationProgressId: operationProgressId
+      }).done(function(progressResponse) {
+        var progress = $.isPlainObject(progressResponse && progressResponse.progress) ? progressResponse.progress : null;
+
+        if (!progress || !state.operationProgress.pendingResult || state.operationProgress.activeId !== operationProgressId) {
+          return;
+        }
+
+        state.operationProgress.latest = progress;
+        renderOperationProgressModal(progress, context, true);
+      });
+    }
+  }
+
+  function showPendingOperationResults() {
+    var pending = state.operationProgress.pendingResult;
+
+    if (!pending) {
+      return;
+    }
+
+    state.operationProgress.activeId = "";
+    state.operationProgress.pendingResult = null;
+    state.operationProgress.latest = null;
+    stopOperationProgressPolling();
+    showOperationResultsFromResponse(pending.response, pending.context);
+  }
+
+  function showOperationResultsFromResponse(response, context) {
+    var summary = response.summary || { ready: 0, quarantined: 0, deleted: 0, missing: 0, blocked: 0, errors: 0 };
+    var results = $.isArray(response.results) ? response.results : [];
+    var hasWarnings = Number(summary.blocked || 0) > 0 || Number(summary.missing || 0) > 0 || Number(summary.errors || 0) > 0;
+    var modalTitle = hasWarnings ? context.resultTitleWarning : context.resultTitleSuccess;
+    var modalType = hasWarnings ? "warning" : "success";
+
+    if (!context.preview) {
+      state.selected = {};
+      applyLocalOperationResults(results);
+      loadAuditHistory(state.deferredDataRequestToken, true, 25);
+    }
+
+    if (response.quarantineSummary) {
+      state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary);
+    } else if (!context.preview) {
+      loadQuarantineSummary(state.deferredDataRequestToken, true);
+    }
+
+    if (!context.preview && context.baseOperation === "quarantine") {
+      state.quarantine.loaded = false;
+    }
+
+    swal({
+      title: modalTitle,
+      text: "",
+      type: modalType,
+      html: true
+    });
+    ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildOperationResultsHtml(summary, results, context));
+    renderAll();
+  }
+
   function startDryRunFlow() {
     var selectedRows = getSelectedActionRows();
 
@@ -5516,62 +5768,58 @@
 
   function runCandidateOperation(selectedRows, operation) {
     var context = buildOperationContext(operation, selectedRows);
+    var useProgressModal = !context.preview && context.baseOperation === "delete";
+    var operationProgressId = useProgressModal ? createOperationProgressId() : "";
+    var requestData;
 
     setBusy(true);
-    ACP.applyDeleteModalClass("");
-    swal({
-      title: context.loadingTitle,
-      text: context.loadingMessage,
-      type: "info",
-      showConfirmButton: false,
-      allowEscapeKey: false,
-      allowOutsideClick: false
-    });
+    context.rows = selectedRows;
 
-    apiPostForUserAction({
+    if (useProgressModal) {
+      startOperationProgressModal(operationProgressId, context);
+    } else {
+      ACP.applyDeleteModalClass("");
+      swal({
+        title: context.loadingTitle,
+        text: context.loadingMessage,
+        type: "info",
+        showConfirmButton: false,
+        allowEscapeKey: false,
+        allowOutsideClick: false
+      });
+    }
+
+    requestData = {
       action: "executeCandidateAction",
       scanToken: state.scanToken,
       candidateIds: JSON.stringify($.map(selectedRows, function(row) {
         return row.id;
       })),
       operation: operation
-    }).done(function(response) {
-      var summary = response.summary || { ready: 0, quarantined: 0, deleted: 0, missing: 0, blocked: 0, errors: 0 };
-      var results = $.isArray(response.results) ? response.results : [];
-      var hasWarnings = Number(summary.blocked || 0) > 0 || Number(summary.missing || 0) > 0 || Number(summary.errors || 0) > 0;
-      var modalTitle = hasWarnings ? context.resultTitleWarning : context.resultTitleSuccess;
-      var modalType = hasWarnings ? "warning" : "success";
+    };
 
+    if (operationProgressId) {
+      requestData.operationProgressId = operationProgressId;
+    }
+
+    apiPostForUserAction(requestData).done(function(response) {
       setBusy(false);
 
-      if (!context.preview) {
-        state.selected = {};
-        applyLocalOperationResults(results);
-        loadAuditHistory(state.deferredDataRequestToken, true, 25);
+      if (useProgressModal) {
+        finalizeOperationProgressModal(response, context);
+        return;
       }
 
-      if (response.quarantineSummary) {
-        state.quarantine.summary = $.extend({ count: 0, sizeLabel: "0 B" }, response.quarantineSummary);
-      } else if (!context.preview) {
-        loadQuarantineSummary(state.deferredDataRequestToken, true);
-      }
-
-      if (!context.preview && context.baseOperation === "quarantine") {
-        state.quarantine.loaded = false;
-      }
-
-      swal({
-        title: modalTitle,
-        text: "",
-        type: modalType,
-        html: true
-      });
-      ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildOperationResultsHtml(summary, results, context));
-      renderAll();
+      showOperationResultsFromResponse(response, context);
     }).fail(function(xhr) {
       var fallbackMessage = ACP.extractErrorMessage(xhr, ACP.t(strings, "scanFailedMessage", "The orphaned appdata scan could not be completed right now."));
 
       setBusy(false);
+      if (useProgressModal) {
+        stopOperationProgressPolling();
+        state.operationProgress.activeId = "";
+        state.operationProgress.pendingResult = null;
+      }
 
       if (xhr && xhr.status === 409) {
         swal({

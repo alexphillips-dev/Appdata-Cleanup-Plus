@@ -2018,6 +2018,36 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   color: var(--acp-locked-text);
 }
 
+.acp-delete-progress-summary {
+  gap: 10px;
+}
+
+.acp-delete-progress-bar {
+  background: var(--acp-input-bg);
+  border: 1px solid var(--acp-input-border);
+  border-radius: 999px;
+  height: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.acp-delete-progress-bar span {
+  background: var(--acp-accent);
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  transition: width 180ms ease;
+}
+
+.acp-delete-progress-panel {
+  max-height: min(34vh, 320px);
+  overflow: auto;
+}
+
+.acp-delete-progress-list {
+  font-size: 11px;
+}
+
 .acp-modal-warning-box,
 .acp-modal-panel {
   background: var(--acp-input-bg);
