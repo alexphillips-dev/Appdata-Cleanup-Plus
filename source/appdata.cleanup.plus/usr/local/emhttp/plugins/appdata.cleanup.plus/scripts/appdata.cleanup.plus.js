@@ -2705,43 +2705,80 @@
 
   function renderScanSummary() {
     var insights = buildScanInsights();
-    var cards = [
-      { label: ACP.t(strings, "scanSummaryRootsLabel", "Scan roots"), value: insights.scanRootCount, tone: "" },
-      { label: ACP.t(strings, "scanSummaryTemplateLabel", "Template rows"), value: insights.templateRowCount, tone: "" },
-      { label: ACP.t(strings, "scanSummaryDiscoveryLabel", "Discovery rows"), value: insights.discoveryRowCount, tone: "is-scheduled" },
-      { label: ACP.t(strings, "scanSummaryReviewLabel", "Needs review"), value: insights.reviewCount, tone: "is-review" },
-      { label: ACP.t(strings, "scanSummaryLockedLabel", "Protected"), value: insights.lockedCount, tone: "is-blocked" },
-      { label: ACP.t(strings, "scanSummaryZfsLabel", "ZFS-backed"), value: insights.zfsBackedCount, tone: "is-selected" },
-      { label: ACP.t(strings, "scanSummaryMappedLabel", "Mapped share path"), value: insights.mappedShareCount, tone: "is-scheduled" },
-      { label: ACP.t(strings, "scanSummaryIgnoredLabel", "Ignored"), value: insights.ignoredCount, tone: "" }
-    ];
-    var cardHtml = [];
+    var detectedRoots = (state.appdataSources && $.isArray(state.appdataSources.detected)) ? state.appdataSources.detected : [];
+    var manualRoots = (state.appdataSources && $.isArray(state.appdataSources.manual))
+      ? state.appdataSources.manual
+      : ((state.settings && $.isArray(state.settings.manualAppdataSources)) ? state.settings.manualAppdataSources : []);
+    var effectiveRoots = $.isArray(insights.scanRoots) ? insights.scanRoots : [];
+    var defaultRoots = uniquePathList(detectedRoots);
+    var addedRoots = uniquePathList(manualRoots);
+    var knownRoots = uniquePathList(defaultRoots.concat(addedRoots));
+    var fallbackRoots = uniquePathList($.grep(effectiveRoots, function(path) {
+      return $.inArray(String(path || ""), knownRoots) === -1;
+    }));
     var rootsHtml = [];
+
+    function uniquePathList(paths) {
+      var seen = {};
+      var result = [];
+
+      $.each(paths || [], function(_, path) {
+        var normalizedPath = $.trim(String(path || ""));
+
+        if (!normalizedPath || seen[normalizedPath]) {
+          return;
+        }
+
+        seen[normalizedPath] = true;
+        result.push(normalizedPath);
+      });
+
+      return result;
+    }
+
+    function buildPathGroup(title, paths, emptyMessage) {
+      var pathHtml = [];
+
+      if (paths.length) {
+        $.each(paths, function(_, path) {
+          pathHtml.push('<code class="acp-modal-path">' + ACP.escapeHtml(String(path || "")) + "</code>");
+        });
+      } else {
+        pathHtml.push('<div class="acp-utility-empty">' + ACP.escapeHtml(emptyMessage) + "</div>");
+      }
+
+      return (
+        '<div class="acp-scan-path-group">' +
+          '<div class="acp-scan-path-title">' + ACP.escapeHtml(title) + "</div>" +
+          '<div class="acp-scan-summary-roots">' + pathHtml.join("") + "</div>" +
+        "</div>"
+      );
+    }
 
     if (!els.$scanSummary || !els.$scanSummary.length) {
       return;
     }
 
-    if (!state.rows.length && !insights.scanRootCount) {
+    if (!state.rows.length && !insights.scanRootCount && !defaultRoots.length && !addedRoots.length && !fallbackRoots.length) {
       els.$scanSummary.empty();
       return;
     }
 
-    $.each(cards, function(_, card) {
-      cardHtml.push(
-        '<span class="acp-modal-stat ' + ACP.escapeHtml(card.tone || "") + '">' +
-          ACP.escapeHtml(card.label) + ": " + ACP.escapeHtml(String(card.value || 0)) +
-        "</span>"
-      );
-    });
+    rootsHtml.push(buildPathGroup(
+      ACP.t(strings, "scanSummaryDefaultTitle", "Default scan path"),
+      defaultRoots.length ? defaultRoots : fallbackRoots,
+      ACP.t(strings, "scanSummaryDefaultEmpty", "No default Docker appdata path is detected right now.")
+    ));
 
-    if (insights.scanRoots.length) {
-      $.each(insights.scanRoots, function(_, path) {
-        rootsHtml.push('<code class="acp-modal-path">' + ACP.escapeHtml(String(path || "")) + "</code>");
-      });
-    } else {
-      rootsHtml.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "scanSummaryRootsEmpty", "No scan roots are configured yet.")) + "</div>");
+    if (defaultRoots.length && fallbackRoots.length) {
+      addedRoots = addedRoots.concat(fallbackRoots);
     }
+
+    rootsHtml.push(buildPathGroup(
+      ACP.t(strings, "scanSummaryAddedTitle", "Added scan paths"),
+      uniquePathList(addedRoots),
+      ACP.t(strings, "scanSummaryAddedEmpty", "No additional appdata scan paths have been added.")
+    ));
 
     els.$scanSummary.html(
       '<article class="acp-scan-summary-panel">' +
@@ -2752,8 +2789,7 @@
           "</div>" +
         "</div>" +
         '<div class="acp-scan-summary-body">' +
-          '<div class="acp-modal-stats">' + cardHtml.join("") + "</div>" +
-          '<div class="acp-scan-summary-roots">' + rootsHtml.join("") + "</div>" +
+          rootsHtml.join("") +
         "</div>" +
       "</article>"
     );

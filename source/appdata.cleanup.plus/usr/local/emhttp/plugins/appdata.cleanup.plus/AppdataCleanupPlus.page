@@ -239,8 +239,10 @@ $config = array(
     "cardReview" => _("Needs review"),
     "cardBlocked" => _("Protected"),
     "cardSelected" => _("Selected"),
-    "scanSummaryTitle" => _("Scan summary"),
-    "scanSummarySubtitle" => _("A quick view of how the current scan is distributed across sources, safety states, and storage types."),
+    "scanSummaryTitle" => _("Scanned appdata paths"),
+    "scanSummarySubtitle" => _("Folders checked for unused appdata. The default Docker appdata path is listed first, followed by any manually added scan paths."),
+    "scanSummaryDefaultTitle" => _("Default scan path"),
+    "scanSummaryAddedTitle" => _("Added scan paths"),
     "scanSummaryRootsLabel" => _("Scan roots"),
     "scanSummaryTemplateLabel" => _("Template rows"),
     "scanSummaryDiscoveryLabel" => _("Discovery rows"),
@@ -249,7 +251,9 @@ $config = array(
     "scanSummaryZfsLabel" => _("ZFS-backed"),
     "scanSummaryMappedLabel" => _("Mapped share path"),
     "scanSummaryIgnoredLabel" => _("Ignored"),
-    "scanSummaryRootsEmpty" => _("No scan roots are configured yet."),
+    "scanSummaryRootsEmpty" => _("No appdata scan paths are configured yet."),
+    "scanSummaryDefaultEmpty" => _("No default Docker appdata path is detected right now."),
+    "scanSummaryAddedEmpty" => _("No additional appdata scan paths have been added."),
     "actionBarTitle" => _("Action bar"),
     "toolsOpenLabel" => _("Tools"),
     "toolsTitle" => _("Tools"),
@@ -581,12 +585,8 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
       <section class="acp-toolbar acp-toolbar-panel acp-control-panel">
         <div class="acp-panel-title"><?php echo _("Controls"); ?></div>
         <div class="acp-control-grid">
-          <div class="acp-control-copy"><?php echo _("Quarantine ready items first. Use Advanced safety only for permanent delete, ZFS dataset destroy, or persistent review bypasses."); ?></div>
           <div class="acp-toolbar-actions acp-control-actions">
             <button type="button" class="acp-button acp-button-secondary" id="acp-rescan"><?php echo _("Rescan"); ?></button>
-            <button type="button" class="acp-button acp-button-secondary" id="acp-select-visible"><?php echo _("Select ready"); ?></button>
-            <button type="button" class="acp-button acp-button-secondary" id="acp-advanced-safety"><?php echo _("Advanced safety"); ?></button>
-            <button type="button" class="acp-button acp-button-secondary" id="acp-clear-selection"><?php echo _("Clear"); ?></button>
           </div>
         </div>
       </section>

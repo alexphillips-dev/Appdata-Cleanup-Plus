@@ -395,7 +395,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   align-items: start;
   column-gap: 14px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 132px;
+  grid-template-columns: minmax(0, 1fr);
   row-gap: 8px;
 }
 
@@ -610,8 +610,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   display: grid;
   gap: 0;
   justify-items: stretch;
-  justify-self: end;
-  margin-left: auto;
+  justify-self: stretch;
+  margin-left: 0;
   width: 132px;
 }
 
@@ -932,6 +932,20 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.acp-scan-path-group {
+  display: grid;
+  gap: 6px;
+}
+
+.acp-scan-path-title {
+  color: var(--acp-heading);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .acp-notice {
