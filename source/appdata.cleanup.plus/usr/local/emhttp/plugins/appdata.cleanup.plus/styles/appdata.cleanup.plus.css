@@ -1440,6 +1440,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .sweet-alert.acp-appdata-sources-modal .sa-icon,
 .sweet-alert.acp-zfs-path-mappings-modal .sa-icon,
 .sweet-alert.acp-tools-modal .sa-icon,
+.sweet-alert.acp-help-modal .sa-icon,
 .sweet-alert.acp-row-details-modal .sa-icon,
 .sweet-alert.acp-advanced-safety-modal .sa-icon {
   display: none !important;
@@ -1450,6 +1451,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .sweet-alert.acp-appdata-sources-modal,
 .sweet-alert.acp-zfs-path-mappings-modal,
 .sweet-alert.acp-tools-modal,
+.sweet-alert.acp-help-modal,
 .sweet-alert.acp-row-details-modal,
 .sweet-alert.acp-advanced-safety-modal {
   box-sizing: border-box !important;
@@ -1475,6 +1477,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .sweet-alert.acp-appdata-sources-modal h2,
 .sweet-alert.acp-zfs-path-mappings-modal h2,
 .sweet-alert.acp-tools-modal h2,
+.sweet-alert.acp-help-modal h2,
 .sweet-alert.acp-row-details-modal h2,
 .sweet-alert.acp-advanced-safety-modal h2 {
   margin-top: 0 !important;
@@ -1490,6 +1493,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .sweet-alert.acp-tools-modal {
   max-width: 760px !important;
+}
+
+.sweet-alert.acp-help-modal {
+  max-width: 980px !important;
 }
 
 .sweet-alert.acp-advanced-safety-modal {
@@ -1647,6 +1654,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 .sweet-alert.acp-tools-modal .acp-modal-host,
+.sweet-alert.acp-help-modal .acp-modal-host,
 .sweet-alert.acp-row-details-modal .acp-modal-host,
 .sweet-alert.acp-advanced-safety-modal .acp-modal-host {
   max-height: none !important;
@@ -1669,6 +1677,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 .sweet-alert.acp-tools-modal .acp-modal-panel,
+.sweet-alert.acp-help-modal .acp-modal-panel,
 .sweet-alert.acp-row-details-modal .acp-modal-panel,
 .sweet-alert.acp-advanced-safety-modal .acp-modal-panel {
   padding: 10px 12px;
@@ -1721,6 +1730,28 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   font-style: normal;
   font-weight: 700;
   line-height: 1.3;
+}
+
+.acp-help-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.acp-help-section {
+  background: var(--acp-panel);
+  border: 1px solid var(--acp-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.acp-help-section-copy {
+  color: var(--acp-text);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
 }
 
 .acp-appdata-sources-textarea {
@@ -2397,6 +2428,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
     min-height: 34px;
     min-width: 0;
     padding: 0 11px;
+  }
+
+  .acp-help-grid {
+    grid-template-columns: 1fr;
   }
 
   .acp-modal-actions-row,

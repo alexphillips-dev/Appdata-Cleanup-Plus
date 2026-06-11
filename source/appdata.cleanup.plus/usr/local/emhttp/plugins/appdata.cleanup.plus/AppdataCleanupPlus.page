@@ -163,6 +163,31 @@ $config = array(
     "advancedSafetyTemplateHelp" => _("Makes saved-template reference rows actionable without a per-scan unlock. Per-scan unlock is safer for normal use."),
     "advancedSafetyAffectsNone" => _("Currently affects 0 rows in this scan."),
     "advancedSafetyAffectsRows" => _("Currently affects {count} rows in this scan."),
+    "helpOpenLabel" => _("Help"),
+    "helpTitle" => _("Appdata Cleanup Plus Help"),
+    "helpSubtitle" => _("Use this reference when you are not sure why a row appears, why it is blocked, or what an action will do."),
+    "helpOverviewTitle" => _("Overview"),
+    "helpOverviewBody" => _("Appdata Cleanup Plus finds Docker appdata folders that appear unused. It compares configured appdata scan paths, saved Docker templates, installed container mappings, ignore entries, safety settings, and storage details. Quarantine is the default action because it can be restored from this plugin."),
+    "helpScannedTitle" => _("What gets scanned"),
+    "helpScannedBody" => _("The plugin scans the detected Docker appdata path first, then any added appdata scan paths. It also reads saved Docker templates and installed container paths so template-only folders and currently used folders can be separated. Direct child folders under each scan path are treated as candidates."),
+    "helpStatesTitle" => _("Result states"),
+    "helpStatesBody" => _("Ready rows look unused and can be selected. Needs review rows need a per-scan unlock or a Cleanup Options bypass before action. Blocked for safety rows cannot be unlocked here. Blocked by options rows need the relevant Cleanup Options switch enabled. Ignored rows are hidden until restored."),
+    "helpWhyRowsTitle" => _("Why rows appear"),
+    "helpWhyRowsBody" => _("Rows may appear because a saved template still points to the folder, because a folder exists directly inside a scan path with no installed container using it, because Docker is offline and live mappings cannot be verified, or because a configured ZFS mapping matched the path."),
+    "helpActionsTitle" => _("Actions"),
+    "helpActionsBody" => _("Details explains the row evidence. Select ready chooses rows that are currently actionable. Unlock for this scan temporarily allows review rows only until the next scan. Ignore hides a row from normal results. Dry run previews what would happen. Quarantine selected moves folders into the quarantine root. Permanent delete removes folders immediately after typed confirmation."),
+    "helpOptionsTitle" => _("Cleanup Options"),
+    "helpOptionsBody" => _("Permanent delete changes the main action from quarantine to delete. ZFS dataset delete allows exact dataset-backed rows to use dataset destroy and still requires permanent delete mode. Outside-share cleanup and saved-template cleanup bypass their review gates persistently, but per-scan unlock is safer for normal use. The affected-row count shows how many current rows that option relates to."),
+    "helpQuarantineTitle" => _("Quarantine"),
+    "helpQuarantineBody" => _("Quarantined folders are moved into the configured quarantine root and tracked by this plugin. You can restore them, purge them permanently, or set purge timing. If the original restore path already exists, the restore conflict flow lets you skip the conflict or restore with an edited folder name."),
+    "helpZfsTitle" => _("ZFS rows"),
+    "helpZfsBody" => _("Exact ZFS dataset-backed appdata rows cannot be quarantined as normal folders. They require permanent delete mode and ZFS dataset delete, then use dataset destroy. Details shows the dataset name, mountpoint, destroy mode, child datasets, snapshots, and mapping evidence when available."),
+    "helpSafetyTitle" => _("Safety rules"),
+    "helpSafetyBody" => _("Safety-blocked rows include share roots, mount roots, symlinked paths, managed Docker or VM storage paths, paths that changed since the scan, missing paths, and unsafe canonical paths. These are blocked at action time too, even if the browser state is stale."),
+    "helpTroubleshootingTitle" => _("Common questions"),
+    "helpTroubleshootingBody" => _("If a row is locked, open Details and read Verdict and Action gate. If a saved template row appears, update or remove the saved template or unlock the row for this scan. If ZFS cannot be selected, enable the required Cleanup Options. If no rows appear, confirm Appdata sources and rescan. If Unraid does not pull an update, verify the raw dev manifest version and package MD5."),
+    "helpWorkflowTitle" => _("Recommended workflow"),
+    "helpWorkflowBody" => _("Rescan, review Needs review and Blocked rows, open Details for anything unclear, quarantine before permanent delete, restore if something was still needed, and use permanent delete only when you are confident."),
     "enablePermanentDeleteLabel" => _("Enable permanent delete"),
     "enableZfsDatasetDeleteLabel" => _("Enable ZFS dataset delete"),
     "allowTemplateReferencedCleanupLabel" => _("Allow saved-template cleanup"),
@@ -626,10 +651,11 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
       <section class="acp-toolbar acp-toolbar-panel acp-control-panel">
         <div class="acp-panel-title"><?php echo _("Controls"); ?></div>
         <div class="acp-control-grid">
-          <div class="acp-control-copy"><?php echo _("Rescan results or adjust cleanup behavior."); ?></div>
+          <div class="acp-control-copy"><?php echo _("Review results, rescan, adjust cleanup behavior, or open help."); ?></div>
           <div class="acp-toolbar-actions acp-control-actions">
             <button type="button" class="acp-button acp-button-secondary" id="acp-rescan"><?php echo _("Rescan"); ?></button>
             <button type="button" class="acp-button acp-button-secondary" id="acp-advanced-safety"><?php echo _("Cleanup Options"); ?></button>
+            <button type="button" class="acp-button acp-button-secondary" id="acp-help"><?php echo _("Help"); ?></button>
           </div>
         </div>
       </section>
