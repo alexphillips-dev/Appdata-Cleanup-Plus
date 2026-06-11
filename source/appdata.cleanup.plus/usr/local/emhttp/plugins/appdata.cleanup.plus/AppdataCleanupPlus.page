@@ -279,21 +279,6 @@ $config = array(
     "cardBlockedSafety" => _("Blocked for safety"),
     "cardBlockedOptions" => _("Blocked by options"),
     "cardSelected" => _("Selected"),
-    "scanSummaryTitle" => _("Scanned appdata paths"),
-    "scanSummarySubtitle" => _("Folders checked for unused appdata. The default Docker appdata path is listed first, followed by any manually added scan paths."),
-    "scanSummaryDefaultTitle" => _("Default scan path"),
-    "scanSummaryAddedTitle" => _("Added scan paths"),
-    "scanSummaryRootsLabel" => _("Scan roots"),
-    "scanSummaryTemplateLabel" => _("Template rows"),
-    "scanSummaryDiscoveryLabel" => _("Discovery rows"),
-    "scanSummaryReviewLabel" => _("Needs review"),
-    "scanSummaryLockedLabel" => _("Protected"),
-    "scanSummaryZfsLabel" => _("ZFS-backed"),
-    "scanSummaryMappedLabel" => _("Mapped share path"),
-    "scanSummaryIgnoredLabel" => _("Ignored"),
-    "scanSummaryRootsEmpty" => _("No appdata scan paths are configured yet."),
-    "scanSummaryDefaultEmpty" => _("No default Docker appdata path is detected right now."),
-    "scanSummaryAddedEmpty" => _("No additional appdata scan paths have been added."),
     "actionBarTitle" => _("Action bar"),
     "toolsOpenLabel" => _("Tools"),
     "toolsTitle" => _("Tools"),
@@ -607,8 +592,8 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
     <section class="acp-summary-grid" id="acp-summary-cards" aria-live="polite"></section>
 
     <div class="acp-toolbar-stack">
-      <section class="acp-toolbar acp-toolbar-panel">
-        <div class="acp-panel-title"><?php echo _("Search"); ?></div>
+      <section class="acp-toolbar acp-toolbar-panel acp-results-controls-panel">
+        <div class="acp-panel-title"><?php echo _("Results controls"); ?></div>
         <div class="acp-toolbar-inline">
           <label class="acp-field acp-field-grow">
             <span class="acp-field-label"><?php echo _("Name Or Path"); ?></span>
@@ -621,7 +606,16 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
               <option value="all"><?php echo _("All"); ?></option>
               <option value="safe"><?php echo _("Ready"); ?></option>
               <option value="review"><?php echo _("Needs review"); ?></option>
-              <option value="blocked"><?php echo _("Protected"); ?></option>
+              <option value="blocked"><?php echo _("Blocked"); ?></option>
+            </select>
+          </label>
+
+          <label class="acp-field acp-compact-field acp-sort-field">
+            <span class="acp-field-label"><?php echo _("Sort"); ?></span>
+            <select id="acp-sort" class="acp-select">
+              <option value="risk"><?php echo _("Risk first"); ?></option>
+              <option value="path"><?php echo _("Path"); ?></option>
+              <option value="name"><?php echo _("Name"); ?></option>
             </select>
           </label>
         </div>
@@ -633,24 +627,9 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
         </div>
       </section>
 
-      <section class="acp-toolbar acp-toolbar-panel acp-sort-panel">
-        <div class="acp-panel-title"><?php echo _("Sort"); ?></div>
-        <div class="acp-toolbar-inline acp-toolbar-inline-sort">
-          <label class="acp-field acp-compact-field acp-sort-field">
-            <span class="acp-field-label"><?php echo _("Order"); ?></span>
-            <select id="acp-sort" class="acp-select">
-              <option value="risk"><?php echo _("Risk first"); ?></option>
-              <option value="path"><?php echo _("Path"); ?></option>
-            <option value="name"><?php echo _("Name"); ?></option>
-          </select>
-        </label>
-        </div>
-      </section>
-
       <section class="acp-toolbar acp-toolbar-panel acp-control-panel">
         <div class="acp-panel-title"><?php echo _("Controls"); ?></div>
         <div class="acp-control-grid">
-          <div class="acp-control-copy"><?php echo _("Rescan, options, and help."); ?></div>
           <div class="acp-toolbar-actions acp-control-actions">
             <button type="button" class="acp-button acp-button-secondary" id="acp-rescan"><?php echo _("Rescan"); ?></button>
             <button type="button" class="acp-button acp-button-secondary" id="acp-advanced-safety"><?php echo _("Cleanup Options"); ?></button>
@@ -662,7 +641,6 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
   </section>
 
   <section class="acp-mode-strip" id="acp-mode-strip" aria-live="polite"></section>
-  <section class="acp-scan-summary" id="acp-scan-summary" aria-live="polite"></section>
   <section class="acp-results-context-row" id="acp-results-context-row">
     <section class="acp-notices" id="acp-notices"></section>
     <section class="acp-results-meta" id="acp-results-meta" aria-live="polite"></section>

@@ -245,7 +245,6 @@
     els.$primaryAction = $("#acp-primary-action");
     els.$resultsMeta = $("#acp-results-meta");
     els.$modeStrip = $("#acp-mode-strip");
-    els.$scanSummary = $("#acp-scan-summary");
     els.$resultsContext = $("#acp-results-context-row");
     els.$notices = $("#acp-notices");
     els.$results = $("#acp-results");
@@ -1079,7 +1078,6 @@
       syncSafetyControls();
       renderSummaryCards();
       renderPanels();
-      renderScanSummary();
       renderNotices([]);
       renderResultsMeta();
       renderStateMessage(
@@ -1433,46 +1431,57 @@
   function buildHelpModalHtml() {
     var sections = [
       {
+        key: "overview",
         title: ACP.t(strings, "helpOverviewTitle", "Overview"),
         body: ACP.t(strings, "helpOverviewBody", "Appdata Cleanup Plus finds Docker appdata folders that appear unused. It compares configured appdata scan paths, saved Docker templates, installed container mappings, ignore entries, safety settings, and storage details. Quarantine is the default action because it can be restored from this plugin.")
       },
       {
+        key: "scanned",
         title: ACP.t(strings, "helpScannedTitle", "What gets scanned"),
         body: ACP.t(strings, "helpScannedBody", "The plugin scans the detected Docker appdata path first, then any added appdata scan paths. It also reads saved Docker templates and installed container paths so template-only folders and currently used folders can be separated. Direct child folders under each scan path are treated as candidates.")
       },
       {
+        key: "states",
         title: ACP.t(strings, "helpStatesTitle", "Result states"),
         body: ACP.t(strings, "helpStatesBody", "Ready rows look unused and can be selected. Needs review rows need a per-scan unlock or a Cleanup Options bypass before action. Blocked for safety rows cannot be unlocked here. Blocked by options rows need the relevant Cleanup Options switch enabled. Ignored rows are hidden until restored.")
       },
       {
+        key: "reasons",
         title: ACP.t(strings, "helpWhyRowsTitle", "Why rows appear"),
         body: ACP.t(strings, "helpWhyRowsBody", "Rows may appear because a saved template still points to the folder, because a folder exists directly inside a scan path with no installed container using it, because Docker is offline and live mappings cannot be verified, or because a configured ZFS mapping matched the path.")
       },
       {
+        key: "actions",
         title: ACP.t(strings, "helpActionsTitle", "Actions"),
         body: ACP.t(strings, "helpActionsBody", "Details explains the row evidence. Select ready chooses rows that are currently actionable. Unlock for this scan temporarily allows review rows only until the next scan. Ignore hides a row from normal results. Dry run previews what would happen. Quarantine selected moves folders into the quarantine root. Permanent delete removes folders immediately after typed confirmation.")
       },
       {
+        key: "options",
         title: ACP.t(strings, "helpOptionsTitle", "Cleanup Options"),
         body: ACP.t(strings, "helpOptionsBody", "Permanent delete changes the main action from quarantine to delete. ZFS dataset delete allows exact dataset-backed rows to use dataset destroy and still requires permanent delete mode. Outside-share cleanup and saved-template cleanup bypass their review gates persistently, but per-scan unlock is safer for normal use. The affected-row count shows how many current rows that option relates to.")
       },
       {
+        key: "quarantine",
         title: ACP.t(strings, "helpQuarantineTitle", "Quarantine"),
         body: ACP.t(strings, "helpQuarantineBody", "Quarantined folders are moved into the configured quarantine root and tracked by this plugin. You can restore them, purge them permanently, or set purge timing. If the original restore path already exists, the restore conflict flow lets you skip the conflict or restore with an edited folder name.")
       },
       {
+        key: "zfs",
         title: ACP.t(strings, "helpZfsTitle", "ZFS rows"),
         body: ACP.t(strings, "helpZfsBody", "Exact ZFS dataset-backed appdata rows cannot be quarantined as normal folders. They require permanent delete mode and ZFS dataset delete, then use dataset destroy. Details shows the dataset name, mountpoint, destroy mode, child datasets, snapshots, and mapping evidence when available.")
       },
       {
+        key: "safety",
         title: ACP.t(strings, "helpSafetyTitle", "Safety rules"),
         body: ACP.t(strings, "helpSafetyBody", "Safety-blocked rows include share roots, mount roots, symlinked paths, managed Docker or VM storage paths, paths that changed since the scan, missing paths, and unsafe canonical paths. These are blocked at action time too, even if the browser state is stale.")
       },
       {
+        key: "troubleshooting",
         title: ACP.t(strings, "helpTroubleshootingTitle", "Common questions"),
         body: ACP.t(strings, "helpTroubleshootingBody", "If a row is locked, open Details and read Verdict and Action gate. If a saved template row appears, update or remove the saved template or unlock the row for this scan. If ZFS cannot be selected, enable the required Cleanup Options. If no rows appear, confirm Appdata sources and rescan. If Unraid does not pull an update, verify the raw dev manifest version and package MD5.")
       },
       {
+        key: "workflow",
         title: ACP.t(strings, "helpWorkflowTitle", "Recommended workflow"),
         body: ACP.t(strings, "helpWorkflowBody", "Rescan, review Needs review and Blocked rows, open Details for anything unclear, quarantine before permanent delete, restore if something was still needed, and use permanent delete only when you are confident.")
       }
@@ -1483,12 +1492,25 @@
       '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "helpSubtitle", "Use this reference when you are not sure why a row appears, why it is blocked, or what an action will do.")) + "</div>",
       "</div>",
       "</div>",
-      '<div class="acp-help-grid">'
+      '<div class="acp-help-tabs" role="tablist">'
     ];
 
-    $.each(sections, function(_, section) {
+    $.each(sections, function(index, section) {
       html.push(
-        '<article class="acp-help-section">' +
+        '<button type="button" class="acp-help-tab' + (index === 0 ? ' is-active' : '') + '" data-help-tab="' + ACP.escapeHtml(section.key) + '" role="tab" aria-selected="' + (index === 0 ? "true" : "false") + '">' +
+          ACP.escapeHtml(section.title || "") +
+        "</button>"
+      );
+    });
+
+    html.push(
+      "</div>",
+      '<div class="acp-help-panels">'
+    );
+
+    $.each(sections, function(index, section) {
+      html.push(
+        '<article class="acp-help-section' + (index === 0 ? ' is-active' : '') + '" data-help-panel="' + ACP.escapeHtml(section.key) + '" role="tabpanel">' +
           '<div class="acp-modal-panel-title">' + ACP.escapeHtml(section.title || "") + "</div>" +
           '<div class="acp-help-section-copy">' + ACP.escapeHtml(section.body || "") + "</div>" +
         "</article>"
@@ -1497,6 +1519,24 @@
 
     html.push("</div>");
     return html.join("");
+  }
+
+  function activateHelpTab(tabKey) {
+    var key = String(tabKey || "");
+    var $modal = getActiveSweetAlertModal();
+
+    if (!key || !$modal.length) {
+      return;
+    }
+
+    $modal.find(".acp-help-tab").each(function() {
+      var isActive = String($(this).data("help-tab") || "") === key;
+      $(this).toggleClass("is-active", isActive).attr("aria-selected", isActive ? "true" : "false");
+    });
+    $modal.find(".acp-help-section").each(function() {
+      var isActive = String($(this).data("help-panel") || "") === key;
+      $(this).toggleClass("is-active", isActive).prop("hidden", !isActive);
+    });
   }
 
   function openHelpModal() {
@@ -1514,6 +1554,9 @@
       }, 180);
     });
     ACP.applyDeleteModalClass("acp-help-modal", buildHelpModalHtml());
+    getActiveSweetAlertModal().off("click.acpHelp").on("click.acpHelp", ".acp-help-tab", function() {
+      activateHelpTab($(this).data("help-tab"));
+    });
   }
 
   function isToolsModalVisible() {
@@ -2810,7 +2853,6 @@
   function renderAll() {
     renderSummaryCards();
     renderPanels();
-    renderScanSummary();
     renderNotices(buildLocalNotices());
     renderResults();
     renderResultsMeta();
@@ -2871,98 +2913,6 @@
     els.$summaryCards.html(html.join(""));
   }
 
-  function renderScanSummary() {
-    var insights = buildScanInsights();
-    var detectedRoots = (state.appdataSources && $.isArray(state.appdataSources.detected)) ? state.appdataSources.detected : [];
-    var manualRoots = (state.appdataSources && $.isArray(state.appdataSources.manual))
-      ? state.appdataSources.manual
-      : ((state.settings && $.isArray(state.settings.manualAppdataSources)) ? state.settings.manualAppdataSources : []);
-    var effectiveRoots = $.isArray(insights.scanRoots) ? insights.scanRoots : [];
-    var defaultRoots = uniquePathList(detectedRoots);
-    var addedRoots = uniquePathList(manualRoots);
-    var knownRoots = uniquePathList(defaultRoots.concat(addedRoots));
-    var fallbackRoots = uniquePathList($.grep(effectiveRoots, function(path) {
-      return $.inArray(String(path || ""), knownRoots) === -1;
-    }));
-    var rootsHtml = [];
-
-    function uniquePathList(paths) {
-      var seen = {};
-      var result = [];
-
-      $.each(paths || [], function(_, path) {
-        var normalizedPath = $.trim(String(path || ""));
-
-        if (!normalizedPath || seen[normalizedPath]) {
-          return;
-        }
-
-        seen[normalizedPath] = true;
-        result.push(normalizedPath);
-      });
-
-      return result;
-    }
-
-    function buildPathGroup(title, paths, emptyMessage) {
-      var pathHtml = [];
-
-      if (paths.length) {
-        $.each(paths, function(_, path) {
-          pathHtml.push('<code class="acp-modal-path">' + ACP.escapeHtml(String(path || "")) + "</code>");
-        });
-      } else {
-        pathHtml.push('<div class="acp-utility-empty">' + ACP.escapeHtml(emptyMessage) + "</div>");
-      }
-
-      return (
-        '<div class="acp-scan-path-group">' +
-          '<div class="acp-scan-path-title">' + ACP.escapeHtml(title) + "</div>" +
-          '<div class="acp-scan-summary-roots">' + pathHtml.join("") + "</div>" +
-        "</div>"
-      );
-    }
-
-    if (!els.$scanSummary || !els.$scanSummary.length) {
-      return;
-    }
-
-    if (!state.rows.length && !insights.scanRootCount && !defaultRoots.length && !addedRoots.length && !fallbackRoots.length) {
-      els.$scanSummary.empty();
-      return;
-    }
-
-    rootsHtml.push(buildPathGroup(
-      ACP.t(strings, "scanSummaryDefaultTitle", "Default scan path"),
-      defaultRoots.length ? defaultRoots : fallbackRoots,
-      ACP.t(strings, "scanSummaryDefaultEmpty", "No default Docker appdata path is detected right now.")
-    ));
-
-    if (defaultRoots.length && fallbackRoots.length) {
-      addedRoots = addedRoots.concat(fallbackRoots);
-    }
-
-    rootsHtml.push(buildPathGroup(
-      ACP.t(strings, "scanSummaryAddedTitle", "Added scan paths"),
-      uniquePathList(addedRoots),
-      ACP.t(strings, "scanSummaryAddedEmpty", "No additional appdata scan paths have been added.")
-    ));
-
-    els.$scanSummary.html(
-      '<article class="acp-scan-summary-panel">' +
-        '<div class="acp-scan-summary-head">' +
-          '<div class="acp-utility-copy">' +
-            '<div class="acp-utility-title">' + ACP.escapeHtml(ACP.t(strings, "scanSummaryTitle", "Scan summary")) + "</div>" +
-            '<div class="acp-utility-subtitle">' + ACP.escapeHtml(ACP.t(strings, "scanSummarySubtitle", "A quick view of how the current scan is distributed across sources, safety states, and storage types.")) + "</div>" +
-          "</div>" +
-        "</div>" +
-        '<div class="acp-scan-summary-body">' +
-          rootsHtml.join("") +
-        "</div>" +
-      "</article>"
-    );
-  }
-
   function renderNotices(notices) {
     var html = [];
     var hasNotices = $.isArray(notices) && notices.length > 0;
@@ -2982,7 +2932,6 @@
 
   function renderLoadingState() {
     renderPanels();
-    renderScanSummary();
     renderNotices([]);
     renderResultsMeta("");
     renderStateMessage(
@@ -4026,6 +3975,7 @@
 
   function buildRowActionHtml(row) {
     var actions = [];
+    var actionability = getRowActionabilityDescriptor(row).value;
 
     if (row.id) {
       actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="details" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsActionLabel", "Details")) + "</button>");
@@ -4033,6 +3983,10 @@
 
     if (row.ignored) {
       actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "restoreActionLabel", "Restore")) + "</button>");
+      return '<div class="acp-row-actions">' + actions.join("") + "</div>";
+    }
+
+    if (actionability === "locked") {
       return '<div class="acp-row-actions">' + actions.join("") + "</div>";
     }
 
@@ -4457,14 +4411,7 @@
   }
 
   function getRowBadgeDescriptors(row) {
-    var descriptors = [getRowActionabilityDescriptor(row), getRowStateDescriptor(row), getRowSourceDescriptor(row)];
-    var storageDescriptor = getRowStorageDescriptor(row);
-
-    if (storageDescriptor) {
-      descriptors.push(storageDescriptor);
-    }
-
-    return descriptors.concat(getRowReasonDescriptors(row));
+    return [getRowActionabilityDescriptor(row), getRowSourceDescriptor(row)];
   }
 
   function rowMatchesBadgeFilter(row, filter) {
