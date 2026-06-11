@@ -2,17 +2,27 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.06.11.08">
-<!ENTITY md5 "bfe4b261113e7119761f07ed68f0aa1c">
+<!ENTITY version "2026.06.11.09">
+<!ENTITY md5 "41b4b83112ea67686dd95bd5ac587ef9">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.06.11.09
+- Release: Promote the full `2026.05.27.01` through `2026.06.11.08` development cycle to the stable `main` channel while keeping the manifest, CA feed, package archive, and plugin install link pointed at `main`
+- UX: Rework the cleanup dashboard around clearer `Ready`, `Needs review`, `Blocked`, and `Ignored` outcomes, merge search/sort/filter controls, remove the scanned appdata paths block, simplify row badges/actions, and keep the Controls panel focused on Rescan, Cleanup Options, and Help
+- UX: Add a detailed Help reference, richer row Details diagnostics, inline explanations for review/blocked rows, clearer result/status messaging, and Cleanup Options affected-row counts so users can understand why an item is safe, review-gated, or blocked
+- UX: Move review unlock controls closer to selection workflows, autosave Cleanup Options switches, rename Advanced safety to Cleanup Options, restore the full non-tabbed Help layout, and tighten dashboard spacing across the top controls and results status areas
+- Safety: Preserve hard locks for unsafe paths, Docker inventory uncertainty, ZFS dataset delete requirements, permanent-delete requirements, outside-share review gates, and saved-template cleanup gates while allowing per-scan unlocks for review rows
+- Delete flow: Add a live permanent-delete progress window with counters, a progress bar, recently deleted paths, and a View results step before the final completion screen
+- Fix: Improve Unraid theme handling, row Details modal rendering/content, light-theme palette detection, and cleanup review workflow regressions from the development cycle
+- Test: Extend behavior smoke coverage for scan-scoped unlocks, settings persistence, delete/progress behavior, details data, row actionability, and safety bypass boundaries
+
 ###2026.06.11.08
 - UX: Restore the Help window to the original full reference layout without tabs
 
@@ -801,7 +811,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
