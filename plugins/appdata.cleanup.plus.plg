@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.05.27.01">
-<!ENTITY md5 "bf54e796d1f967dc927773a7f98046f6">
+<!ENTITY version "2026.06.10.01">
+<!ENTITY md5 "d77dc92961264256a998fabf97e8d388">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.06.10.01
+- Maintenance: Refresh package metadata and build artifacts
+
 ###2026.05.27.01
 - UX: Simplify the dashboard around `Ready to clean`, `Needs review`, `Protected`, and `Ignored` sections so users see cleanup outcomes instead of internal source categories
 - UX: Move persistent risky switches into an `Advanced safety` modal and keep the main controls focused on rescan, selection, quarantine, and review workflows

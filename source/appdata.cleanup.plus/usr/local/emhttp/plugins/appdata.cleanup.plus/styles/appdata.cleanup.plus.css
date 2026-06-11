@@ -714,6 +714,10 @@ body[data-acp-host-theme="light"] #acp-app,
   grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
 }
 
+.acp-mode-strip-grid-simplified {
+  grid-template-columns: repeat(3, minmax(0, 0.75fr)) minmax(280px, 1.5fr);
+}
+
 .acp-mode-card,
 .acp-utility-card {
   background: var(--acp-panel);
@@ -732,6 +736,10 @@ body[data-acp-host-theme="light"] #acp-app,
 }
 
 .acp-mode-card:first-child {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.acp-workflow-card {
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -816,6 +824,25 @@ body[data-acp-host-theme="light"] #acp-app,
 .acp-quarantine-actions .acp-button {
   min-height: 28px;
   padding: 0 9px;
+}
+
+.acp-more-actions {
+  align-items: center;
+  border-left: 1px solid var(--acp-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-left: 2px;
+  padding-left: 8px;
+}
+
+.acp-more-actions-label {
+  color: var(--acp-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .acp-utility-body {
@@ -2229,6 +2256,16 @@ body[data-acp-host-theme="light"] #acp-app,
   .acp-mode-strip-grid,
   .acp-quarantine-paths {
     grid-template-columns: 1fr;
+  }
+
+  .acp-more-actions {
+    border-left: 0;
+    border-top: 1px solid var(--acp-border);
+    flex-basis: 100%;
+    margin-left: 0;
+    margin-top: 2px;
+    padding-left: 0;
+    padding-top: 7px;
   }
 
   .acp-results-section-head {
