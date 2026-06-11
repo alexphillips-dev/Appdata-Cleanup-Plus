@@ -608,11 +608,11 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   align-content: start;
   align-items: stretch;
   display: grid;
-  gap: 0;
+  gap: 4px;
   justify-items: stretch;
   justify-self: stretch;
   margin-left: 0;
-  width: 132px;
+  width: 100%;
 }
 
 .acp-control-actions .acp-button {

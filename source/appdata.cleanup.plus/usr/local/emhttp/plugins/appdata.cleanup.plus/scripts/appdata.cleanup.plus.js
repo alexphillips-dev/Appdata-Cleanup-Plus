@@ -424,12 +424,6 @@
       }
     });
 
-    els.$modeStrip.on("click", "[data-action='open-advanced-safety']", function() {
-      if (!state.busy) {
-        openAdvancedSafetyModal();
-      }
-    });
-
     $(document).on("change.acpAdvancedSafety", ".sweet-alert [data-safety-setting]", function(event) {
       event.preventDefault();
       event.stopPropagation();
@@ -1450,7 +1444,7 @@
       "</div>",
       "</div>",
       '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "advancedSafetyTitle", "Advanced safety")) + "</div>",
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "advancedSafetyTitle", "Cleanup Options")) + "</div>",
       '<div class="acp-advanced-safety-list">'
     ];
 
@@ -1481,7 +1475,7 @@
 
   function openAdvancedSafetyModal() {
     swal({
-      title: ACP.t(strings, "advancedSafetyTitle", "Advanced safety"),
+      title: ACP.t(strings, "advancedSafetyTitle", "Cleanup Options"),
       text: "",
       type: "warning",
       html: true,
@@ -1515,13 +1509,13 @@
       onSuccess: function() {
         if (isAdvancedSafetyModalVisible()) {
           renderAdvancedSafetyModal();
-          getActiveSweetAlertModal().find("[data-role='advanced-safety-feedback']").text(ACP.t(strings, "advancedSafetySavedMessage", "Advanced safety settings saved."));
+          getActiveSweetAlertModal().find("[data-role='advanced-safety-feedback']").text(ACP.t(strings, "advancedSafetySavedMessage", "Cleanup options saved."));
         }
       },
       onFailure: function(xhr) {
         if (isAdvancedSafetyModalVisible()) {
           renderAdvancedSafetyModal();
-          getActiveSweetAlertModal().find("[data-role='advanced-safety-feedback']").text(ACP.extractErrorMessage(xhr, ACP.t(strings, "advancedSafetyFailedMessage", "Advanced safety settings could not be saved right now.")));
+          getActiveSweetAlertModal().find("[data-role='advanced-safety-feedback']").text(ACP.extractErrorMessage(xhr, ACP.t(strings, "advancedSafetyFailedMessage", "Cleanup options could not be saved right now.")));
         }
       }
     });
@@ -2482,7 +2476,7 @@
               ? ACP.t(strings, "noticeZfsDatasetMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows.")
               : ACP.t(strings, "noticeZfsDatasetDeleteModeMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows, so permanent delete mode must also be enabled before they become actionable.")
           )
-          : ACP.t(strings, "noticeZfsDeleteDisabledMessage", "ZFS-backed rows stay visible but protected until ZFS dataset delete is enabled in Advanced safety.")
+          : ACP.t(strings, "noticeZfsDeleteDisabledMessage", "ZFS-backed rows stay visible but protected until ZFS dataset delete is enabled in Cleanup Options.")
       });
     }
 

@@ -94,7 +94,6 @@
     var zfsPathMappingsButtonLabel = ACP.t(strings, "zfsPathMappingsOpenLabel", "ZFS mappings");
     var auditButtonLabel = ACP.t(strings, "auditHistoryOpenLabel", "Show history");
     var toolsButtonLabel = ACP.t(strings, "toolsOpenLabel", "Tools");
-    var advancedSafetyButtonLabel = ACP.t(strings, "advancedSafetyOpenLabel", "Advanced safety");
     var html = [
       '<div class="acp-mode-strip-grid">',
       '<article class="acp-mode-card ' + (isDeleteMode ? "is-delete-mode" : "is-safe-mode") + '">',
@@ -114,7 +113,6 @@
         ? ('<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings">' + ACP.escapeHtml(zfsPathMappingsButtonLabel) + "</button>")
         : "",
       '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(quarantineButtonLabel) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="open-advanced-safety">' + ACP.escapeHtml(advancedSafetyButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history">' + ACP.escapeHtml(auditButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-tools">' + ACP.escapeHtml(toolsButtonLabel) + "</button>",
       "</div>",
@@ -414,11 +412,11 @@
     }
 
     if (row.storageKind === "zfs" && !row.enableZfsDatasetDelete) {
-      return ACP.t(strings, "rowDetailsNextStepEnableZfs", "Open Advanced safety and enable ZFS dataset delete, then review the dataset details.");
+      return ACP.t(strings, "rowDetailsNextStepEnableZfs", "Open Cleanup Options and enable ZFS dataset delete, then review the dataset details.");
     }
 
     if (row.storageKind === "zfs" && !row.enablePermanentDelete) {
-      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Open Advanced safety and enable permanent delete. ZFS-backed rows cannot be quarantined.");
+      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Open Cleanup Options and enable permanent delete. ZFS-backed rows cannot be quarantined.");
     }
 
     if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {

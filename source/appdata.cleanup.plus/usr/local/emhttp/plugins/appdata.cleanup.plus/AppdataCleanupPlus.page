@@ -140,12 +140,12 @@ $config = array(
     "settingsSaveFailedMessage" => _("The new safety settings could not be saved right now."),
     "showIgnoredLabel" => _("Show ignored"),
     "showExternalLabel" => _("Allow outside-share cleanup"),
-    "advancedSafetyOpenLabel" => _("Advanced safety"),
-    "advancedSafetyTitle" => _("Advanced safety"),
+    "advancedSafetyOpenLabel" => _("Cleanup Options"),
+    "advancedSafetyTitle" => _("Cleanup Options"),
     "advancedSafetySubtitle" => _("Persistent switches for riskier cleanup modes. Normal review rows can be unlocked for the current scan from the results instead."),
     "advancedSafetySaveLabel" => _("Save safety settings"),
-    "advancedSafetySavedMessage" => _("Advanced safety settings saved."),
-    "advancedSafetyFailedMessage" => _("Advanced safety settings could not be saved right now."),
+    "advancedSafetySavedMessage" => _("Cleanup options saved."),
+    "advancedSafetyFailedMessage" => _("Cleanup options could not be saved right now."),
     "advancedSafetyPermanentDeleteHelp" => _("Changes the primary action from quarantine to permanent delete and requires typed confirmation."),
     "advancedSafetyZfsHelp" => _("Allows exact ZFS dataset-backed rows to use dataset destroy. ZFS rows still require permanent delete mode."),
     "advancedSafetyOutsideShareHelp" => _("Makes outside-appdata review rows actionable without a per-scan unlock. Per-scan unlock is safer for normal use."),
@@ -223,7 +223,7 @@ $config = array(
     "noticeZfsDatasetTitle" => _("ZFS dataset candidates found"),
     "noticeZfsDatasetMessage" => _("ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows."),
     "noticeZfsDeleteDisabledTitle" => _("ZFS dataset delete is disabled"),
-    "noticeZfsDeleteDisabledMessage" => _("ZFS-backed rows stay visible but protected until ZFS dataset delete is enabled in Advanced safety."),
+    "noticeZfsDeleteDisabledMessage" => _("ZFS-backed rows stay visible but protected until ZFS dataset delete is enabled in Cleanup Options."),
     "noticeDockerOfflineTitle" => _("Docker is offline"),
     "noticeDockerOfflineMessage" => _("Results are based only on saved Docker templates. Review every path before acting on anything."),
     "noticeIgnoredTitle" => _("Ignore list active"),
@@ -332,14 +332,14 @@ $config = array(
     "rowDetailsOutcomeReady" => _("Ready under current safety settings"),
     "rowDetailsNextStepIgnored" => _("Use Restore if you want this path to appear in cleanup scans again."),
     "rowDetailsNextStepHardLocked" => _("No action is available here. The path resolves to a managed or unsafe target."),
-    "rowDetailsNextStepEnableZfs" => _("Open Advanced safety and enable ZFS dataset delete, then review the dataset details."),
-    "rowDetailsNextStepEnablePermanentDelete" => _("Open Advanced safety and enable permanent delete. ZFS-backed rows cannot be quarantined."),
+    "rowDetailsNextStepEnableZfs" => _("Open Cleanup Options and enable ZFS dataset delete, then review the dataset details."),
+    "rowDetailsNextStepEnablePermanentDelete" => _("Open Cleanup Options and enable permanent delete. ZFS-backed rows cannot be quarantined."),
     "rowDetailsNextStepUnlock" => _("Use Unlock for this scan if you have checked the details and want to act on this review item."),
     "rowDetailsNextStepUnlocked" => _("Proceed carefully. Rescanning will restore the normal policy lock."),
     "rowDetailsNextStepMappedNoExactDataset" => _("Correct the ZFS mapping so the dataset mount root matches exactly, or continue as a normal folder."),
     "rowDetailsNextStepZfsReady" => _("Only permanent delete mode is supported for ZFS-backed rows. Review the destroy impact below before proceeding."),
     "rowDetailsNextStepReview" => _("Confirm that this path really belongs to orphaned appdata before acting on it."),
-    "rowDetailsNextStepReady" => _("Quarantine is recommended. Permanent delete is available only from Advanced safety."),
+    "rowDetailsNextStepReady" => _("Quarantine is recommended. Permanent delete is available only from Cleanup Options."),
     "rowDetailsYesLabel" => _("Yes"),
     "rowDetailsNoLabel" => _("No"),
     "rowDetailsNoneLabel" => _("None"),
@@ -585,8 +585,10 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
       <section class="acp-toolbar acp-toolbar-panel acp-control-panel">
         <div class="acp-panel-title"><?php echo _("Controls"); ?></div>
         <div class="acp-control-grid">
+          <div class="acp-control-copy"><?php echo _("Rescan results or adjust cleanup behavior."); ?></div>
           <div class="acp-toolbar-actions acp-control-actions">
             <button type="button" class="acp-button acp-button-secondary" id="acp-rescan"><?php echo _("Rescan"); ?></button>
+            <button type="button" class="acp-button acp-button-secondary" id="acp-advanced-safety"><?php echo _("Cleanup Options"); ?></button>
           </div>
         </div>
       </section>
