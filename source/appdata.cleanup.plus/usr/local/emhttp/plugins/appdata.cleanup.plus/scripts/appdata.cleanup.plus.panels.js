@@ -56,7 +56,7 @@
 
   ACP.syncModeStripLockOverrideButton = function(context) {
     var els = context.els || {};
-    var $button = els.$modeStrip ? els.$modeStrip.find("[data-action='toggle-lock-override']").first() : $();
+    var $button = els.$lockOverride || $();
     var buttonState;
 
     if (!$button.length) {
@@ -75,7 +75,6 @@
     var strings = context.strings || {};
     var settings = state.settings || {};
     var summary = (state.quarantine && state.quarantine.summary) || { count: 0, sizeLabel: "0 B" };
-    var lockOverrideButton = ACP.buildLockOverrideButtonState(context);
     var isDeleteMode = !!(state.settings && state.settings.enablePermanentDelete);
     var showZfsPathMappingsButton = !!settings.enableZfsDatasetDelete;
     var leftTitle = isDeleteMode
@@ -91,7 +90,6 @@
     var quarantineButtonLabel = state.quarantine && state.quarantine.loading
       ? ACP.t(strings, "quarantineLoadingLabel", "Loading quarantine")
       : ACP.t(strings, "quarantineManagerOpenLabel", "Show quarantine");
-    var lockOverrideButtonLabel = lockOverrideButton.label;
     var appdataSourcesButtonLabel = ACP.t(strings, "appdataSourcesOpenLabel", "Appdata sources");
     var zfsPathMappingsButtonLabel = ACP.t(strings, "zfsPathMappingsOpenLabel", "ZFS mappings");
     var auditButtonLabel = ACP.t(strings, "auditHistoryOpenLabel", "Show history");
@@ -111,7 +109,6 @@
       '<div class="acp-mode-card-message">' + ACP.escapeHtml(managerMessage + managerMeta) + "</div>",
       "</div>",
       '<div class="acp-mode-card-actions">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-lock-override" data-lock-intent="' + ACP.escapeHtml(lockOverrideButton.intent) + '"' + (lockOverrideButton.disabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(lockOverrideButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources">' + ACP.escapeHtml(appdataSourcesButtonLabel) + "</button>",
       showZfsPathMappingsButton
         ? ('<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings">' + ACP.escapeHtml(zfsPathMappingsButtonLabel) + "</button>")

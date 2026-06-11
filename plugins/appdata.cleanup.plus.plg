@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.06.10.07">
-<!ENTITY md5 "61937bd6eb11e04c35873aa4a91232d9">
+<!ENTITY version "2026.06.10.08">
+<!ENTITY md5 "179f0ce469149065dfab0d6149561912">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.06.10.08
+- UX: Move the bulk Unlock selected control from the top action bar to the bottom selection bar beside Select ready
+
 ###2026.06.10.07
 - UX: Remove the Advanced safety save button and automatically persist each safety checkbox when it changes
 

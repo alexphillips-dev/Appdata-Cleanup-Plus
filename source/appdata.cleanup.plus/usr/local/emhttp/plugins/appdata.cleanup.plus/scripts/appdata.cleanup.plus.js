@@ -233,6 +233,7 @@
     els.$selectPreset = $("#acp-select-preset");
     els.$applySelectPreset = $("#acp-apply-select-preset");
     els.$selectAll = $("#acp-select-all");
+    els.$lockOverride = $("#acp-lock-override");
     els.$dryRun = $("#acp-dry-run");
     els.$primaryAction = $("#acp-primary-action");
     els.$resultsMeta = $("#acp-results-meta");
@@ -293,6 +294,13 @@
     els.$selectAll.on("click", function() {
       if (!state.busy) {
         selectAllRows();
+      }
+    });
+    els.$lockOverride.on("click", function() {
+      var intent = String($(this).data("lock-intent") || "unlock");
+
+      if (!state.busy) {
+        startSelectedLockOverrideFlow(intent);
       }
     });
     els.$dryRun.on("click", startDryRunFlow);
@@ -401,14 +409,6 @@
     els.$modeStrip.on("click", "[data-action='open-zfs-path-mappings']", function() {
       if (!state.busy) {
         openZfsPathMappingsModal();
-      }
-    });
-
-    els.$modeStrip.on("click", "[data-action='toggle-lock-override']", function() {
-      var intent = String($(this).data("lock-intent") || "unlock");
-
-      if (!state.busy) {
-        startSelectedLockOverrideFlow(intent);
       }
     });
 
