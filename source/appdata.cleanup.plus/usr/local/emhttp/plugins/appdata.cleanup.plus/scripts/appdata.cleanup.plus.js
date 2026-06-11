@@ -3812,12 +3812,32 @@
 
   function buildRowNotesHtml(row) {
     var notes = [];
+    var actionability = getRowActionabilityDescriptor(row).value;
+    var explanation = ACP.buildRowReviewExplanation
+      ? ACP.buildRowReviewExplanation({ state: state, strings: strings }, row)
+      : null;
 
     if (row.reason) {
       notes.push('<div class="acp-row-note is-primary">' + ACP.escapeHtml(row.reason) + "</div>");
     }
 
-    if (row.policyReason) {
+    if ((actionability === "review" || actionability === "locked") && explanation) {
+      if (explanation.why) {
+        notes.push(
+          '<div class="acp-row-note is-warning"><span class="acp-row-note-label">' +
+          ACP.escapeHtml(ACP.t(strings, "rowDetailsWhyLabel", "Why")) +
+          ':</span> ' + ACP.escapeHtml(explanation.why) + "</div>"
+        );
+      }
+
+      if (explanation.how) {
+        notes.push(
+          '<div class="acp-row-note"><span class="acp-row-note-label">' +
+          ACP.escapeHtml(ACP.t(strings, "rowDetailsResolveLabel", "How to resolve")) +
+          ':</span> ' + ACP.escapeHtml(explanation.how) + "</div>"
+        );
+      }
+    } else if (row.policyReason) {
       notes.push('<div class="acp-row-note is-warning">' + ACP.escapeHtml(row.policyReason) + "</div>");
     }
 
@@ -3841,7 +3861,7 @@
 
     if (row.ignored && row.ignoredReason) {
       notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.ignoredReason) + "</div>");
-    } else if (!row.policyReason && row.risk !== "safe" && row.riskReason) {
+    } else if (!explanation && !row.policyReason && row.risk !== "safe" && row.riskReason) {
       notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.riskReason) + "</div>");
     }
 

@@ -1300,6 +1300,11 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   color: var(--acp-review-text);
 }
 
+.acp-row-note-label {
+  color: var(--acp-heading);
+  font-weight: 700;
+}
+
 .acp-row-side {
   align-content: start;
   align-items: end;
