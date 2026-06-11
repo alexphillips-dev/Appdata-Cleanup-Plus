@@ -22,7 +22,7 @@
       case "missing":
         return { label: ACP.t(strings, "resultMissingLabel", "Missing"), tone: "is-blocked" };
       case "blocked":
-        return { label: ACP.t(strings, "resultBlockedLabel", "Locked"), tone: "is-review" };
+        return { label: ACP.t(strings, "resultBlockedLabel", "Blocked"), tone: "is-review" };
       default:
         return { label: ACP.t(strings, "resultErrorLabel", "Error"), tone: "is-review" };
     }
@@ -470,11 +470,11 @@
   }
 
   function getRowExplanationUnlockability(strings, row) {
-    if (row.securityLockReason || row.risk === "blocked") {
+    if (ACP.getRowBlockType(row) === "safety") {
       return ACP.t(strings, "rowUnlockabilityNever", "Cannot be unlocked here. Safety locks protect managed paths, root paths, symlinks, mount points, and other unsafe targets.");
     }
 
-    if (row.storageKind === "zfs" && row.policyLocked) {
+    if (ACP.getRowBlockType(row) === "options") {
       return ACP.t(strings, "rowUnlockabilitySettings", "Not unlockable per scan. Change Cleanup Options if you intend to allow this ZFS action.");
     }
 
@@ -495,11 +495,38 @@
       : ACP.t(strings, "rowUnlockabilityUnavailable", "No cleanup action is currently available.");
   }
 
+  ACP.getRowBlockType = function(row) {
+    var policyReason = String((row && row.policyReason) || "");
+
+    if (!row) {
+      return "";
+    }
+
+    if (row.securityLockReason || row.risk === "blocked") {
+      return "safety";
+    }
+
+    if (
+      row.storageKind === "zfs" &&
+      row.policyLocked &&
+      (/zfs dataset delete is disabled/i.test(policyReason) || /permanent delete/i.test(policyReason))
+    ) {
+      return "options";
+    }
+
+    if (row.policyLocked && !row.lockOverrideAllowed) {
+      return "options";
+    }
+
+    return "";
+  };
+
   ACP.buildRowReviewExplanation = function(context, row) {
     var strings = (context && context.strings) || {};
     var settings = (context && context.state && context.state.settings) || {};
     var detailRow = $.extend({}, row || {}, settings);
-    var isProtected = !!(detailRow.securityLockReason || detailRow.risk === "blocked" || (detailRow.storageKind === "zfs" && detailRow.policyLocked));
+    var blockType = ACP.getRowBlockType(detailRow);
+    var isProtected = !!blockType;
     var isReview = !!(detailRow.policyLocked || detailRow.risk === "review" || detailRow.lockOverridden);
     var why = getRowExplanationBase(strings, detailRow);
     var how = getRowDetailsNextStep(strings, detailRow);
@@ -514,13 +541,16 @@
     return {
       state: isProtected ? "protected" : (isReview ? "review" : "ready"),
       title: isProtected
-        ? ACP.t(strings, "rowDetailsProtectedExplanationTitle", "Why this row is protected")
+        ? (blockType === "options"
+          ? ACP.t(strings, "rowDetailsOptionsBlockedExplanationTitle", "Why this row is blocked by Cleanup Options")
+          : ACP.t(strings, "rowDetailsProtectedExplanationTitle", "Why this row is blocked for safety"))
         : (isReview
           ? ACP.t(strings, "rowDetailsReviewExplanationTitle", "Why this row needs review")
           : ACP.t(strings, "rowDetailsExplanationTitle", "Current explanation")),
       why: why,
       how: how,
       evidence: evidence,
+      blockType: blockType,
       unlockability: getRowExplanationUnlockability(strings, detailRow)
     };
   };
@@ -681,13 +711,32 @@
     html.push("</div>");
 
     html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(explanation.title || ACP.t(strings, "rowDetailsExplanationTitle", "Current explanation")) + "</div>");
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsVerdictTitle", "Verdict")) + "</div>");
     html.push(buildModalFieldListHtml([
       { label: ACP.t(strings, "rowDetailsOutcomeLabel", "Current outcome"), value: getRowDetailsOutcome(strings, $.extend({}, row, settings)) },
       { label: ACP.t(strings, "rowDetailsWhyLabel", "Why"), value: summaryMessage || row.reason || "" },
       { label: ACP.t(strings, "rowDetailsResolveLabel", "How to resolve"), value: nextStepMessage },
-      { label: ACP.t(strings, "rowDetailsUnlockabilityLabel", "Unlockability"), value: explanation.unlockability || "" },
-      { label: ACP.t(strings, "rowDetailsEvidenceLabel", "Evidence"), value: explanation.evidence || "" }
+      { label: ACP.t(strings, "rowDetailsUnlockabilityLabel", "Unlockability"), value: explanation.unlockability || "" }
+    ]));
+    html.push("</div>");
+
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsWhyExistsTitle", "Why this row exists")) + "</div>");
+    html.push(buildModalFieldListHtml([
+      { label: ACP.t(strings, "sourceLabel", "Source"), value: row.sourceDisplay || row.sourceSummary || "" },
+      { label: ACP.t(strings, "rowDetailsSourceNamesLabel", "Source names"), value: sourceNames.join(", ") },
+      { label: ACP.t(strings, "rowDetailsTargetsLabel", "Targets"), value: targetPaths.join(", ") },
+      { label: ACP.t(strings, "rowDetailsEvidenceLabel", "Evidence"), value: explanation.evidence || row.reason || "" }
+    ]));
+    html.push("</div>");
+
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(explanation.title || ACP.t(strings, "rowDetailsActionGateTitle", "Action gate")) + "</div>");
+    html.push(buildModalFieldListHtml([
+      { label: ACP.t(strings, "rowDetailsRiskLabel", "Risk"), value: row.riskLabel || row.risk || "" },
+      { label: ACP.t(strings, "rowDetailsStatusLabel", "Status"), value: row.statusLabel || row.status || "" },
+      { label: ACP.t(strings, "rowDetailsPolicyLabel", "Policy"), value: row.policyReason || "" },
+      { label: ACP.t(strings, "rowDetailsSecurityLabel", "Security"), value: row.securityLockReason || row.riskReason || "" }
     ]));
     html.push("</div>");
 
@@ -703,9 +752,6 @@
     html.push('<div class="acp-modal-panel">');
     html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsSourceTitle", "Source evidence")) + "</div>");
     html.push(buildModalFieldListHtml([
-      { label: ACP.t(strings, "sourceLabel", "Source"), value: row.sourceDisplay || row.sourceSummary || "" },
-      { label: ACP.t(strings, "rowDetailsSourceNamesLabel", "Source names"), value: sourceNames.join(", ") },
-      { label: ACP.t(strings, "rowDetailsTargetsLabel", "Targets"), value: targetPaths.join(", ") },
       { label: ACP.t(strings, "rowDetailsTemplateRefsLabel", "Template refs"), value: templateRefs.length ? $.map(templateRefs, function(ref) { return (ref && ref.name ? ref.name : "") + (ref && ref.target ? " -> " + ref.target : ""); }).join(", ") : "" }
     ]));
     html.push("</div>");
@@ -713,10 +759,6 @@
     html.push('<div class="acp-modal-panel">');
     html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsSafetyTitle", "Safety and actionability")) + "</div>");
     html.push(buildModalFieldListHtml([
-      { label: ACP.t(strings, "rowDetailsRiskLabel", "Risk"), value: row.riskLabel || row.risk || "" },
-      { label: ACP.t(strings, "rowDetailsStatusLabel", "Status"), value: row.statusLabel || row.status || "" },
-      { label: ACP.t(strings, "rowDetailsPolicyLabel", "Policy"), value: row.policyReason || "" },
-      { label: ACP.t(strings, "rowDetailsSecurityLabel", "Security"), value: row.securityLockReason || row.riskReason || "" },
       { label: ACP.t(strings, "rowDetailsInsideSourceLabel", "Inside configured source"), value: row.insideConfiguredSource ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No") },
       { label: ACP.t(strings, "rowDetailsInsideShareLabel", "Inside default share"), value: row.insideDefaultShare ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No") },
       { label: ACP.t(strings, "rowDetailsShareLabel", "Share"), value: row.shareName || "" },

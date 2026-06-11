@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.06.11.01">
-<!ENTITY md5 "48fce4080ba94d3cf2bd9535e2bb07b0">
+<!ENTITY version "2026.06.11.02">
+<!ENTITY md5 "ab0f055a74bb8e277eb6ac6775640461">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.06.11.02
+- UX: Add Cleanup Options affected-row counts, split safety-blocked rows from option-blocked rows, restructure Details around verdict/source/action-gate explanations, and clarify cleanup result and empty-state messages
+
 ###2026.06.11.01
 - UX: Add explicit Why and How to resolve explanations to Needs review and Protected rows, with fuller Details diagnostics for policy locks, safety locks, templates, paths, and ZFS state
 

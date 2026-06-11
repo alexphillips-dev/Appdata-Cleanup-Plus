@@ -1427,26 +1427,31 @@
 
   function buildAdvancedSafetyModalHtml() {
     var settings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
+    var impactCounts = buildCleanupOptionsImpactCounts();
     var toggles = [
       {
         key: "enablePermanentDelete",
         label: ACP.t(strings, "enablePermanentDeleteLabel", "Enable permanent delete"),
-        help: ACP.t(strings, "advancedSafetyPermanentDeleteHelp", "Changes the primary action from quarantine to permanent delete and requires typed confirmation.")
+        help: ACP.t(strings, "advancedSafetyPermanentDeleteHelp", "Changes the primary action from quarantine to permanent delete and requires typed confirmation."),
+        impact: impactCounts.enablePermanentDelete
       },
       {
         key: "enableZfsDatasetDelete",
         label: ACP.t(strings, "enableZfsDatasetDeleteLabel", "Enable ZFS dataset delete"),
-        help: ACP.t(strings, "advancedSafetyZfsHelp", "Allows exact ZFS dataset-backed rows to use dataset destroy. ZFS rows still require permanent delete mode.")
+        help: ACP.t(strings, "advancedSafetyZfsHelp", "Allows exact ZFS dataset-backed rows to use dataset destroy. ZFS rows still require permanent delete mode."),
+        impact: impactCounts.enableZfsDatasetDelete
       },
       {
         key: "allowOutsideShareCleanup",
         label: ACP.t(strings, "showExternalLabel", "Allow outside-share cleanup"),
-        help: ACP.t(strings, "advancedSafetyOutsideShareHelp", "Makes outside-appdata review rows actionable without a per-scan unlock. Per-scan unlock is safer for normal use.")
+        help: ACP.t(strings, "advancedSafetyOutsideShareHelp", "Makes outside-appdata review rows actionable without a per-scan unlock. Per-scan unlock is safer for normal use."),
+        impact: impactCounts.allowOutsideShareCleanup
       },
       {
         key: "allowTemplateReferencedCleanup",
         label: ACP.t(strings, "allowTemplateReferencedCleanupLabel", "Allow saved-template cleanup"),
-        help: ACP.t(strings, "advancedSafetyTemplateHelp", "Makes saved-template reference rows actionable without a per-scan unlock. Per-scan unlock is safer for normal use.")
+        help: ACP.t(strings, "advancedSafetyTemplateHelp", "Makes saved-template reference rows actionable without a per-scan unlock. Per-scan unlock is safer for normal use."),
+        impact: impactCounts.allowTemplateReferencedCleanup
       }
     ];
     var html = [
@@ -1467,6 +1472,7 @@
           '<span class="acp-advanced-safety-copy">' +
             '<strong>' + ACP.escapeHtml(toggle.label) + "</strong>" +
             '<span>' + ACP.escapeHtml(toggle.help) + "</span>" +
+            '<em>' + ACP.escapeHtml(buildCleanupOptionImpactText(toggle.impact)) + "</em>" +
           "</span>" +
         "</label>"
       );
@@ -1479,6 +1485,52 @@
     );
 
     return html.join("");
+  }
+
+  function buildCleanupOptionsImpactCounts() {
+    var counts = {
+      enablePermanentDelete: 0,
+      enableZfsDatasetDelete: 0,
+      allowOutsideShareCleanup: 0,
+      allowTemplateReferencedCleanup: 0
+    };
+
+    $.each(state.rows || [], function(_, row) {
+      var policyReason = String((row && row.policyReason) || "");
+
+      if (!row || row.ignored) {
+        return;
+      }
+
+      if (row.canDelete || (row.storageKind === "zfs" && /permanent delete/i.test(policyReason))) {
+        counts.enablePermanentDelete += 1;
+      }
+
+      if (row.storageKind === "zfs") {
+        counts.enableZfsDatasetDelete += 1;
+      }
+
+      if ((row.risk === "review" && row.sourceKind !== "template") || /outside-share cleanup is disabled/i.test(policyReason)) {
+        counts.allowOutsideShareCleanup += 1;
+      }
+
+      if (row.sourceKind === "template") {
+        counts.allowTemplateReferencedCleanup += 1;
+      }
+    });
+
+    return counts;
+  }
+
+  function buildCleanupOptionImpactText(count) {
+    var rowCount = Number(count || 0);
+
+    if (rowCount <= 0) {
+      return ACP.t(strings, "advancedSafetyAffectsNone", "Currently affects 0 rows in this scan.");
+    }
+
+    return ACP.t(strings, "advancedSafetyAffectsRows", "Currently affects {count} rows in this scan.")
+      .replace("{count}", String(rowCount));
   }
 
   function renderAdvancedSafetyModal() {
@@ -2675,6 +2727,8 @@
     var insights = buildScanInsights();
     var parts = [];
 
+    parts.push(ACP.t(strings, "emptyNoUnusedFoundMessage", "No unused appdata folders were found under the current scan paths."));
+
     if (insights.scanRoots.length === 1) {
       parts.push(ACP.t(strings, "emptyScannedSinglePrefix", "Scanned appdata root:") + " " + insights.scanRoots[0] + ".");
     } else if (insights.scanRoots.length > 1) {
@@ -2688,6 +2742,11 @@
         ? ACP.t(strings, "emptyTemplatesCheckedMessage", "Saved Docker templates were checked too.")
         : ACP.t(strings, "emptyDockerOfflineCheckedMessage", "Docker is offline, so only saved Docker templates could be checked.")
     );
+
+    if (Number(insights.templateRowCount || 0) === 0 && state.dockerRunning) {
+      parts.push(ACP.t(strings, "emptyTemplateEducationMessage", "Saved Docker templates can still reference appdata after a container is removed, so they are included in the scan evidence."));
+    }
+
     parts.push(ACP.t(strings, "emptyNextStepsMessage", "If you expected orphaned folders, confirm the full appdata root in Appdata sources, remove the container first, and rescan."));
 
     return parts.join(" ");
@@ -3908,8 +3967,8 @@
       },
       {
         key: "locked",
-        title: ACP.t(strings, "protectedSectionTitle", "Protected"),
-        message: ACP.t(strings, "protectedSectionMessage", "These are blocked by safety rules and cannot be cleaned from the normal workflow.")
+        title: ACP.t(strings, "protectedSectionTitle", "Blocked"),
+        message: ACP.t(strings, "protectedSectionMessage", "Safety-blocked rows cannot be unlocked here. Cleanup Options-blocked rows need the relevant option enabled first.")
       },
       {
         key: "ignored",
@@ -4031,7 +4090,7 @@
 
   function getActionabilityLabel(actionability) {
     if (actionability === "locked") {
-      return ACP.t(strings, "cardBlocked", "Protected");
+      return ACP.t(strings, "cardBlocked", "Blocked");
     }
 
     if (actionability === "review") {
@@ -4042,6 +4101,8 @@
   }
 
   function getRowActionabilityDescriptor(row) {
+    var blockType = ACP.getRowBlockType ? ACP.getRowBlockType(row) : "";
+
     if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
       return {
         kind: "actionability",
@@ -4058,7 +4119,9 @@
       return {
         kind: "actionability",
         value: "locked",
-        label: ACP.t(strings, "cardBlocked", "Protected"),
+        label: blockType === "options"
+          ? ACP.t(strings, "cardBlockedOptions", "Blocked by options")
+          : ACP.t(strings, "cardBlockedSafety", "Blocked for safety"),
         tone: "locked",
         title: row.policyReason || row.securityLockReason || row.riskReason || "",
         kindClass: "actionability",
@@ -5313,6 +5376,13 @@
 
   function buildOperationResultsHtml(summary, results, context) {
     var stats = [];
+    var successfulCount = Number(summary.deleted || 0) + Number(summary.quarantined || 0) + Number(summary.ready || 0);
+    var warningCount = Number(summary.skipped || 0) + Number(summary.blocked || 0) + Number(summary.missing || 0) + Number(summary.errors || 0);
+    var leadMessage = context.preview
+      ? ACP.t(strings, "operationPreviewLead", "Review what would happen before running the action.")
+      : (warningCount > 0
+        ? ACP.t(strings, "operationResultsWarningLead", "The action finished, but some rows were skipped, blocked, missing, or failed. Review the list before leaving this screen.")
+        : ACP.t(strings, "operationResultsSuccessLead", "The action completed successfully. Review the final status for each row below."));
     var html = ['<div class="acp-modal-summary">'];
 
     if (context.preview) {
@@ -5324,10 +5394,15 @@
       stats.push('<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "resultQuarantinedLabel", "Quarantined")) + ": " + ACP.escapeHtml(String(summary.quarantined || 0)) + "</span>");
     }
 
-    stats.push('<span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "resultBlockedLabel", "Locked")) + ": " + ACP.escapeHtml(String(summary.blocked || 0)) + "</span>");
+    if (!context.preview) {
+      stats.push('<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "operationResultsCompletedLabel", "Completed")) + ": " + ACP.escapeHtml(String(successfulCount)) + "</span>");
+    }
+    stats.push('<span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "resultSkippedLabel", "Skipped")) + ": " + ACP.escapeHtml(String(summary.skipped || 0)) + "</span>");
+    stats.push('<span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "resultBlockedLabel", "Blocked")) + ": " + ACP.escapeHtml(String(summary.blocked || 0)) + "</span>");
     stats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(ACP.t(strings, "resultMissingLabel", "Missing")) + ": " + ACP.escapeHtml(String(summary.missing || 0)) + "</span>");
     stats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(ACP.t(strings, "resultErrorLabel", "Error")) + ": " + ACP.escapeHtml(String(summary.errors || 0)) + "</span>");
 
+    html.push('<div class="acp-modal-copy"><div class="acp-modal-lead">' + ACP.escapeHtml(leadMessage) + "</div></div>");
     html.push('<div class="acp-modal-stats">' + stats.join("") + "</div>");
     html.push('<div class="acp-modal-panel">');
     html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(context.listTitle) + "</div>");
