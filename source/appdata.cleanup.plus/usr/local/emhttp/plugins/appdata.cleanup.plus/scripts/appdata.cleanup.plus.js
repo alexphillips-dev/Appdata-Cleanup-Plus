@@ -1546,6 +1546,7 @@
     });
 
     renderOpenRowDetailsModal();
+    window.setTimeout(renderOpenRowDetailsModal, 0);
     loadCandidateDetails(row);
   }
 
@@ -1856,8 +1857,9 @@
 
   function renderOpenRowDetailsModal() {
     var row = getRowDetailsModalRow();
+    var $modal = getActiveSweetAlertModal();
 
-    if (!row || !getActiveSweetAlertModal().hasClass("acp-row-details-modal")) {
+    if (!row || !$modal.length) {
       return;
     }
 
