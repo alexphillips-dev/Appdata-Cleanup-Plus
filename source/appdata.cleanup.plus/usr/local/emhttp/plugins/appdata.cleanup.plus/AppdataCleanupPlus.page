@@ -38,7 +38,12 @@ if ( $hostThemeName === "grey" ) {
   $hostThemeName = "gray";
 }
 
-if ( strpos($hostThemeName, "white") !== false || strpos($hostThemeName, "light") !== false ) {
+if (
+  strpos($hostThemeName, "white") !== false ||
+  strpos($hostThemeName, "light") !== false ||
+  strpos($hostThemeName, "gray") !== false ||
+  strpos($hostThemeName, "azure") !== false
+) {
   $hostThemeClass = "light";
 } elseif ( strpos($hostThemeName, "black") !== false ) {
   $hostThemeClass = "dark";

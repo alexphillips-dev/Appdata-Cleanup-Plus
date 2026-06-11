@@ -306,6 +306,42 @@
     return null;
   };
 
+  ACP.resolveHostSurfaceColor = function() {
+    var candidates = [];
+    var selectors = [
+      "#content",
+      ".content",
+      "#main",
+      "main",
+      ".page",
+      ".canvas",
+      ".template"
+    ];
+    var i;
+    var node;
+    var style;
+
+    for (i = 0; i < selectors.length; i += 1) {
+      node = document.querySelector ? document.querySelector(selectors[i]) : null;
+      if (node && window.getComputedStyle) {
+        style = window.getComputedStyle(node);
+        candidates.push(ACP.parseThemeColor(style ? style.backgroundColor : ""));
+      }
+    }
+
+    if (document.body && window.getComputedStyle) {
+      style = window.getComputedStyle(document.body);
+      candidates.push(ACP.parseThemeColor(style ? style.backgroundColor : ""));
+    }
+
+    if (document.documentElement && window.getComputedStyle) {
+      style = window.getComputedStyle(document.documentElement);
+      candidates.push(ACP.parseThemeColor(style ? style.backgroundColor : ""));
+    }
+
+    return ACP.resolveThemeSurfaceColor.apply(ACP, candidates);
+  };
+
   ACP.themeColorLuminance = function(color) {
     var channels;
 
@@ -319,13 +355,7 @@
 
   ACP.inferThemeClass = function(themeName) {
     var normalized = ACP.normalizeHostThemeName(themeName);
-    var bodyStyle = document.body ? window.getComputedStyle(document.body) : null;
-    var htmlStyle = document.documentElement ? window.getComputedStyle(document.documentElement) : null;
-    var background = ACP.resolveThemeSurfaceColor(
-      ACP.parseThemeColor(bodyStyle ? bodyStyle.backgroundColor : ""),
-      ACP.parseThemeColor(htmlStyle ? htmlStyle.backgroundColor : ""),
-      ACP.parseThemeColor("#0f1825")
-    );
+    var background = ACP.resolveHostSurfaceColor();
     var luminance = ACP.themeColorLuminance(background);
 
     if (normalized.indexOf("white") !== -1 || normalized.indexOf("light") !== -1) {
@@ -334,6 +364,15 @@
 
     if (normalized.indexOf("black") !== -1) {
       return "dark";
+    }
+
+    if (!background && (normalized.indexOf("gray") !== -1 || normalized.indexOf("azure") !== -1)) {
+      return "light";
+    }
+
+    if (!background) {
+      background = ACP.parseThemeColor("#0f1825");
+      luminance = ACP.themeColorLuminance(background);
     }
 
     if (luminance >= 0.58) {
