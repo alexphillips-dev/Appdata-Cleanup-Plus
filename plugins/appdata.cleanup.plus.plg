@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.06.11.04">
-<!ENTITY md5 "21ddbe27def54efe3d1eed2396a548e6">
+<!ENTITY version "2026.06.11.05">
+<!ENTITY md5 "6b08d35826a83b6a3271ca2d0c5b5ca1">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.06.11.05
+- UX: Move visible/detected and active filter status out of the Sort card into a dedicated results status row with a Clear filter button
+
 ###2026.06.11.04
 - UX: Tighten the Controls panel layout so Rescan, Cleanup Options, and Help fit the top row without making the dashboard cards uneven
 

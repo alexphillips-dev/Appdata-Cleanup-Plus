@@ -361,6 +361,7 @@
 
     els.$results.on("click", ".acp-badge-filter", handleBadgeFilterClick);
     els.$resultsMeta.on("click", ".acp-badge-filter", handleBadgeFilterClick);
+    els.$resultsMeta.on("click", "[data-action='clear-filters']", clearFilters);
     els.$results.on("keydown", ".acp-badge-filter", handleBadgeFilterKeydown);
     els.$resultsMeta.on("keydown", ".acp-badge-filter", handleBadgeFilterKeydown);
 
@@ -4714,7 +4715,8 @@
         label: badgeFilter.label,
         tone: getBadgeFilterTone(badgeFilter),
         kindClass: "meta"
-      })
+      }) +
+      '<button type="button" class="acp-button acp-button-secondary acp-results-meta-clear" data-action="clear-filters">' + ACP.escapeHtml(ACP.t(strings, "clearFiltersLabel", "Clear filter")) + "</button>"
     );
   }
 

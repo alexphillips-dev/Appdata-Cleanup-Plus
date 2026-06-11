@@ -655,10 +655,6 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   min-width: 170px;
 }
 
-.acp-sort-panel .acp-results-meta {
-  margin-top: auto;
-}
-
 .acp-filter-group {
   display: flex;
   flex-wrap: wrap;
@@ -694,16 +690,20 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 .acp-results-meta {
-  align-self: end;
+  align-items: center;
+  background: var(--acp-panel);
+  border: 1px solid var(--acp-border);
+  border-radius: 10px;
   color: var(--acp-muted);
   display: flex;
   flex-wrap: wrap;
   font-size: 11px;
   gap: 6px;
-  justify-content: flex-end;
+  justify-content: flex-start;
   line-height: 1.4;
-  min-height: 16px;
-  text-align: right;
+  min-height: 36px;
+  padding: 6px 10px;
+  text-align: left;
 }
 
 .acp-results-meta-copy {
@@ -712,6 +712,11 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .acp-results-meta-filter-label {
   font-weight: 700;
+}
+
+.acp-results-meta-clear {
+  min-height: 24px;
+  padding: 0 9px;
 }
 
 .acp-mode-strip {
