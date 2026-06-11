@@ -865,7 +865,8 @@ behaviorSmokeAssertSame("zfs", $templatedRow["storageKind"], "Mapped template-ba
 behaviorSmokeAssertSame("docker_vm_nvme/" . $appdataShareName . "/templated-orphan", $templatedRow["datasetName"], "Mapped template-backed rows should expose the resolved ZFS dataset name.");
 behaviorSmokeAssertSame(true, ! empty($templatedRow["policyLocked"]), "Template-backed rows should start locked even when no installed container maps them.");
 behaviorSmokeAssertSame(false, ! empty($templatedRow["canDelete"]), "Template-backed rows should not be actionable from the dashboard.");
-behaviorSmokeAssertContains("Remove or update the saved template", $templatedRow["policyReason"], "Template-backed row locks should explain that saved templates must be handled first.");
+behaviorSmokeAssertSame(true, ! empty($templatedRow["lockOverrideAllowed"]), "Template-backed row locks should allow a scan-scoped review unlock.");
+behaviorSmokeAssertContains("saved template may expect or recreate it", $templatedRow["policyReason"], "Template-backed row locks should explain the saved-template reinstall risk.");
 behaviorSmokeAssertSame("docker_vm_nvme/" . $appdataShareName . "/Sonarr", $zfsCaseRow["datasetName"], "ZFS dataset resolution should preserve case-sensitive dataset names.");
 behaviorSmokeAssertSame("filesystem", $filesystemRow["sourceKind"], "Filesystem-only rows should be marked as discovery candidates.");
 behaviorSmokeAssertSame("filesystem", $staleNestedEmptyParentRow["sourceKind"], "Empty stale parent remnants should be surfaced as discovery candidates.");
@@ -877,9 +878,10 @@ behaviorSmokeAssertSame(true, ! empty($manualCustomFilesystemRow["canDelete"]), 
 behaviorSmokeAssertSame(true, ! empty($staleNestedEmptyParentRow["canDelete"]), "Empty stale parent remnants should remain actionable.");
 behaviorSmokeAssertSame("safe", $manualAliasTemplateRow["risk"], "Template-backed rows under configured appdata sources should not be mislabeled as outside-share review.");
 behaviorSmokeAssertSame(false, ! empty($manualAliasTemplateRow["canDelete"]), "Template-backed rows under manual appdata sources should not be actionable by default.");
+behaviorSmokeAssertSame(true, ! empty($manualAliasTemplateRow["lockOverrideAllowed"]), "Template-backed rows under manual appdata sources should support a scan-scoped review unlock.");
 behaviorSmokeAssertSame("review", $outsideShareReviewRow["risk"], "Outside-share template rows should be marked for review.");
 behaviorSmokeAssertSame(true, ! empty($outsideShareReviewRow["policyLocked"]), "Outside-share review rows should start locked when outside-share cleanup is disabled.");
-behaviorSmokeAssertSame(false, ! empty($outsideShareReviewRow["lockOverrideAllowed"]), "Template-backed outside-share review rows should not allow a manual lock override.");
+behaviorSmokeAssertSame(true, ! empty($outsideShareReviewRow["lockOverrideAllowed"]), "Template-backed outside-share review rows should allow a scan-scoped review unlock.");
 behaviorSmokeAssertSame(false, ! empty($outsideShareReviewRow["canDelete"]), "Outside-share review rows should not be actionable before manual unlock.");
 behaviorSmokeAssertContains("Saved templates", $templatedRow["reason"], "Template-backed rows should explain their saved-template reference.");
 behaviorSmokeAssertContains("Saved templates", $templatedRow["policyReason"], "Template-backed rows should surface the saved-template action lock reason.");
@@ -897,7 +899,18 @@ $templateActionResolution = resolveCandidateForAction(array(
   "targetPaths" => array("/opt/manual")
 ), getAppdataCleanupPlusSafetySettings(), "quarantine");
 behaviorSmokeAssertSame(false, ! empty($templateActionResolution["ok"]), "Action-time validation should block template-backed rows even if a stale snapshot is submitted.");
-behaviorSmokeAssertContains("Remove or update the saved template", $templateActionResolution["message"], "Template-backed action blocks should explain the saved-template requirement.");
+behaviorSmokeAssertContains("saved template may expect or recreate it", $templateActionResolution["message"], "Template-backed action blocks should explain the saved-template risk.");
+$templateUnlockResolution = resolveCandidateForAction(array(
+  "path" => $manualAliasTemplatePath,
+  "displayPath" => $manualAliasTemplatePath,
+  "realPath" => (string)@realpath($manualAliasTemplatePath),
+  "sourceKind" => "template",
+  "sourceNames" => array("manual-template-only"),
+  "targetPaths" => array("/opt/manual"),
+  "lockOverrideAllowed" => true,
+  "lockOverridden" => true
+), getAppdataCleanupPlusSafetySettings(), "quarantine");
+behaviorSmokeAssertSame(true, ! empty($templateUnlockResolution["ok"]), "Action-time validation should allow inside-source template rows after a scan-scoped review unlock.");
 $templateBypassSettings = getAppdataCleanupPlusSafetySettings();
 $templateBypassSettings["allowTemplateReferencedCleanup"] = true;
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings($templateBypassSettings), "Saved-template cleanup bypass setting should save for action validation.");
@@ -1281,6 +1294,23 @@ if ( function_exists("symlink") && @symlink($symlinkTargetPath, $symlinkLinkPath
   $symlinkReason = buildPathSecurityLockReason($symlinkLinkPath . "/child");
   behaviorSmokeAssertContains($symlinkLinkPath, $symlinkReason, "Symlink lock reasons should identify the exact offending path segment.");
 }
+
+$progressDeletePath = $stateRoot . "/progress-delete";
+$progressDeleteId = "smoke-progress-delete";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($progressDeletePath . "/nested"), "Progress delete fixture should be created.");
+file_put_contents($progressDeletePath . "/root.txt", "root");
+file_put_contents($progressDeletePath . "/nested/child.txt", "child");
+appdataCleanupPlusInitializeOperationProgress($progressDeleteId, "delete", 1);
+$progressDeleteResult = nativeDeleteDirectory($progressDeletePath, array(
+  "operationProgressId" => $progressDeleteId
+));
+$progressPayload = appdataCleanupPlusReadOperationProgress($progressDeleteId);
+behaviorSmokeAssertSame(true, ! empty($progressDeleteResult["ok"]), "Progress-tracked native deletes should succeed.");
+behaviorSmokeAssertSame(false, is_dir($progressDeletePath), "Progress-tracked native deletes should remove the target folder.");
+behaviorSmokeAssertSame(4, (int)$progressPayload["totalItems"], "Progress tracking should count root, nested directories, and files.");
+behaviorSmokeAssertSame(4, (int)$progressPayload["processedItems"], "Progress tracking should record each deleted filesystem entry.");
+behaviorSmokeAssertTrue(! empty($progressPayload["recent"]) && count($progressPayload["recent"]) >= 2, "Progress tracking should retain recently deleted paths.");
+behaviorSmokeAssertContains("progress-delete", appdataCleanupPlusJsonEncode($progressPayload["recent"]), "Progress tracking should include deleted path names.");
 
 behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);

@@ -22,7 +22,7 @@
       case "missing":
         return { label: ACP.t(strings, "resultMissingLabel", "Missing"), tone: "is-blocked" };
       case "blocked":
-        return { label: ACP.t(strings, "resultBlockedLabel", "Locked"), tone: "is-review" };
+        return { label: ACP.t(strings, "resultBlockedLabel", "Blocked"), tone: "is-review" };
       default:
         return { label: ACP.t(strings, "resultErrorLabel", "Error"), tone: "is-review" };
     }
@@ -56,7 +56,7 @@
 
   ACP.syncModeStripLockOverrideButton = function(context) {
     var els = context.els || {};
-    var $button = els.$modeStrip ? els.$modeStrip.find("[data-action='toggle-lock-override']").first() : $();
+    var $button = els.$lockOverride || $();
     var buttonState;
 
     if (!$button.length) {
@@ -75,7 +75,6 @@
     var strings = context.strings || {};
     var settings = state.settings || {};
     var summary = (state.quarantine && state.quarantine.summary) || { count: 0, sizeLabel: "0 B" };
-    var lockOverrideButton = ACP.buildLockOverrideButtonState(context);
     var isDeleteMode = !!(state.settings && state.settings.enablePermanentDelete);
     var showZfsPathMappingsButton = !!settings.enableZfsDatasetDelete;
     var leftTitle = isDeleteMode
@@ -91,7 +90,6 @@
     var quarantineButtonLabel = state.quarantine && state.quarantine.loading
       ? ACP.t(strings, "quarantineLoadingLabel", "Loading quarantine")
       : ACP.t(strings, "quarantineManagerOpenLabel", "Show quarantine");
-    var lockOverrideButtonLabel = lockOverrideButton.label;
     var appdataSourcesButtonLabel = ACP.t(strings, "appdataSourcesOpenLabel", "Appdata sources");
     var zfsPathMappingsButtonLabel = ACP.t(strings, "zfsPathMappingsOpenLabel", "ZFS mappings");
     var auditButtonLabel = ACP.t(strings, "auditHistoryOpenLabel", "Show history");
@@ -110,7 +108,6 @@
       '<div class="acp-mode-card-message">' + ACP.escapeHtml(managerMessage + managerMeta) + "</div>",
       "</div>",
       '<div class="acp-mode-card-actions">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-lock-override" data-lock-intent="' + ACP.escapeHtml(lockOverrideButton.intent) + '"' + (lockOverrideButton.disabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(lockOverrideButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources">' + ACP.escapeHtml(appdataSourcesButtonLabel) + "</button>",
       showZfsPathMappingsButton
         ? ('<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings">' + ACP.escapeHtml(zfsPathMappingsButtonLabel) + "</button>")
@@ -363,13 +360,208 @@
     return html.join("");
   }
 
+  function buildRowTemplateEvidence(row) {
+    var templateRefs = $.isArray(row.templateRefs) ? row.templateRefs : [];
+    var sourceNames = $.isArray(row.sourceNames) ? row.sourceNames : [];
+    var targetPaths = $.isArray(row.targetPaths) ? row.targetPaths : [];
+    var parts = [];
+
+    if (sourceNames.length) {
+      parts.push("Saved templates: " + sourceNames.join(", "));
+    } else if (row.sourceSummary || row.sourceDisplay) {
+      parts.push("Source: " + (row.sourceSummary || row.sourceDisplay));
+    }
+
+    if (targetPaths.length) {
+      parts.push("Template target paths: " + targetPaths.join(", "));
+    } else if (row.targetSummary) {
+      parts.push("Template target paths: " + row.targetSummary);
+    }
+
+    if (templateRefs.length) {
+      parts.push("References: " + $.map(templateRefs, function(ref) {
+        return (ref && ref.name ? ref.name : "template") + (ref && ref.target ? " -> " + ref.target : "");
+      }).join(", "));
+    }
+
+    return parts.join(" ");
+  }
+
+  function buildRowPathEvidence(row) {
+    var parts = [];
+
+    if (row.displayPath || row.path) {
+      parts.push("Path: " + (row.displayPath || row.path));
+    }
+
+    if (row.realPath && row.realPath !== (row.displayPath || row.path)) {
+      parts.push("Canonical path: " + row.realPath);
+    }
+
+    if (row.sourceRoot) {
+      parts.push("Matched scan root: " + row.sourceRoot);
+    }
+
+    if (row.shareName) {
+      parts.push("Share: " + row.shareName);
+    }
+
+    return parts.join(" ");
+  }
+
+  function buildRowZfsEvidence(row) {
+    var parts = [];
+
+    if (row.storageKind === "zfs") {
+      parts.push("ZFS dataset: " + (row.datasetName || row.datasetMountpoint || "detected"));
+
+      if (row.datasetMountpoint) {
+        parts.push("Mountpoint: " + row.datasetMountpoint);
+      }
+
+      if (row.zfsImpactSummary) {
+        parts.push(row.zfsImpactSummary);
+      }
+    } else if (row.zfsMappingMatched) {
+      parts.push(row.zfsResolutionDetail || row.zfsResolutionMessage || "A ZFS path mapping matched, but the row did not resolve to an exact dataset mountpoint.");
+    }
+
+    return parts.join(" ");
+  }
+
+  function getRowExplanationBase(strings, row) {
+    if (row.ignored) {
+      return row.ignoredReason || ACP.t(strings, "rowExplainIgnored", "This row is hidden by the ignore list.");
+    }
+
+    if (row.securityLockReason) {
+      return row.securityLockReason;
+    }
+
+    if (row.risk === "blocked") {
+      return row.riskReason || row.policyReason || ACP.t(strings, "rowExplainBlocked", "This path is protected by a safety rule.");
+    }
+
+    if (row.storageKind === "zfs" && row.policyLocked) {
+      return row.policyReason || ACP.t(strings, "selectionHintZfsMode", "ZFS dataset-backed rows require permanent delete mode and cannot be quarantined.");
+    }
+
+    if (row.policyLocked && !row.lockOverridden) {
+      return row.policyReason || row.riskReason || ACP.t(strings, "rowExplainPolicyLocked", "This row needs manual review before it can be cleaned.");
+    }
+
+    if (row.lockOverridden) {
+      return ACP.t(strings, "lockOverrideNote", "Manual unlock override is active for this scan only.");
+    }
+
+    if (row.zfsMappingMatched && row.storageKind !== "zfs") {
+      return row.zfsResolutionDetail || row.zfsResolutionMessage || ACP.t(strings, "rowDetailsOutcomeMappedNoExactDataset", "Mapped share path did not resolve to an exact dataset");
+    }
+
+    if (row.risk === "review") {
+      return row.riskReason || row.reason || ACP.t(strings, "rowExplainReview", "This row needs review before cleanup.");
+    }
+
+    if (row.storageKind === "zfs") {
+      return ACP.t(strings, "rowExplainZfsReady", "This row resolves to an exact ZFS dataset and uses dataset destroy instead of folder quarantine.");
+    }
+
+    return row.reason || row.riskReason || ACP.t(strings, "rowExplainReady", "This row is ready under the current cleanup settings.");
+  }
+
+  function getRowExplanationUnlockability(strings, row) {
+    if (ACP.getRowBlockType(row) === "safety") {
+      return ACP.t(strings, "rowUnlockabilityNever", "Cannot be unlocked here. Safety locks protect managed paths, root paths, symlinks, mount points, and other unsafe targets.");
+    }
+
+    if (ACP.getRowBlockType(row) === "options") {
+      return ACP.t(strings, "rowUnlockabilitySettings", "Not unlockable per scan. Change Cleanup Options if you intend to allow this ZFS action.");
+    }
+
+    if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
+      return ACP.t(strings, "rowUnlockabilityPerScan", "Can be unlocked for this scan only after you verify the details.");
+    }
+
+    if (row.lockOverridden) {
+      return ACP.t(strings, "rowUnlockabilityUnlocked", "Unlocked for this scan only. A rescan restores the normal review lock.");
+    }
+
+    if (row.risk === "review") {
+      return ACP.t(strings, "rowUnlockabilityReview", "Review manually before acting. If a policy lock appears, use Unlock for this scan.");
+    }
+
+    return row.canDelete
+      ? ACP.t(strings, "rowUnlockabilityReady", "Actionable under the current settings.")
+      : ACP.t(strings, "rowUnlockabilityUnavailable", "No cleanup action is currently available.");
+  }
+
+  ACP.getRowBlockType = function(row) {
+    var policyReason = String((row && row.policyReason) || "");
+
+    if (!row) {
+      return "";
+    }
+
+    if (row.securityLockReason || row.risk === "blocked") {
+      return "safety";
+    }
+
+    if (
+      row.storageKind === "zfs" &&
+      row.policyLocked &&
+      (/zfs dataset delete is disabled/i.test(policyReason) || /permanent delete/i.test(policyReason))
+    ) {
+      return "options";
+    }
+
+    if (row.policyLocked && !row.lockOverrideAllowed) {
+      return "options";
+    }
+
+    return "";
+  };
+
+  ACP.buildRowReviewExplanation = function(context, row) {
+    var strings = (context && context.strings) || {};
+    var settings = (context && context.state && context.state.settings) || {};
+    var detailRow = $.extend({}, row || {}, settings);
+    var blockType = ACP.getRowBlockType(detailRow);
+    var isProtected = !!blockType;
+    var isReview = !!(detailRow.policyLocked || detailRow.risk === "review" || detailRow.lockOverridden);
+    var why = getRowExplanationBase(strings, detailRow);
+    var how = getRowDetailsNextStep(strings, detailRow);
+    var evidence = $.grep([
+      buildRowTemplateEvidence(detailRow),
+      buildRowPathEvidence(detailRow),
+      buildRowZfsEvidence(detailRow)
+    ], function(value) {
+      return !!$.trim(String(value || ""));
+    }).join(" ");
+
+    return {
+      state: isProtected ? "protected" : (isReview ? "review" : "ready"),
+      title: isProtected
+        ? (blockType === "options"
+          ? ACP.t(strings, "rowDetailsOptionsBlockedExplanationTitle", "Why this row is blocked by Cleanup Options")
+          : ACP.t(strings, "rowDetailsProtectedExplanationTitle", "Why this row is blocked for safety"))
+        : (isReview
+          ? ACP.t(strings, "rowDetailsReviewExplanationTitle", "Why this row needs review")
+          : ACP.t(strings, "rowDetailsExplanationTitle", "Current explanation")),
+      why: why,
+      how: how,
+      evidence: evidence,
+      blockType: blockType,
+      unlockability: getRowExplanationUnlockability(strings, detailRow)
+    };
+  };
+
   function getRowDetailsOutcome(strings, row) {
     if (row.ignored) {
       return ACP.t(strings, "rowDetailsOutcomeIgnored", "Ignored until restored");
     }
 
     if (row.securityLockReason || row.risk === "blocked") {
-      return ACP.t(strings, "rowDetailsOutcomeHardLocked", "Hard-locked by safety rules");
+      return ACP.t(strings, "rowDetailsOutcomeHardLocked", "Protected by safety rules");
     }
 
     if (row.storageKind === "zfs" && row.policyLocked) {
@@ -383,7 +575,7 @@
     }
 
     if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsOutcomePolicyLocked", "Locked by current safety policy");
+      return ACP.t(strings, "rowDetailsOutcomePolicyLocked", "Needs review before cleanup");
     }
 
     if (row.lockOverridden) {
@@ -415,15 +607,15 @@
     }
 
     if (row.storageKind === "zfs" && !row.enableZfsDatasetDelete) {
-      return ACP.t(strings, "rowDetailsNextStepEnableZfs", "Turn on Enable ZFS dataset delete in Safety settings, then rescan if needed.");
+      return ACP.t(strings, "rowDetailsNextStepEnableZfs", "Open Cleanup Options and enable ZFS dataset delete, then review the dataset details.");
     }
 
     if (row.storageKind === "zfs" && !row.enablePermanentDelete) {
-      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Turn on Enable permanent delete. ZFS-backed rows cannot be quarantined.");
+      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Open Cleanup Options and enable permanent delete. ZFS-backed rows cannot be quarantined.");
     }
 
     if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsNextStepUnlock", "Select this row and use Unlock selected if you want to act on it during this scan.");
+      return ACP.t(strings, "rowDetailsNextStepUnlock", "Use Unlock for this scan if you have checked the details and want to act on this review item.");
     }
 
     if (row.lockOverridden) {
@@ -487,8 +679,9 @@
     var riskTone = row.policyLocked || row.risk === "blocked"
       ? "is-blocked"
       : (row.risk === "review" ? "is-review" : "is-safe");
-    var summaryMessage = row.policyReason || row.securityLockReason || row.riskReason || row.reason || "";
-    var nextStepMessage = getRowDetailsNextStep(strings, $.extend({}, row, settings));
+    var explanation = ACP.buildRowReviewExplanation(context, row);
+    var summaryMessage = explanation.why || row.policyReason || row.securityLockReason || row.riskReason || row.reason || "";
+    var nextStepMessage = explanation.how || getRowDetailsNextStep(strings, $.extend({}, row, settings));
     var storageItems = [
       { label: ACP.t(strings, "rowDetailsStorageKindLabel", "Storage kind"), value: row.storageLabel || row.storageKind || "" },
       { label: ACP.t(strings, "rowDetailsDatasetLabel", "Dataset"), value: row.datasetName || "" },
@@ -518,11 +711,32 @@
     html.push("</div>");
 
     html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsExplanationTitle", "Current explanation")) + "</div>");
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsVerdictTitle", "Verdict")) + "</div>");
     html.push(buildModalFieldListHtml([
       { label: ACP.t(strings, "rowDetailsOutcomeLabel", "Current outcome"), value: getRowDetailsOutcome(strings, $.extend({}, row, settings)) },
       { label: ACP.t(strings, "rowDetailsWhyLabel", "Why"), value: summaryMessage || row.reason || "" },
-      { label: ACP.t(strings, "rowDetailsNextStepLabel", "Next step"), value: nextStepMessage }
+      { label: ACP.t(strings, "rowDetailsResolveLabel", "How to resolve"), value: nextStepMessage },
+      { label: ACP.t(strings, "rowDetailsUnlockabilityLabel", "Unlockability"), value: explanation.unlockability || "" }
+    ]));
+    html.push("</div>");
+
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsWhyExistsTitle", "Why this row exists")) + "</div>");
+    html.push(buildModalFieldListHtml([
+      { label: ACP.t(strings, "sourceLabel", "Source"), value: row.sourceDisplay || row.sourceSummary || "" },
+      { label: ACP.t(strings, "rowDetailsSourceNamesLabel", "Source names"), value: sourceNames.join(", ") },
+      { label: ACP.t(strings, "rowDetailsTargetsLabel", "Targets"), value: targetPaths.join(", ") },
+      { label: ACP.t(strings, "rowDetailsEvidenceLabel", "Evidence"), value: explanation.evidence || row.reason || "" }
+    ]));
+    html.push("</div>");
+
+    html.push('<div class="acp-modal-panel">');
+    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(explanation.title || ACP.t(strings, "rowDetailsActionGateTitle", "Action gate")) + "</div>");
+    html.push(buildModalFieldListHtml([
+      { label: ACP.t(strings, "rowDetailsRiskLabel", "Risk"), value: row.riskLabel || row.risk || "" },
+      { label: ACP.t(strings, "rowDetailsStatusLabel", "Status"), value: row.statusLabel || row.status || "" },
+      { label: ACP.t(strings, "rowDetailsPolicyLabel", "Policy"), value: row.policyReason || "" },
+      { label: ACP.t(strings, "rowDetailsSecurityLabel", "Security"), value: row.securityLockReason || row.riskReason || "" }
     ]));
     html.push("</div>");
 
@@ -538,9 +752,6 @@
     html.push('<div class="acp-modal-panel">');
     html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsSourceTitle", "Source evidence")) + "</div>");
     html.push(buildModalFieldListHtml([
-      { label: ACP.t(strings, "sourceLabel", "Source"), value: row.sourceDisplay || row.sourceSummary || "" },
-      { label: ACP.t(strings, "rowDetailsSourceNamesLabel", "Source names"), value: sourceNames.join(", ") },
-      { label: ACP.t(strings, "rowDetailsTargetsLabel", "Targets"), value: targetPaths.join(", ") },
       { label: ACP.t(strings, "rowDetailsTemplateRefsLabel", "Template refs"), value: templateRefs.length ? $.map(templateRefs, function(ref) { return (ref && ref.name ? ref.name : "") + (ref && ref.target ? " -> " + ref.target : ""); }).join(", ") : "" }
     ]));
     html.push("</div>");
@@ -548,10 +759,6 @@
     html.push('<div class="acp-modal-panel">');
     html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsSafetyTitle", "Safety and actionability")) + "</div>");
     html.push(buildModalFieldListHtml([
-      { label: ACP.t(strings, "rowDetailsRiskLabel", "Risk"), value: row.riskLabel || row.risk || "" },
-      { label: ACP.t(strings, "rowDetailsStatusLabel", "Status"), value: row.statusLabel || row.status || "" },
-      { label: ACP.t(strings, "rowDetailsPolicyLabel", "Policy"), value: row.policyReason || "" },
-      { label: ACP.t(strings, "rowDetailsSecurityLabel", "Security"), value: row.securityLockReason || row.riskReason || "" },
       { label: ACP.t(strings, "rowDetailsInsideSourceLabel", "Inside configured source"), value: row.insideConfiguredSource ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No") },
       { label: ACP.t(strings, "rowDetailsInsideShareLabel", "Inside default share"), value: row.insideDefaultShare ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No") },
       { label: ACP.t(strings, "rowDetailsShareLabel", "Share"), value: row.shareName || "" },

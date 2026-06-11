@@ -413,7 +413,7 @@ function appdataCleanupPlusTemplateActionLockReason($sourceNames=array(), $targe
     $targetSummary = "tracked container paths";
   }
 
-  return $sourceLabel . " still reference this folder at " . $targetSummary . ". Remove or update the saved template before quarantining or deleting this appdata path.";
+  return $sourceLabel . " still point here at " . $targetSummary . ". If you clean this path, reinstalling from that saved template may expect or recreate it.";
 }
 
 function appdataCleanupPlusDockerInventoryUnverified($dockerRunning, $containers, $templateVolumes) {
@@ -1105,7 +1105,7 @@ function applySafetyPolicyToRow($row, $settings) {
     $row["policyLocked"] = true;
     $row["policyReason"] = $templateLockReason;
     $row["canDelete"] = false;
-    $row["lockOverrideAllowed"] = false;
+    $row["lockOverrideAllowed"] = true;
     $row["lockOverridden"] = false;
 
     if ( $row["risk"] !== "blocked" && empty($row["insideConfiguredSource"]) ) {

@@ -1243,8 +1243,28 @@ function restoreTrackedQuarantineEntry($entry, $options=array()) {
   );
 }
 
+function countNativeDeleteDirectoryItems($path) {
+  $count = 1;
+
+  try {
+    $iterator = new RecursiveIteratorIterator(
+      new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+      RecursiveIteratorIterator::SELF_FIRST
+    );
+
+    foreach ( $iterator as $item ) {
+      $count++;
+    }
+  } catch ( Exception $exception ) {
+    return 1;
+  }
+
+  return $count;
+}
+
 function nativeDeleteDirectory($path, $options=array()) {
   $allowSymlinkEntries = ! empty($options["allowSymlinkEntries"]);
+  $progressId = isset($options["operationProgressId"]) ? (string)$options["operationProgressId"] : "";
   $unsafeReason = inspectDirectoryTreeForUnsafeEntries($path, array(
     "allowSymlinkEntries" => $allowSymlinkEntries
   ));
@@ -1254,6 +1274,14 @@ function nativeDeleteDirectory($path, $options=array()) {
       "ok" => false,
       "message" => $unsafeReason
     );
+  }
+
+  if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressAddTotal") ) {
+    appdataCleanupPlusOperationProgressAddTotal($progressId, countNativeDeleteDirectoryItems($path));
+    appdataCleanupPlusUpdateOperationProgress($progressId, array(
+      "currentPath" => $path,
+      "message" => "Deleting files."
+    ), true);
   }
 
   try {
@@ -1272,6 +1300,9 @@ function nativeDeleteDirectory($path, $options=array()) {
             "message" => "A symlink entry could not be removed cleanly."
           );
         }
+        if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressRecordItem") ) {
+          appdataCleanupPlusOperationProgressRecordItem($progressId, $itemPath, "symlink", "deleted");
+        }
         continue;
       }
 
@@ -1282,12 +1313,18 @@ function nativeDeleteDirectory($path, $options=array()) {
             "message" => "A directory could not be removed cleanly."
           );
         }
+        if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressRecordItem") ) {
+          appdataCleanupPlusOperationProgressRecordItem($progressId, $itemPath, "directory", "deleted");
+        }
       } else {
         if ( ! @unlink($itemPath) ) {
           return array(
             "ok" => false,
             "message" => "A file could not be removed cleanly."
           );
+        }
+        if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressRecordItem") ) {
+          appdataCleanupPlusOperationProgressRecordItem($progressId, $itemPath, "file", "deleted");
         }
       }
     }
@@ -1303,6 +1340,10 @@ function nativeDeleteDirectory($path, $options=array()) {
       "ok" => false,
       "message" => "The top-level folder could not be removed cleanly."
     );
+  }
+
+  if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressRecordItem") ) {
+    appdataCleanupPlusOperationProgressRecordItem($progressId, $path, "directory", "deleted");
   }
 
   clearCachedAppdataCleanupPlusPathStats($path);
@@ -1490,7 +1531,12 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
-  if ( isset($candidate["sourceKind"]) && (string)$candidate["sourceKind"] === "template" && empty($settings["allowTemplateReferencedCleanup"]) ) {
+  if (
+    isset($candidate["sourceKind"]) &&
+    (string)$candidate["sourceKind"] === "template" &&
+    empty($settings["allowTemplateReferencedCleanup"]) &&
+    ! appdataCleanupPlusCandidateHasLockOverride($candidate)
+  ) {
     return array(
       "ok" => false,
       "path" => $candidatePath,
@@ -1764,10 +1810,11 @@ function isSupportedOperation($operation) {
   return in_array($baseOperation, array("quarantine", "delete"), true);
 }
 
-function executeCandidateOperation($candidates, $settings, $operation) {
+function executeCandidateOperation($candidates, $settings, $operation, $options=array()) {
   $results = array();
   $preview = isPreviewOperation($operation);
   $baseOperation = getBaseOperation($operation);
+  $progressId = isset($options["operationProgressId"]) ? (string)$options["operationProgressId"] : "";
 
   foreach ( $candidates as $candidate ) {
     $resolved = resolveCandidateForAction($candidate, $settings, $baseOperation);
@@ -1779,6 +1826,9 @@ function executeCandidateOperation($candidates, $settings, $operation) {
         "status" => $resolved["status"],
         "message" => $resolved["message"]
       );
+      if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressCompleteRoot") && ! $preview && $baseOperation === "delete" ) {
+        appdataCleanupPlusOperationProgressCompleteRoot($progressId, $resolved["displayPath"], "error");
+      }
       continue;
     }
 
@@ -1832,6 +1882,13 @@ function executeCandidateOperation($candidates, $settings, $operation) {
     if ( ! empty($resolved["storage"]["kind"]) && $resolved["storage"]["kind"] === "zfs" ) {
       $datasetName = (string)$resolved["storage"]["datasetName"];
       $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName);
+      if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressAddTotal") ) {
+        appdataCleanupPlusOperationProgressAddTotal($progressId, 1);
+        appdataCleanupPlusUpdateOperationProgress($progressId, array(
+          "currentPath" => $datasetName,
+          "message" => "Destroying ZFS dataset."
+        ), true);
+      }
       $deleteResult = $zfsPreview["ok"]
         ? appdataCleanupPlusDestroyZfsDataset($datasetName, ! empty($zfsPreview["recursive"]))
         : $zfsPreview;
@@ -1839,6 +1896,9 @@ function executeCandidateOperation($candidates, $settings, $operation) {
       if ( ! empty($deleteResult["ok"]) ) {
         clearCachedAppdataCleanupPlusPathStats($resolved["displayPath"]);
         clearCachedAppdataCleanupPlusPathStats((string)$resolved["storage"]["datasetMountpoint"]);
+        if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressRecordItem") ) {
+          appdataCleanupPlusOperationProgressRecordItem($progressId, $datasetName, "zfs", "deleted");
+        }
       }
 
       $results[] = array(
@@ -1855,16 +1915,24 @@ function executeCandidateOperation($candidates, $settings, $operation) {
         "status" => $deleteResult["ok"] ? "deleted" : "error",
         "message" => $deleteResult["message"]
       );
+      if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressCompleteRoot") ) {
+        appdataCleanupPlusOperationProgressCompleteRoot($progressId, $resolved["displayPath"], ! empty($deleteResult["ok"]) ? "deleted" : "error");
+      }
       continue;
     }
 
-    $deleteResult = nativeDeleteDirectory($resolved["displayPath"]);
+    $deleteResult = nativeDeleteDirectory($resolved["displayPath"], array(
+      "operationProgressId" => $progressId
+    ));
     $results[] = array(
       "path" => $resolved["path"],
       "displayPath" => $resolved["displayPath"],
       "status" => $deleteResult["ok"] ? "deleted" : "error",
       "message" => $deleteResult["message"]
     );
+    if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressCompleteRoot") ) {
+      appdataCleanupPlusOperationProgressCompleteRoot($progressId, $resolved["displayPath"], ! empty($deleteResult["ok"]) ? "deleted" : "error");
+    }
   }
 
   return array(

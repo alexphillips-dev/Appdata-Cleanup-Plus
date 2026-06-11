@@ -169,6 +169,8 @@
     var $modal = $(".sweet-alert:visible").last();
     var $baseText;
     var $existingHost;
+    var $anchor;
+    var $buttonContainer;
 
     if (!$modal.length) {
       $modal = $(".sweet-alert.showSweetAlert").last();
@@ -181,7 +183,7 @@
     $baseText = $modal.children("p").first();
     $existingHost = $modal.children(".acp-modal-host");
 
-    $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-quarantine-manager-modal acp-audit-history-modal acp-appdata-sources-modal acp-zfs-path-mappings-modal acp-tools-modal acp-row-details-modal");
+    $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-quarantine-manager-modal acp-audit-history-modal acp-appdata-sources-modal acp-zfs-path-mappings-modal acp-tools-modal acp-help-modal acp-row-details-modal acp-advanced-safety-modal");
     if (className) {
       $modal.addClass(className);
     }
@@ -192,6 +194,17 @@
       if ($baseText.length) {
         $baseText.addClass("acp-modal-hidden");
         $baseText.after('<div class="acp-modal-host">' + htmlContent + "</div>");
+      } else {
+        $anchor = $modal.children("h2").first();
+        $buttonContainer = $modal.children(".sa-button-container, .sa-confirm-button-container").first();
+
+        if ($anchor.length) {
+          $anchor.after('<div class="acp-modal-host">' + htmlContent + "</div>");
+        } else if ($buttonContainer.length) {
+          $buttonContainer.before('<div class="acp-modal-host">' + htmlContent + "</div>");
+        } else {
+          $modal.append('<div class="acp-modal-host">' + htmlContent + "</div>");
+        }
       }
     } else if ($baseText.length) {
       $baseText.removeClass("acp-modal-hidden");
@@ -306,6 +319,42 @@
     return null;
   };
 
+  ACP.resolveHostSurfaceColor = function() {
+    var candidates = [];
+    var selectors = [
+      "#content",
+      ".content",
+      "#main",
+      "main",
+      ".page",
+      ".canvas",
+      ".template"
+    ];
+    var i;
+    var node;
+    var style;
+
+    for (i = 0; i < selectors.length; i += 1) {
+      node = document.querySelector ? document.querySelector(selectors[i]) : null;
+      if (node && window.getComputedStyle) {
+        style = window.getComputedStyle(node);
+        candidates.push(ACP.parseThemeColor(style ? style.backgroundColor : ""));
+      }
+    }
+
+    if (document.body && window.getComputedStyle) {
+      style = window.getComputedStyle(document.body);
+      candidates.push(ACP.parseThemeColor(style ? style.backgroundColor : ""));
+    }
+
+    if (document.documentElement && window.getComputedStyle) {
+      style = window.getComputedStyle(document.documentElement);
+      candidates.push(ACP.parseThemeColor(style ? style.backgroundColor : ""));
+    }
+
+    return ACP.resolveThemeSurfaceColor.apply(ACP, candidates);
+  };
+
   ACP.themeColorLuminance = function(color) {
     var channels;
 
@@ -319,13 +368,7 @@
 
   ACP.inferThemeClass = function(themeName) {
     var normalized = ACP.normalizeHostThemeName(themeName);
-    var bodyStyle = document.body ? window.getComputedStyle(document.body) : null;
-    var htmlStyle = document.documentElement ? window.getComputedStyle(document.documentElement) : null;
-    var background = ACP.resolveThemeSurfaceColor(
-      ACP.parseThemeColor(bodyStyle ? bodyStyle.backgroundColor : ""),
-      ACP.parseThemeColor(htmlStyle ? htmlStyle.backgroundColor : ""),
-      ACP.parseThemeColor("#0f1825")
-    );
+    var background = ACP.resolveHostSurfaceColor();
     var luminance = ACP.themeColorLuminance(background);
 
     if (normalized.indexOf("white") !== -1 || normalized.indexOf("light") !== -1) {
@@ -334,6 +377,15 @@
 
     if (normalized.indexOf("black") !== -1) {
       return "dark";
+    }
+
+    if (!background && (normalized.indexOf("gray") !== -1 || normalized.indexOf("azure") !== -1)) {
+      return "light";
+    }
+
+    if (!background) {
+      background = ACP.parseThemeColor("#0f1825");
+      luminance = ACP.themeColorLuminance(background);
     }
 
     if (luminance >= 0.58) {
