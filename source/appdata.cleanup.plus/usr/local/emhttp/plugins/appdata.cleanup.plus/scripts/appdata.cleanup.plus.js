@@ -246,6 +246,7 @@
     els.$resultsMeta = $("#acp-results-meta");
     els.$modeStrip = $("#acp-mode-strip");
     els.$scanSummary = $("#acp-scan-summary");
+    els.$resultsContext = $("#acp-results-context-row");
     els.$notices = $("#acp-notices");
     els.$results = $("#acp-results");
     els.$selectionSummary = $("#acp-selection-summary");
@@ -2964,6 +2965,7 @@
 
   function renderNotices(notices) {
     var html = [];
+    var hasNotices = $.isArray(notices) && notices.length > 0;
 
     $.each(notices || [], function(_, notice) {
       html.push(
@@ -2975,6 +2977,7 @@
     });
 
     els.$notices.html(html.join(""));
+    els.$resultsContext.toggleClass("has-notices", hasNotices);
   }
 
   function renderLoadingState() {

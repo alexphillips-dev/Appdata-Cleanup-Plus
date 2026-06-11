@@ -691,6 +691,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .acp-results-meta {
   align-items: center;
+  align-self: stretch;
   background: var(--acp-panel);
   border: 1px solid var(--acp-border);
   border-radius: 10px;
@@ -912,9 +913,23 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.acp-results-context-row {
+  display: grid;
+  gap: 6px;
+}
+
+.acp-results-context-row.has-notices {
+  align-items: stretch;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .acp-notices {
   display: grid;
   gap: 6px;
+}
+
+.acp-results-context-row:not(.has-notices) .acp-notices {
+  display: none;
 }
 
 .acp-scan-summary {
@@ -2523,6 +2538,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
   .acp-bottom-actions .acp-select {
     min-width: 100%;
+  }
+
+  .acp-results-context-row.has-notices {
+    grid-template-columns: 1fr;
   }
 
   .acp-results-meta {

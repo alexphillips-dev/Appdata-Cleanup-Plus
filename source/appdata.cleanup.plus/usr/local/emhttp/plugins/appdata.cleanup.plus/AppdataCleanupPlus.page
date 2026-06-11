@@ -663,8 +663,10 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
 
   <section class="acp-mode-strip" id="acp-mode-strip" aria-live="polite"></section>
   <section class="acp-scan-summary" id="acp-scan-summary" aria-live="polite"></section>
-  <section class="acp-notices" id="acp-notices"></section>
-  <section class="acp-results-meta" id="acp-results-meta" aria-live="polite"></section>
+  <section class="acp-results-context-row" id="acp-results-context-row">
+    <section class="acp-notices" id="acp-notices"></section>
+    <section class="acp-results-meta" id="acp-results-meta" aria-live="polite"></section>
+  </section>
   <section class="acp-results" id="acp-results" aria-live="polite"></section>
 
   <section class="acp-bottom-bar" id="acp-bottom-bar">
