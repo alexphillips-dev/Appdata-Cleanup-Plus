@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.06.11.07">
-<!ENTITY md5 "d0954d5fd1b68b942ee6f907e70953b2">
+<!ENTITY version "2026.06.11.08">
+<!ENTITY md5 "bfe4b261113e7119761f07ed68f0aa1c">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.06.11.08
+- UX: Restore the Help window to the original full reference layout without tabs
+
 ###2026.06.11.07
 - UX: Merge search and sort into one results controls panel, remove the scanned appdata paths block, simplify row badges and locked-row actions, and make Help tabbed
 
