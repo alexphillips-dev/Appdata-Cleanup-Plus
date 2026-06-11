@@ -430,12 +430,14 @@
       }
     });
 
-    $(document).on("click.acpAdvancedSafety", ".sweet-alert [data-action='save-advanced-safety']", function(event) {
+    $(document).on("change.acpAdvancedSafety", ".sweet-alert [data-safety-setting]", function(event) {
       event.preventDefault();
       event.stopPropagation();
 
       if (!state.busy) {
         saveAdvancedSafetySettingsFromModal();
+      } else if (isAdvancedSafetyModalVisible()) {
+        renderAdvancedSafetyModal();
       }
     });
 
@@ -1467,13 +1469,14 @@
     html.push(
       "</div>",
       '<div class="acp-modal-feedback" data-role="advanced-safety-feedback"></div>',
-      '<div class="acp-modal-actions-row">',
-      '<button type="button" class="acp-button acp-button-primary" data-action="save-advanced-safety">' + ACP.escapeHtml(ACP.t(strings, "advancedSafetySaveLabel", "Save safety settings")) + "</button>",
-      "</div>",
       "</div>"
     );
 
     return html.join("");
+  }
+
+  function renderAdvancedSafetyModal() {
+    ACP.applyDeleteModalClass("acp-advanced-safety-modal", buildAdvancedSafetyModalHtml());
   }
 
   function openAdvancedSafetyModal() {
@@ -1491,7 +1494,7 @@
         renderPanels();
       }, 180);
     });
-    ACP.applyDeleteModalClass("acp-advanced-safety-modal", buildAdvancedSafetyModalHtml());
+    renderAdvancedSafetyModal();
   }
 
   function isAdvancedSafetyModalVisible() {
@@ -1507,14 +1510,17 @@
     });
 
     $modal.find("[data-role='advanced-safety-feedback']").text(ACP.t(strings, "savingLabel", "Saving..."));
+    $modal.find("[data-safety-setting]").prop("disabled", true);
     saveSafetySettings(nextSettings, {
       onSuccess: function() {
         if (isAdvancedSafetyModalVisible()) {
+          renderAdvancedSafetyModal();
           getActiveSweetAlertModal().find("[data-role='advanced-safety-feedback']").text(ACP.t(strings, "advancedSafetySavedMessage", "Advanced safety settings saved."));
         }
       },
       onFailure: function(xhr) {
         if (isAdvancedSafetyModalVisible()) {
+          renderAdvancedSafetyModal();
           getActiveSweetAlertModal().find("[data-role='advanced-safety-feedback']").text(ACP.extractErrorMessage(xhr, ACP.t(strings, "advancedSafetyFailedMessage", "Advanced safety settings could not be saved right now.")));
         }
       }
