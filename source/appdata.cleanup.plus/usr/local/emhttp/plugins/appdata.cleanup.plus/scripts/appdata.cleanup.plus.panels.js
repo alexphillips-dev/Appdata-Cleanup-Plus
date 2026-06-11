@@ -50,7 +50,7 @@
       intent: intent,
       label: intent === "relock"
         ? ACP.t(strings, "lockOverrideRelockLabel", "Relock selected")
-        : ACP.t(strings, "lockOverrideUnlockLabel", "Allow selected for this scan")
+        : ACP.t(strings, "lockOverrideUnlockLabel", "Unlock selected")
     };
   };
 
@@ -96,45 +96,30 @@
     var zfsPathMappingsButtonLabel = ACP.t(strings, "zfsPathMappingsOpenLabel", "ZFS mappings");
     var auditButtonLabel = ACP.t(strings, "auditHistoryOpenLabel", "Show history");
     var toolsButtonLabel = ACP.t(strings, "toolsOpenLabel", "Tools");
-    var advancedSafetyButtonLabel = ACP.t(strings, "advancedSafetyOpenLabel", "Advanced delete settings");
+    var advancedSafetyButtonLabel = ACP.t(strings, "advancedSafetyOpenLabel", "Advanced safety");
     var html = [
-      '<div class="acp-mode-strip-grid acp-mode-strip-grid-simplified">',
-      '<article class="acp-mode-card acp-workflow-card">',
+      '<div class="acp-mode-strip-grid">',
+      '<article class="acp-mode-card ' + (isDeleteMode ? "is-delete-mode" : "is-safe-mode") + '">',
       '<div class="acp-mode-card-copy">',
-      '<div class="acp-mode-card-title">' + ACP.escapeHtml(ACP.t(strings, "workflowStepScanTitle", "1. Scan")) + "</div>",
-      '<div class="acp-mode-card-message">' + ACP.escapeHtml(ACP.t(strings, "workflowStepScanMessage", "Review folders that appear unused before taking action.")) + "</div>",
-      "</div>",
-      "</article>",
-      '<article class="acp-mode-card acp-workflow-card">',
-      '<div class="acp-mode-card-copy">',
-      '<div class="acp-mode-card-title">' + ACP.escapeHtml(ACP.t(strings, "workflowStepReviewTitle", "2. Review")) + "</div>",
-      '<div class="acp-mode-card-message">' + ACP.escapeHtml(ACP.t(strings, "workflowStepReviewMessage", "Open details when a row needs another check.")) + "</div>",
-      "</div>",
-      "</article>",
-      '<article class="acp-mode-card acp-workflow-card ' + (isDeleteMode ? "is-delete-mode" : "is-safe-mode") + '">',
-      '<div class="acp-mode-card-copy">',
-      '<div class="acp-mode-card-title">' + ACP.escapeHtml(ACP.t(strings, "workflowStepQuarantineTitle", "3. Quarantine")) + "</div>",
+      '<div class="acp-mode-card-title">' + ACP.escapeHtml(leftTitle) + "</div>",
       '<div class="acp-mode-card-message">' + ACP.escapeHtml(leftMessage) + "</div>",
       "</div>",
       "</article>",
       '<article class="acp-mode-card is-manager-card">',
       '<div class="acp-mode-card-copy">',
-      '<div class="acp-mode-card-title">' + ACP.escapeHtml(ACP.t(strings, "actionBarTitle", "Quarantine")) + "</div>",
+      '<div class="acp-mode-card-title">' + ACP.escapeHtml(ACP.t(strings, "actionBarTitle", "Action bar")) + "</div>",
       '<div class="acp-mode-card-message">' + ACP.escapeHtml(managerMessage + managerMeta) + "</div>",
       "</div>",
       '<div class="acp-mode-card-actions">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources">' + ACP.escapeHtml(appdataSourcesButtonLabel) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(quarantineButtonLabel) + "</button>",
-      '<div class="acp-more-actions">',
-      '<span class="acp-more-actions-label">' + ACP.escapeHtml(ACP.t(strings, "moreActionsLabel", "More")) + "</span>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-lock-override" data-lock-intent="' + ACP.escapeHtml(lockOverrideButton.intent) + '"' + (lockOverrideButton.disabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(lockOverrideButtonLabel) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources">' + ACP.escapeHtml(appdataSourcesButtonLabel) + "</button>",
       showZfsPathMappingsButton
         ? ('<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings">' + ACP.escapeHtml(zfsPathMappingsButtonLabel) + "</button>")
         : "",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(quarantineButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-advanced-safety">' + ACP.escapeHtml(advancedSafetyButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history">' + ACP.escapeHtml(auditButtonLabel) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-tools">' + ACP.escapeHtml(toolsButtonLabel) + "</button>",
-      "</div>",
       "</div>",
       "</article>",
       "</div>"
@@ -386,12 +371,12 @@
     }
 
     if (row.securityLockReason || row.risk === "blocked") {
-      return ACP.t(strings, "rowDetailsOutcomeHardLocked", "Blocked by safety rules");
+      return ACP.t(strings, "rowDetailsOutcomeHardLocked", "Protected by safety rules");
     }
 
     if (row.storageKind === "zfs" && row.policyLocked) {
       if (!row.enableZfsDatasetDelete) {
-        return ACP.t(strings, "rowDetailsOutcomeZfsDisabled", "Blocked until ZFS dataset destroy is enabled");
+        return ACP.t(strings, "rowDetailsOutcomeZfsDisabled", "Blocked until ZFS dataset delete is enabled");
       }
 
       if (!row.enablePermanentDelete) {
@@ -400,7 +385,7 @@
     }
 
     if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsOutcomePolicyLocked", "Needs a check before cleanup");
+      return ACP.t(strings, "rowDetailsOutcomePolicyLocked", "Needs review before cleanup");
     }
 
     if (row.lockOverridden) {
@@ -432,15 +417,15 @@
     }
 
     if (row.storageKind === "zfs" && !row.enableZfsDatasetDelete) {
-      return ACP.t(strings, "rowDetailsNextStepEnableZfs", "Open Advanced delete settings and enable ZFS dataset destroy, then review the dataset details.");
+      return ACP.t(strings, "rowDetailsNextStepEnableZfs", "Open Advanced safety and enable ZFS dataset delete, then review the dataset details.");
     }
 
     if (row.storageKind === "zfs" && !row.enablePermanentDelete) {
-      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Open Advanced delete settings and use permanent delete. ZFS-backed rows cannot be quarantined.");
+      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Open Advanced safety and enable permanent delete. ZFS-backed rows cannot be quarantined.");
     }
 
     if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsNextStepUnlock", "Use Allow for this scan if you have checked the details and want to act on this review item.");
+      return ACP.t(strings, "rowDetailsNextStepUnlock", "Use Unlock for this scan if you have checked the details and want to act on this review item.");
     }
 
     if (row.lockOverridden) {

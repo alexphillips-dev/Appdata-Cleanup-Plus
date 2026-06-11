@@ -1647,7 +1647,7 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
         "path" => $candidatePath,
         "displayPath" => $displayPath,
         "status" => "blocked",
-        "message" => "ZFS dataset destroy is disabled in Advanced delete settings."
+        "message" => "ZFS dataset delete is disabled in Safety settings."
       );
     }
 

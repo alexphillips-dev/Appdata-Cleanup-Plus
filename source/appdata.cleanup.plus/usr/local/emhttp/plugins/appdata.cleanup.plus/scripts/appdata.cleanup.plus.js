@@ -104,7 +104,7 @@
     return [
       {
         value: "safe",
-        label: ACP.t(strings, "selectionPresetSafeLabel", "Safe rows"),
+        label: ACP.t(strings, "selectionPresetSafeLabel", "Ready rows"),
         matches: function(row) {
           return isRowSelectable(row) && getRowActionabilityDescriptor(row).value === "ready";
         }
@@ -1427,7 +1427,7 @@
       },
       {
         key: "enableZfsDatasetDelete",
-        label: ACP.t(strings, "enableZfsDatasetDeleteLabel", "Allow ZFS dataset destroy"),
+        label: ACP.t(strings, "enableZfsDatasetDeleteLabel", "Enable ZFS dataset delete"),
         help: ACP.t(strings, "advancedSafetyZfsHelp", "Allows exact ZFS dataset-backed rows to use dataset destroy. ZFS rows still require permanent delete mode.")
       },
       {
@@ -1448,7 +1448,7 @@
       "</div>",
       "</div>",
       '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "advancedSafetyTitle", "Advanced delete settings")) + "</div>",
+      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "advancedSafetyTitle", "Advanced safety")) + "</div>",
       '<div class="acp-advanced-safety-list">'
     ];
 
@@ -1478,7 +1478,7 @@
 
   function openAdvancedSafetyModal() {
     swal({
-      title: ACP.t(strings, "advancedSafetyTitle", "Advanced delete settings"),
+      title: ACP.t(strings, "advancedSafetyTitle", "Advanced safety"),
       text: "",
       type: "warning",
       html: true,
@@ -1510,12 +1510,12 @@
     saveSafetySettings(nextSettings, {
       onSuccess: function() {
         if (isAdvancedSafetyModalVisible()) {
-          getActiveSweetAlertModal().find("[data-role='advanced-safety-feedback']").text(ACP.t(strings, "advancedSafetySavedMessage", "Advanced delete settings saved."));
+          getActiveSweetAlertModal().find("[data-role='advanced-safety-feedback']").text(ACP.t(strings, "advancedSafetySavedMessage", "Advanced safety settings saved."));
         }
       },
       onFailure: function(xhr) {
         if (isAdvancedSafetyModalVisible()) {
-          getActiveSweetAlertModal().find("[data-role='advanced-safety-feedback']").text(ACP.extractErrorMessage(xhr, ACP.t(strings, "advancedSafetyFailedMessage", "Advanced delete settings could not be saved right now.")));
+          getActiveSweetAlertModal().find("[data-role='advanced-safety-feedback']").text(ACP.extractErrorMessage(xhr, ACP.t(strings, "advancedSafetyFailedMessage", "Advanced safety settings could not be saved right now.")));
         }
       }
     });
@@ -1567,8 +1567,8 @@
   function openZfsPathMappingsModal() {
     if (!state.settings.enableZfsDatasetDelete) {
       swal(
-        ACP.t(strings, "zfsPathMappingsUnavailableTitle", "Allow ZFS dataset destroy first"),
-        ACP.t(strings, "zfsPathMappingsUnavailableMessage", "Turn on ZFS dataset destroy in Advanced delete settings before configuring ZFS mappings."),
+        ACP.t(strings, "zfsPathMappingsUnavailableTitle", "Enable ZFS dataset delete first"),
+        ACP.t(strings, "zfsPathMappingsUnavailableMessage", "Turn on ZFS dataset delete in Safety settings before configuring ZFS mappings."),
         "warning"
       );
       return;
@@ -2281,7 +2281,7 @@
       if (!state.settings.enableZfsDatasetDelete) {
         nextRow.canDelete = false;
         nextRow.policyLocked = true;
-        nextRow.policyReason = "ZFS dataset destroy is disabled in Advanced delete settings.";
+        nextRow.policyReason = "ZFS dataset delete is disabled in Safety settings.";
         return nextRow;
       }
 
@@ -2457,7 +2457,7 @@
     if (Number(summary.blocked || 0) > 0) {
       notices.push({
         type: "warning",
-        title: ACP.t(strings, "noticeLockedPathsTitle", "Blocked paths stay blocked"),
+        title: ACP.t(strings, "noticeLockedPathsTitle", "Protected paths stay blocked"),
         message: ACP.t(strings, "noticeLockedPathsMessage", "Any path that resolves to a share root, mount point, symlinked location, managed Docker/VM path, or other unsafe target cannot be unlocked here.")
       });
     }
@@ -2467,14 +2467,14 @@
         type: state.settings.enableZfsDatasetDelete ? "info" : "warning",
         title: state.settings.enableZfsDatasetDelete
           ? ACP.t(strings, "noticeZfsDatasetTitle", "ZFS dataset candidates found")
-          : ACP.t(strings, "noticeZfsDeleteDisabledTitle", "ZFS dataset destroy is disabled"),
+          : ACP.t(strings, "noticeZfsDeleteDisabledTitle", "ZFS dataset delete is disabled"),
         message: state.settings.enableZfsDatasetDelete
           ? (
             state.settings.enablePermanentDelete
               ? ACP.t(strings, "noticeZfsDatasetMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows.")
               : ACP.t(strings, "noticeZfsDatasetDeleteModeMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows, so permanent delete mode must also be enabled before they become actionable.")
           )
-          : ACP.t(strings, "noticeZfsDeleteDisabledMessage", "ZFS-backed rows stay visible but blocked until ZFS dataset destroy is enabled in Advanced delete settings.")
+          : ACP.t(strings, "noticeZfsDeleteDisabledMessage", "ZFS-backed rows stay visible but protected until ZFS dataset delete is enabled in Advanced safety.")
       });
     }
 
@@ -2684,8 +2684,8 @@
     var cards = [
       { label: ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, tone: "" },
       { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, tone: "is-accent" },
-      { label: ACP.t(strings, "cardReview", "Check first"), value: state.summary.review || 0, tone: "is-review" },
-      { label: ACP.t(strings, "cardBlocked", "Blocked"), value: state.summary.blocked || 0, tone: "is-blocked" },
+      { label: ACP.t(strings, "cardReview", "Needs review"), value: state.summary.review || 0, tone: "is-review" },
+      { label: ACP.t(strings, "cardBlocked", "Protected"), value: state.summary.blocked || 0, tone: "is-blocked" },
       { label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount, tone: "is-safe" }
     ];
     var html = [];
@@ -2709,8 +2709,8 @@
       { label: ACP.t(strings, "scanSummaryRootsLabel", "Scan roots"), value: insights.scanRootCount, tone: "" },
       { label: ACP.t(strings, "scanSummaryTemplateLabel", "Template rows"), value: insights.templateRowCount, tone: "" },
       { label: ACP.t(strings, "scanSummaryDiscoveryLabel", "Discovery rows"), value: insights.discoveryRowCount, tone: "is-scheduled" },
-      { label: ACP.t(strings, "scanSummaryReviewLabel", "Check first"), value: insights.reviewCount, tone: "is-review" },
-      { label: ACP.t(strings, "scanSummaryLockedLabel", "Blocked"), value: insights.lockedCount, tone: "is-blocked" },
+      { label: ACP.t(strings, "scanSummaryReviewLabel", "Needs review"), value: insights.reviewCount, tone: "is-review" },
+      { label: ACP.t(strings, "scanSummaryLockedLabel", "Protected"), value: insights.lockedCount, tone: "is-blocked" },
       { label: ACP.t(strings, "scanSummaryZfsLabel", "ZFS-backed"), value: insights.zfsBackedCount, tone: "is-selected" },
       { label: ACP.t(strings, "scanSummaryMappedLabel", "Mapped share path"), value: insights.mappedShareCount, tone: "is-scheduled" },
       { label: ACP.t(strings, "scanSummaryIgnoredLabel", "Ignored"), value: insights.ignoredCount, tone: "" }
@@ -3760,74 +3760,12 @@
     return facts.join('<span class="acp-row-meta-separator">|</span>');
   }
 
-  function buildRowGuidanceNote(label, message, className) {
-    if (!message) {
-      return "";
-    }
-
-    return (
-      '<div class="acp-row-note ' + ACP.escapeHtml(className || "") + '">' +
-        '<strong>' + ACP.escapeHtml(label) + ":</strong> " +
-        ACP.escapeHtml(message) +
-      "</div>"
-    );
-  }
-
-  function getRowWhyListedMessage(row) {
-    if (row.ignored) {
-      return row.ignoredReason || ACP.t(strings, "rowRecommendedIgnored", "Use Restore if you want this path to appear in cleanup scans again.");
-    }
-
-    if (row.sourceKind === "filesystem") {
-      return ACP.t(strings, "rowWhyListedFilesystem", "Found directly inside an appdata source with no live container or saved template using it.");
-    }
-
-    if (row.sourceKind === "template") {
-      return ACP.t(strings, "rowWhyListedTemplate", "A saved Docker template still points here, but no installed container is using this path.");
-    }
-
-    return row.reason || ACP.t(strings, "rowWhyListedDefault", "No live container mapping currently uses this path.");
-  }
-
-  function getRowRecommendedActionMessage(row) {
-    var actionability = getRowActionabilityDescriptor(row).value;
-
-    if (row.ignored) {
-      return ACP.t(strings, "rowRecommendedIgnored", "Use Restore if you want this path to appear in cleanup scans again.");
-    }
-
-    if (row.storageKind === "zfs") {
-      return ACP.t(strings, "rowRecommendedZfs", "ZFS datasets require Advanced delete settings; they cannot be quarantined.");
-    }
-
-    if (actionability === "locked") {
-      return ACP.t(strings, "rowRecommendedBlocked", "No normal cleanup action is available. Open Details for the exact safety reason.");
-    }
-
-    if (row.lockOverridden) {
-      return ACP.t(strings, "rowRecommendedUnlocked", "Allowed for this scan. Quarantine only after confirming the path is unused.");
-    }
-
-    if (actionability === "review") {
-      return ACP.t(strings, "rowRecommendedReview", "Check the details, then allow it for this scan only if it really belongs to removed appdata.");
-    }
-
-    return ACP.t(strings, "rowRecommendedReady", "Quarantine first. You can restore it later from Quarantine.");
-  }
-
   function buildRowNotesHtml(row) {
     var notes = [];
 
-    notes.push(buildRowGuidanceNote(
-      ACP.t(strings, "rowWhyListedLabel", "Why listed"),
-      getRowWhyListedMessage(row),
-      "is-primary"
-    ));
-    notes.push(buildRowGuidanceNote(
-      ACP.t(strings, "rowRecommendedActionLabel", "Recommended action"),
-      getRowRecommendedActionMessage(row),
-      getRowActionabilityDescriptor(row).value === "locked" ? "is-warning" : ""
-    ));
+    if (row.reason) {
+      notes.push('<div class="acp-row-note is-primary">' + ACP.escapeHtml(row.reason) + "</div>");
+    }
 
     if (row.policyReason) {
       notes.push('<div class="acp-row-note is-warning">' + ACP.escapeHtml(row.policyReason) + "</div>");
@@ -3873,7 +3811,7 @@
     }
 
     if (row.id && row.lockOverrideAllowed && row.policyLocked && !row.lockOverridden) {
-      actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unlock" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "lockOverrideRowUnlockLabel", "Allow for this scan")) + "</button>");
+      actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unlock" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "lockOverrideRowUnlockLabel", "Unlock for this scan")) + "</button>");
     } else if (row.id && row.lockOverrideAllowed && row.lockOverridden) {
       actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="relock" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "lockOverrideRowRelockLabel", "Relock")) + "</button>");
     }
@@ -3890,17 +3828,17 @@
     return [
       {
         key: "ready",
-        title: ACP.t(strings, "readySectionTitle", "Safe to quarantine"),
+        title: ACP.t(strings, "readySectionTitle", "Ready to clean"),
         message: ACP.t(strings, "readySectionMessage", "These look like orphaned appdata folders inside configured appdata roots. Quarantine is the recommended action.")
       },
       {
         key: "review",
-        title: ACP.t(strings, "reviewSectionTitle", "Check before quarantining"),
+        title: ACP.t(strings, "reviewSectionTitle", "Needs review"),
         message: ACP.t(strings, "reviewSectionMessage", "These may be safe, but they need explicit confirmation first. Unlock them for this scan after checking the details.")
       },
       {
         key: "locked",
-        title: ACP.t(strings, "protectedSectionTitle", "Blocked"),
+        title: ACP.t(strings, "protectedSectionTitle", "Protected"),
         message: ACP.t(strings, "protectedSectionMessage", "These are blocked by safety rules and cannot be cleaned from the normal workflow.")
       },
       {
@@ -4023,11 +3961,11 @@
 
   function getActionabilityLabel(actionability) {
     if (actionability === "locked") {
-      return ACP.t(strings, "cardBlocked", "Blocked");
+      return ACP.t(strings, "cardBlocked", "Protected");
     }
 
     if (actionability === "review") {
-      return ACP.t(strings, "cardReview", "Check first");
+      return ACP.t(strings, "cardReview", "Needs review");
     }
 
     return ACP.t(strings, "cardDeletable", "Ready");
@@ -4038,7 +3976,7 @@
       return {
         kind: "actionability",
         value: "review",
-        label: ACP.t(strings, "cardReview", "Check first"),
+        label: ACP.t(strings, "cardReview", "Needs review"),
         tone: "review",
         title: row.policyReason || row.riskReason || "",
         kindClass: "actionability",
@@ -4050,7 +3988,7 @@
       return {
         kind: "actionability",
         value: "locked",
-        label: ACP.t(strings, "cardBlocked", "Blocked"),
+        label: ACP.t(strings, "cardBlocked", "Protected"),
         tone: "locked",
         title: row.policyReason || row.securityLockReason || row.riskReason || "",
         kindClass: "actionability",
@@ -4062,7 +4000,7 @@
       return {
         kind: "actionability",
         value: "review",
-        label: ACP.t(strings, "cardReview", "Check first"),
+        label: ACP.t(strings, "cardReview", "Needs review"),
         tone: "review",
         title: row.riskReason || row.policyReason || "",
         kindClass: "actionability",
@@ -4234,7 +4172,7 @@
       });
     }
 
-    if (row.storageKind === "zfs" && /zfs dataset (delete|destroy) is disabled/i.test(policyReason)) {
+    if (row.storageKind === "zfs" && /zfs dataset delete is disabled/i.test(policyReason)) {
       pushBadgeDescriptor(descriptors, {
         kind: "reason",
         value: "zfs_delete_disabled",
@@ -4662,14 +4600,14 @@
       return row.risk === "review";
     }).length;
     var summaryText = selectedRows.length + " " + (selectedRows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
-    var detailText = ACP.t(strings, "selectionHintIdle", "Select safe rows to quarantine them. Review rows can be allowed for this scan after checking details. Blocked paths stay blocked.");
+    var detailText = ACP.t(strings, "selectionHintIdle", "Select ready rows to quarantine them. Review rows can be unlocked for this scan after checking details. Protected paths stay blocked.");
 
     if (!state.scanToken && Number(state.summary.total || 0) > 0) {
       detailText = ACP.t(strings, "selectionHintReadOnly", "Scan results are read-only right now because the secure action snapshot could not be created.");
     } else if (selectedUnlockRows.length > 0) {
-      detailText = ACP.t(strings, "selectionHintUnlock", "Selected review rows need confirmation. Use Allow selected for this scan.");
+      detailText = ACP.t(strings, "selectionHintUnlock", "Selected review rows need confirmation. Use Unlock selected to allow them for this scan.");
     } else if (!state.settings.allowOutsideShareCleanup && Number(state.summary.review || 0) > 0) {
-      detailText = ACP.t(strings, "selectionHintSafety", "Review rows need confirmation first. Select them and use Allow selected for this scan.");
+      detailText = ACP.t(strings, "selectionHintSafety", "Review rows need confirmation first. Select them and use Unlock selected to allow them for this scan.");
     } else if (reviewSelected > 0 && state.settings.enablePermanentDelete) {
       detailText = ACP.t(strings, "selectionHintReview", "Review rows still need extra scrutiny before permanent delete.");
     } else if (selectedActionRows.length && state.settings.enablePermanentDelete) {
@@ -4800,7 +4738,7 @@
       if (zfsModalWasVisible && previousSettings.enableZfsDatasetDelete && !state.settings.enableZfsDatasetDelete) {
         swal(
           ACP.t(strings, "zfsPathMappingsDisabledTitle", "ZFS mappings closed"),
-          ACP.t(strings, "zfsPathMappingsDisabledMessage", "ZFS dataset destroy was turned off, so the ZFS mappings editor has been closed."),
+          ACP.t(strings, "zfsPathMappingsDisabledMessage", "ZFS dataset delete was turned off, so the ZFS mappings editor has been closed."),
           "info"
         );
       } else if (isZfsPathMappingsModalVisible()) {
@@ -5062,7 +5000,7 @@
       '<div class="acp-modal-flag">' + ACP.escapeHtml(isUnlock ? ACP.t(strings, "lockOverrideUnlockButton", "Unlock") : ACP.t(strings, "lockOverrideRelockButton", "Relock")) + "</div>",
       '<div class="acp-modal-copy">',
       '<div class="acp-modal-lead">' + ACP.escapeHtml(isUnlock ? ACP.t(strings, "lockOverrideUnlockMessage", "The selected review folders will be manually unlocked for this scan only.") : ACP.t(strings, "lockOverrideRelockMessage", "The selected review folders will return to their locked review state for this scan.")) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(isUnlock ? ACP.t(strings, "lockOverrideUnlockDetail", "This applies only to review rows for the current scan. Blocked paths stay blocked.") : ACP.t(strings, "lockOverrideRelockDetail", "This removes the temporary manual unlock override from the selected review folders.")) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(isUnlock ? ACP.t(strings, "lockOverrideUnlockDetail", "This bypass only applies to review locks for the current scan. Protected paths stay blocked.") : ACP.t(strings, "lockOverrideRelockDetail", "This removes the temporary manual unlock override from the selected review folders.")) + "</div>",
       "</div>",
       '<div class="acp-modal-stats"><span class="acp-modal-stat is-review">' + ACP.escapeHtml(String(rows.length)) + " " + ACP.escapeHtml(rows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected")) + "</span></div>",
       '<div class="acp-modal-panel">',
@@ -5091,7 +5029,7 @@
     var targetRows = getSelectedLockOverrideRows(normalizedIntent);
     var isUnlock = normalizedIntent === "unlock";
     var confirmTitle = isUnlock
-      ? ACP.t(strings, "lockOverrideUnlockTitle", "Allow selected review folders for this scan?")
+      ? ACP.t(strings, "lockOverrideUnlockTitle", "Unlock selected review folders?")
       : ACP.t(strings, "lockOverrideRelockTitle", "Relock selected review folders?");
     var confirmButtonText = isUnlock
       ? ACP.t(strings, "lockOverrideUnlockButton", "Unlock")
