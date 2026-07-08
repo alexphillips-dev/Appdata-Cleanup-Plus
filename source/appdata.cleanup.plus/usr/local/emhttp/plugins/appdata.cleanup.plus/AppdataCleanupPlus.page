@@ -572,9 +572,13 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
       <label class="acp-field acp-compact-field acp-sort-field">
         <span class="acp-field-label"><?php echo _("Sort by"); ?></span>
         <select id="acp-sort" class="acp-select">
-          <option value="risk"><?php echo _("Risk: Highest"); ?></option>
+          <option value="name" selected><?php echo _("Name"); ?></option>
           <option value="path"><?php echo _("Path"); ?></option>
-          <option value="name"><?php echo _("Name"); ?></option>
+          <option value="last-used"><?php echo _("Last used"); ?></option>
+          <option value="size"><?php echo _("Size: Largest"); ?></option>
+          <option value="source"><?php echo _("Source"); ?></option>
+          <option value="type"><?php echo _("Type"); ?></option>
+          <option value="risk"><?php echo _("Risk: Highest"); ?></option>
         </select>
       </label>
     </div>

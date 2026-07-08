@@ -56,7 +56,7 @@
       pendingResult: null,
       latest: null
     },
-    sortMode: "risk",
+    sortMode: "name",
     bulkSelectPreset: "safe",
     busy: false
   };
@@ -2981,7 +2981,7 @@
       },
       uiState: {
         searchTerm: $.trim(String(els.$search.val() || "")),
-        sortMode: String(state.sortMode || "risk"),
+        sortMode: String(state.sortMode || "name"),
         busy: !!state.busy
       },
       scan: {
@@ -4197,6 +4197,14 @@
     var rightName = String(right.name || "").toLowerCase();
     var leftPath = String(left.displayPath || left.path || "").toLowerCase();
     var rightPath = String(right.displayPath || right.path || "").toLowerCase();
+    var leftSource = String(left.sourceDisplay || left.sourceSummary || "").toLowerCase();
+    var rightSource = String(right.sourceDisplay || right.sourceSummary || "").toLowerCase();
+    var leftType = String(left.storageKind === "zfs" ? "zfs dataset" : (left.sourceType || left.sourceLabel || "")).toLowerCase();
+    var rightType = String(right.storageKind === "zfs" ? "zfs dataset" : (right.sourceType || right.sourceLabel || "")).toLowerCase();
+    var leftSize = left.sizeBytes === null || left.sizeBytes === undefined ? -1 : Number(left.sizeBytes || 0);
+    var rightSize = right.sizeBytes === null || right.sizeBytes === undefined ? -1 : Number(right.sizeBytes || 0);
+    var leftModified = Number(left.lastModified || 0);
+    var rightModified = Number(right.lastModified || 0);
     var leftRank = Object.prototype.hasOwnProperty.call(actionabilityRank, leftActionability) ? actionabilityRank[leftActionability] : 9;
     var rightRank = Object.prototype.hasOwnProperty.call(actionabilityRank, rightActionability) ? actionabilityRank[rightActionability] : 9;
 
@@ -4210,6 +4218,22 @@
 
     if (state.sortMode === "path") {
       return leftPath.localeCompare(rightPath) || leftName.localeCompare(rightName);
+    }
+
+    if (state.sortMode === "last-used") {
+      return rightModified - leftModified || leftName.localeCompare(rightName) || leftPath.localeCompare(rightPath);
+    }
+
+    if (state.sortMode === "size") {
+      return rightSize - leftSize || leftName.localeCompare(rightName) || leftPath.localeCompare(rightPath);
+    }
+
+    if (state.sortMode === "source") {
+      return leftSource.localeCompare(rightSource) || leftName.localeCompare(rightName) || leftPath.localeCompare(rightPath);
+    }
+
+    if (state.sortMode === "type") {
+      return leftType.localeCompare(rightType) || leftName.localeCompare(rightName) || leftPath.localeCompare(rightPath);
     }
 
     return leftRank - rightRank || leftPath.localeCompare(rightPath);
