@@ -3693,6 +3693,32 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   text-transform: none;
 }
 
+#acp-app .acp-bottom-actions .acp-button.acp-button-warning:not(:disabled) {
+  background: var(--acp-review-soft);
+  border-color: var(--acp-review-text);
+  color: var(--acp-button-text) !important;
+}
+
+#acp-app .acp-bottom-actions .acp-button.acp-button-warning:hover:not(:disabled),
+#acp-app .acp-bottom-actions .acp-button.acp-button-warning:focus-visible:not(:disabled) {
+  background: rgba(242, 184, 75, 0.2);
+  border-color: var(--acp-review-text);
+  color: var(--acp-button-hover-text) !important;
+}
+
+#acp-app .acp-bottom-actions .acp-button.acp-button-danger:not(:disabled) {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: var(--acp-notice-delete-title);
+  color: var(--acp-button-text) !important;
+}
+
+#acp-app .acp-bottom-actions .acp-button.acp-button-danger:hover:not(:disabled),
+#acp-app .acp-bottom-actions .acp-button.acp-button-danger:focus-visible:not(:disabled) {
+  background: rgba(239, 68, 68, 0.26);
+  border-color: var(--acp-notice-delete-title);
+  color: var(--acp-button-hover-text) !important;
+}
+
 @media (max-width: 1320px) {
   #acp-app .acp-dashboard-top {
     grid-template-columns: 1fr;

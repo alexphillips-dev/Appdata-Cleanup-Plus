@@ -582,7 +582,7 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
     <div class="acp-bottom-actions">
       <button type="button" class="acp-button acp-button-secondary" id="acp-select-all" disabled><?php echo _("Select ready"); ?></button>
       <button type="button" class="acp-button acp-button-secondary" id="acp-clear-selection" disabled><?php echo _("Clear selection"); ?></button>
-      <button type="button" class="acp-button acp-button-secondary" id="acp-dry-run" disabled><?php echo _("Dry run"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary acp-button-warning" id="acp-dry-run" disabled><?php echo _("Dry run"); ?></button>
       <button type="button" class="acp-button acp-button-secondary" id="acp-primary-action" disabled><?php echo _("Quarantine selected"); ?></button>
     </div>
   </section>

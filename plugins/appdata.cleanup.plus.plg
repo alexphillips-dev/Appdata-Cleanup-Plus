@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.39">
-<!ENTITY md5 "1343524e4225fd2e3e1304f15fc42696">
+<!ENTITY version "2026.07.08.40">
+<!ENTITY md5 "4953c0f30d8bbb52db1f839b6ed0e047">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.40
+- UI: Color the bottom Dry run action light yellow and the permanent Delete selected action red when enabled.
+
 ###2026.07.08.39
 - UI: Emphasize the ZFS dataset notice instruction to disable Safe Mode before acting on exact dataset rows.
 

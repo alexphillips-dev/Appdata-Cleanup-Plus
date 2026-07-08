@@ -4256,6 +4256,7 @@
       els.$actionToolbar.find(".acp-action-toolbar-copy span").text(selectedRows.length ? summaryText : ACP.t(strings, "noItemsSelectedLabel", "No items selected"));
     }
     els.$primaryAction.text(getPrimaryActionLabel());
+    els.$primaryAction.toggleClass("acp-button-danger", !!state.settings.enablePermanentDelete);
     els.$primaryAction.prop("disabled", state.busy || !state.scanToken || selectedActionRows.length === 0);
     els.$dryRun.prop("disabled", state.busy || !state.scanToken || selectedActionRows.length === 0);
     els.$selectAll.prop("disabled", state.busy || totalSelectableCount === 0 || selectedReadyRows.length >= totalSelectableCount);
