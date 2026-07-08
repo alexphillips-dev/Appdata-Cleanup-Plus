@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.38">
-<!ENTITY md5 "651cf4d2ae28141d21cb624ecc26acc8">
+<!ENTITY version "2026.07.08.39">
+<!ENTITY md5 "1343524e4225fd2e3e1304f15fc42696">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.39
+- UI: Emphasize the ZFS dataset notice instruction to disable Safe Mode before acting on exact dataset rows.
+
 ###2026.07.08.38
 - UI: Restore the top summary cards to left-aligned copy while correcting the label spacing so counts sit higher in the card.
 

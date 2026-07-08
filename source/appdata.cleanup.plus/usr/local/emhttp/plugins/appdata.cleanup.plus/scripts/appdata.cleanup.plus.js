@@ -2286,12 +2286,17 @@
     }
 
     if (hasZfsRows) {
+      var zfsDeleteModePrefix = ACP.t(strings, "noticeZfsDatasetDeleteModePrefix", "ZFS-backed appdata rows use dataset destroy instead of folder delete.");
+      var zfsDeleteModeAction = ACP.t(strings, "noticeZfsDatasetDeleteModeAction", "Disable Safe Mode before acting on exact dataset rows.");
       notices.push({
         type: "info",
         title: ACP.t(strings, "noticeZfsDatasetTitle", "ZFS dataset candidates found"),
         message: state.settings.enablePermanentDelete
           ? ACP.t(strings, "noticeZfsDatasetMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows.")
-          : ACP.t(strings, "noticeZfsDatasetDeleteModeMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Disable Safe Mode before acting on exact dataset rows.")
+          : zfsDeleteModePrefix + " " + zfsDeleteModeAction,
+        messageHtml: state.settings.enablePermanentDelete
+          ? ""
+          : ACP.escapeHtml(zfsDeleteModePrefix) + ' <strong class="acp-notice-emphasis is-delete-mode">' + ACP.escapeHtml(zfsDeleteModeAction) + "</strong>"
       });
     }
 
@@ -2535,7 +2540,7 @@
       html.push(
         '<article class="acp-notice is-' + ACP.escapeHtml(notice.type || "info") + '">' +
           '<div class="acp-notice-title">' + ACP.escapeHtml(notice.title || "") + "</div>" +
-          '<div class="acp-notice-message">' + ACP.escapeHtml(notice.message || "") + "</div>" +
+          '<div class="acp-notice-message">' + (notice.messageHtml || ACP.escapeHtml(notice.message || "")) + "</div>" +
         "</article>"
       );
     });

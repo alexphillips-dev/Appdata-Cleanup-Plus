@@ -924,6 +924,14 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   line-height: 1.45;
 }
 
+.acp-notice-emphasis {
+  font-weight: 800;
+}
+
+.acp-notice-emphasis.is-delete-mode {
+  color: var(--acp-notice-delete-title);
+}
+
 .acp-results {
   display: grid;
   gap: 12px;
