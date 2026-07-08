@@ -3400,6 +3400,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 /* Mockup precision pass */
 #acp-app .acp-dashboard-top {
+  gap: 8px;
   grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
 }
 
@@ -3410,6 +3411,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 #acp-app .acp-mode-card {
   grid-template-columns: 36px minmax(0, 1fr);
   min-height: 118px;
+  overflow: hidden;
+  position: relative;
 }
 
 #acp-app .acp-mode-card > .acp-button {
@@ -3418,6 +3421,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 #acp-app .acp-mode-card-title {
   align-items: center;
+  display: block;
+  padding-right: 48px;
 }
 
 #acp-app .acp-mode-card-title span {
@@ -3448,7 +3453,24 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-mode-card-title strong {
+  align-items: center;
+  border: 1px solid rgba(34, 197, 94, 0.38);
+  border-radius: 5px;
+  display: inline-flex;
   flex: 0 0 auto;
+  font-size: 10px;
+  height: 20px;
+  justify-content: center;
+  line-height: 1;
+  min-width: 34px;
+  padding: 0 7px;
+  position: absolute;
+  right: 16px;
+  top: 16px;
+}
+
+#acp-app .acp-mode-card.is-delete-mode .acp-mode-card-title strong {
+  border-color: rgba(239, 68, 68, 0.4);
 }
 
 #acp-app .acp-mode-link {
