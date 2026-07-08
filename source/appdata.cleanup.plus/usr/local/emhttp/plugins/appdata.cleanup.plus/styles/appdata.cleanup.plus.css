@@ -3467,12 +3467,22 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   border-radius: 50%;
   color: #60a5fa;
   display: flex;
-  font-size: 32px;
-  font-weight: 800;
   height: 58px;
   justify-content: center;
   width: 58px;
   flex: 0 0 58px;
+}
+
+#acp-app .acp-summary-icon svg {
+  display: block;
+  fill: none;
+  height: 32px;
+  overflow: visible;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.25;
+  width: 32px;
 }
 
 #acp-app .acp-summary-card.is-safe .acp-summary-icon {
@@ -3493,6 +3503,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 #acp-app .acp-summary-card.is-selected .acp-summary-icon {
   background: rgba(168, 85, 247, 0.16);
   color: #a78bfa;
+}
+
+#acp-app .acp-summary-card.is-selected .acp-summary-icon svg {
+  stroke-dasharray: 4 4;
 }
 
 #acp-app .acp-summary-label {

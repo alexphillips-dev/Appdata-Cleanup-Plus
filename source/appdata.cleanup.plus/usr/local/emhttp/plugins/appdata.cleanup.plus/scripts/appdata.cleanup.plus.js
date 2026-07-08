@@ -2518,10 +2518,13 @@
 
   function renderSummaryCards() {
     var selectedCount = getSelectedRows().length;
+    var detectedIcon = '<svg viewBox="0 0 24 24" focusable="false"><circle cx="10.75" cy="10.75" r="5.75"></circle><path d="m15.25 15.25 4 4"></path></svg>';
+    var readyIcon = '<svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="8.25"></circle><path d="m8.25 12.35 2.55 2.55 5.25-5.8"></path></svg>';
+    var selectedIcon = '<svg viewBox="0 0 24 24" focusable="false"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>';
     var cards = [
-      { label: ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, subtitle: ACP.t(strings, "cardTotalSubtitle", "Total orphaned"), tone: "is-detected", icon: "⌕" },
-      { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, subtitle: ACP.t(strings, "cardDeletableSubtitle", "Safe to clean"), tone: "is-safe", icon: "✓" },
-      { label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount, subtitle: ACP.t(strings, "cardSelectedSubtitle", "Marked this scan"), tone: "is-selected", icon: "□" }
+      { label: ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, subtitle: ACP.t(strings, "cardTotalSubtitle", "Total orphaned"), tone: "is-detected", iconHtml: detectedIcon },
+      { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, subtitle: ACP.t(strings, "cardDeletableSubtitle", "Safe to clean"), tone: "is-safe", iconHtml: readyIcon },
+      { label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount, subtitle: ACP.t(strings, "cardSelectedSubtitle", "Marked this scan"), tone: "is-selected", iconHtml: selectedIcon }
     ];
     var html = [];
 
@@ -2529,7 +2532,7 @@
       var glowClass = Number(card.value || 0) > 0 ? " has-glow" : "";
       html.push(
         '<article class="acp-summary-card ' + card.tone + glowClass + '">' +
-          '<span class="acp-summary-icon" aria-hidden="true">' + ACP.escapeHtml(card.icon || "") + "</span>" +
+          '<span class="acp-summary-icon" aria-hidden="true">' + (card.iconHtml || "") + "</span>" +
           '<span class="acp-summary-copy">' +
             '<span class="acp-summary-label">' + ACP.escapeHtml(card.label) + "</span>" +
             '<span class="acp-summary-value">' + ACP.escapeHtml(String(card.value)) + "</span>" +
