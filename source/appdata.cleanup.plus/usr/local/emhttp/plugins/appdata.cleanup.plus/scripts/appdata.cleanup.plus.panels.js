@@ -42,7 +42,7 @@
       : ACP.t(strings, "disableSafeModeLabel", "Disable Safe Mode");
     var html = [
       '<article class="acp-mode-card ' + (isDeleteMode ? "is-delete-mode" : "is-safe-mode") + '">',
-      '<div class="acp-mode-icon" aria-hidden="true">' + (isDeleteMode ? "!" : "✓") + "</div>",
+      '<div class="acp-mode-icon" aria-hidden="true">' + (isDeleteMode ? "!" : '<span class="acp-mode-shield-check"></span>') + "</div>",
       '<div class="acp-mode-card-copy">',
       '<div class="acp-mode-card-title"><span>' + ACP.escapeHtml(ACP.t(strings, "safeModeCardTitle", "Safe Mode")) + '</span><strong>' + ACP.escapeHtml(safeModeLabel) + "</strong></div>",
       '<div class="acp-mode-card-message">' + ACP.escapeHtml(leftMessage) + "</div>",
