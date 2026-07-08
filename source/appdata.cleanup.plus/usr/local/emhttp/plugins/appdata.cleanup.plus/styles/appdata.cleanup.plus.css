@@ -1487,17 +1487,23 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .sweet-alert.acp-delete-modal button.cancel,
 .sweet-alert.acp-delete-modal button.confirm {
+  align-items: center !important;
   background: var(--acp-button-bg) !important;
   border: 1px solid var(--acp-button-border) !important;
   border-radius: 8px !important;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.88), inset 0 0 0 1px rgba(255, 255, 255, 0.03) !important;
   color: var(--acp-button-text) !important;
+  display: inline-flex !important;
   font-size: 11px !important;
   font-weight: 700 !important;
+  height: 34px !important;
+  justify-content: center !important;
   letter-spacing: 0.08em !important;
+  line-height: 1 !important;
   min-height: 34px !important;
   padding: 0 14px !important;
   text-transform: uppercase !important;
+  vertical-align: middle !important;
 }
 
 .sweet-alert.acp-delete-modal button.confirm {
@@ -1626,6 +1632,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   gap: 10px !important;
   justify-content: center !important;
   margin-top: 14px !important;
+}
+
+.sweet-alert.acp-delete-modal .sa-confirm-button-container {
+  display: contents !important;
 }
 
 .sweet-alert.acp-delete-modal .sa-button-container button,
