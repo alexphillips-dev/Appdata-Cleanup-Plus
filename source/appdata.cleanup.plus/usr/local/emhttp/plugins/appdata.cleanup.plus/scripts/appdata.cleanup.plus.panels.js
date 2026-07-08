@@ -28,100 +28,56 @@
     }
   };
 
-  ACP.buildLockOverrideButtonState = function(context) {
-    var state = context.state || {};
-    var strings = context.strings || {};
-    var selected = state.selected || {};
-    var rows = $.isArray(state.rows) ? state.rows : [];
-    var selectedRows = $.grep(rows, function(row) {
-      var rowId = String((row && row.id) || "");
-      return !!rowId && !!selected[rowId] && !row.ignored && (!!row.canDelete || !!row.lockOverrideAllowed);
-    });
-    var unlockCount = $.grep(selectedRows, function(row) {
-      return !!row.lockOverrideAllowed && !!row.policyLocked && !row.lockOverridden;
-    }).length;
-    var relockCount = $.grep(selectedRows, function(row) {
-      return !!row.lockOverrideAllowed && !!row.lockOverridden;
-    }).length;
-    var intent = unlockCount > 0 ? "unlock" : (relockCount > 0 ? "relock" : "unlock");
-
-    return {
-      disabled: !!state.busy || !state.scanToken || (unlockCount === 0 && relockCount === 0),
-      intent: intent,
-      label: intent === "relock"
-        ? ACP.t(strings, "lockOverrideRelockLabel", "Relock selected")
-        : ACP.t(strings, "lockOverrideUnlockLabel", "Unlock selected")
-    };
-  };
-
-  ACP.syncModeStripLockOverrideButton = function(context) {
-    var els = context.els || {};
-    var $button = els.$lockOverride || $();
-    var buttonState;
-
-    if (!$button.length) {
-      return;
-    }
-
-    buttonState = ACP.buildLockOverrideButtonState(context);
-    $button.text(buttonState.label);
-    $button.attr("data-lock-intent", buttonState.intent);
-    $button.prop("disabled", !!buttonState.disabled);
-  };
-
   ACP.renderModeStrip = function(context) {
     var state = context.state || {};
     var els = context.els || {};
     var strings = context.strings || {};
-    var settings = state.settings || {};
-    var summary = (state.quarantine && state.quarantine.summary) || { count: 0, sizeLabel: "0 B" };
     var isDeleteMode = !!(state.settings && state.settings.enablePermanentDelete);
-    var showZfsPathMappingsButton = !!settings.enableZfsDatasetDelete;
-    var leftTitle = isDeleteMode
-      ? ACP.t(strings, "noticeDeleteModeTitle", "Permanent delete mode is enabled")
-      : ACP.t(strings, "noticeSafeModeTitle", "Safe mode is on");
     var leftMessage = isDeleteMode
       ? ACP.t(strings, "noticeDeleteModeMessage", "Selected folders will be permanently removed after confirmation. Use this mode carefully.")
       : ACP.t(strings, "noticeSafeModeMessage", "The primary action moves selected folders into quarantine instead of permanently deleting them.");
-    var managerMessage = summary.count > 0
-      ? summary.count + " " + (summary.count === 1 ? ACP.t(strings, "quarantineCountSingular", "quarantined folder") : ACP.t(strings, "quarantineCountPlural", "quarantined folders")) + " tracked"
-      : ACP.t(strings, "quarantineSummaryEmpty", "No quarantined folders are tracked right now.");
-    var managerMeta = summary.count > 0 && summary.sizeLabel ? " | " + summary.sizeLabel : "";
-    var quarantineButtonLabel = state.quarantine && state.quarantine.loading
-      ? ACP.t(strings, "quarantineLoadingLabel", "Loading quarantine")
-      : ACP.t(strings, "quarantineManagerOpenLabel", "Show quarantine");
-    var appdataSourcesButtonLabel = ACP.t(strings, "appdataSourcesOpenLabel", "Appdata sources");
-    var zfsPathMappingsButtonLabel = ACP.t(strings, "zfsPathMappingsOpenLabel", "ZFS mappings");
-    var auditButtonLabel = ACP.t(strings, "auditHistoryOpenLabel", "Show history");
-    var toolsButtonLabel = ACP.t(strings, "toolsOpenLabel", "Tools");
+    var safeModeLabel = isDeleteMode ? ACP.t(strings, "offLabel", "OFF") : ACP.t(strings, "onLabel", "ON");
+    var safeModeActionLabel = isDeleteMode
+      ? ACP.t(strings, "enableSafeModeLabel", "Enable Safe Mode")
+      : ACP.t(strings, "disableSafeModeLabel", "Disable Safe Mode");
     var html = [
-      '<div class="acp-mode-strip-grid">',
       '<article class="acp-mode-card ' + (isDeleteMode ? "is-delete-mode" : "is-safe-mode") + '">',
+      '<div class="acp-mode-icon" aria-hidden="true">' + (isDeleteMode ? "!" : '<svg class="acp-mode-shield-icon" viewBox="0 0 24 24" focusable="false"><path class="acp-mode-shield-shape" d="M12 2.4 20 5.6v6.1c0 5-3.3 8.7-8 10-4.7-1.3-8-5-8-10V5.6L12 2.4Z"></path><path class="acp-mode-shield-check" d="m8 12 2.5 2.5L16.5 8.8"></path></svg>') + "</div>",
       '<div class="acp-mode-card-copy">',
-      '<div class="acp-mode-card-title">' + ACP.escapeHtml(leftTitle) + "</div>",
+      '<div class="acp-mode-card-title"><span>' + ACP.escapeHtml(ACP.t(strings, "safeModeCardTitle", "Safe Mode")) + '</span><strong>' + ACP.escapeHtml(safeModeLabel) + "</strong></div>",
       '<div class="acp-mode-card-message">' + ACP.escapeHtml(leftMessage) + "</div>",
+      '<button type="button" class="acp-mode-link" data-action="toggle-safe-mode">' + ACP.escapeHtml(safeModeActionLabel) + "</button>",
       "</div>",
-      "</article>",
-      '<article class="acp-mode-card is-manager-card">',
-      '<div class="acp-mode-card-copy">',
-      '<div class="acp-mode-card-title">' + ACP.escapeHtml(ACP.t(strings, "actionBarTitle", "Action bar")) + "</div>",
-      '<div class="acp-mode-card-message">' + ACP.escapeHtml(managerMessage + managerMeta) + "</div>",
-      "</div>",
-      '<div class="acp-mode-card-actions">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources">' + ACP.escapeHtml(appdataSourcesButtonLabel) + "</button>",
-      showZfsPathMappingsButton
-        ? ('<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings">' + ACP.escapeHtml(zfsPathMappingsButtonLabel) + "</button>")
-        : "",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(quarantineButtonLabel) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history">' + ACP.escapeHtml(auditButtonLabel) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="open-tools">' + ACP.escapeHtml(toolsButtonLabel) + "</button>",
-      "</div>",
-      "</article>",
-      "</div>"
+      "</article>"
     ];
 
     els.$modeStrip.html(html.join(""));
   };
+
+  function buildSimpleModalIntro(icon, title, message, metaHtml) {
+    return (
+      '<div class="acp-simple-modal-intro">' +
+        '<div class="acp-simple-modal-icon" aria-hidden="true">' + ACP.escapeHtml(icon || "") + "</div>" +
+        '<div class="acp-simple-modal-intro-copy">' +
+          '<div class="acp-simple-modal-title">' + ACP.escapeHtml(title || "") + "</div>" +
+          '<div class="acp-simple-modal-message">' + ACP.escapeHtml(message || "") + "</div>" +
+        "</div>" +
+        (metaHtml ? ('<div class="acp-simple-modal-meta">' + metaHtml + "</div>") : "") +
+      "</div>"
+    );
+  }
+
+  function buildSimpleModalCard(title, bodyHtml, actionsHtml, className) {
+    return (
+      '<section class="acp-simple-modal-card' + (className ? " " + ACP.escapeHtml(className) : "") + '">' +
+        '<div class="acp-simple-modal-card-head">' +
+          '<div class="acp-simple-modal-card-title">' + ACP.escapeHtml(title || "") + "</div>" +
+          (actionsHtml ? ('<div class="acp-simple-modal-card-actions">' + actionsHtml + "</div>") : "") +
+        "</div>" +
+        '<div class="acp-simple-modal-card-body">' + (bodyHtml || "") + "</div>" +
+      "</section>"
+    );
+  }
 
   ACP.buildQuarantineManagerModalHtml = function(context) {
     var state = context.state || {};
@@ -146,15 +102,15 @@
     });
     allSelected = entries.length > 0 && selectedCount >= entries.length;
     selectionDisabled = !!quarantine.loading || selectedCount === 0;
-    var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(subtitle) + "</div>",
-      "</div>",
-      '<div class="acp-modal-actions-row acp-quarantine-manager-toolbar">',
-      '<div class="acp-modal-subcopy acp-quarantine-selected-summary">' + ACP.escapeHtml(selectedCount + " " + (selectedCount === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"))) + "</div>",
-      '<div class="acp-quarantine-toolbar-groups">',
-      '<div class="acp-modal-inline-actions acp-quarantine-toolbar-primary">',
+    var selectedSummary = selectedCount + " " + (selectedCount === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
+    var bulkActions = [
+      '<button type="button" class="acp-button acp-button-secondary" data-action="refresh-quarantine"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantineRefreshLabel", "Refresh")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="select-all-quarantine"' + (quarantine.loading || !entries.length || allSelected ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "selectAllLabel", "Select all")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="clear-quarantine-selection"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "clearLabel", "Clear")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="restore-selected-quarantine"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "restoreSelectedLabel", "Restore selected")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="purge-selected-quarantine"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "purgeSelectedLabel", "Purge selected")) + "</button>"
+    ].join("");
+    var scheduleHtml = [
       '<label class="acp-quarantine-schedule-field">',
       '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleDaysLabel", "Purge in days")) + "</span>",
       '<input type="number" min="0" step="1" class="acp-input acp-quarantine-default-purge-input" value="' + ACP.escapeHtml(String(defaultPurgeDays >= 0 ? defaultPurgeDays : 0)) + '"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>',
@@ -164,19 +120,26 @@
       '<input type="datetime-local" class="acp-input acp-quarantine-schedule-at-input" value="' + ACP.escapeHtml(purgeAtInput) + '"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>',
       "</label>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="set-quarantine-purge-schedule"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleSetLabel", "Set purge")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="clear-quarantine-purge-schedule"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleClearLabel", "Clear purge timer")) + "</button>",
-      "</div>",
-      '<div class="acp-modal-inline-actions acp-quarantine-toolbar-secondary">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="refresh-quarantine"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantineRefreshLabel", "Refresh")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="select-all-quarantine"' + (quarantine.loading || !entries.length || allSelected ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "selectAllLabel", "Select all")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="clear-quarantine-selection"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "clearLabel", "Clear")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="restore-selected-quarantine"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "restoreSelectedLabel", "Restore selected")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="purge-selected-quarantine"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "purgeSelectedLabel", "Purge selected")) + "</button>",
-      "</div>",
-      "</div>",
-      "</div>",
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "quarantineTrackedTitle", "Tracked folders")) + "</div>"
+      '<button type="button" class="acp-button acp-button-secondary" data-action="clear-quarantine-purge-schedule"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleClearLabel", "Clear purge timer")) + "</button>"
+    ].join("");
+    var html = [
+      '<div class="acp-simple-modal-shell acp-simple-modal-quarantine">',
+      buildSimpleModalIntro(
+        "Q",
+        ACP.t(strings, "quarantineManagerTitle", "Quarantine"),
+        subtitle,
+        '<span class="acp-simple-pill acp-quarantine-selected-summary">' + ACP.escapeHtml(selectedSummary) + "</span>"
+      ),
+      buildSimpleModalCard(
+        ACP.t(strings, "quarantineActionsTitle", "Actions"),
+        '<div class="acp-simple-modal-actions">' + bulkActions + "</div>" +
+        '<details class="acp-simple-disclosure"><summary>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeTimerTitle", "Purge timer")) + '</summary><div class="acp-simple-modal-form-row">' + scheduleHtml + "</div></details>",
+        "",
+        "acp-simple-modal-card-compact"
+      ),
+      '<section class="acp-simple-modal-card acp-simple-modal-list-card">',
+      '<div class="acp-simple-modal-card-head"><div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "quarantineTrackedTitle", "Tracked folders")) + "</div></div>",
+      '<div class="acp-simple-modal-card-body">'
     ];
 
     if (quarantine.loading) {
@@ -188,16 +151,16 @@
       $.each(entries, function(_, entry) {
         var entryId = String(entry.id || "");
         var isSelected = !!selected[entryId];
-        html.push('<li class="acp-modal-result acp-quarantine-entry' + (isSelected ? ' is-selected' : "") + '" data-entry-id="' + ACP.escapeHtml(entryId) + '">');
-        html.push('<div class="acp-modal-result-head">');
-        html.push('<div class="acp-quarantine-entry-main">');
-        html.push('<label class="acp-quarantine-entry-check">');
+        html.push('<li class="acp-simple-list-item acp-quarantine-entry' + (isSelected ? ' is-selected' : "") + '" data-entry-id="' + ACP.escapeHtml(entryId) + '">');
+        html.push('<div class="acp-simple-list-main">');
+        html.push('<label class="acp-quarantine-entry-check acp-simple-list-check">');
         html.push('<input type="checkbox" class="acp-quarantine-checkbox" data-entry-id="' + ACP.escapeHtml(entryId) + '"' + (isSelected ? ' checked="checked"' : "") + ">");
         html.push("</label>");
-        html.push('<div class="acp-quarantine-title-wrap">');
-        html.push('<div class="acp-modal-inline-title">' + ACP.escapeHtml(entry.name || entry.sourcePath || "") + "</div>");
+        html.push('<div class="acp-simple-list-copy">');
+        html.push('<div class="acp-simple-list-title">' + ACP.escapeHtml(entry.name || entry.sourcePath || "") + "</div>");
+        html.push('<div class="acp-simple-list-subtitle">' + ACP.escapeHtml((entry.quarantinedAtLabel || "") + (entry.quarantinedAgeLabel ? " | " + entry.quarantinedAgeLabel : "") + (entry.sizeLabel ? " | " + entry.sizeLabel : "")) + "</div>");
         if (entry.purgeScheduled && entry.purgeBadgeLabel) {
-          html.push('<div class="acp-quarantine-meta-badges">');
+          html.push('<div class="acp-simple-badge-row">');
           html.push('<span class="acp-modal-stat ' + ACP.escapeHtml(entry.purgeBadgeTone || "is-selected") + '" title="' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduledLabel", "Scheduled purge") + (entry.purgeAtLabel ? ": " + entry.purgeAtLabel : "")) + '">' + ACP.escapeHtml(entry.purgeBadgeLabel) + "</span>");
           if (entry.purgeAtLabel) {
             html.push('<span class="acp-modal-stat is-scheduled" title="' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduledLabel", "Scheduled purge")) + '">' + ACP.escapeHtml(entry.purgeAtLabel) + "</span>");
@@ -206,20 +169,21 @@
         }
         html.push("</div>");
         html.push("</div>");
-        html.push('<div class="acp-modal-inline-actions">');
+        html.push('<div class="acp-simple-list-actions">');
         html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="restore" data-entry-id="' + ACP.escapeHtml(entryId) + '">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreActionLabel", "Restore")) + "</button>");
         html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="purge" data-entry-id="' + ACP.escapeHtml(entryId) + '">' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeActionLabel", "Purge")) + "</button>");
         html.push("</div>");
         html.push("</div>");
-        html.push('<div class="acp-modal-result-message">' + ACP.escapeHtml((entry.quarantinedAtLabel || "") + (entry.quarantinedAgeLabel ? " | " + entry.quarantinedAgeLabel : "") + (entry.sizeLabel ? " | " + entry.sizeLabel : "")) + "</div>");
+        html.push('<details class="acp-simple-disclosure acp-simple-list-details"><summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>");
         html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineSourceLabel", "Original")) + '</span><code class="acp-modal-path">' + ACP.escapeHtml(entry.sourcePath || "") + "</code></div>");
         html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineLocationLabel", "Quarantine path")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(entry.destination || "") + "</code></div>");
+        html.push("</details>");
         html.push("</li>");
       });
       html.push("</ul>");
     }
 
-    html.push("</div></div>");
+    html.push("</div></section></div>");
     return html.join("");
   };
 
@@ -233,12 +197,16 @@
       ? (auditHistory.length + " " + ACP.t(strings, "auditHistoryEntriesLabel", "entries available"))
       : ACP.t(strings, "auditHistoryEmptySummary", "No cleanup history has been recorded yet."));
     var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(subtitle) + "</div>",
-      "</div>",
-      '<div class="acp-modal-panel acp-modal-panel-scroll">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryTitle", "Audit history")) + "</div>"
+      '<div class="acp-simple-modal-shell acp-simple-modal-history">',
+      buildSimpleModalIntro(
+        "H",
+        ACP.t(strings, "auditHistoryTitle", "History"),
+        subtitle,
+        auditHistory.length ? ('<span class="acp-simple-pill">' + ACP.escapeHtml(String(auditHistory.length)) + "</span>") : ""
+      ),
+      '<section class="acp-simple-modal-card acp-simple-modal-list-card acp-modal-panel-scroll">',
+      '<div class="acp-simple-modal-card-head"><div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryTitle", "Audit history")) + "</div></div>",
+      '<div class="acp-simple-modal-card-body">'
     ];
 
     if (state.auditHistoryLoading && !auditHistory.length) {
@@ -246,20 +214,22 @@
     } else if (!auditHistory.length) {
       html.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryEmptyMessage", "No cleanup, restore, or purge actions have been recorded yet.")) + "</div>");
     } else {
-      html.push('<div class="acp-audit-list">');
+      html.push('<div class="acp-audit-list acp-simple-history-list">');
       $.each(auditHistory, function(_, entry) {
-        html.push('<article class="acp-audit-entry">');
-        html.push('<div class="acp-audit-head">');
-        html.push('<div class="acp-audit-head-main">');
+        html.push('<article class="acp-audit-entry acp-simple-list-item">');
+        html.push('<div class="acp-simple-list-main">');
+        html.push('<div class="acp-simple-list-copy">');
+        html.push('<div class="acp-simple-list-title">' + ACP.escapeHtml(entry.operationLabel || ACP.t(strings, "auditHistoryEntryLabel", "Cleanup action")) + "</div>");
+        html.push('<div class="acp-simple-list-subtitle">' + ACP.escapeHtml((entry.timestampLabel || entry.timestamp || "") + (entry.relativeLabel ? " | " + entry.relativeLabel : "")) + "</div>");
+        html.push("</div>");
+        html.push('<div class="acp-simple-badge-row">');
         html.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(entry.operationLabel || "") + "</span>");
-        html.push('<span class="acp-audit-time">' + ACP.escapeHtml(entry.timestampLabel || entry.timestamp || "") + "</span>");
-        if (entry.relativeLabel) {
-          html.push('<span class="acp-audit-time-muted">' + ACP.escapeHtml(entry.relativeLabel) + "</span>");
+        html.push('<span class="acp-modal-stat is-scheduled">' + ACP.escapeHtml(String(entry.requestedCount || 0)) + " " + ACP.escapeHtml(ACP.t(strings, "auditRequestedLabel", "items submitted")) + "</span>");
+        html.push("</div>");
+        html.push("</div>");
+        if (entry.message) {
+          html.push('<div class="acp-simple-list-message">' + ACP.escapeHtml(entry.message || "") + "</div>");
         }
-        html.push("</div>");
-        html.push('<div class="acp-audit-head-meta">' + ACP.escapeHtml(String(entry.requestedCount || 0)) + " " + ACP.escapeHtml(ACP.t(strings, "auditRequestedLabel", "items submitted")) + "</div>");
-        html.push("</div>");
-        html.push('<div class="acp-audit-message">' + ACP.escapeHtml(entry.message || "") + "</div>");
         html.push('<div class="acp-modal-stats">');
         $.each(entry.summary || {}, function(status, count) {
           var statusMeta;
@@ -272,6 +242,7 @@
         html.push("</div>");
 
         if ($.isArray(entry.results) && entry.results.length) {
+          html.push('<details class="acp-simple-disclosure acp-simple-list-details"><summary>' + ACP.escapeHtml(ACP.t(strings, "auditHistoryResultsLabel", "Item results")) + "</summary>");
           html.push('<div class="acp-audit-results">');
           $.each(entry.results, function(_, result) {
             var statusMeta = ACP.formatOperationResultStatus(strings, result.status);
@@ -287,6 +258,7 @@
             html.push("</div>");
           });
           html.push("</div>");
+          html.push("</details>");
         }
 
         html.push("</article>");
@@ -294,7 +266,7 @@
       html.push("</div>");
     }
 
-    html.push("</div></div>");
+    html.push("</div></section></div>");
     return html.join("");
   };
 
@@ -446,20 +418,12 @@
       return row.policyReason || ACP.t(strings, "selectionHintZfsMode", "ZFS dataset-backed rows require permanent delete mode and cannot be quarantined.");
     }
 
-    if (row.policyLocked && !row.lockOverridden) {
-      return row.policyReason || row.riskReason || ACP.t(strings, "rowExplainPolicyLocked", "This row needs manual review before it can be cleaned.");
-    }
-
-    if (row.lockOverridden) {
-      return ACP.t(strings, "lockOverrideNote", "Manual unlock override is active for this scan only.");
+    if (row.policyLocked) {
+      return row.policyReason || row.riskReason || ACP.t(strings, "rowExplainPolicyLocked", "This row is blocked by the current cleanup options.");
     }
 
     if (row.zfsMappingMatched && row.storageKind !== "zfs") {
       return row.zfsResolutionDetail || row.zfsResolutionMessage || ACP.t(strings, "rowDetailsOutcomeMappedNoExactDataset", "Mapped share path did not resolve to an exact dataset");
-    }
-
-    if (row.risk === "review") {
-      return row.riskReason || row.reason || ACP.t(strings, "rowExplainReview", "This row needs review before cleanup.");
     }
 
     if (row.storageKind === "zfs") {
@@ -476,18 +440,6 @@
 
     if (ACP.getRowBlockType(row) === "options") {
       return ACP.t(strings, "rowUnlockabilitySettings", "Not unlockable per scan. Change Cleanup Options if you intend to allow this ZFS action.");
-    }
-
-    if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return ACP.t(strings, "rowUnlockabilityPerScan", "Can be unlocked for this scan only after you verify the details.");
-    }
-
-    if (row.lockOverridden) {
-      return ACP.t(strings, "rowUnlockabilityUnlocked", "Unlocked for this scan only. A rescan restores the normal review lock.");
-    }
-
-    if (row.risk === "review") {
-      return ACP.t(strings, "rowUnlockabilityReview", "Review manually before acting. If a policy lock appears, use Unlock for this scan.");
     }
 
     return row.canDelete
@@ -514,7 +466,7 @@
       return "options";
     }
 
-    if (row.policyLocked && !row.lockOverrideAllowed) {
+    if (row.policyLocked) {
       return "options";
     }
 
@@ -527,7 +479,6 @@
     var detailRow = $.extend({}, row || {}, settings);
     var blockType = ACP.getRowBlockType(detailRow);
     var isProtected = !!blockType;
-    var isReview = !!(detailRow.policyLocked || detailRow.risk === "review" || detailRow.lockOverridden);
     var why = getRowExplanationBase(strings, detailRow);
     var how = getRowDetailsNextStep(strings, detailRow);
     var evidence = $.grep([
@@ -539,14 +490,12 @@
     }).join(" ");
 
     return {
-      state: isProtected ? "protected" : (isReview ? "review" : "ready"),
+      state: isProtected ? "protected" : "ready",
       title: isProtected
         ? (blockType === "options"
           ? ACP.t(strings, "rowDetailsOptionsBlockedExplanationTitle", "Why this row is blocked by Cleanup Options")
           : ACP.t(strings, "rowDetailsProtectedExplanationTitle", "Why this row is blocked for safety"))
-        : (isReview
-          ? ACP.t(strings, "rowDetailsReviewExplanationTitle", "Why this row needs review")
-          : ACP.t(strings, "rowDetailsExplanationTitle", "Current explanation")),
+        : ACP.t(strings, "rowDetailsExplanationTitle", "Current explanation"),
       why: why,
       how: how,
       evidence: evidence,
@@ -574,24 +523,12 @@
       }
     }
 
-    if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsOutcomePolicyLocked", "Needs review before cleanup");
-    }
-
-    if (row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsOutcomeUnlocked", "Temporarily unlocked for this scan");
-    }
-
     if (row.zfsMappingMatched && row.storageKind !== "zfs") {
       return ACP.t(strings, "rowDetailsOutcomeMappedNoExactDataset", "Mapped share path did not resolve to an exact dataset");
     }
 
     if (row.storageKind === "zfs") {
       return ACP.t(strings, "rowDetailsOutcomeZfsReady", "Ready for ZFS dataset destroy");
-    }
-
-    if (row.risk === "review") {
-      return ACP.t(strings, "rowDetailsOutcomeReview", "Review row is currently actionable");
     }
 
     return ACP.t(strings, "rowDetailsOutcomeReady", "Ready under current safety settings");
@@ -614,24 +551,12 @@
       return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Open Cleanup Options and enable permanent delete. ZFS-backed rows cannot be quarantined.");
     }
 
-    if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsNextStepUnlock", "Use Unlock for this scan if you have checked the details and want to act on this review item.");
-    }
-
-    if (row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsNextStepUnlocked", "Proceed carefully. Rescanning will restore the normal policy lock.");
-    }
-
     if (row.zfsMappingMatched && row.storageKind !== "zfs") {
       return ACP.t(strings, "rowDetailsNextStepMappedNoExactDataset", "Correct the ZFS mapping so the dataset mount root matches exactly, or continue as a normal folder.");
     }
 
     if (row.storageKind === "zfs") {
       return ACP.t(strings, "rowDetailsNextStepZfsReady", "Only permanent delete mode is supported for ZFS-backed rows. Review the destroy impact below before proceeding.");
-    }
-
-    if (row.risk === "review") {
-      return ACP.t(strings, "rowDetailsNextStepReview", "Confirm that this path really belongs to orphaned appdata before acting on it.");
     }
 
     return ACP.t(strings, "rowDetailsNextStepReady", "You can quarantine it now, or permanently delete it if that mode is enabled.");
@@ -641,27 +566,29 @@
     var strings = context.strings || {};
 
     return [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsSubtitle", "Support and maintainer utilities for exporting the current plugin state.")) + "</div>",
-      '</div>',
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsTitle", "Export diagnostics")) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsMessage", "Downloads a redacted JSON bundle with current scan state, plugin state files, bounded support log excerpts, safety settings, source roots, quarantine summary, audit history, and row metadata for troubleshooting.")) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsPrivacyNote", "App-specific names, template filenames, full filesystem paths, IPs, emails, tokens, and hostnames are redacted or aliased before export. Review before sharing.")) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsCopyMessage", "Copies a redacted text diagnostics summary. Use this if the JSON download fails or a forum post needs plain text.")) + "</div>",
-      '<div class="acp-modal-actions-row">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="export-diagnostics">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsExportLabel", "Download diagnostics")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="copy-diagnostics-text">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsCopyLabel", "Copy diagnostics text")) + "</button>",
-      "</div>",
-      "</div>",
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "toolsSupportSummaryTitle", "Copy support summary")) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsSupportSummaryMessage", "Copies a concise support summary with version, scan counts, safety toggles, scan roots, ZFS state, and quarantine totals for forum posts or issue reports.")) + "</div>",
-      '<div class="acp-modal-actions-row">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="copy-support-summary">' + ACP.escapeHtml(ACP.t(strings, "toolsSupportSummaryCopyLabel", "Copy support summary")) + "</button>",
-      "</div>",
-      "</div>",
+      '<div class="acp-simple-modal-shell acp-simple-modal-tools">',
+      buildSimpleModalIntro(
+        "T",
+        ACP.t(strings, "toolsTitle", "Tools"),
+        ACP.t(strings, "toolsSubtitle", "Support and maintainer utilities for exporting the current plugin state."),
+        ""
+      ),
+      buildSimpleModalCard(
+        ACP.t(strings, "toolsDiagnosticsTitle", "Diagnostics"),
+        '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsSimpleMessage", "Download a redacted support bundle when troubleshooting a bug or unexpected result.")) + "</p>" +
+        '<details class="acp-simple-disclosure"><summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>" +
+        '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsPrivacyNote", "App-specific names, template filenames, full filesystem paths, IPs, emails, tokens, and hostnames are redacted or aliased before export. Review before sharing.")) + "</p>" +
+        "</details>",
+        '<button type="button" class="acp-button acp-button-secondary" data-action="export-diagnostics">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsExportLabel", "Download diagnostics")) + "</button>" +
+        '<button type="button" class="acp-button acp-button-secondary" data-action="copy-diagnostics-text">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsCopyLabel", "Copy text")) + "</button>",
+        ""
+      ),
+      buildSimpleModalCard(
+        ACP.t(strings, "toolsSupportSummaryTitle", "Support summary"),
+        '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsSupportSummarySimpleMessage", "Copy a short summary for forum posts or issue reports.")) + "</p>",
+        '<button type="button" class="acp-button acp-button-secondary" data-action="copy-support-summary">' + ACP.escapeHtml(ACP.t(strings, "toolsSupportSummaryCopyLabel", "Copy summary")) + "</button>",
+        ""
+      ),
       "</div>"
     ].join("");
   };
@@ -669,146 +596,140 @@
   ACP.buildRowDetailsModalHtml = function(context, row) {
     var strings = context.strings || {};
     var settings = (context.state && context.state.settings) || {};
-    var summaryStats = [];
     var templateRefs = $.isArray(row.templateRefs) ? row.templateRefs : [];
     var sourceNames = $.isArray(row.sourceNames) ? row.sourceNames : [];
     var targetPaths = $.isArray(row.targetPaths) ? row.targetPaths : [];
     var childDatasets = $.isArray(row.zfsChildDatasets) ? row.zfsChildDatasets : [];
     var snapshots = $.isArray(row.zfsSnapshots) ? row.zfsSnapshots : [];
     var resolutionVariants = $.isArray(row.zfsResolutionVariants) ? row.zfsResolutionVariants : [];
-    var riskTone = row.policyLocked || row.risk === "blocked"
-      ? "is-blocked"
-      : (row.risk === "review" ? "is-review" : "is-safe");
     var explanation = ACP.buildRowReviewExplanation(context, row);
     var summaryMessage = explanation.why || row.policyReason || row.securityLockReason || row.riskReason || row.reason || "";
     var nextStepMessage = explanation.how || getRowDetailsNextStep(strings, $.extend({}, row, settings));
-    var storageItems = [
+    var name = row.name || (row.displayPath || row.path || "").split("/").pop() || ACP.t(strings, "rowDetailsUnknownName", "Unknown folder");
+    var sourceLabel = row.sourceLabel || (row.sourceKind === "filesystem" ? ACP.t(strings, "discoveryLabel", "Discovery") : ACP.t(strings, "templateLabel", "Template"));
+    var sourceTone = row.sourceKind === "filesystem" ? "discovery" : "template";
+    var statusTone = row.ignored ? "neutral" : ((row.policyLocked || row.risk === "blocked" || !row.canDelete) ? "locked" : "ready");
+    var statusLabel = row.ignored
+      ? ACP.t(strings, "ignoredLabel", "Ignored")
+      : ((row.policyLocked || row.risk === "blocked" || !row.canDelete)
+        ? ACP.t(strings, "cardBlocked", "Blocked")
+        : ACP.t(strings, "cardDeletable", "Ready"));
+    var sourceExplanation = row.sourceKind === "filesystem"
+      ? ACP.t(strings, "rowDetailsDiscoverySimple", "This folder was found inside an appdata source, but no installed container or saved Docker template currently points to it.")
+      : ACP.t(strings, "rowDetailsTemplateSimple", "A saved Docker template references this folder, but no installed container currently uses it.");
+    var actionExplanation = "";
+    var actionButtons = [];
+    var technicalItems = [
+      { label: ACP.t(strings, "rowDetailsOutcomeLabel", "Current outcome"), value: getRowDetailsOutcome(strings, $.extend({}, row, settings)) },
+      { label: ACP.t(strings, "rowDetailsPolicyLabel", "Policy"), value: row.policyReason || "" },
+      { label: ACP.t(strings, "rowDetailsSecurityLabel", "Security"), value: row.securityLockReason || row.riskReason || "" },
+      { label: ACP.t(strings, "rowDetailsRealPathLabel", "Canonical path"), value: row.realPath || "", code: true },
+      { label: ACP.t(strings, "rowDetailsSourceRootLabel", "Matched source root"), value: row.sourceRoot || "", code: true },
+      { label: ACP.t(strings, "rowDetailsSourceNamesLabel", "Source names"), value: sourceNames.join(", ") },
+      { label: ACP.t(strings, "rowDetailsTargetsLabel", "Targets"), value: targetPaths.join(", ") },
+      { label: ACP.t(strings, "rowDetailsTemplateRefsLabel", "Template refs"), value: templateRefs.length ? $.map(templateRefs, function(ref) { return (ref && ref.name ? ref.name : "") + (ref && ref.target ? " -> " + ref.target : ""); }).join(", ") : "" },
+      { label: ACP.t(strings, "rowDetailsInsideSourceLabel", "Inside configured source"), value: row.insideConfiguredSource ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No") },
+      { label: ACP.t(strings, "rowDetailsShareLabel", "Share"), value: row.shareName || "" },
       { label: ACP.t(strings, "rowDetailsStorageKindLabel", "Storage kind"), value: row.storageLabel || row.storageKind || "" },
       { label: ACP.t(strings, "rowDetailsDatasetLabel", "Dataset"), value: row.datasetName || "" },
       { label: ACP.t(strings, "rowDetailsMountpointLabel", "Mountpoint"), value: row.datasetMountpoint || "", code: true },
       { label: ACP.t(strings, "rowDetailsMatchedShareRootLabel", "Matched share root"), value: row.zfsMatchedShareRoot || "", code: true },
       { label: ACP.t(strings, "rowDetailsMatchedDatasetRootLabel", "Matched dataset root"), value: row.zfsMatchedDatasetRoot || "", code: true },
       { label: ACP.t(strings, "rowDetailsResolutionLabel", "Resolution"), value: row.zfsResolutionDetail || row.zfsResolutionMessage || (row.zfsMappingMatched ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No")) },
-      { label: ACP.t(strings, "rowDetailsCheckedPathsLabel", "Checked paths"), values: resolutionVariants, code: true }
+      { label: ACP.t(strings, "rowDetailsCheckedPathsLabel", "Checked paths"), values: resolutionVariants, code: true },
+      { label: ACP.t(strings, "zfsChildDatasetsLabel", "Child datasets"), values: childDatasets, code: true },
+      { label: ACP.t(strings, "zfsSnapshotsLabel", "Snapshots"), values: snapshots, code: true }
     ];
     var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(summaryMessage || ACP.t(strings, "rowDetailsSummaryTitle", "Why this row looks the way it does")) + "</div>",
-      '<div class="acp-modal-hint">' + ACP.escapeHtml(nextStepMessage) + "</div>",
+      '<div class="acp-row-details-shell">',
+      '<div class="acp-row-details-hero">',
+      '<div class="acp-row-details-icon" aria-hidden="true"></div>',
+      '<div class="acp-row-details-titleblock">',
+      '<div class="acp-row-details-title">' + ACP.escapeHtml(name) + "</div>",
+      '<code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code>",
       "</div>",
-      '<div class="acp-modal-stats">'
+      '<div class="acp-row-details-badges">',
+      '<span class="acp-badge acp-badge-tone-' + ACP.escapeHtml(statusTone) + '">' + ACP.escapeHtml(statusLabel) + "</span>",
+      '<span class="acp-badge acp-badge-tone-' + ACP.escapeHtml(sourceTone) + '">' + ACP.escapeHtml(sourceLabel) + "</span>",
+      "</div>",
+      "</div>"
     ];
 
-    summaryStats.push('<span class="acp-modal-stat ' + ACP.escapeHtml(riskTone) + '">' + ACP.escapeHtml((row.riskLabel || row.risk || "").toString()) + "</span>");
-    summaryStats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(row.statusLabel || row.status || "") + "</span>");
-    if (row.storageKind === "zfs") {
-      summaryStats.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(row.datasetName || ACP.t(strings, "badgeStorageZfs", "ZFS dataset")) + "</span>");
-    } else if (row.zfsMappingMatched) {
-      summaryStats.push('<span class="acp-modal-stat is-scheduled">' + ACP.escapeHtml(ACP.t(strings, "scanSummaryMappedLabel", "Mapped share path")) + "</span>");
-    }
-    html.push(summaryStats.join(""));
-    html.push("</div>");
-
-    html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsVerdictTitle", "Verdict")) + "</div>");
-    html.push(buildModalFieldListHtml([
-      { label: ACP.t(strings, "rowDetailsOutcomeLabel", "Current outcome"), value: getRowDetailsOutcome(strings, $.extend({}, row, settings)) },
-      { label: ACP.t(strings, "rowDetailsWhyLabel", "Why"), value: summaryMessage || row.reason || "" },
-      { label: ACP.t(strings, "rowDetailsResolveLabel", "How to resolve"), value: nextStepMessage },
-      { label: ACP.t(strings, "rowDetailsUnlockabilityLabel", "Unlockability"), value: explanation.unlockability || "" }
-    ]));
-    html.push("</div>");
-
-    html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsWhyExistsTitle", "Why this row exists")) + "</div>");
-    html.push(buildModalFieldListHtml([
-      { label: ACP.t(strings, "sourceLabel", "Source"), value: row.sourceDisplay || row.sourceSummary || "" },
-      { label: ACP.t(strings, "rowDetailsSourceNamesLabel", "Source names"), value: sourceNames.join(", ") },
-      { label: ACP.t(strings, "rowDetailsTargetsLabel", "Targets"), value: targetPaths.join(", ") },
-      { label: ACP.t(strings, "rowDetailsEvidenceLabel", "Evidence"), value: explanation.evidence || row.reason || "" }
-    ]));
-    html.push("</div>");
-
-    html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(explanation.title || ACP.t(strings, "rowDetailsActionGateTitle", "Action gate")) + "</div>");
-    html.push(buildModalFieldListHtml([
-      { label: ACP.t(strings, "rowDetailsRiskLabel", "Risk"), value: row.riskLabel || row.risk || "" },
-      { label: ACP.t(strings, "rowDetailsStatusLabel", "Status"), value: row.statusLabel || row.status || "" },
-      { label: ACP.t(strings, "rowDetailsPolicyLabel", "Policy"), value: row.policyReason || "" },
-      { label: ACP.t(strings, "rowDetailsSecurityLabel", "Security"), value: row.securityLockReason || row.riskReason || "" }
-    ]));
-    html.push("</div>");
-
-    html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsPathTitle", "Paths")) + "</div>");
-    html.push(buildModalFieldListHtml([
-      { label: ACP.t(strings, "rowDetailsCurrentPathLabel", "Current path"), value: row.displayPath || row.path || "", code: true },
-      { label: ACP.t(strings, "rowDetailsRealPathLabel", "Canonical path"), value: row.realPath || "", code: true, secondary: true },
-      { label: ACP.t(strings, "rowDetailsSourceRootLabel", "Matched source root"), value: row.sourceRoot || "", code: true }
-    ]));
-    html.push("</div>");
-
-    html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsSourceTitle", "Source evidence")) + "</div>");
-    html.push(buildModalFieldListHtml([
-      { label: ACP.t(strings, "rowDetailsTemplateRefsLabel", "Template refs"), value: templateRefs.length ? $.map(templateRefs, function(ref) { return (ref && ref.name ? ref.name : "") + (ref && ref.target ? " -> " + ref.target : ""); }).join(", ") : "" }
-    ]));
-    html.push("</div>");
-
-    html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsSafetyTitle", "Safety and actionability")) + "</div>");
-    html.push(buildModalFieldListHtml([
-      { label: ACP.t(strings, "rowDetailsInsideSourceLabel", "Inside configured source"), value: row.insideConfiguredSource ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No") },
-      { label: ACP.t(strings, "rowDetailsInsideShareLabel", "Inside default share"), value: row.insideDefaultShare ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No") },
-      { label: ACP.t(strings, "rowDetailsShareLabel", "Share"), value: row.shareName || "" },
-      { label: ACP.t(strings, "rowDetailsDepthLabel", "Depth"), value: row.depth === null || row.depth === undefined ? "" : String(row.depth) }
-    ]));
-    html.push("</div>");
-
-    html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsStorageTitle", "Storage")) + "</div>");
-    if (row.storageKind === "zfs") {
-      storageItems.push({
-        label: ACP.t(strings, "rowDetailsDestroyModeLabel", "Destroy mode"),
-        value: row.detailLoading
-          ? ACP.t(strings, "rowDetailsLoadingLabel", "Loading latest ZFS detail...")
-          : (row.zfsPreviewError
-            ? row.zfsPreviewError
-            : (row.zfsPreviewLoaded
-              ? (row.zfsRecursiveDestroy ? ACP.t(strings, "zfsRecursiveDestroyValue", "Recursive destroy") : ACP.t(strings, "zfsStandardDestroyValue", "Standard destroy"))
-              : ACP.t(strings, "rowDetailsZfsPreviewPending", "Open details again if you need a fresh ZFS destroy preview.")))
-      });
-      storageItems.push({
-        label: ACP.t(strings, "rowDetailsImpactLabel", "Destroy impact"),
-        value: row.detailLoading
-          ? ACP.t(strings, "rowDetailsLoadingLabel", "Loading latest ZFS detail...")
-          : (row.zfsImpactSummary || (row.zfsPreviewLoaded ? ACP.t(strings, "rowDetailsNoImpactLabel", "No descendant datasets or snapshots are currently expected.") : ""))
-      });
-      storageItems.push({
-        label: ACP.t(strings, "zfsChildDatasetsLabel", "Child datasets"),
-        values: childDatasets.length ? childDatasets : [],
-        code: true
-      });
-      storageItems.push({
-        label: ACP.t(strings, "zfsSnapshotsLabel", "Snapshots"),
-        values: snapshots.length ? snapshots : [],
-        code: true
-      });
+    if (row.ignored) {
+      actionExplanation = ACP.t(strings, "rowDetailsActionIgnored", "This folder is hidden. Restore it if you want it to appear in cleanup scans again.");
+    } else if (!row.canDelete || row.policyLocked || row.risk === "blocked") {
+      actionExplanation = nextStepMessage || ACP.t(strings, "rowDetailsActionBlocked", "No cleanup action is available for this folder right now.");
+    } else if (row.storageKind === "zfs") {
+      actionExplanation = ACP.t(strings, "rowDetailsActionZfs", "Cleanup will destroy the matching ZFS dataset. ZFS rows cannot be moved to quarantine.");
+    } else if (settings.enablePermanentDelete) {
+      actionExplanation = ACP.t(strings, "rowDetailsActionDelete", "Cleanup will permanently delete this folder.");
     } else {
-      storageItems.push({ label: ACP.t(strings, "rowDetailsMappingLabel", "ZFS mapping"), value: row.zfsResolutionDetail || row.zfsResolutionMessage || (row.zfsMappingMatched ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No")) });
+      actionExplanation = ACP.t(strings, "rowDetailsActionQuarantine", "Safe Mode will move this folder to quarantine so it can be restored later.");
     }
 
-    html.push(buildModalFieldListHtml(storageItems));
-    html.push("</div>");
+    html.push(
+      '<div class="acp-row-details-grid">',
+      '<section class="acp-row-details-card">',
+      '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsWhyLabel", "Why")) + "</div>",
+      '<p>' + ACP.escapeHtml(summaryMessage || sourceExplanation) + "</p>",
+      '<p class="acp-row-details-muted">' + ACP.escapeHtml(sourceExplanation) + "</p>",
+      "</section>",
+      '<section class="acp-row-details-card">',
+      '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsCleanupTitle", "What cleanup will do")) + "</div>",
+      '<p>' + ACP.escapeHtml(actionExplanation) + "</p>",
+      "</section>",
+      "</div>"
+    );
 
-    html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsStatsTitle", "Stats")) + "</div>");
-    html.push(buildModalFieldListHtml([
-      { label: ACP.t(strings, "sizeLabel", "Size"), value: row.sizeLabel || "" },
-      { label: ACP.t(strings, "updatedLabel", "Updated"), value: row.lastModifiedExact || row.lastModifiedLabel || "" }
-    ]));
-    html.push("</div>");
+    if (row.storageKind === "zfs") {
+      html.push(
+        '<section class="acp-row-details-card acp-row-details-card-full">',
+        '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsStorageTitle", "Storage")) + "</div>",
+        buildModalFieldListHtml([
+          { label: ACP.t(strings, "rowDetailsDatasetLabel", "Dataset"), value: row.datasetName || "" },
+          { label: ACP.t(strings, "rowDetailsMountpointLabel", "Mountpoint"), value: row.datasetMountpoint || "", code: true },
+          {
+            label: ACP.t(strings, "rowDetailsImpactLabel", "Destroy impact"),
+            value: row.detailLoading
+              ? ACP.t(strings, "rowDetailsLoadingLabel", "Loading latest ZFS detail...")
+              : (row.zfsPreviewError || row.zfsImpactSummary || (row.zfsPreviewLoaded ? ACP.t(strings, "rowDetailsNoImpactLabel", "No descendant datasets or snapshots are currently expected.") : ""))
+          }
+        ]),
+        "</section>"
+      );
+    }
+
+    html.push(
+      '<section class="acp-row-details-card acp-row-details-card-full">',
+      '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsInfoTitle", "Folder info")) + "</div>",
+      buildModalFieldListHtml([
+        { label: ACP.t(strings, "sizeLabel", "Size"), value: row.sizeLabel || "" },
+        { label: ACP.t(strings, "updatedLabel", "Updated"), value: row.lastModifiedLabel || row.lastModifiedExact || "" },
+        { label: ACP.t(strings, "sourceLabel", "Source"), value: row.sourceDisplay || row.sourceSummary || sourceLabel },
+        { label: ACP.t(strings, "rowDetailsResolveLabel", "How to resolve"), value: nextStepMessage }
+      ]),
+      "</section>"
+    );
+
+    if (row.canDelete && !row.ignored) {
+      actionButtons.push('<button type="button" class="acp-button acp-button-primary" data-action="row-detail-select" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "selectFolderLabel", "Select folder")) + "</button>");
+    }
+
+    if (row.ignored) {
+      actionButtons.push('<button type="button" class="acp-button acp-button-secondary" data-action="row-detail-restore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "restoreActionLabel", "Restore")) + "</button>");
+    } else {
+      actionButtons.push('<button type="button" class="acp-button acp-button-secondary" data-action="row-detail-ignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "ignoreActionLabel", "Ignore")) + "</button>");
+    }
+
+    html.push('<div class="acp-row-details-actions">' + actionButtons.join("") + "</div>");
+
+    html.push(
+      '<details class="acp-row-details-technical">',
+      '<summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>",
+      buildModalFieldListHtml(technicalItems),
+      "</details>"
+    );
+
     html.push("</div>");
 
     return html.join("");
@@ -842,17 +763,13 @@
     var entryHtml = [];
     var browserListHtml = [];
     var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesLead", "The Docker appdata root is auto-detected when available. Browse to a non-standard appdata location, then add it to the manual source list.")) + "</div>",
-      '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesHint", "Only add dedicated appdata roots. Direct child folders under each root are treated as discovery candidates.")) + "</div>",
-      "</div>",
-      '<div class="acp-modal-actions-row">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="save-appdata-sources"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesSaveLabel", "Save sources")) + "</button>",
-      "</div>",
-      "</div>",
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesDetectedTitle", "Detected source")) + "</div>"
+      '<div class="acp-simple-modal-shell acp-simple-modal-sources">',
+      buildSimpleModalIntro(
+        "S",
+        ACP.t(strings, "appdataSourcesTitle", "Appdata sources"),
+        ACP.t(strings, "appdataSourcesLead", "Use this only when your appdata folder is somewhere custom. Docker's appdata root is detected automatically when available."),
+        '<button type="button" class="acp-button acp-button-secondary" data-action="save-appdata-sources"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesSaveLabel", "Save sources")) + "</button>"
+      )
     ];
 
     $.each(detected.concat(manual), function(_, path) {
@@ -866,6 +783,9 @@
       effective.push(normalizedPath);
     });
 
+    html.push('<section class="acp-simple-modal-card">');
+    html.push('<div class="acp-simple-modal-card-head"><div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesDetectedTitle", "Detected source")) + "</div></div>");
+    html.push('<div class="acp-simple-modal-card-body">');
     if (!detected.length) {
       html.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesDetectedEmpty", "No Docker appdata source is auto-detected right now.")) + "</div>");
     } else {
@@ -875,6 +795,7 @@
       });
       html.push("</div>");
     }
+    html.push("</div></section>");
 
     if (browser.loading) {
       pathStatusMessage = ACP.t(strings, "appdataSourcesBrowseLoadingMessage", "Loading folders from the selected path.");
@@ -925,12 +846,18 @@
     browserListHtml = browserListHtml.concat(entryHtml);
 
     html.push(
-      "</div>",
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualTitle", "Manual source paths")) + "</div>",
+      '<section class="acp-simple-modal-card acp-simple-modal-list-card">',
+      '<div class="acp-simple-modal-card-head"><div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualTitle", "Manual source paths")) + "</div></div>",
+      '<div class="acp-simple-modal-card-body">',
       manualHtml.length
         ? ('<div class="acp-appdata-source-manual-list">' + manualHtml.join("") + "</div>")
         : ('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualEmpty", "No manual appdata source paths have been added yet.")) + "</div>"),
+      "</div>",
+      "</section>",
+      '<section class="acp-simple-modal-card">',
+      '<div class="acp-simple-modal-card-head"><div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesAddTitle", "Add a source")) + "</div></div>",
+      '<div class="acp-simple-modal-card-body">',
+      '<p class="acp-simple-modal-copyline">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesHint", "Only add dedicated appdata roots. Direct child folders under each root are treated as cleanup candidates.")) + "</p>",
       '<div class="acp-appdata-browser-shell">',
       '<div class="acp-appdata-browser-current">',
       '<div class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesCurrentPathLabel", "Current path")) + "</div>",
@@ -949,8 +876,9 @@
       '<div class="acp-modal-feedback" data-role="appdata-sources-feedback">' + ACP.escapeHtml(feedbackMessage) + "</div>",
       "</div>",
       "</div>",
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesEffectiveTitle", "Effective scan roots")) + "</div>"
+      "</section>",
+      '<details class="acp-simple-disclosure acp-simple-modal-wide-disclosure">',
+      '<summary>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesEffectiveTitle", "Effective scan roots")) + "</summary>"
     );
 
     if (!effective.length) {
@@ -963,7 +891,7 @@
       html.push("</div>");
     }
 
-    html.push("</div>");
+    html.push("</details></div>");
     return html.join("");
   };
 

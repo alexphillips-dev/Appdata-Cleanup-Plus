@@ -202,6 +202,10 @@ function formatBytesLabel($bytes) {
     return "Unknown";
   }
 
+  if ( (int)$bytes === 0 ) {
+    return "Empty";
+  }
+
   $units = array("B", "KB", "MB", "GB", "TB");
   $value = (float)$bytes;
   $unitIndex = 0;
@@ -238,27 +242,27 @@ function formatRelativeAgeLabel($timestamp) {
   }
 
   if ( $delta < 3600 ) {
-    $minutes = max(1, floor($delta / 60));
-    return $minutes . " min ago";
+    $minutes = (int) max(1, floor($delta / 60));
+    return $minutes . " minute" . ($minutes === 1 ? "" : "s") . " ago";
   }
 
   if ( $delta < 86400 ) {
-    $hours = max(1, floor($delta / 3600));
-    return $hours . " hr ago";
+    $hours = (int) max(1, floor($delta / 3600));
+    return $hours . " hour" . ($hours === 1 ? "" : "s") . " ago";
   }
 
   if ( $delta < 2592000 ) {
-    $days = max(1, floor($delta / 86400));
+    $days = (int) max(1, floor($delta / 86400));
     return $days . " day" . ($days === 1 ? "" : "s") . " ago";
   }
 
   if ( $delta < 31536000 ) {
-    $months = max(1, floor($delta / 2592000));
-    return $months . " mo ago";
+    $months = (int) max(1, floor($delta / 2592000));
+    return $months . " month" . ($months === 1 ? "" : "s") . " ago";
   }
 
-  $years = max(1, floor($delta / 31536000));
-  return $years . " yr ago";
+  $years = (int) max(1, floor($delta / 31536000));
+  return $years . " year" . ($years === 1 ? "" : "s") . " ago";
 }
 
 function measureDirectoryBytesWithDu($path) {
@@ -330,7 +334,9 @@ function collectPathStats($path) {
   }
 
   if ( $sizeBytes === null ) {
-    $measuredSize = measureDirectoryBytes($path);
+    $measuredSize = appdataCleanupPlusDirectoryIsEmpty($path)
+      ? 0
+      : measureDirectoryBytes($path);
 
     if ( $measuredSize !== null ) {
       $sizeBytes = (int)$measuredSize;
@@ -442,12 +448,10 @@ function appdataCleanupPlusApplyDockerInventorySafetyToRows($rows, $message="") 
     $row["policyLocked"] = true;
     $row["policyReason"] = $lockMessage;
     $row["canDelete"] = false;
-    $row["lockOverrideAllowed"] = false;
-    $row["lockOverridden"] = false;
 
     if ( ! isset($row["risk"]) || $row["risk"] !== "blocked" ) {
-      $row["risk"] = "review";
-      $row["riskLabel"] = "Review";
+      $row["risk"] = "blocked";
+      $row["riskLabel"] = "Locked";
       $row["riskReason"] = $lockMessage;
     }
 
@@ -1076,8 +1080,6 @@ function buildPathSecurityLockReason($resolvedPath, $settings=null, $storageMeta
 function applySafetyPolicyToRow($row, $settings) {
   $row["policyLocked"] = false;
   $row["policyReason"] = "";
-  $row["lockOverrideAllowed"] = ! empty($row["lockOverrideAllowed"]);
-  $row["lockOverridden"] = ! empty($row["lockOverridden"]) && $row["lockOverrideAllowed"];
 
   if ( ! empty($row["securityLockReason"]) ) {
     $row["policyLocked"] = true;
@@ -1086,35 +1088,10 @@ function applySafetyPolicyToRow($row, $settings) {
     $row["risk"] = "blocked";
     $row["riskLabel"] = "Locked";
     $row["riskReason"] = $row["securityLockReason"];
-    $row["lockOverrideAllowed"] = false;
-    $row["lockOverridden"] = false;
     return $row;
   }
 
   if ( ! empty($row["ignored"]) ) {
-    $row["lockOverrideAllowed"] = false;
-    $row["lockOverridden"] = false;
-    return $row;
-  }
-
-  if ( isset($row["sourceKind"]) && $row["sourceKind"] === "template" && empty($settings["allowTemplateReferencedCleanup"]) ) {
-    $templateLockReason = appdataCleanupPlusTemplateActionLockReason(
-      isset($row["sourceNames"]) ? $row["sourceNames"] : array(),
-      isset($row["targetPaths"]) ? $row["targetPaths"] : array()
-    );
-    $row["policyLocked"] = true;
-    $row["policyReason"] = $templateLockReason;
-    $row["canDelete"] = false;
-    $row["lockOverrideAllowed"] = true;
-    $row["lockOverridden"] = false;
-
-    if ( $row["risk"] !== "blocked" && empty($row["insideConfiguredSource"]) ) {
-      $row["risk"] = "review";
-      $row["riskLabel"] = "Review";
-    }
-
-    $row["riskReason"] = $templateLockReason;
-
     return $row;
   }
 
@@ -1122,22 +1099,7 @@ function applySafetyPolicyToRow($row, $settings) {
     $row["policyLocked"] = true;
     $row["policyReason"] = "ZFS dataset delete is disabled in Safety settings.";
     $row["canDelete"] = false;
-    $row["lockOverrideAllowed"] = false;
-    $row["lockOverridden"] = false;
     return $row;
-  }
-
-  if ( $row["risk"] === "review" && empty($settings["allowOutsideShareCleanup"]) ) {
-    $row["lockOverrideAllowed"] = true;
-
-    if ( empty($row["lockOverridden"]) ) {
-      $row["policyLocked"] = true;
-      $row["policyReason"] = "Outside-share cleanup is disabled in Safety settings.";
-      $row["canDelete"] = false;
-    }
-  } else {
-    $row["lockOverrideAllowed"] = false;
-    $row["lockOverridden"] = false;
   }
 
   return $row;
@@ -1252,8 +1214,6 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
         "securityLockReason" => $securityLockReason,
         "policyLocked" => false,
         "policyReason" => "",
-        "lockOverrideAllowed" => false,
-        "lockOverridden" => false,
         "ignored" => false,
         "ignoredAt" => "",
         "ignoredAtLabel" => "",
@@ -1350,9 +1310,7 @@ function buildSnapshotCandidateMap($rows) {
       "sizeBytes" => $row["sizeBytes"],
       "risk" => isset($row["risk"]) ? $row["risk"] : "safe",
       "reason" => isset($row["reason"]) ? $row["reason"] : "",
-      "ignored" => ! empty($row["ignored"]),
-      "lockOverrideAllowed" => ! empty($row["lockOverrideAllowed"]),
-      "lockOverridden" => ! empty($row["lockOverridden"])
+      "ignored" => ! empty($row["ignored"])
     );
   }
 

@@ -788,18 +788,10 @@ function classifyAppdataCandidate($path, $settings=null) {
     return $classification;
   }
 
-  $classification["risk"] = "review";
-  $classification["riskLabel"] = "Review";
-  $classification["riskReason"] = "This path sits outside the configured appdata sources. Review it carefully before deleting.";
+  $classification["risk"] = "safe";
+  $classification["riskLabel"] = "Ready";
+  $classification["riskReason"] = "This path is not used by installed containers.";
   return $classification;
-}
-
-function appdataCleanupPlusCandidateSupportsLockOverride($candidate) {
-  return is_array($candidate) && ! empty($candidate["lockOverrideAllowed"]);
-}
-
-function appdataCleanupPlusCandidateHasLockOverride($candidate) {
-  return appdataCleanupPlusCandidateSupportsLockOverride($candidate) && ! empty($candidate["lockOverridden"]);
 }
 
 function findAppdata($volumes, $settings=null) {
@@ -1427,10 +1419,8 @@ function getDefaultAppdataCleanupPlusQuarantineRoot() {
 
 function getDefaultAppdataCleanupPlusSafetySettings() {
   return array(
-    "allowOutsideShareCleanup" => false,
-    "enablePermanentDelete" => false,
+    "enablePermanentDelete" => true,
     "enableZfsDatasetDelete" => false,
-    "allowTemplateReferencedCleanup" => false,
     "quarantineRoot" => getDefaultAppdataCleanupPlusQuarantineRoot(),
     "defaultQuarantinePurgeDays" => 0,
     "manualAppdataSources" => array(),
@@ -1451,10 +1441,8 @@ function normalizeAppdataCleanupPlusSafetySettings($settings) {
   }
 
   $normalized = array(
-    "allowOutsideShareCleanup" => ! empty($settings["allowOutsideShareCleanup"]),
-    "enablePermanentDelete" => ! empty($settings["enablePermanentDelete"]),
+    "enablePermanentDelete" => array_key_exists("enablePermanentDelete", $settings) ? ! empty($settings["enablePermanentDelete"]) : $defaults["enablePermanentDelete"],
     "enableZfsDatasetDelete" => ! empty($settings["enableZfsDatasetDelete"]),
-    "allowTemplateReferencedCleanup" => ! empty($settings["allowTemplateReferencedCleanup"]),
     "quarantineRoot" => isset($settings["quarantineRoot"]) ? trim((string)$settings["quarantineRoot"]) : $defaults["quarantineRoot"],
     "defaultQuarantinePurgeDays" => $defaultQuarantinePurgeDays,
     "manualAppdataSources" => appdataCleanupPlusNormalizeManualAppdataSources(isset($settings["manualAppdataSources"]) ? $settings["manualAppdataSources"] : $defaults["manualAppdataSources"]),

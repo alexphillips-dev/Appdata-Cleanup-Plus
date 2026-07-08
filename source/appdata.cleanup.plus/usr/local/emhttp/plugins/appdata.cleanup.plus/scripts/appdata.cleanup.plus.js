@@ -56,10 +56,7 @@
       pendingResult: null,
       latest: null
     },
-    riskFilter: "all",
     sortMode: "risk",
-    showIgnored: false,
-    badgeFilter: null,
     bulkSelectPreset: "safe",
     busy: false
   };
@@ -214,7 +211,6 @@
     });
     bindEvents();
     renderSummaryCards();
-    renderResultsMeta();
     renderPanels();
     renderLoadingState();
     updateActionBar();
@@ -225,12 +221,8 @@
     els.$app = $("#acp-app");
     els.$summaryCards = $("#acp-summary-cards");
     els.$search = $("#acp-search");
-    els.$riskFilter = $("#acp-risk-filter");
-    els.$showIgnored = $("#acp-show-ignored");
-    els.$allowExternal = $("#acp-allow-external");
     els.$enableDelete = $("#acp-enable-delete");
     els.$enableZfsDelete = $("#acp-enable-zfs-delete");
-    els.$allowTemplateCleanup = $("#acp-allow-template-cleanup");
     els.$advancedSafety = $("#acp-advanced-safety");
     els.$help = $("#acp-help");
     els.$sort = $("#acp-sort");
@@ -240,13 +232,12 @@
     els.$selectPreset = $("#acp-select-preset");
     els.$applySelectPreset = $("#acp-apply-select-preset");
     els.$selectAll = $("#acp-select-all");
-    els.$lockOverride = $("#acp-lock-override");
     els.$dryRun = $("#acp-dry-run");
     els.$primaryAction = $("#acp-primary-action");
-    els.$resultsMeta = $("#acp-results-meta");
     els.$modeStrip = $("#acp-mode-strip");
     els.$resultsContext = $("#acp-results-context-row");
     els.$notices = $("#acp-notices");
+    els.$actionToolbar = $("#acp-action-toolbar");
     els.$results = $("#acp-results");
     els.$selectionSummary = $("#acp-selection-summary");
     els.$selectionDetail = $("#acp-selection-detail");
@@ -255,24 +246,9 @@
   function bindEvents() {
     els.$search.on("input", renderAll);
 
-    els.$riskFilter.on("change", function() {
-      state.riskFilter = els.$riskFilter.val();
-      renderResults();
-      renderResultsMeta();
-      updateActionBar();
-    });
-
-    els.$showIgnored.on("change", function() {
-      state.showIgnored = !!els.$showIgnored.prop("checked");
-      renderResults();
-      renderResultsMeta();
-      updateActionBar();
-    });
-
     els.$sort.on("change", function() {
       state.sortMode = els.$sort.val();
       renderResults();
-      renderResultsMeta();
     });
 
     els.$rescan.on("click", function() {
@@ -303,20 +279,11 @@
         selectAllRows();
       }
     });
-    els.$lockOverride.on("click", function() {
-      var intent = String($(this).data("lock-intent") || "unlock");
-
-      if (!state.busy) {
-        startSelectedLockOverrideFlow(intent);
-      }
-    });
     els.$dryRun.on("click", startDryRunFlow);
     els.$primaryAction.on("click", startPrimaryActionFlow);
 
-    els.$allowExternal.on("change", saveSafetySettings);
     els.$enableDelete.on("change", saveSafetySettings);
     els.$enableZfsDelete.on("change", saveSafetySettings);
-    els.$allowTemplateCleanup.on("change", saveSafetySettings);
     els.$advancedSafety.on("click", function() {
       if (!state.busy) {
         openAdvancedSafetyModal();
@@ -359,12 +326,6 @@
       updateActionBar();
     });
 
-    els.$results.on("click", ".acp-badge-filter", handleBadgeFilterClick);
-    els.$resultsMeta.on("click", ".acp-badge-filter", handleBadgeFilterClick);
-    els.$resultsMeta.on("click", "[data-action='clear-filters']", clearFilters);
-    els.$results.on("keydown", ".acp-badge-filter", handleBadgeFilterKeydown);
-    els.$resultsMeta.on("keydown", ".acp-badge-filter", handleBadgeFilterKeydown);
-
     els.$results.on("click", ".acp-row-action", function(event) {
       var action = $(this).data("row-action");
       var rowId = $(this).data("row-id");
@@ -398,40 +359,44 @@
     els.$results.on("click", "[data-action]", function() {
       var action = $(this).data("action");
 
-      if (action === "clear-filters") {
-        clearFilters();
-      }
-
       if (action === "rescan") {
         loadScan();
       }
     });
 
-    els.$modeStrip.on("click", "[data-action='toggle-quarantine']", function() {
+    els.$app.on("click", "[data-action='toggle-quarantine']", function() {
       if (!state.busy) {
         openQuarantineManagerModal(false);
       }
     });
 
-    els.$modeStrip.on("click", "[data-action='open-appdata-sources']", function() {
+    els.$app.on("click", "[data-action='open-appdata-sources']", function() {
       if (!state.busy) {
         openAppdataSourcesModal();
       }
     });
 
-    els.$modeStrip.on("click", "[data-action='open-zfs-path-mappings']", function() {
+    els.$app.on("click", "[data-action='toggle-safe-mode']", function() {
+      if (!state.busy) {
+        saveSafetySettings({
+          enablePermanentDelete: !state.settings.enablePermanentDelete
+        });
+      }
+    });
+
+    els.$app.on("click", "[data-action='open-zfs-path-mappings']", function() {
       if (!state.busy) {
         openZfsPathMappingsModal();
       }
     });
 
-    els.$modeStrip.on("click", "[data-action='open-audit-history']", function() {
+    els.$app.on("click", "[data-action='open-audit-history']", function() {
       if (!state.busy) {
         openAuditHistoryModal();
       }
     });
 
-    els.$modeStrip.on("click", "[data-action='open-tools']", function() {
+    els.$app.on("click", "[data-action='open-tools']", function() {
       if (!state.busy) {
         openToolsModal();
       }
@@ -679,6 +644,46 @@
       showPendingOperationResults();
     });
 
+    $(document).on("change.acpDeleteConfirm", ".sweet-alert .acp-delete-confirm-checkbox", function() {
+      syncDeleteConfirmationState();
+    });
+
+    $(document).on("click.acpRowDetails", ".sweet-alert [data-action='row-detail-select']", function(event) {
+      var rowId = String($(this).data("row-id") || "");
+      var row = findRowById(rowId);
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!row || !isRowSelectable(row)) {
+        return;
+      }
+
+      state.selected[rowId] = true;
+      renderResults();
+      renderSummaryCards();
+      updateActionBar();
+      renderOpenRowDetailsModal();
+    });
+
+    $(document).on("click.acpRowDetails", ".sweet-alert [data-action='row-detail-ignore'], .sweet-alert [data-action='row-detail-restore']", function(event) {
+      var rowId = String($(this).data("row-id") || "");
+      var action = $(this).data("action") === "row-detail-restore" ? "unignore" : "ignore";
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!rowId || state.busy) {
+        return;
+      }
+
+      swal.close();
+      state.rowDetails.activeRowId = "";
+      state.rowDetails.requestToken = "";
+      ACP.releaseModalScrollLock(false);
+      postRowAction(action, rowId);
+    });
+
     $(document).on("click.acpSources", ".sweet-alert [data-action='add-current-appdata-source']", function(event) {
       event.preventDefault();
       event.stopPropagation();
@@ -805,45 +810,6 @@
     });
   }
 
-  function handleBadgeFilterClick(event) {
-    var $badge = $(this);
-    var kind = $.trim(String($badge.data("badgeKind") || ""));
-    var value = $.trim(String($badge.data("badgeValue") || ""));
-    var label = $.trim(String($badge.data("badgeLabel") || $badge.text() || ""));
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (!kind || !value) {
-      return;
-    }
-
-    if (isBadgeFilterActive(kind, value)) {
-      state.badgeFilter = null;
-    } else {
-      state.badgeFilter = {
-        kind: kind,
-        value: value,
-        label: label || value
-      };
-    }
-
-    renderResults();
-    renderResultsMeta();
-    updateActionBar();
-  }
-
-  function handleBadgeFilterKeydown(event) {
-    var key = String(event.key || "");
-
-    if (key !== "Enter" && key !== " ") {
-      return;
-    }
-
-    event.preventDefault();
-    $(this).trigger("click");
-  }
-
   function buildContext() {
     return {
       state: state,
@@ -925,10 +891,8 @@
   function syncSafetyControls() {
     var settings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
 
-    els.$allowExternal.prop("checked", !!settings.allowOutsideShareCleanup);
-    els.$enableDelete.prop("checked", !!settings.enablePermanentDelete);
+    els.$enableDelete.prop("checked", !settings.enablePermanentDelete);
     els.$enableZfsDelete.prop("checked", !!settings.enableZfsDatasetDelete);
-    els.$allowTemplateCleanup.prop("checked", !!settings.allowTemplateReferencedCleanup);
   }
 
   function getSafetyToggleValue($element, fallback) {
@@ -949,20 +913,8 @@
       : ACP.t(strings, "quarantineActionLabel", "Quarantine selected");
   }
 
-  function isRowLockOverrideAllowed(row) {
-    return !!row && !row.ignored && !!row.lockOverrideAllowed;
-  }
-
-  function isRowPendingLockOverride(row) {
-    return isRowLockOverrideAllowed(row) && !!row.policyLocked && !row.lockOverridden;
-  }
-
-  function isRowRelockable(row) {
-    return isRowLockOverrideAllowed(row) && !!row.lockOverridden;
-  }
-
   function isRowSelectable(row) {
-    return !!row && !row.ignored && (!!row.canDelete || isRowLockOverrideAllowed(row));
+    return !!row && !row.ignored && !!row.canDelete;
   }
 
   function isReadySelectableRow(row) {
@@ -974,12 +926,8 @@
     els.$app.toggleClass("is-busy", state.busy);
     els.$rescan.prop("disabled", state.busy);
     els.$search.prop("disabled", state.busy);
-    els.$riskFilter.prop("disabled", state.busy);
-    els.$showIgnored.prop("disabled", state.busy);
-    els.$allowExternal.prop("disabled", state.busy);
     els.$enableDelete.prop("disabled", state.busy);
     els.$enableZfsDelete.prop("disabled", state.busy);
-    els.$allowTemplateCleanup.prop("disabled", state.busy);
     els.$advancedSafety.prop("disabled", state.busy);
     els.$help.prop("disabled", state.busy);
     els.$sort.prop("disabled", state.busy);
@@ -1079,7 +1027,6 @@
       renderSummaryCards();
       renderPanels();
       renderNotices([]);
-      renderResultsMeta();
       renderStateMessage(
         pluginBusy ? ACP.t(strings, "backendBusyTitle", "Backend busy") : ACP.t(strings, "scanFailedTitle", "Scan failed"),
         pluginBusy ? getPluginBusyMessage(xhr) : ACP.extractErrorMessage(xhr, ACP.t(strings, "scanFailedMessage", "The orphaned appdata scan could not be completed right now.")),
@@ -1440,7 +1387,7 @@
       },
       {
         title: ACP.t(strings, "helpStatesTitle", "Result states"),
-        body: ACP.t(strings, "helpStatesBody", "Ready rows look unused and can be selected. Needs review rows need a per-scan unlock or a Cleanup Options bypass before action. Blocked for safety rows cannot be unlocked here. Blocked by options rows need the relevant Cleanup Options switch enabled. Ignored rows are hidden until restored.")
+        body: ACP.t(strings, "helpStatesBody", "Ready rows look unused and can be selected. Blocked for safety rows cannot be cleaned here. Blocked by options rows need the relevant Cleanup Options switch enabled. Ignored rows are hidden until restored.")
       },
       {
         title: ACP.t(strings, "helpWhyRowsTitle", "Why rows appear"),
@@ -1448,11 +1395,11 @@
       },
       {
         title: ACP.t(strings, "helpActionsTitle", "Actions"),
-        body: ACP.t(strings, "helpActionsBody", "Details explains the row evidence. Select ready chooses rows that are currently actionable. Unlock for this scan temporarily allows review rows only until the next scan. Ignore hides a row from normal results. Dry run previews what would happen. Quarantine selected moves folders into the quarantine root. Permanent delete removes folders immediately after typed confirmation.")
+        body: ACP.t(strings, "helpActionsBody", "Details shows a short explanation, what cleanup will do, and optional technical information. Select ready chooses rows that are currently actionable. Ignore hides a row from normal results. Dry run previews what would happen. Quarantine selected moves folders into the quarantine root. Permanent delete removes folders immediately after typed confirmation.")
       },
       {
         title: ACP.t(strings, "helpOptionsTitle", "Cleanup Options"),
-        body: ACP.t(strings, "helpOptionsBody", "Permanent delete changes the main action from quarantine to delete. ZFS dataset delete allows exact dataset-backed rows to use dataset destroy and still requires permanent delete mode. Outside-share cleanup and saved-template cleanup bypass their review gates persistently, but per-scan unlock is safer for normal use. The affected-row count shows how many current rows that option relates to.")
+        body: ACP.t(strings, "helpOptionsBody", "Permanent delete changes the main action from quarantine to delete. ZFS dataset delete allows exact dataset-backed rows to use dataset destroy and still requires permanent delete mode. The affected-row count shows how many current rows that option relates to.")
       },
       {
         title: ACP.t(strings, "helpQuarantineTitle", "Quarantine"),
@@ -1460,7 +1407,7 @@
       },
       {
         title: ACP.t(strings, "helpZfsTitle", "ZFS rows"),
-        body: ACP.t(strings, "helpZfsBody", "Exact ZFS dataset-backed appdata rows cannot be quarantined as normal folders. They require permanent delete mode and ZFS dataset delete, then use dataset destroy. Details shows the dataset name, mountpoint, destroy mode, child datasets, snapshots, and mapping evidence when available.")
+        body: ACP.t(strings, "helpZfsBody", "Exact ZFS dataset-backed appdata rows cannot be quarantined as normal folders. They require permanent delete mode and ZFS dataset delete, then use dataset destroy. Details shows the dataset name, mountpoint, and destroy impact when available.")
       },
       {
         title: ACP.t(strings, "helpSafetyTitle", "Safety rules"),
@@ -1468,11 +1415,11 @@
       },
       {
         title: ACP.t(strings, "helpTroubleshootingTitle", "Common questions"),
-        body: ACP.t(strings, "helpTroubleshootingBody", "If a row is locked, open Details and read Verdict and Action gate. If a saved template row appears, update or remove the saved template or unlock the row for this scan. If ZFS cannot be selected, enable the required Cleanup Options. If no rows appear, confirm Appdata sources and rescan. If Unraid does not pull an update, verify the raw dev manifest version and package MD5.")
+        body: ACP.t(strings, "helpTroubleshootingBody", "If a row is locked, open Details and read why cleanup is unavailable. If ZFS cannot be selected, enable the required Cleanup Options. If no rows appear, confirm Appdata sources and rescan. If Unraid does not pull an update, verify the raw dev manifest version and package MD5.")
       },
       {
         title: ACP.t(strings, "helpWorkflowTitle", "Recommended workflow"),
-        body: ACP.t(strings, "helpWorkflowBody", "Rescan, review Needs review and Blocked rows, open Details for anything unclear, quarantine before permanent delete, restore if something was still needed, and use permanent delete only when you are confident.")
+        body: ACP.t(strings, "helpWorkflowBody", "Rescan, review Ready and Blocked rows, open Details for anything unclear, quarantine before permanent delete, restore if something was still needed, and use permanent delete only when you are confident.")
       }
     ];
     var html = [
@@ -1524,8 +1471,8 @@
     var toggles = [
       {
         key: "enablePermanentDelete",
-        label: ACP.t(strings, "enablePermanentDeleteLabel", "Enable permanent delete"),
-        help: ACP.t(strings, "advancedSafetyPermanentDeleteHelp", "Changes the primary action from quarantine to permanent delete and requires typed confirmation."),
+        label: ACP.t(strings, "enableSafeModeLabel", "Enable Safe Mode"),
+        help: ACP.t(strings, "advancedSafetyPermanentDeleteHelp", "Turn this off to use permanent delete as the primary action. Safe Mode moves selected folders into quarantine instead."),
         impact: impactCounts.enablePermanentDelete
       },
       {
@@ -1533,24 +1480,12 @@
         label: ACP.t(strings, "enableZfsDatasetDeleteLabel", "Enable ZFS dataset delete"),
         help: ACP.t(strings, "advancedSafetyZfsHelp", "Allows exact ZFS dataset-backed rows to use dataset destroy. ZFS rows still require permanent delete mode."),
         impact: impactCounts.enableZfsDatasetDelete
-      },
-      {
-        key: "allowOutsideShareCleanup",
-        label: ACP.t(strings, "showExternalLabel", "Allow outside-share cleanup"),
-        help: ACP.t(strings, "advancedSafetyOutsideShareHelp", "Makes outside-appdata review rows actionable without a per-scan unlock. Per-scan unlock is safer for normal use."),
-        impact: impactCounts.allowOutsideShareCleanup
-      },
-      {
-        key: "allowTemplateReferencedCleanup",
-        label: ACP.t(strings, "allowTemplateReferencedCleanupLabel", "Allow saved-template cleanup"),
-        help: ACP.t(strings, "advancedSafetyTemplateHelp", "Makes saved-template reference rows actionable without a per-scan unlock. Per-scan unlock is safer for normal use."),
-        impact: impactCounts.allowTemplateReferencedCleanup
       }
     ];
     var html = [
       '<div class="acp-modal-summary">',
       '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "advancedSafetySubtitle", "Persistent switches for riskier cleanup modes. Normal review rows can be unlocked for the current scan from the results instead.")) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "advancedSafetySubtitle", "Safe Mode moves cleanup targets into quarantine instead of permanently deleting them. ZFS dataset delete is only needed for exact dataset-backed rows.")) + "</div>",
       "</div>",
       "</div>",
       '<div class="acp-modal-panel">',
@@ -1561,7 +1496,7 @@
     $.each(toggles, function(_, toggle) {
       html.push(
         '<label class="acp-advanced-safety-toggle">' +
-          '<input type="checkbox" data-safety-setting="' + ACP.escapeHtml(toggle.key) + '"' + (settings[toggle.key] ? ' checked="checked"' : "") + ">" +
+          '<input type="checkbox" data-safety-setting="' + ACP.escapeHtml(toggle.key) + '"' + (toggle.key === "enablePermanentDelete" ? (!settings[toggle.key] ? ' checked="checked"' : "") : (settings[toggle.key] ? ' checked="checked"' : "")) + ">" +
           '<span class="acp-advanced-safety-copy">' +
             '<strong>' + ACP.escapeHtml(toggle.label) + "</strong>" +
             '<span>' + ACP.escapeHtml(toggle.help) + "</span>" +
@@ -1583,9 +1518,7 @@
   function buildCleanupOptionsImpactCounts() {
     var counts = {
       enablePermanentDelete: 0,
-      enableZfsDatasetDelete: 0,
-      allowOutsideShareCleanup: 0,
-      allowTemplateReferencedCleanup: 0
+      enableZfsDatasetDelete: 0
     };
 
     $.each(state.rows || [], function(_, row) {
@@ -1603,13 +1536,6 @@
         counts.enableZfsDatasetDelete += 1;
       }
 
-      if ((row.risk === "review" && row.sourceKind !== "template") || /outside-share cleanup is disabled/i.test(policyReason)) {
-        counts.allowOutsideShareCleanup += 1;
-      }
-
-      if (row.sourceKind === "template") {
-        counts.allowTemplateReferencedCleanup += 1;
-      }
     });
 
     return counts;
@@ -1657,7 +1583,8 @@
     var nextSettings = {};
 
     $modal.find("[data-safety-setting]").each(function() {
-      nextSettings[String($(this).data("safety-setting") || "")] = !!$(this).prop("checked");
+      var key = String($(this).data("safety-setting") || "");
+      nextSettings[key] = key === "enablePermanentDelete" ? !$(this).prop("checked") : !!$(this).prop("checked");
     });
 
     $modal.find("[data-role='advanced-safety-feedback']").text(ACP.t(strings, "savingLabel", "Saving..."));
@@ -1686,7 +1613,7 @@
     state.rowDetails.activeRowId = String(row.id || "");
 
     swal({
-      title: ACP.t(strings, "rowDetailsTitle", "Row details"),
+      title: ACP.t(strings, "rowDetailsTitle", "Folder details"),
       text: "",
       type: "info",
       html: true,
@@ -2398,12 +2325,8 @@
 
     nextRow.policyLocked = false;
     nextRow.policyReason = "";
-    nextRow.lockOverrideAllowed = !!nextRow.lockOverrideAllowed;
-    nextRow.lockOverridden = nextRow.lockOverrideAllowed && !!nextRow.lockOverridden;
 
     if (nextRow.ignored) {
-      nextRow.lockOverrideAllowed = false;
-      nextRow.lockOverridden = false;
       nextRow.canDelete = false;
       return nextRow;
     }
@@ -2412,31 +2335,10 @@
       nextRow.canDelete = false;
       nextRow.policyLocked = true;
       nextRow.policyReason = nextRow.securityLockReason;
-      nextRow.lockOverrideAllowed = false;
-      nextRow.lockOverridden = false;
-      return nextRow;
-    }
-
-    if (nextRow.sourceKind === "template" && !state.settings.allowTemplateReferencedCleanup && !nextRow.lockOverridden) {
-      nextRow.canDelete = false;
-      nextRow.policyLocked = true;
-      nextRow.policyReason = buildTemplateActionLockReason(nextRow);
-      nextRow.riskReason = nextRow.policyReason;
-      nextRow.lockOverrideAllowed = true;
-      nextRow.lockOverridden = false;
-
-      if (nextRow.risk === "review" && nextRow.insideConfiguredSource) {
-        nextRow.risk = "safe";
-        nextRow.riskLabel = "Ready";
-      }
-
       return nextRow;
     }
 
     if (nextRow.storageKind === "zfs") {
-      nextRow.lockOverrideAllowed = false;
-      nextRow.lockOverridden = false;
-
       if (!state.settings.enableZfsDatasetDelete) {
         nextRow.canDelete = false;
         nextRow.policyLocked = true;
@@ -2453,35 +2355,10 @@
     }
 
     if (nextRow.risk === "blocked") {
-      nextRow.lockOverrideAllowed = false;
-      nextRow.lockOverridden = false;
       nextRow.canDelete = false;
       return nextRow;
     }
 
-    if (nextRow.lockOverrideAllowed && nextRow.lockOverridden) {
-      nextRow.policyLocked = false;
-      nextRow.policyReason = "";
-      nextRow.canDelete = true;
-      return nextRow;
-    }
-
-    if (nextRow.risk === "review" && !state.settings.allowOutsideShareCleanup) {
-      nextRow.lockOverrideAllowed = true;
-
-      if (!nextRow.lockOverridden) {
-        nextRow.canDelete = false;
-        nextRow.policyLocked = true;
-        nextRow.policyReason = "Outside-share cleanup is disabled in Safety settings.";
-        return nextRow;
-      }
-
-      nextRow.canDelete = true;
-      return nextRow;
-    }
-
-    nextRow.lockOverrideAllowed = false;
-    nextRow.lockOverridden = false;
     nextRow.canDelete = true;
     return nextRow;
   }
@@ -2499,10 +2376,8 @@
 
       var actionability = getRowActionabilityDescriptor(row).value;
 
-      if (actionability === "ready") {
+      if (actionability === "ready" || actionability === "review") {
         summary.safe += 1;
-      } else if (actionability === "review") {
-        summary.review += 1;
       } else if (actionability === "locked") {
         summary.blocked += 1;
       }
@@ -2523,7 +2398,6 @@
     var discoveryRows = 0;
     var zfsRows = 0;
     var mappedRows = 0;
-    var reviewRows = 0;
     var lockedRows = 0;
 
     $.each(rows, function(_, row) {
@@ -2543,9 +2417,7 @@
         mappedRows += 1;
       }
 
-      if (getRowActionabilityDescriptor(row).value === "review") {
-        reviewRows += 1;
-      } else if (getRowActionabilityDescriptor(row).value === "locked") {
+      if (getRowActionabilityDescriptor(row).value === "locked") {
         lockedRows += 1;
       }
     });
@@ -2555,7 +2427,7 @@
       scanRootCount: effectiveRoots.length,
       templateRowCount: templateRows,
       discoveryRowCount: discoveryRows,
-      reviewCount: reviewRows,
+      reviewCount: 0,
       lockedCount: lockedRows,
       zfsBackedCount: zfsRows,
       mappedShareCount: mappedRows,
@@ -2569,9 +2441,6 @@
     var hasZfsRows = $.grep(state.rows || [], function(row) {
       return row && row.storageKind === "zfs";
     }).length > 0;
-    var reviewCount = $.grep(state.rows || [], function(row) {
-      return row && !row.ignored && getRowActionabilityDescriptor(row).value === "review";
-    }).length;
 
     if (!state.dockerRunning) {
       notices.push({
@@ -2595,22 +2464,6 @@
         title: ACP.t(strings, "scanReadOnlyTitle", "Read-only scan"),
         message: state.scanWarningMessage || ACP.t(strings, "scanReadOnlyMessage", "Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.")
       });
-    }
-
-    if (reviewCount > 0) {
-      if (!state.settings.allowOutsideShareCleanup) {
-        notices.push({
-          type: "info",
-          title: ACP.t(strings, "noticeOutsideShareDisabledTitle", "Review items need confirmation"),
-          message: ACP.t(strings, "noticeOutsideShareDisabledMessage", "Review paths stay visible and start locked. Unlock them for this scan after checking details.")
-        });
-      } else {
-        notices.push({
-          type: "warning",
-          title: ACP.t(strings, "noticeOutsideShareEnabledTitle", "Review bypass is enabled"),
-          message: ACP.t(strings, "noticeOutsideShareEnabledMessage", "Some review paths may already be actionable because an advanced bypass is enabled. Confirm each one carefully before acting.")
-        });
-      }
     }
 
     if (Number(summary.blocked || 0) > 0) {
@@ -2810,7 +2663,6 @@
     renderPanels();
     renderNotices(buildLocalNotices());
     renderResults();
-    renderResultsMeta();
     syncBulkSelectionPresetControls();
     updateActionBar();
   }
@@ -2847,11 +2699,9 @@
   function renderSummaryCards() {
     var selectedCount = getSelectedRows().length;
     var cards = [
-      { label: ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, tone: "" },
-      { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, tone: "is-accent" },
-      { label: ACP.t(strings, "cardReview", "Needs review"), value: state.summary.review || 0, tone: "is-review" },
-      { label: ACP.t(strings, "cardBlocked", "Protected"), value: state.summary.blocked || 0, tone: "is-blocked" },
-      { label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount, tone: "is-safe" }
+      { label: ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, subtitle: ACP.t(strings, "cardTotalSubtitle", "Total orphaned"), tone: "is-detected", icon: "⌕" },
+      { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, subtitle: ACP.t(strings, "cardDeletableSubtitle", "Safe to clean"), tone: "is-safe", icon: "✓" },
+      { label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount, subtitle: ACP.t(strings, "cardSelectedSubtitle", "Marked this scan"), tone: "is-selected", icon: "□" }
     ];
     var html = [];
 
@@ -2859,8 +2709,12 @@
       var glowClass = Number(card.value || 0) > 0 ? " has-glow" : "";
       html.push(
         '<article class="acp-summary-card ' + card.tone + glowClass + '">' +
-          '<span class="acp-summary-label">' + ACP.escapeHtml(card.label) + "</span>" +
-          '<span class="acp-summary-value">' + ACP.escapeHtml(String(card.value)) + "</span>" +
+          '<span class="acp-summary-icon" aria-hidden="true">' + ACP.escapeHtml(card.icon || "") + "</span>" +
+          '<span class="acp-summary-copy">' +
+            '<span class="acp-summary-label">' + ACP.escapeHtml(card.label) + "</span>" +
+            '<span class="acp-summary-value">' + ACP.escapeHtml(String(card.value)) + "</span>" +
+            '<span class="acp-summary-subtitle">' + ACP.escapeHtml(card.subtitle || "") + "</span>" +
+          "</span>" +
         "</article>"
       );
     });
@@ -2882,19 +2736,65 @@
     });
 
     els.$notices.html(html.join(""));
-    els.$resultsContext.toggleClass("has-notices", hasNotices);
+    if (els.$resultsContext && els.$resultsContext.length) {
+      els.$resultsContext.toggleClass("has-notices", hasNotices);
+    }
   }
 
   function renderLoadingState() {
+    renderSummaryCards();
     renderPanels();
     renderNotices([]);
-    renderResultsMeta("");
-    renderStateMessage(
-      ACP.t(strings, "loadingTitle", "Scanning appdata sources and saved Docker templates"),
-      ACP.t(strings, "loadingMessage", "Reviewing orphaned appdata folders and active container mappings."),
-      null,
-      null,
-      true
+
+    if (state.rows.length) {
+      renderResults();
+      return;
+    }
+
+    renderLoadingResultsShell();
+  }
+
+  function renderLoadingResultsShell() {
+    var rowCount = Math.max(3, Math.min(6, Number(state.summary.total || 0) || 3));
+    var rowHtml = [];
+    var index;
+
+    for (index = 0; index < rowCount; index += 1) {
+      rowHtml.push(
+        '<article class="acp-row acp-row-loading" aria-hidden="true">' +
+          '<div class="acp-row-select"><span class="acp-loading-check"></span></div>' +
+          '<div class="acp-row-main">' +
+            '<div class="acp-row-primary">' +
+              '<div class="acp-row-loading-name"><span></span><small></small></div>' +
+              '<div class="acp-row-loading-used"><span></span><small></small></div>' +
+              '<div class="acp-row-loading-size"><span></span></div>' +
+              '<div class="acp-row-loading-path"><span></span></div>' +
+              '<div class="acp-row-loading-badge"><span></span></div>' +
+              '<div class="acp-row-loading-actions"><span></span><span></span></div>' +
+            "</div>" +
+          "</div>" +
+        "</article>"
+      );
+    }
+
+    els.$results.html(
+      '<section class="acp-results-section acp-results-section-ready acp-results-section-loading" aria-busy="true">' +
+        '<header class="acp-results-section-head">' +
+          '<div class="acp-results-section-copy">' +
+            '<h3 class="acp-results-section-title">' + ACP.escapeHtml(ACP.t(strings, "readySectionTitle", "Ready to Clean")) + "</h3>" +
+            '<p class="acp-results-section-message">' + ACP.escapeHtml(ACP.t(strings, "loadingMessage", "Reviewing orphaned appdata folders and active container mappings.")) + "</p>" +
+          "</div>" +
+          '<div class="acp-results-section-meta">' +
+            '<div class="acp-results-section-badges">' +
+              '<span class="acp-badge acp-badge-kind-count">' + ACP.escapeHtml(ACP.t(strings, "loadingShortLabel", "Scanning")) + "</span>" +
+            "</div>" +
+          "</div>" +
+        "</header>" +
+        '<div class="acp-results-table-head">' +
+          '<span></span><span>' + ACP.escapeHtml(ACP.t(strings, "nameLabel", "Name")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "lastUsedLabel", "Last used")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "pathLabel", "Path")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sourceLabel", "Source")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "actionsLabel", "Actions")) + '</span>' +
+        "</div>" +
+        '<div class="acp-results-section-body">' + rowHtml.join("") + "</div>" +
+      "</section>"
     );
   }
 
@@ -3258,10 +3158,7 @@
       },
       uiState: {
         searchTerm: $.trim(String(els.$search.val() || "")),
-        riskFilter: String(state.riskFilter || "all"),
-        showIgnored: !!state.showIgnored,
         sortMode: String(state.sortMode || "risk"),
-        badgeFilter: state.badgeFilter || null,
         busy: !!state.busy
       },
       scan: {
@@ -3326,14 +3223,11 @@
       "Docker: " + (state.dockerRunning ? "running" : "offline"),
       "Rows: detected=" + String(Number(summary.total || 0)) +
         " ready=" + String(Number(summary.deletable || 0)) +
-        " review=" + String(Number(summary.review || 0)) +
         " locked=" + String(Number(summary.blocked || 0)) +
         " ignored=" + String(Number(summary.ignored || 0)),
       "Selection: " + String(selectedRows.length) + " selected",
-      "Safety: outside-share=" + (state.settings.allowOutsideShareCleanup ? "on" : "off") +
-        " permanent-delete=" + (state.settings.enablePermanentDelete ? "on" : "off") +
-        " zfs-delete=" + (state.settings.enableZfsDatasetDelete ? "on" : "off") +
-        " saved-template-cleanup=" + (state.settings.allowTemplateReferencedCleanup ? "on" : "off"),
+      "Safety: permanent-delete=" + (state.settings.enablePermanentDelete ? "on" : "off") +
+        " zfs-delete=" + (state.settings.enableZfsDatasetDelete ? "on" : "off"),
       "Sources: roots=" + String(scanRoots.length) +
         " mappings=" + String($.isArray((state.appdataSources || {}).zfsPathMappings) ? state.appdataSources.zfsPathMappings.length : 0),
       "ZFS: backed=" + String(Number(insights.zfsBackedCount || 0)) +
@@ -3915,10 +3809,6 @@
       notes.push('<div class="acp-row-note is-warning">' + ACP.escapeHtml(row.zfsPreviewError) + "</div>");
     }
 
-    if (row.lockOverridden) {
-      notes.push('<div class="acp-row-note is-warning">' + ACP.escapeHtml(ACP.t(strings, "lockOverrideNote", "Manual unlock override is active for this scan only.")) + "</div>");
-    }
-
     if (row.ignored && row.ignoredReason) {
       notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.ignoredReason) + "</div>");
     } else if (!explanation && !row.policyReason && row.risk !== "safe" && row.riskReason) {
@@ -3945,12 +3835,6 @@
       return '<div class="acp-row-actions">' + actions.join("") + "</div>";
     }
 
-    if (row.id && row.lockOverrideAllowed && row.policyLocked && !row.lockOverridden) {
-      actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unlock" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "lockOverrideRowUnlockLabel", "Unlock for this scan")) + "</button>");
-    } else if (row.id && row.lockOverrideAllowed && row.lockOverridden) {
-      actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="relock" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "lockOverrideRowRelockLabel", "Relock")) + "</button>");
-    }
-
     if (row.id) {
       actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="ignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "ignoreActionLabel", "Ignore")) + "</button>");
       return '<div class="acp-row-actions">' + actions.join("") + "</div>";
@@ -3959,17 +3843,22 @@
     return "";
   }
 
+  function buildRowFolderIconHtml() {
+    return (
+      '<span class="acp-row-folder-icon" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" focusable="false">' +
+          '<path d="M3.75 6.75a2 2 0 0 1 2-2h4.15l2.1 2h6.25a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2Z"></path>' +
+        "</svg>" +
+      "</span>"
+    );
+  }
+
   function buildResultsSectionDefinitions() {
     return [
       {
         key: "ready",
         title: ACP.t(strings, "readySectionTitle", "Ready to clean"),
         message: ACP.t(strings, "readySectionMessage", "These look like orphaned appdata folders inside configured appdata roots. Quarantine is the recommended action.")
-      },
-      {
-        key: "review",
-        title: ACP.t(strings, "reviewSectionTitle", "Needs review"),
-        message: ACP.t(strings, "reviewSectionMessage", "These may be safe, but they need explicit confirmation first. Unlock them for this scan after checking the details.")
       },
       {
         key: "locked",
@@ -3996,69 +3885,9 @@
     return String(value || "").toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
   }
 
-  function getActiveBadgeFilter() {
-    if (!state.badgeFilter || !state.badgeFilter.kind || !state.badgeFilter.value) {
-      return null;
-    }
-
-    return {
-      kind: String(state.badgeFilter.kind),
-      value: String(state.badgeFilter.value),
-      label: String(state.badgeFilter.label || state.badgeFilter.value)
-    };
-  }
-
-  function isBadgeFilterActive(kind, value) {
-    var filter = getActiveBadgeFilter();
-
-    if (!filter) {
-      return false;
-    }
-
-    return filter.kind === String(kind || "") && filter.value === String(value || "");
-  }
-
-  function getBadgeFilterTone(filter) {
-    var value = filter && filter.value ? String(filter.value) : "";
-
-    if (!filter) {
-      return "neutral";
-    }
-
-    if (filter.kind === "actionability") {
-      return value || "neutral";
-    }
-
-    if (filter.kind === "source" && value === "filesystem") {
-      return "discovery";
-    }
-
-    if (filter.kind === "reason") {
-      if (value === "outside_share") {
-        return "review";
-      }
-
-      if (value === "override_active") {
-        return "review";
-      }
-
-      if (value === "symlink" || value === "mount_point" || value === "root_path" || value === "unsafe_path" || value === "safety_lock") {
-        return "locked";
-      }
-    }
-
-    if (filter.kind === "storage" && value === "zfs") {
-      return "neutral";
-    }
-
-    return "neutral";
-  }
-
   function buildBadgeHtml(badge) {
     var classes = ["acp-badge", "acp-badge-tone-" + sanitizeBadgeToken(badge.tone || "neutral")];
     var kindClass = badge.kindClass || badge.kind || "";
-    var interactive = badge.kind && badge.value;
-    var active = interactive && isBadgeFilterActive(badge.kind, badge.value);
     var title = $.trim(String(badge.title || ""));
 
     if (kindClass) {
@@ -4069,28 +3898,6 @@
       classes.push("is-primary");
     }
 
-    if (interactive) {
-      classes.push("acp-badge-filter");
-
-      if (active) {
-        classes.push("is-active");
-      }
-
-      title = $.trim((title ? title + " " : "") + ACP.t(strings, "badgeFilterHint", "Click to filter rows by this badge."));
-
-      return (
-        '<span class="' + classes.join(" ") + '"' +
-          ' data-badge-kind="' + ACP.escapeHtml(String(badge.kind)) + '"' +
-          ' data-badge-value="' + ACP.escapeHtml(String(badge.value)) + '"' +
-          ' data-badge-label="' + ACP.escapeHtml(String(badge.label || badge.value)) + '"' +
-          ' role="button"' +
-          ' tabindex="0"' +
-          ' aria-pressed="' + (active ? "true" : "false") + '"' +
-          (title ? ' title="' + ACP.escapeHtml(title) + '"' : "") +
-        ">" + ACP.escapeHtml(String(badge.label || "")) + "</span>"
-      );
-    }
-
     return '<span class="' + classes.join(" ") + '"' + (title ? ' title="' + ACP.escapeHtml(title) + '"' : "") + ">" + ACP.escapeHtml(String(badge.label || "")) + "</span>";
   }
 
@@ -4099,27 +3906,11 @@
       return ACP.t(strings, "cardBlocked", "Blocked");
     }
 
-    if (actionability === "review") {
-      return ACP.t(strings, "cardReview", "Needs review");
-    }
-
     return ACP.t(strings, "cardDeletable", "Ready");
   }
 
   function getRowActionabilityDescriptor(row) {
     var blockType = ACP.getRowBlockType ? ACP.getRowBlockType(row) : "";
-
-    if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return {
-        kind: "actionability",
-        value: "review",
-        label: ACP.t(strings, "cardReview", "Needs review"),
-        tone: "review",
-        title: row.policyReason || row.riskReason || "",
-        kindClass: "actionability",
-        isPrimary: true
-      };
-    }
 
     if (row.policyLocked || row.risk === "blocked") {
       return {
@@ -4130,18 +3921,6 @@
           : ACP.t(strings, "cardBlockedSafety", "Blocked for safety"),
         tone: "locked",
         title: row.policyReason || row.securityLockReason || row.riskReason || "",
-        kindClass: "actionability",
-        isPrimary: true
-      };
-    }
-
-    if (row.risk === "review") {
-      return {
-        kind: "actionability",
-        value: "review",
-        label: ACP.t(strings, "cardReview", "Needs review"),
-        tone: "review",
-        title: row.riskReason || row.policyReason || "",
         kindClass: "actionability",
         isPrimary: true
       };
@@ -4184,7 +3963,7 @@
       kind: "source",
       value: String(row.sourceKind || "template"),
       label: row.sourceLabel || ACP.t(strings, "sourceLabel", "Source"),
-      tone: row.sourceKind === "filesystem" ? "discovery" : "neutral",
+      tone: row.sourceKind === "filesystem" ? "discovery" : "template",
       title: row.sourceDisplay || row.sourceSummary || "",
       kindClass: "source"
     };
@@ -4278,17 +4057,6 @@
       return descriptors;
     }
 
-    if (row.lockOverridden) {
-      pushBadgeDescriptor(descriptors, {
-        kind: "reason",
-        value: "override_active",
-        label: ACP.t(strings, "badgeReasonOverrideActive", "Override active"),
-        tone: "review",
-        title: ACP.t(strings, "lockOverrideNote", "Manual unlock override is active for this scan only."),
-        kindClass: "reason"
-      });
-    }
-
     if (row.sourceKind === "template" && policyReason) {
       pushBadgeDescriptor(descriptors, {
         kind: "reason",
@@ -4296,17 +4064,6 @@
         label: ACP.t(strings, "badgeReasonTemplateReference", "Template reference"),
         tone: "review",
         title: policyReason,
-        kindClass: "reason"
-      });
-    }
-
-    if ((row.risk === "review" && row.sourceKind !== "template") || /outside-share cleanup is disabled/i.test(policyReason)) {
-      pushBadgeDescriptor(descriptors, {
-        kind: "reason",
-        value: "outside_share",
-        label: ACP.t(strings, "badgeReasonOutsideShare", "Outside share"),
-        tone: "review",
-        title: policyReason || riskReason,
         kindClass: "reason"
       });
     }
@@ -4347,8 +4104,6 @@
     if (
       row.policyLocked &&
       !securityReason &&
-      !row.lockOverridden &&
-      !/outside-share cleanup is disabled/i.test(policyReason) &&
       !/zfs dataset delete is disabled/i.test(policyReason) &&
       !/permanent delete/i.test(policyReason)
     ) {
@@ -4366,40 +4121,7 @@
   }
 
   function getRowBadgeDescriptors(row) {
-    return [getRowActionabilityDescriptor(row), getRowSourceDescriptor(row)];
-  }
-
-  function rowMatchesBadgeFilter(row, filter) {
-    var reasonDescriptors;
-
-    if (!filter) {
-      return true;
-    }
-
-    if (filter.kind === "actionability") {
-      return getRowActionabilityDescriptor(row).value === filter.value;
-    }
-
-    if (filter.kind === "status") {
-      return String(row.status || "") === filter.value;
-    }
-
-    if (filter.kind === "source") {
-      return String(row.sourceKind || "") === filter.value;
-    }
-
-    if (filter.kind === "storage") {
-      return String(row.storageKind || "") === filter.value;
-    }
-
-    if (filter.kind === "reason") {
-      reasonDescriptors = getRowReasonDescriptors(row);
-      return $.grep(reasonDescriptors, function(descriptor) {
-        return descriptor.value === filter.value;
-      }).length > 0;
-    }
-
-    return true;
+    return [getRowSourceDescriptor(row)];
   }
 
   function buildSectionActionabilitySummary(rows) {
@@ -4484,10 +4206,11 @@
     var selectable = isRowSelectable(row);
     var rowClass = "acp-row";
     var rowActionHtml = buildRowActionHtml(row);
-    var rowNotesHtml = buildRowNotesHtml(row);
     var badgeHtml = $.map(getRowBadgeDescriptors(row), function(badge) {
       return buildBadgeHtml(badge);
     }).join("");
+    var sourceText = row.sourceDisplay || row.sourceSummary || row.name || "";
+    var targetText = row.targetSummary || "";
 
     if (isSelected) {
       rowClass += " is-selected";
@@ -4510,18 +4233,22 @@
           '<div class="acp-row-primary">' +
             '<div class="acp-row-title-wrap">' +
               '<div class="acp-row-title-line">' +
+                buildRowFolderIconHtml() +
                 '<h3 class="acp-row-title">' + ACP.escapeHtml(row.name || row.displayPath || "") + "</h3>" +
               "</div>" +
-              '<div class="acp-row-meta">' + buildRowMetaHtml(row) + "</div>" +
-              (rowNotesHtml ? '<div class="acp-row-notes">' + rowNotesHtml + "</div>" : "") +
-            "</div>" +
-            '<div class="acp-row-side">' +
-              '<div class="acp-row-side-head">' +
-                '<div class="acp-row-badges">' +
-                  badgeHtml +
-                "</div>" +
-                '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
+              '<div class="acp-row-meta">' +
+                '<span class="acp-row-meta-item">' + ACP.escapeHtml(sourceText) + "</span>" +
+                (targetText ? '<span class="acp-row-meta-separator">•</span><span class="acp-row-meta-item">' + ACP.escapeHtml(targetText) + "</span>" : "") +
               "</div>" +
+            "</div>" +
+            '<div class="acp-row-used">' +
+              '<span>' + ACP.escapeHtml(row.lastModifiedLabel || "Unknown") + "</span>" +
+              '<small>' + ACP.escapeHtml(ACP.t(strings, "updatedLabel", "Updated")) + "</small>" +
+            "</div>" +
+            '<div class="acp-row-size">' + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || "Unknown")) + "</div>" +
+            '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
+            '<div class="acp-row-badges">' + badgeHtml + "</div>" +
+            '<div class="acp-row-side">' +
               rowActionHtml +
             "</div>" +
           "</div>" +
@@ -4546,10 +4273,10 @@
     }
 
     if (!visibleRows.length) {
-      if (!state.showIgnored && Number(state.summary.total || 0) === 0 && Number(state.summary.ignored || 0) > 0) {
+      if (Number(state.summary.total || 0) === 0 && Number(state.summary.ignored || 0) > 0) {
         renderStateMessage(
           ACP.t(strings, "ignoredOnlyTitle", "Only ignored paths remain"),
-          ACP.t(strings, "ignoredOnlyMessage", "Every detected candidate is hidden by your ignore list. Turn on Show ignored to review or restore hidden paths."),
+          ACP.t(strings, "ignoredOnlyMessage", "Every detected candidate is hidden by your ignore list."),
           null,
           null
         );
@@ -4557,10 +4284,10 @@
       }
 
       renderStateMessage(
-        ACP.t(strings, "noMatchesTitle", "No folders match the current filters"),
-        ACP.t(strings, "noMatchesMessage", "Clear the search, badge, or risk filters to see the full scan again."),
-        "clear-filters",
-        ACP.t(strings, "clearFiltersLabel", "Clear filters")
+        ACP.t(strings, "noMatchesTitle", "No folders match the current search"),
+        ACP.t(strings, "noMatchesMessage", "Clear the search field to see the full scan again."),
+        null,
+        null
       );
       return;
     }
@@ -4583,46 +4310,15 @@
             "</div>" +
             '<div class="acp-results-section-meta">' + buildSectionMetaHtml(section.rows || []) + "</div>" +
           "</header>" +
+          '<div class="acp-results-table-head">' +
+            '<span></span><span>' + ACP.escapeHtml(ACP.t(strings, "nameLabel", "Name")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "lastUsedLabel", "Last used")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "pathLabel", "Path")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sourceLabel", "Source")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "actionsLabel", "Actions")) + '</span>' +
+          "</div>" +
           '<div class="acp-results-section-body">' + rowHtml.join("") + "</div>" +
         "</section>"
       );
     });
 
     els.$results.html(html.join(""));
-  }
-
-  function renderResultsMeta() {
-    var badgeFilter = getActiveBadgeFilter();
-    var visibleRows = getVisibleRows();
-    var hiddenIgnored = Number(state.summary.ignored || 0) > 0 && !state.showIgnored;
-    var parts = [
-      visibleRows.length + " " + ACP.t(strings, "visibleSummary", "visible"),
-      Number(state.summary.total || 0) + " " + ACP.t(strings, "detectedSummary", "detected")
-    ];
-
-    if (hiddenIgnored) {
-      parts.push(Number(state.summary.ignored || 0) + " " + ACP.t(strings, "ignoredHiddenSummary", "ignored hidden"));
-    } else if (state.showIgnored && Number(state.summary.ignored || 0) > 0) {
-      parts.push(Number(state.summary.ignored || 0) + " " + ACP.t(strings, "ignoredShownSummary", "ignored shown"));
-    }
-
-    if (!badgeFilter) {
-      els.$resultsMeta.text(parts.join(" | "));
-      return;
-    }
-
-    els.$resultsMeta.html(
-      '<span class="acp-results-meta-copy">' + ACP.escapeHtml(parts.join(" | ")) + "</span>" +
-      '<span class="acp-results-meta-filter-label">' + ACP.escapeHtml(ACP.t(strings, "filteredByLabel", "Filtered by")) + "</span>" +
-      buildBadgeHtml({
-        kind: badgeFilter.kind,
-        value: badgeFilter.value,
-        label: badgeFilter.label,
-        tone: getBadgeFilterTone(badgeFilter),
-        kindClass: "meta"
-      }) +
-      '<button type="button" class="acp-button acp-button-secondary acp-results-meta-clear" data-action="clear-filters">' + ACP.escapeHtml(ACP.t(strings, "clearFiltersLabel", "Clear filter")) + "</button>"
-    );
   }
 
   function renderStateMessage(title, message, action, actionLabel, isLoading) {
@@ -4640,21 +4336,12 @@
   }
 
   function getVisibleRows() {
-    var badgeFilter = getActiveBadgeFilter();
     var term = $.trim(String(els.$search.val() || "")).toLowerCase();
 
     return $.grep(state.rows || [], function(row) {
       var haystack = ((row.name || "") + " " + (row.displayPath || "") + " " + (row.sourceSummary || "") + " " + (row.targetSummary || "")).toLowerCase();
 
-      if (!state.showIgnored && row.ignored) {
-        return false;
-      }
-
-      if (state.riskFilter !== "all" && row.risk !== state.riskFilter) {
-        return false;
-      }
-
-      if (badgeFilter && !rowMatchesBadgeFilter(row, badgeFilter)) {
+      if (row.ignored) {
         return false;
       }
 
@@ -4719,7 +4406,6 @@
   function updateActionBar() {
     var selectedRows = getSelectedRows();
     var selectedActionRows = getSelectedActionRows();
-    var selectedUnlockRows = getSelectedLockOverrideRows("unlock");
     var selectedReadyRows = $.grep(selectedRows, function(row) {
       return isReadySelectableRow(row);
     });
@@ -4729,20 +4415,12 @@
     var visibleSelectableCount = $.grep(getVisibleRows(), function(row) {
       return isReadySelectableRow(row);
     }).length;
-    var reviewSelected = $.grep(selectedActionRows, function(row) {
-      return row.risk === "review";
-    }).length;
     var summaryText = selectedRows.length + " " + (selectedRows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
-    var detailText = ACP.t(strings, "selectionHintIdle", "Select ready rows to quarantine them. Review rows can be unlocked for this scan after checking details. Protected paths stay blocked.");
+    var totalText = String(Number(state.summary.total || 0)) + " " + ACP.t(strings, "itemsTotalLabel", "items total");
+    var detailText = ACP.t(strings, "selectionHintIdle", "Select ready rows to clean them. Protected paths stay blocked.");
 
     if (!state.scanToken && Number(state.summary.total || 0) > 0) {
       detailText = ACP.t(strings, "selectionHintReadOnly", "Scan results are read-only right now because the secure action snapshot could not be created.");
-    } else if (selectedUnlockRows.length > 0) {
-      detailText = ACP.t(strings, "selectionHintUnlock", "Selected review rows need confirmation. Use Unlock selected to allow them for this scan.");
-    } else if (!state.settings.allowOutsideShareCleanup && Number(state.summary.review || 0) > 0) {
-      detailText = ACP.t(strings, "selectionHintSafety", "Review rows need confirmation first. Select them and use Unlock selected to allow them for this scan.");
-    } else if (reviewSelected > 0 && state.settings.enablePermanentDelete) {
-      detailText = ACP.t(strings, "selectionHintReview", "Review rows still need extra scrutiny before permanent delete.");
     } else if (selectedActionRows.length && state.settings.enablePermanentDelete) {
       detailText = ACP.t(strings, "selectionHintDeleteMode", "Permanent delete requires typed confirmation.");
     } else if (selectedActionRows.length) {
@@ -4750,7 +4428,10 @@
     }
 
     els.$selectionSummary.text(summaryText);
-    els.$selectionDetail.text(detailText);
+    els.$selectionDetail.text(totalText);
+    if (els.$actionToolbar && els.$actionToolbar.length) {
+      els.$actionToolbar.find(".acp-action-toolbar-copy span").text(selectedRows.length ? summaryText : ACP.t(strings, "noItemsSelectedLabel", "No items selected"));
+    }
     els.$primaryAction.text(getPrimaryActionLabel());
     els.$primaryAction.prop("disabled", state.busy || !state.scanToken || selectedActionRows.length === 0);
     els.$dryRun.prop("disabled", state.busy || !state.scanToken || selectedActionRows.length === 0);
@@ -4758,9 +4439,6 @@
     els.$selectVisible.prop("disabled", state.busy || visibleSelectableCount === 0);
     els.$clearSelection.prop("disabled", state.busy || selectedRows.length === 0);
 
-    if (typeof ACP.syncModeStripLockOverrideButton === "function") {
-      ACP.syncModeStripLockOverrideButton(buildContext());
-    }
   }
 
   function getSelectedRows() {
@@ -4775,24 +4453,6 @@
     });
   }
 
-  function getSelectedLockOverrideRows(intent) {
-    return $.grep(getSelectedRows(), function(row) {
-      return intent === "relock" ? isRowRelockable(row) : isRowPendingLockOverride(row);
-    });
-  }
-
-  function clearFilters() {
-    state.riskFilter = "all";
-    state.showIgnored = false;
-    state.badgeFilter = null;
-    els.$search.val("");
-    els.$riskFilter.val("all");
-    els.$showIgnored.prop("checked", false);
-    renderResults();
-    renderResultsMeta();
-    updateActionBar();
-  }
-
   function saveSafetySettings(overrides, options) {
     var normalizedOverrides = $.isPlainObject(overrides) ? overrides : {};
     var normalizedOptions = $.isPlainObject(options) ? options : {};
@@ -4802,10 +4462,8 @@
     var previousAppdataSources = $.extend(true, { detected: [], manual: [], effective: [], zfsPathMappings: [] }, state.appdataSources || {});
     var wasQuarantineManagerVisible = isQuarantineManagerModalVisible();
     var nextSettings = $.extend({}, previousSettings, {
-      allowOutsideShareCleanup: getSafetyToggleValue(els.$allowExternal, previousSettings.allowOutsideShareCleanup),
-      enablePermanentDelete: getSafetyToggleValue(els.$enableDelete, previousSettings.enablePermanentDelete),
-      enableZfsDatasetDelete: getSafetyToggleValue(els.$enableZfsDelete, previousSettings.enableZfsDatasetDelete),
-      allowTemplateReferencedCleanup: getSafetyToggleValue(els.$allowTemplateCleanup, previousSettings.allowTemplateReferencedCleanup)
+      enablePermanentDelete: !getSafetyToggleValue(els.$enableDelete, !previousSettings.enablePermanentDelete),
+      enableZfsDatasetDelete: getSafetyToggleValue(els.$enableZfsDelete, previousSettings.enableZfsDatasetDelete)
     }, normalizedOverrides);
     var nextDefaultPurgeDays = normalizeDefaultQuarantinePurgeDaysValue(nextSettings.defaultQuarantinePurgeDays);
 
@@ -4830,10 +4488,8 @@
 
     var requestData = {
       action: "saveSafetySettings",
-      allowOutsideShareCleanup: nextSettings.allowOutsideShareCleanup ? "1" : "0",
       enablePermanentDelete: nextSettings.enablePermanentDelete ? "1" : "0",
       enableZfsDatasetDelete: nextSettings.enableZfsDatasetDelete ? "1" : "0",
-      allowTemplateReferencedCleanup: nextSettings.allowTemplateReferencedCleanup ? "1" : "0",
       defaultQuarantinePurgeDays: String(Number(nextSettings.defaultQuarantinePurgeDays || 0)),
       manualAppdataSources: ($.isArray(nextSettings.manualAppdataSources) ? nextSettings.manualAppdataSources : []).join("\n"),
       zfsPathMappings: JSON.stringify($.isArray(nextSettings.zfsPathMappings) ? nextSettings.zfsPathMappings : [])
@@ -5039,10 +4695,6 @@
         nextRow.ignoredReason = "";
         nextRow.status = state.dockerRunning ? "orphaned" : "docker_offline";
         nextRow.statusLabel = state.dockerRunning ? "Orphaned" : "Docker offline";
-      } else if (intent === "unlock") {
-        nextRow.lockOverridden = true;
-      } else if (intent === "relock") {
-        nextRow.lockOverridden = false;
       }
 
       return applyLocalSafetyStateToRow(nextRow);
@@ -5115,89 +4767,11 @@
     postCandidateStateIntent([rowId], intent, {
       failureTitle: action === "unignore"
         ? ACP.t(strings, "restoreFailedTitle", "Restore failed")
-        : (action === "unlock" || action === "relock" ? ACP.t(strings, "lockOverrideFailedTitle", "Lock override failed") : ACP.t(strings, "ignoreFailedTitle", "Ignore failed")),
+        : ACP.t(strings, "ignoreFailedTitle", "Ignore failed"),
       failureMessage: action === "unignore"
         ? ACP.t(strings, "restoreFailedMessage", "The ignore list could not be updated right now.")
-        : (action === "unlock" || action === "relock" ? ACP.t(strings, "lockOverrideFailedMessage", "The selected review folders could not be updated right now.") : ACP.t(strings, "ignoreFailedMessage", "The ignore list could not be updated right now."))
+        : ACP.t(strings, "ignoreFailedMessage", "The ignore list could not be updated right now.")
     });
-  }
-
-  function buildLockOverridePreviewHtml(rows, intent) {
-    var isUnlock = intent !== "relock";
-    var preview = rows.slice(0, 6);
-    var listTitle = isUnlock
-      ? ACP.t(strings, "lockOverrideUnlockListTitle", "Folders to unlock")
-      : ACP.t(strings, "lockOverrideRelockListTitle", "Folders to relock");
-    var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-flag">' + ACP.escapeHtml(isUnlock ? ACP.t(strings, "lockOverrideUnlockButton", "Unlock") : ACP.t(strings, "lockOverrideRelockButton", "Relock")) + "</div>",
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-lead">' + ACP.escapeHtml(isUnlock ? ACP.t(strings, "lockOverrideUnlockMessage", "The selected review folders will be manually unlocked for this scan only.") : ACP.t(strings, "lockOverrideRelockMessage", "The selected review folders will return to their locked review state for this scan.")) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(isUnlock ? ACP.t(strings, "lockOverrideUnlockDetail", "This bypass only applies to review locks for the current scan. Protected paths stay blocked.") : ACP.t(strings, "lockOverrideRelockDetail", "This removes the temporary manual unlock override from the selected review folders.")) + "</div>",
-      "</div>",
-      '<div class="acp-modal-stats"><span class="acp-modal-stat is-review">' + ACP.escapeHtml(String(rows.length)) + " " + ACP.escapeHtml(rows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected")) + "</span></div>",
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(listTitle) + "</div>",
-      '<ul class="acp-modal-list">'
-    ];
-
-    $.each(preview, function(_, row) {
-      html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code>");
-      if (row.datasetName) {
-        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDatasetLabel", "ZFS dataset")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.datasetName) + "</code></div>");
-      }
-      html.push("</li>");
-    });
-
-    if (rows.length > preview.length) {
-      html.push('<li class="acp-modal-list-more">+' + ACP.escapeHtml(String(rows.length - preview.length)) + " more</li>");
-    }
-
-    html.push("</ul></div></div>");
-    return html.join("");
-  }
-
-  function startSelectedLockOverrideFlow(intent) {
-    var normalizedIntent = intent === "relock" ? "relock" : "unlock";
-    var targetRows = getSelectedLockOverrideRows(normalizedIntent);
-    var isUnlock = normalizedIntent === "unlock";
-    var confirmTitle = isUnlock
-      ? ACP.t(strings, "lockOverrideUnlockTitle", "Unlock selected review folders?")
-      : ACP.t(strings, "lockOverrideRelockTitle", "Relock selected review folders?");
-    var confirmButtonText = isUnlock
-      ? ACP.t(strings, "lockOverrideUnlockButton", "Unlock")
-      : ACP.t(strings, "lockOverrideRelockButton", "Relock");
-
-    if (!targetRows.length) {
-      swal(
-        ACP.t(strings, "lockOverrideEmptyTitle", "Nothing to update"),
-        ACP.t(strings, "lockOverrideEmptyMessage", "Select at least one review row before using the unlock control."),
-        "warning"
-      );
-      return;
-    }
-
-    swal({
-      title: confirmTitle,
-      text: "",
-      type: "warning",
-      html: true,
-      showCancelButton: true,
-      closeOnConfirm: true,
-      confirmButtonText: confirmButtonText + " " + String(targetRows.length)
-    }, function(confirmed) {
-      if (!confirmed) {
-        return;
-      }
-
-      postCandidateStateIntent($.map(targetRows, function(row) {
-        return row.id;
-      }), normalizedIntent, {
-        failureTitle: ACP.t(strings, "lockOverrideFailedTitle", "Lock override failed"),
-        failureMessage: ACP.t(strings, "lockOverrideFailedMessage", "The selected review folders could not be updated right now.")
-      });
-    });
-    ACP.applyDeleteModalClass("acp-delete-modal", buildLockOverridePreviewHtml(targetRows, normalizedIntent));
   }
 
   function buildOperationContext(operation, rows) {
@@ -5289,79 +4863,87 @@
 
   function getDeleteTypedTitle(context) {
     if (context.confirmButtonLabel === ACP.t(strings, "deleteDatasetActionLabel", "Destroy")) {
-      return ACP.t(strings, "destroyTypedTitle", "Type DELETE to confirm dataset destroy");
+      return ACP.t(strings, "destroyCheckboxTitle", "Confirm dataset destroy");
     }
 
     if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
-      return ACP.t(strings, "deleteMixedTypedTitle", "Type DELETE to confirm item delete");
+      return ACP.t(strings, "deleteMixedCheckboxTitle", "Confirm delete");
     }
 
-    return ACP.t(strings, "deleteTypedTitle", "Type DELETE to confirm permanent delete");
+    return ACP.t(strings, "deleteCheckboxTitle", "Confirm permanent delete");
+  }
+
+  function syncDeleteConfirmationState() {
+    var $modal = getActiveSweetAlertModal();
+    var checked = !!$modal.find(".acp-delete-confirm-checkbox").prop("checked");
+
+    $modal.find(".acp-delete-confirm-error").hide();
+    $modal.find("button.confirm")
+      .toggleClass("acp-confirm-disabled", !checked)
+      .attr("aria-disabled", checked ? "false" : "true");
+  }
+
+  function requireDeleteConfirmationChecked() {
+    var $modal = getActiveSweetAlertModal();
+    var checked = !!$modal.find(".acp-delete-confirm-checkbox").prop("checked");
+
+    if (!checked) {
+      $modal.find(".acp-delete-confirm-error").show();
+      $modal.find(".acp-delete-confirm-checkbox").focus();
+      return false;
+    }
+
+    return true;
   }
 
   function buildOperationPreviewHtml(rows, context, options) {
     var settings = options || {};
-    var reviewCount = typeof settings.reviewCount === "number" ? settings.reviewCount : $.grep(rows, function(row) {
-      return row.risk === "review";
-    }).length;
-    var safeCount = Math.max(0, rows.length - reviewCount);
+    var safeCount = rows.length;
     var preview = rows.slice(0, 6);
+    var selectedLabel = rows.length + " " + (rows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
+    var actionLabel = context.baseOperation === "delete"
+      ? ACP.t(strings, "deleteImmediateLabel", "Permanent delete")
+      : ACP.t(strings, "quarantineActionLabel", "Quarantine");
+    var icon = context.baseOperation === "delete" ? "!" : "Q";
     var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-flag">' + ACP.escapeHtml(ACP.t(strings, "deleteWarningLabel", "WARNING")) + "</div>",
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-lead">' + ACP.escapeHtml(context.confirmMessage) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(context.detailMessage) + "</div>",
+      '<div class="acp-delete-simple-shell">',
+      '<div class="acp-delete-simple-intro">',
+      '<div class="acp-delete-simple-icon" aria-hidden="true">' + ACP.escapeHtml(icon) + "</div>",
+      '<div class="acp-delete-simple-copy">',
+      '<div class="acp-delete-simple-title">' + ACP.escapeHtml(actionLabel) + "</div>",
+      '<div class="acp-delete-simple-message">' + ACP.escapeHtml(context.confirmMessage) + " " + ACP.escapeHtml(context.detailMessage) + "</div>",
       "</div>",
-      '<div class="acp-modal-stats">',
-      '<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(String(rows.length)) + " selected</span>",
-      '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "deleteSafeLabel", "Ready")) + ": " + ACP.escapeHtml(String(safeCount)) + "</span>"
+      '<div class="acp-delete-simple-pills">',
+      '<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(selectedLabel) + "</span>",
+      '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "deleteSafeLabel", "Ready")) + ": " + ACP.escapeHtml(String(safeCount)) + "</span>",
+      "</div>",
+      "</div>",
+      '<section class="acp-delete-simple-card">',
+      '<div class="acp-delete-simple-card-title">' + ACP.escapeHtml(context.listTitle) + "</div>",
+      '<ul class="acp-delete-simple-list">'
     ];
 
-    if (reviewCount > 0) {
-      html.push('<span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "deleteReviewCountLabel", "Review")) + ": " + ACP.escapeHtml(String(reviewCount)) + "</span>");
-    }
-
-    html.push("</div>");
-
-    if (reviewCount > 0) {
-      html.push(
-        '<div class="acp-modal-warning-box">' +
-          '<strong>' + ACP.escapeHtml(ACP.t(strings, "deleteReviewLabel", "Review required")) + ".</strong> " +
-          ACP.escapeHtml(ACP.t(strings, "deleteTypedMessage", "One or more selected folders sit outside the configured appdata sources.")) +
-        "</div>"
-      );
-    }
-
-    if (settings.showTypeHint) {
-      var typeHint = ACP.t(strings, "deleteTypedHint", "Type DELETE to continue with this permanent delete.");
-
-      if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteDatasetPlural", "datasets")) {
-        typeHint = ACP.t(strings, "destroyTypedHint", "Type DELETE to continue with this dataset destroy.");
-      } else if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
-        typeHint = ACP.t(strings, "deleteMixedTypedHint", "Type DELETE to continue with this delete.");
-      }
-
-      html.push('<div class="acp-modal-hint">' + ACP.escapeHtml(typeHint) + "</div>");
-    }
-
-    html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(context.listTitle) + "</div>");
-    html.push('<ul class="acp-modal-list">');
-
     $.each(preview, function(_, row) {
-      html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code>");
+      var details = [];
+
+      html.push('<li class="acp-delete-simple-list-item">');
+      html.push('<code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code>");
+
       if (row.datasetName) {
-        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDatasetLabel", "ZFS dataset")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.datasetName) + "</code></div>");
+        details.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDatasetLabel", "ZFS dataset")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.datasetName) + "</code></div>");
       }
       if (row.zfsImpactSummary) {
-        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDestroyImpactLabel", "Impact")) + '</span><span class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.zfsImpactSummary) + "</span></div>");
+        details.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDestroyImpactLabel", "Impact")) + '</span><span class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.zfsImpactSummary) + "</span></div>");
       }
       if ($.isArray(row.zfsChildDatasets) && row.zfsChildDatasets.length) {
-        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsChildDatasetsLabel", "Child datasets")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(formatPreviewList(row.zfsChildDatasets, Number(row.zfsChildDatasetCount || row.zfsChildDatasets.length))) + "</code></div>");
+        details.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsChildDatasetsLabel", "Child datasets")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(formatPreviewList(row.zfsChildDatasets, Number(row.zfsChildDatasetCount || row.zfsChildDatasets.length))) + "</code></div>");
       }
       if ($.isArray(row.zfsSnapshots) && row.zfsSnapshots.length) {
-        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsSnapshotsLabel", "Snapshots")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(formatPreviewList(row.zfsSnapshots, Number(row.zfsSnapshotCount || row.zfsSnapshots.length))) + "</code></div>");
+        details.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsSnapshotsLabel", "Snapshots")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(formatPreviewList(row.zfsSnapshots, Number(row.zfsSnapshotCount || row.zfsSnapshots.length))) + "</code></div>");
+      }
+
+      if (details.length) {
+        html.push('<details class="acp-simple-disclosure acp-delete-simple-details"><summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>" + details.join("") + "</details>");
       }
       html.push("</li>");
     });
@@ -5370,7 +4952,27 @@
       html.push('<li class="acp-modal-list-more">+' + ACP.escapeHtml(String(rows.length - preview.length)) + " more</li>");
     }
 
-    html.push("</ul></div></div>");
+    html.push("</ul></section>");
+
+    if (settings.showTypeHint) {
+      var typeHint = ACP.t(strings, "deleteCheckboxConfirmLabel", "I confirm I want to permanently delete the selected folders. This action cannot be undone by this plugin.");
+
+      if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteDatasetPlural", "datasets")) {
+        typeHint = ACP.t(strings, "destroyCheckboxConfirmLabel", "I confirm I want to permanently destroy the selected datasets. This action cannot be undone by this plugin.");
+      } else if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
+        typeHint = ACP.t(strings, "deleteMixedCheckboxConfirmLabel", "I confirm I want to permanently remove the selected items. This action cannot be undone by this plugin.");
+      }
+
+      html.push(
+        '<label class="acp-delete-confirm-box">' +
+          '<input type="checkbox" class="acp-delete-confirm-checkbox">' +
+          '<span>' + ACP.escapeHtml(typeHint) + "</span>" +
+        "</label>" +
+        '<div class="acp-delete-confirm-error" style="display:none;">' + ACP.escapeHtml(ACP.t(strings, "deleteCheckboxError", "Confirm the permanent delete before continuing.")) + "</div>"
+      );
+    }
+
+    html.push("</div>");
     return html.join("");
   }
 
@@ -5381,32 +4983,56 @@
     var leadMessage = context.preview
       ? ACP.t(strings, "operationPreviewLead", "Review what would happen before running the action.")
       : (warningCount > 0
-        ? ACP.t(strings, "operationResultsWarningLead", "The action finished, but some rows were skipped, blocked, missing, or failed. Review the list before leaving this screen.")
+        ? ACP.t(strings, "operationResultsWarningLead", "Some folders could not be cleaned. Review the items below and fix anything that is still in use.")
         : ACP.t(strings, "operationResultsSuccessLead", "The action completed successfully. Review the final status for each row below."));
-    var html = ['<div class="acp-modal-summary">'];
+    var icon = context.preview ? "P" : (warningCount > 0 ? "!" : "✓");
+    var title = context.preview
+      ? ACP.t(strings, "operationPreviewTitle", "Preview")
+      : (warningCount > 0 ? context.resultTitleWarning : context.resultTitleSuccess);
+    var html = [
+      '<div class="acp-delete-simple-shell acp-delete-results-simple">',
+      '<div class="acp-delete-simple-intro">',
+      '<div class="acp-delete-simple-icon" aria-hidden="true">' + ACP.escapeHtml(icon) + "</div>",
+      '<div class="acp-delete-simple-copy">',
+      '<div class="acp-delete-simple-title">' + ACP.escapeHtml(title) + "</div>",
+      '<div class="acp-delete-simple-message">' + ACP.escapeHtml(leadMessage) + "</div>",
+      "</div>"
+    ];
+
+    function pushStat(count, label, tone, allowZero) {
+      var numericCount = Number(count || 0);
+
+      if (numericCount <= 0 && !allowZero) {
+        return;
+      }
+
+      stats.push('<span class="acp-modal-stat ' + ACP.escapeHtml(tone || "") + '">' + ACP.escapeHtml(label) + ": " + ACP.escapeHtml(String(numericCount)) + "</span>");
+    }
 
     if (context.preview) {
-      html.push('<div class="acp-modal-flag is-preview">' + ACP.escapeHtml(context.warningLabel) + "</div>");
-      stats.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(ACP.t(strings, "previewReadyLabel", "Ready")) + ": " + ACP.escapeHtml(String(summary.ready || 0)) + "</span>");
+      pushStat(summary.ready, ACP.t(strings, "previewReadyLabel", "Ready"), "is-selected", warningCount <= 0);
     } else if (context.baseOperation === "delete") {
-      stats.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(ACP.t(strings, "resultDeletedLabel", "Deleted")) + ": " + ACP.escapeHtml(String(summary.deleted || 0)) + "</span>");
+      pushStat(summary.deleted, ACP.t(strings, "resultDeletedLabel", "Deleted"), "is-selected", warningCount <= 0);
     } else {
-      stats.push('<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "resultQuarantinedLabel", "Quarantined")) + ": " + ACP.escapeHtml(String(summary.quarantined || 0)) + "</span>");
+      pushStat(summary.quarantined, ACP.t(strings, "resultQuarantinedLabel", "Quarantined"), "is-safe", warningCount <= 0);
     }
 
-    if (!context.preview) {
+    if (!context.preview && successfulCount > 0) {
       stats.push('<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "operationResultsCompletedLabel", "Completed")) + ": " + ACP.escapeHtml(String(successfulCount)) + "</span>");
     }
-    stats.push('<span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "resultSkippedLabel", "Skipped")) + ": " + ACP.escapeHtml(String(summary.skipped || 0)) + "</span>");
-    stats.push('<span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "resultBlockedLabel", "Blocked")) + ": " + ACP.escapeHtml(String(summary.blocked || 0)) + "</span>");
-    stats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(ACP.t(strings, "resultMissingLabel", "Missing")) + ": " + ACP.escapeHtml(String(summary.missing || 0)) + "</span>");
-    stats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(ACP.t(strings, "resultErrorLabel", "Error")) + ": " + ACP.escapeHtml(String(summary.errors || 0)) + "</span>");
+    pushStat(summary.skipped, ACP.t(strings, "resultSkippedLabel", "Skipped"), "is-review");
+    pushStat(summary.blocked, ACP.t(strings, "resultBlockedLabel", "Blocked"), "is-blocked");
+    pushStat(summary.missing, ACP.t(strings, "resultMissingLabel", "Missing"), "is-review");
+    pushStat(summary.errors, ACP.t(strings, "resultErrorLabel", "Error"), "is-blocked");
+    if (!stats.length) {
+      pushStat(0, ACP.t(strings, "operationResultsCompletedLabel", "Completed"), "is-safe", true);
+    }
 
-    html.push('<div class="acp-modal-copy"><div class="acp-modal-lead">' + ACP.escapeHtml(leadMessage) + "</div></div>");
-    html.push('<div class="acp-modal-stats">' + stats.join("") + "</div>");
-    html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(context.listTitle) + "</div>");
-    html.push('<ul class="acp-modal-list acp-modal-result-list">');
+    html.push('<div class="acp-delete-simple-pills">' + stats.join("") + "</div>");
+    html.push("</div>");
+    html.push('<section class="acp-delete-simple-card">');
+    html.push('<div class="acp-delete-simple-card-title">' + ACP.escapeHtml(warningCount > 0 ? ACP.t(strings, "operationResultNeedsAttentionTitle", "Needs attention") : context.listTitle) + "</div>");
+    html.push('<ul class="acp-delete-simple-list acp-delete-result-list">');
 
     $.each(results || [], function(_, result) {
       var statusMeta = ACP.formatOperationResultStatus(strings, result.status);
@@ -5462,8 +5088,8 @@
       }
 
       html.push(
-        '<li class="acp-modal-result">' +
-          '<div class="acp-modal-result-head">' +
+        '<li class="acp-delete-simple-list-item">' +
+          '<div class="acp-delete-result-head">' +
             '<span class="acp-modal-stat ' + statusMeta.tone + '">' + ACP.escapeHtml(statusMeta.label) + "</span>" +
             '<code class="acp-modal-path">' + ACP.escapeHtml(result.displayPath || result.path || "") + '</code>' +
           "</div>" +
@@ -5473,7 +5099,7 @@
       );
     });
 
-    html.push("</ul></div></div>");
+    html.push("</ul></section></div>");
     return html.join("");
   }
 
@@ -5502,26 +5128,27 @@
     var currentProgress = $.isPlainObject(progress) ? progress : {};
     var ratio = readyForResults ? 1 : getOperationProgressRatio(currentProgress);
     var percent = Math.round(ratio * 100);
-    var processedItems = Number(currentProgress.processedItems || 0);
-    var totalItems = Number(currentProgress.totalItems || 0);
     var completedRoots = Number(currentProgress.completedRoots || 0);
     var totalRoots = Number(currentProgress.totalRoots || currentProgress.requestedCount || 0);
-    var recent = $.isArray(currentProgress.recent) ? currentProgress.recent.slice(-50).reverse() : [];
+    var progressBarClass = "acp-delete-progress-bar" + (readyForResults ? " is-complete" : " is-running");
     var message = readyForResults
       ? ACP.t(strings, "deleteProgressComplete", "Delete finished. Review the results before leaving this screen.")
-      : (currentProgress.message || ACP.t(strings, "deleteProgressRunning", "Removing files now."));
+      : (currentProgress.message || ACP.t(strings, "deleteProgressRunning", "Removing selected folders now."));
     var html = [
-      '<div class="acp-modal-summary acp-delete-progress-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-lead">' + ACP.escapeHtml(message) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(context.detailMessage || ACP.t(strings, "deletingMessage", "Large folders can take a moment to remove.")) + "</div>",
+      '<div class="acp-delete-simple-shell acp-delete-progress-summary">',
+      '<div class="acp-delete-simple-intro">',
+      '<div class="acp-delete-simple-icon" aria-hidden="true">' + (readyForResults ? "✓" : "...") + "</div>",
+      '<div class="acp-delete-simple-copy">',
+      '<div class="acp-delete-simple-title">' + ACP.escapeHtml(readyForResults ? ACP.t(strings, "deleteProgressCompleteTitle", "Delete complete") : context.loadingTitle) + "</div>",
+      '<div class="acp-delete-simple-message">' + ACP.escapeHtml(message) + "</div>",
       "</div>",
-      '<div class="acp-delete-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + ACP.escapeHtml(String(percent)) + '">',
+      "</div>",
+      '<section class="acp-delete-simple-card">',
+      '<div class="' + progressBarClass + '" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + ACP.escapeHtml(String(percent)) + '">',
       '<span style="width:' + ACP.escapeHtml(String(percent)) + '%"></span>',
       "</div>",
       '<div class="acp-modal-stats">',
       '<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(String(percent)) + "%</span>",
-      '<span class="acp-modal-stat">' + ACP.escapeHtml(String(processedItems)) + (totalItems > 0 ? (" / " + ACP.escapeHtml(String(totalItems))) : "") + " " + ACP.escapeHtml(ACP.t(strings, "deleteProgressFilesLabel", "items")) + "</span>",
       '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(String(completedRoots)) + (totalRoots > 0 ? (" / " + ACP.escapeHtml(String(totalRoots))) : "") + " " + ACP.escapeHtml(ACP.t(strings, "deleteFolderPlural", "folders")) + "</span>",
       "</div>"
     ];
@@ -5535,26 +5162,11 @@
       );
     }
 
-    html.push(
-      '<div class="acp-modal-panel acp-delete-progress-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "deleteProgressRecentLabel", "Recently deleted")) + "</div>"
-    );
-
-    if (recent.length) {
-      html.push('<ul class="acp-modal-list acp-delete-progress-list">');
-      $.each(recent, function(_, item) {
-        html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(item.path || "") + "</code></li>");
-      });
-      html.push("</ul>");
-    } else {
-      html.push('<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "deleteProgressNoRecent", "Deleted paths will appear here as the operation runs.")) + "</div>");
-    }
-
-    html.push("</div>");
+    html.push("</section>");
 
     if (readyForResults) {
       html.push(
-        '<div class="acp-modal-actions-row">' +
+        '<div class="acp-delete-simple-actions">' +
           '<button type="button" class="acp-button acp-button-primary" data-action="view-operation-results">' + ACP.escapeHtml(ACP.t(strings, "deleteProgressViewResults", "View results")) + "</button>" +
         "</div>"
       );
@@ -5564,11 +5176,24 @@
     return html.join("");
   }
 
+  function syncOperationProgressModalButtons(readyForResults) {
+    var $modal = getActiveSweetAlertModal();
+    var $confirm = $modal.find("button.confirm");
+    var $cancel = $modal.find("button.cancel");
+
+    $cancel.hide();
+    $confirm
+      .toggleClass("acp-confirm-disabled", !readyForResults)
+      .prop("disabled", !readyForResults)
+      .attr("aria-disabled", readyForResults ? "false" : "true");
+  }
+
   function renderOperationProgressModal(progress, context, readyForResults) {
     ACP.applyDeleteModalClass(
-      "acp-delete-modal acp-delete-results-modal",
+      "acp-delete-modal acp-delete-results-modal " + (readyForResults ? "acp-delete-progress-ready" : "acp-delete-progress-running"),
       buildOperationProgressHtml(progress, context, readyForResults)
     );
+    syncOperationProgressModalButtons(!!readyForResults);
   }
 
   function stopOperationProgressPolling() {
@@ -5628,9 +5253,17 @@
       text: "",
       type: "info",
       html: true,
-      showConfirmButton: false,
+      showConfirmButton: true,
+      showCancelButton: false,
+      closeOnConfirm: false,
+      confirmButtonText: ACP.t(strings, "okLabel", "OK"),
       allowEscapeKey: false,
       allowOutsideClick: false
+    }, function() {
+      if (state.operationProgress.pendingResult) {
+        showPendingOperationResults();
+      }
+      return false;
     });
     renderOperationProgressModal(state.operationProgress.latest, context, false);
     state.operationProgress.pollTimer = window.setTimeout(function() {
@@ -5711,7 +5344,9 @@
       title: modalTitle,
       text: "",
       type: modalType,
-      html: true
+      html: true,
+      showCancelButton: false,
+      confirmButtonText: ACP.t(strings, "okLabel", "OK")
     });
     ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildOperationResultsHtml(summary, results, context));
     renderAll();
@@ -5730,9 +5365,6 @@
 
   function startPrimaryActionFlow() {
     var selectedRows = getSelectedActionRows();
-    var reviewRows = $.grep(selectedRows, function(row) {
-      return row.risk === "review";
-    });
     var context = buildOperationContext(getPrimaryOperation(), selectedRows);
     var confirmButtonText = buildActionConfirmButtonText(context, selectedRows.length);
 
@@ -5773,7 +5405,9 @@
               title: ACP.t(strings, "dryRunResultTitleWarning", "Dry run finished with warnings"),
               text: "",
               type: "warning",
-              html: true
+              html: true,
+              showCancelButton: false,
+              confirmButtonText: ACP.t(strings, "okLabel", "OK")
             });
             ACP.applyDeleteModalClass(
               "acp-delete-modal acp-delete-results-modal",
@@ -5785,19 +5419,13 @@
           swal({
             title: getDeleteTypedTitle(context),
             text: "",
-            type: "input",
+            type: "warning",
             html: true,
             showCancelButton: true,
             closeOnConfirm: false,
-            inputPlaceholder: ACP.t(strings, "deleteTypedPlaceholder", "DELETE"),
             confirmButtonText: confirmButtonText
-          }, function(inputValue) {
-            if (inputValue === false) {
-              return false;
-            }
-
-            if ($.trim(String(inputValue || "")).toUpperCase() !== "DELETE") {
-              swal.showInputError(ACP.t(strings, "deleteTypedError", "Type DELETE to continue."));
+          }, function() {
+            if (!requireDeleteConfirmationChecked()) {
               return false;
             }
 
@@ -5805,9 +5433,9 @@
             return true;
           });
           ACP.applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildOperationPreviewHtml(previewResults, context, {
-            reviewCount: reviewRows.length,
             showTypeHint: true
           }));
+          syncDeleteConfirmationState();
         }).fail(function(xhr) {
           setBusy(false);
           swal(context.failureTitle, ACP.extractErrorMessage(xhr, ACP.t(strings, "deletePreviewFailedMessage", "The delete preview could not be prepared right now.")), "error");
@@ -5818,19 +5446,13 @@
       swal({
         title: getDeleteTypedTitle(context),
         text: "",
-        type: "input",
+        type: "warning",
         html: true,
         showCancelButton: true,
         closeOnConfirm: false,
-        inputPlaceholder: ACP.t(strings, "deleteTypedPlaceholder", "DELETE"),
         confirmButtonText: confirmButtonText
-      }, function(inputValue) {
-        if (inputValue === false) {
-          return false;
-        }
-
-        if ($.trim(String(inputValue || "")).toUpperCase() !== "DELETE") {
-          swal.showInputError(ACP.t(strings, "deleteTypedError", "Type DELETE to continue."));
+      }, function() {
+        if (!requireDeleteConfirmationChecked()) {
           return false;
         }
 
@@ -5838,9 +5460,9 @@
         return true;
       });
       ACP.applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildOperationPreviewHtml(selectedRows, context, {
-        reviewCount: reviewRows.length,
         showTypeHint: true
       }));
+      syncDeleteConfirmationState();
       return;
     }
 
@@ -5856,7 +5478,6 @@
       runCandidateOperation(selectedRows, context.operation);
     });
     ACP.applyDeleteModalClass("acp-delete-modal", buildOperationPreviewHtml(selectedRows, context, {
-      reviewCount: 0,
       showTypeHint: false
     }));
   }
