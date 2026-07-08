@@ -34,6 +34,7 @@
   --acp-button-primary-bg: rgba(241, 90, 36, 0.16);
   --acp-button-primary-border: rgba(241, 90, 36, 0.72);
   --acp-button-primary-text: var(--acp-button-text);
+  --acp-button-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   --acp-filter-bg: rgba(255, 255, 255, 0.03);
   --acp-filter-border: rgba(255, 255, 255, 0.08);
   --acp-filter-text: #b9c1cc;
@@ -190,6 +191,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   --acp-button-primary-bg: rgba(226, 91, 35, 0.12);
   --acp-button-primary-border: rgba(226, 91, 35, 0.44);
   --acp-button-primary-text: var(--acp-button-text);
+  --acp-button-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.24);
   --acp-filter-bg: rgba(255, 255, 255, 0.9);
   --acp-filter-border: rgba(15, 23, 42, 0.1);
   --acp-filter-text: #556274;
@@ -540,7 +542,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   background: var(--acp-button-bg);
   border: 1px solid var(--acp-button-border);
   border-radius: 10px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.88), inset 0 0 0 1px rgba(255, 255, 255, 0.03) !important;
+  box-shadow: var(--acp-button-shadow) !important;
   color: var(--acp-button-text);
   cursor: pointer;
   display: inline-flex;
@@ -561,7 +563,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .acp-button:focus-visible:not(:disabled) {
   background: var(--acp-button-hover-bg);
   border-color: var(--acp-button-hover-border);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.88), inset 0 0 0 1px rgba(255, 255, 255, 0.03) !important;
+  box-shadow: var(--acp-button-shadow) !important;
   color: var(--acp-button-hover-text);
 }
 
@@ -1559,7 +1561,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   background: var(--acp-button-bg) !important;
   border: 1px solid var(--acp-button-border) !important;
   border-radius: 8px !important;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.88), inset 0 0 0 1px rgba(255, 255, 255, 0.03) !important;
+  box-shadow: var(--acp-button-shadow) !important;
   color: var(--acp-button-text) !important;
   display: inline-flex !important;
   font-size: 11px !important;
