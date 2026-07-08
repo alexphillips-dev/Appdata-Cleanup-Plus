@@ -261,6 +261,7 @@ $config = array(
     "detectedSummary" => _("detected"),
     "cardTotal" => _("Detected"),
     "cardBlocked" => _("Blocked"),
+    "cardBlockedSubtitle" => _("Locked or in use"),
     "cardBlockedSafety" => _("Blocked for safety"),
     "cardBlockedOptions" => _("Blocked by options"),
     "cardSelected" => _("Selected"),

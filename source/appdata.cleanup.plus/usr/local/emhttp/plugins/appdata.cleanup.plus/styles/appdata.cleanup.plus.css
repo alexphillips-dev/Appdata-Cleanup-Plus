@@ -3442,7 +3442,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 #acp-app .acp-summary-grid {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
   width: 100%;
 }
 
@@ -3878,7 +3878,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   }
 
   #acp-app .acp-summary-grid {
-    grid-template-columns: repeat(3, minmax(150px, 1fr));
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
   }
 
   #acp-app .acp-row-primary,
@@ -3911,7 +3911,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-summary-grid {
-  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
 }
 
 #acp-app .acp-mode-card {
