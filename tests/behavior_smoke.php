@@ -36,14 +36,6 @@ if ( function_exists("session_status") && session_status() === PHP_SESSION_ACTIV
   session_write_close();
 }
 
-if ( ! is_dir($sessionRoot) ) {
-  mkdir($sessionRoot, 0777, true);
-}
-
-session_save_path($sessionRoot);
-session_id("acp-behavior-primary");
-session_start();
-
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/helpers.php");
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/dashboard.php");
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/quarantine.php");
@@ -138,6 +130,10 @@ behaviorSmokeRemoveTree($manualAliasSourceRoot);
 behaviorSmokeRemoveTree($manualCustomSourceRoot);
 behaviorSmokeRemoveTree($outsideShareReviewRoot);
 behaviorSmokeRemoveTree($appdataSharePhysicalRoot);
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($sessionRoot), "Session fixture root should be created.");
+session_save_path($sessionRoot);
+session_id("acp-behavior-primary");
+session_start();
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusConfigDir(), "State root should be created.");
 $defaultSafetySettings = getAppdataCleanupPlusSafetySettings();
 behaviorSmokeAssertSame(0, (int)$defaultSafetySettings["defaultQuarantinePurgeDays"], "Default safety settings should start with no quarantine purge timer.");
