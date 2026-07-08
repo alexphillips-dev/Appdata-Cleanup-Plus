@@ -5130,6 +5130,7 @@
     var percent = Math.round(ratio * 100);
     var completedRoots = Number(currentProgress.completedRoots || 0);
     var totalRoots = Number(currentProgress.totalRoots || currentProgress.requestedCount || 0);
+    var progressBarClass = "acp-delete-progress-bar" + (readyForResults ? " is-complete" : " is-running");
     var message = readyForResults
       ? ACP.t(strings, "deleteProgressComplete", "Delete finished. Review the results before leaving this screen.")
       : (currentProgress.message || ACP.t(strings, "deleteProgressRunning", "Removing selected folders now."));
@@ -5143,7 +5144,7 @@
       "</div>",
       "</div>",
       '<section class="acp-delete-simple-card">',
-      '<div class="acp-delete-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + ACP.escapeHtml(String(percent)) + '">',
+      '<div class="' + progressBarClass + '" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + ACP.escapeHtml(String(percent)) + '">',
       '<span style="width:' + ACP.escapeHtml(String(percent)) + '%"></span>',
       "</div>",
       '<div class="acp-modal-stats">',
@@ -5175,11 +5176,24 @@
     return html.join("");
   }
 
+  function syncOperationProgressModalButtons(readyForResults) {
+    var $modal = getActiveSweetAlertModal();
+    var $confirm = $modal.find("button.confirm");
+    var $cancel = $modal.find("button.cancel");
+
+    $cancel.hide();
+    $confirm
+      .toggleClass("acp-confirm-disabled", !readyForResults)
+      .prop("disabled", !readyForResults)
+      .attr("aria-disabled", readyForResults ? "false" : "true");
+  }
+
   function renderOperationProgressModal(progress, context, readyForResults) {
     ACP.applyDeleteModalClass(
-      "acp-delete-modal acp-delete-results-modal",
+      "acp-delete-modal acp-delete-results-modal " + (readyForResults ? "acp-delete-progress-ready" : "acp-delete-progress-running"),
       buildOperationProgressHtml(progress, context, readyForResults)
     );
+    syncOperationProgressModalButtons(!!readyForResults);
   }
 
   function stopOperationProgressPolling() {
@@ -5239,9 +5253,17 @@
       text: "",
       type: "info",
       html: true,
-      showConfirmButton: false,
+      showConfirmButton: true,
+      showCancelButton: false,
+      closeOnConfirm: false,
+      confirmButtonText: ACP.t(strings, "okLabel", "OK"),
       allowEscapeKey: false,
       allowOutsideClick: false
+    }, function() {
+      if (state.operationProgress.pendingResult) {
+        showPendingOperationResults();
+      }
+      return false;
     });
     renderOperationProgressModal(state.operationProgress.latest, context, false);
     state.operationProgress.pollTimer = window.setTimeout(function() {

@@ -2759,6 +2759,46 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   transition: width 180ms ease;
 }
 
+.acp-delete-progress-bar.is-running::after {
+  animation: acp-delete-progress-sweep 1.05s linear infinite;
+  background: linear-gradient(90deg, transparent, var(--acp-accent), transparent);
+  content: "";
+  height: 100%;
+  left: -45%;
+  opacity: 0.72;
+  position: absolute;
+  top: 0;
+  width: 45%;
+}
+
+.acp-delete-progress-bar.is-complete::after {
+  display: none;
+}
+
+@keyframes acp-delete-progress-sweep {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(320%);
+  }
+}
+
+.sweet-alert.acp-delete-progress-running button.confirm,
+.sweet-alert.acp-delete-progress-running button.confirm:hover {
+  background: var(--acp-button-bg) !important;
+  border-color: var(--acp-button-border) !important;
+  color: var(--acp-muted) !important;
+  cursor: not-allowed !important;
+  opacity: 0.56 !important;
+}
+
+.sweet-alert.acp-delete-progress-running button.cancel,
+.sweet-alert.acp-delete-progress-ready button.cancel {
+  display: none !important;
+}
+
 .acp-delete-progress-panel {
   max-height: min(34vh, 320px);
   overflow: auto;
