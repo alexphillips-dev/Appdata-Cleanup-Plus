@@ -56,10 +56,7 @@
       pendingResult: null,
       latest: null
     },
-    riskFilter: "all",
     sortMode: "risk",
-    showIgnored: false,
-    badgeFilter: null,
     bulkSelectPreset: "safe",
     busy: false
   };
@@ -225,8 +222,6 @@
     els.$app = $("#acp-app");
     els.$summaryCards = $("#acp-summary-cards");
     els.$search = $("#acp-search");
-    els.$riskFilter = $("#acp-risk-filter");
-    els.$showIgnored = $("#acp-show-ignored");
     els.$enableDelete = $("#acp-enable-delete");
     els.$enableZfsDelete = $("#acp-enable-zfs-delete");
     els.$advancedSafety = $("#acp-advanced-safety");
@@ -244,7 +239,6 @@
     els.$modeStrip = $("#acp-mode-strip");
     els.$resultsContext = $("#acp-results-context-row");
     els.$notices = $("#acp-notices");
-    els.$safeBanner = $("#acp-safe-banner");
     els.$actionToolbar = $("#acp-action-toolbar");
     els.$results = $("#acp-results");
     els.$selectionSummary = $("#acp-selection-summary");
@@ -253,20 +247,6 @@
 
   function bindEvents() {
     els.$search.on("input", renderAll);
-
-    els.$riskFilter.on("change", function() {
-      state.riskFilter = els.$riskFilter.val();
-      renderResults();
-      renderResultsMeta();
-      updateActionBar();
-    });
-
-    els.$showIgnored.on("change", function() {
-      state.showIgnored = !!els.$showIgnored.prop("checked");
-      renderResults();
-      renderResultsMeta();
-      updateActionBar();
-    });
 
     els.$sort.on("change", function() {
       state.sortMode = els.$sort.val();
@@ -349,12 +329,6 @@
       updateActionBar();
     });
 
-    els.$results.on("click", ".acp-badge-filter", handleBadgeFilterClick);
-    els.$resultsMeta.on("click", ".acp-badge-filter", handleBadgeFilterClick);
-    els.$resultsMeta.on("click", "[data-action='clear-filters']", clearFilters);
-    els.$results.on("keydown", ".acp-badge-filter", handleBadgeFilterKeydown);
-    els.$resultsMeta.on("keydown", ".acp-badge-filter", handleBadgeFilterKeydown);
-
     els.$results.on("click", ".acp-row-action", function(event) {
       var action = $(this).data("row-action");
       var rowId = $(this).data("row-id");
@@ -387,10 +361,6 @@
 
     els.$results.on("click", "[data-action]", function() {
       var action = $(this).data("action");
-
-      if (action === "clear-filters") {
-        clearFilters();
-      }
 
       if (action === "rescan") {
         loadScan();
@@ -803,45 +773,6 @@
     });
   }
 
-  function handleBadgeFilterClick(event) {
-    var $badge = $(this);
-    var kind = $.trim(String($badge.data("badgeKind") || ""));
-    var value = $.trim(String($badge.data("badgeValue") || ""));
-    var label = $.trim(String($badge.data("badgeLabel") || $badge.text() || ""));
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (!kind || !value) {
-      return;
-    }
-
-    if (isBadgeFilterActive(kind, value)) {
-      state.badgeFilter = null;
-    } else {
-      state.badgeFilter = {
-        kind: kind,
-        value: value,
-        label: label || value
-      };
-    }
-
-    renderResults();
-    renderResultsMeta();
-    updateActionBar();
-  }
-
-  function handleBadgeFilterKeydown(event) {
-    var key = String(event.key || "");
-
-    if (key !== "Enter" && key !== " ") {
-      return;
-    }
-
-    event.preventDefault();
-    $(this).trigger("click");
-  }
-
   function buildContext() {
     return {
       state: state,
@@ -958,8 +889,6 @@
     els.$app.toggleClass("is-busy", state.busy);
     els.$rescan.prop("disabled", state.busy);
     els.$search.prop("disabled", state.busy);
-    els.$riskFilter.prop("disabled", state.busy);
-    els.$showIgnored.prop("disabled", state.busy);
     els.$enableDelete.prop("disabled", state.busy);
     els.$enableZfsDelete.prop("disabled", state.busy);
     els.$advancedSafety.prop("disabled", state.busy);
@@ -3151,10 +3080,7 @@
       },
       uiState: {
         searchTerm: $.trim(String(els.$search.val() || "")),
-        riskFilter: String(state.riskFilter || "all"),
-        showIgnored: !!state.showIgnored,
         sortMode: String(state.sortMode || "risk"),
-        badgeFilter: state.badgeFilter || null,
         busy: !!state.busy
       },
       scan: {
@@ -3881,69 +3807,9 @@
     return String(value || "").toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
   }
 
-  function getActiveBadgeFilter() {
-    if (!state.badgeFilter || !state.badgeFilter.kind || !state.badgeFilter.value) {
-      return null;
-    }
-
-    return {
-      kind: String(state.badgeFilter.kind),
-      value: String(state.badgeFilter.value),
-      label: String(state.badgeFilter.label || state.badgeFilter.value)
-    };
-  }
-
-  function isBadgeFilterActive(kind, value) {
-    var filter = getActiveBadgeFilter();
-
-    if (!filter) {
-      return false;
-    }
-
-    return filter.kind === String(kind || "") && filter.value === String(value || "");
-  }
-
-  function getBadgeFilterTone(filter) {
-    var value = filter && filter.value ? String(filter.value) : "";
-
-    if (!filter) {
-      return "neutral";
-    }
-
-    if (filter.kind === "actionability") {
-      return value || "neutral";
-    }
-
-    if (filter.kind === "source" && value === "filesystem") {
-      return "discovery";
-    }
-
-    if (filter.kind === "reason") {
-      if (value === "outside_share") {
-        return "review";
-      }
-
-      if (value === "override_active") {
-        return "review";
-      }
-
-      if (value === "symlink" || value === "mount_point" || value === "root_path" || value === "unsafe_path" || value === "safety_lock") {
-        return "locked";
-      }
-    }
-
-    if (filter.kind === "storage" && value === "zfs") {
-      return "neutral";
-    }
-
-    return "neutral";
-  }
-
   function buildBadgeHtml(badge) {
     var classes = ["acp-badge", "acp-badge-tone-" + sanitizeBadgeToken(badge.tone || "neutral")];
     var kindClass = badge.kindClass || badge.kind || "";
-    var interactive = badge.kind && badge.value;
-    var active = interactive && isBadgeFilterActive(badge.kind, badge.value);
     var title = $.trim(String(badge.title || ""));
 
     if (kindClass) {
@@ -3952,28 +3818,6 @@
 
     if (badge.isPrimary) {
       classes.push("is-primary");
-    }
-
-    if (interactive) {
-      classes.push("acp-badge-filter");
-
-      if (active) {
-        classes.push("is-active");
-      }
-
-      title = $.trim((title ? title + " " : "") + ACP.t(strings, "badgeFilterHint", "Click to filter rows by this badge."));
-
-      return (
-        '<span class="' + classes.join(" ") + '"' +
-          ' data-badge-kind="' + ACP.escapeHtml(String(badge.kind)) + '"' +
-          ' data-badge-value="' + ACP.escapeHtml(String(badge.value)) + '"' +
-          ' data-badge-label="' + ACP.escapeHtml(String(badge.label || badge.value)) + '"' +
-          ' role="button"' +
-          ' tabindex="0"' +
-          ' aria-pressed="' + (active ? "true" : "false") + '"' +
-          (title ? ' title="' + ACP.escapeHtml(title) + '"' : "") +
-        ">" + ACP.escapeHtml(String(badge.label || "")) + "</span>"
-      );
     }
 
     return '<span class="' + classes.join(" ") + '"' + (title ? ' title="' + ACP.escapeHtml(title) + '"' : "") + ">" + ACP.escapeHtml(String(badge.label || "")) + "</span>";
@@ -4202,39 +4046,6 @@
     return [getRowActionabilityDescriptor(row), getRowSourceDescriptor(row)];
   }
 
-  function rowMatchesBadgeFilter(row, filter) {
-    var reasonDescriptors;
-
-    if (!filter) {
-      return true;
-    }
-
-    if (filter.kind === "actionability") {
-      return getRowActionabilityDescriptor(row).value === filter.value;
-    }
-
-    if (filter.kind === "status") {
-      return String(row.status || "") === filter.value;
-    }
-
-    if (filter.kind === "source") {
-      return String(row.sourceKind || "") === filter.value;
-    }
-
-    if (filter.kind === "storage") {
-      return String(row.storageKind || "") === filter.value;
-    }
-
-    if (filter.kind === "reason") {
-      reasonDescriptors = getRowReasonDescriptors(row);
-      return $.grep(reasonDescriptors, function(descriptor) {
-        return descriptor.value === filter.value;
-      }).length > 0;
-    }
-
-    return true;
-  }
-
   function buildSectionActionabilitySummary(rows) {
     var summary = { ready: 0, review: 0, locked: 0 };
 
@@ -4384,10 +4195,10 @@
     }
 
     if (!visibleRows.length) {
-      if (!state.showIgnored && Number(state.summary.total || 0) === 0 && Number(state.summary.ignored || 0) > 0) {
+      if (Number(state.summary.total || 0) === 0 && Number(state.summary.ignored || 0) > 0) {
         renderStateMessage(
           ACP.t(strings, "ignoredOnlyTitle", "Only ignored paths remain"),
-          ACP.t(strings, "ignoredOnlyMessage", "Every detected candidate is hidden by your ignore list. Turn on Show ignored to review or restore hidden paths."),
+          ACP.t(strings, "ignoredOnlyMessage", "Every detected candidate is hidden by your ignore list."),
           null,
           null
         );
@@ -4395,10 +4206,10 @@
       }
 
       renderStateMessage(
-        ACP.t(strings, "noMatchesTitle", "No folders match the current filters"),
-        ACP.t(strings, "noMatchesMessage", "Clear the search, badge, or risk filters to see the full scan again."),
-        "clear-filters",
-        ACP.t(strings, "clearFiltersLabel", "Clear filters")
+        ACP.t(strings, "noMatchesTitle", "No folders match the current search"),
+        ACP.t(strings, "noMatchesMessage", "Clear the search field to see the full scan again."),
+        null,
+        null
       );
       return;
     }
@@ -4433,37 +4244,17 @@
   }
 
   function renderResultsMeta() {
-    var badgeFilter = getActiveBadgeFilter();
     var visibleRows = getVisibleRows();
-    var hiddenIgnored = Number(state.summary.ignored || 0) > 0 && !state.showIgnored;
     var parts = [
       visibleRows.length + " " + ACP.t(strings, "visibleSummary", "visible"),
       Number(state.summary.total || 0) + " " + ACP.t(strings, "detectedSummary", "detected")
     ];
 
-    if (hiddenIgnored) {
+    if (Number(state.summary.ignored || 0) > 0) {
       parts.push(Number(state.summary.ignored || 0) + " " + ACP.t(strings, "ignoredHiddenSummary", "ignored hidden"));
-    } else if (state.showIgnored && Number(state.summary.ignored || 0) > 0) {
-      parts.push(Number(state.summary.ignored || 0) + " " + ACP.t(strings, "ignoredShownSummary", "ignored shown"));
     }
 
-    if (!badgeFilter) {
-      els.$resultsMeta.text(parts.join(" | "));
-      return;
-    }
-
-    els.$resultsMeta.html(
-      '<span class="acp-results-meta-copy">' + ACP.escapeHtml(parts.join(" | ")) + "</span>" +
-      '<span class="acp-results-meta-filter-label">' + ACP.escapeHtml(ACP.t(strings, "filteredByLabel", "Filtered by")) + "</span>" +
-      buildBadgeHtml({
-        kind: badgeFilter.kind,
-        value: badgeFilter.value,
-        label: badgeFilter.label,
-        tone: getBadgeFilterTone(badgeFilter),
-        kindClass: "meta"
-      }) +
-      '<button type="button" class="acp-button acp-button-secondary acp-results-meta-clear" data-action="clear-filters">' + ACP.escapeHtml(ACP.t(strings, "clearFiltersLabel", "Clear filter")) + "</button>"
-    );
+    els.$resultsMeta.text(parts.join(" | "));
   }
 
   function renderStateMessage(title, message, action, actionLabel, isLoading) {
@@ -4481,25 +4272,12 @@
   }
 
   function getVisibleRows() {
-    var badgeFilter = getActiveBadgeFilter();
     var term = $.trim(String(els.$search.val() || "")).toLowerCase();
 
     return $.grep(state.rows || [], function(row) {
       var haystack = ((row.name || "") + " " + (row.displayPath || "") + " " + (row.sourceSummary || "") + " " + (row.targetSummary || "")).toLowerCase();
 
-      if (!state.showIgnored && row.ignored) {
-        return false;
-      }
-
-      if (state.riskFilter === "blocked" && getRowActionabilityDescriptor(row).value !== "locked") {
-        return false;
-      }
-
-      if (state.riskFilter !== "all" && state.riskFilter !== "blocked" && row.risk !== state.riskFilter) {
-        return false;
-      }
-
-      if (badgeFilter && !rowMatchesBadgeFilter(row, badgeFilter)) {
+      if (row.ignored) {
         return false;
       }
 
@@ -4609,18 +4387,6 @@
     return $.grep(getSelectedRows(), function(row) {
       return !!row.canDelete;
     });
-  }
-
-  function clearFilters() {
-    state.riskFilter = "all";
-    state.showIgnored = false;
-    state.badgeFilter = null;
-    els.$search.val("");
-    els.$riskFilter.val("all");
-    els.$showIgnored.prop("checked", false);
-    renderResults();
-    renderResultsMeta();
-    updateActionBar();
   }
 
   function saveSafetySettings(overrides, options) {

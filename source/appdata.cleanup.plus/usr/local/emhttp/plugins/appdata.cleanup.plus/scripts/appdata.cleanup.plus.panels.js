@@ -32,11 +32,7 @@
     var state = context.state || {};
     var els = context.els || {};
     var strings = context.strings || {};
-    var settings = state.settings || {};
     var isDeleteMode = !!(state.settings && state.settings.enablePermanentDelete);
-    var leftTitle = isDeleteMode
-      ? ACP.t(strings, "noticeDeleteModeTitle", "Permanent delete mode is enabled")
-      : ACP.t(strings, "noticeSafeModeTitle", "Safe mode is on");
     var leftMessage = isDeleteMode
       ? ACP.t(strings, "noticeDeleteModeMessage", "Selected folders will be permanently removed after confirmation. Use this mode carefully.")
       : ACP.t(strings, "noticeSafeModeMessage", "The primary action moves selected folders into quarantine instead of permanently deleting them.");
@@ -44,7 +40,6 @@
     var safeModeActionLabel = isDeleteMode
       ? ACP.t(strings, "enableSafeModeLabel", "Enable Safe Mode")
       : ACP.t(strings, "disableSafeModeLabel", "Disable Safe Mode");
-    var quarantineRoot = String(settings.quarantineRoot || "");
     var html = [
       '<article class="acp-mode-card ' + (isDeleteMode ? "is-delete-mode" : "is-safe-mode") + '">',
       '<div class="acp-mode-icon" aria-hidden="true">' + (isDeleteMode ? "!" : "✓") + "</div>",
@@ -57,20 +52,6 @@
     ];
 
     els.$modeStrip.html(html.join(""));
-
-    if (els.$safeBanner && els.$safeBanner.length) {
-      els.$safeBanner.html(
-        '<div class="acp-safe-banner-copy">' +
-          '<span class="acp-safe-banner-icon" aria-hidden="true">i</span>' +
-          '<div><strong>' + ACP.escapeHtml(leftTitle) + '</strong><span>' + ACP.escapeHtml(leftMessage) + '</span></div>' +
-        '</div>' +
-        '<div class="acp-safe-banner-location">' +
-          '<span>' + ACP.escapeHtml(ACP.t(strings, "quarantineLocationLabel", "Quarantine location:")) + '</span>' +
-          '<code>' + ACP.escapeHtml(quarantineRoot || ACP.t(strings, "quarantineLocationUnset", "Default quarantine root")) + '</code>' +
-          '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-safe-mode">' + ACP.escapeHtml(safeModeActionLabel) + '</button>' +
-        '</div>'
-      );
-    }
   };
 
   ACP.buildQuarantineManagerModalHtml = function(context) {

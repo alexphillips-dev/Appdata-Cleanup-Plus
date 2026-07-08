@@ -89,7 +89,6 @@ $config = array(
     "scanExpiredMessage" => _("This scan expired or is no longer valid. Rescan and try again."),
     "rescanLabel" => _("Rescan"),
     "selectAllLabel" => _("Select all"),
-    "clearFiltersLabel" => _("Clear filters"),
     "clearLabel" => _("Clear"),
     "deleteEmptyTitle" => _("Nothing selected"),
     "deleteEmptyMessage" => _("Select at least one deletable folder before continuing."),
@@ -149,7 +148,6 @@ $config = array(
     "restoreFailedMessage" => _("The ignore list could not be updated right now."),
     "settingsSaveFailedTitle" => _("Safety settings failed"),
     "settingsSaveFailedMessage" => _("The new safety settings could not be saved right now."),
-    "showIgnoredLabel" => _("Show ignored"),
     "advancedSafetyOpenLabel" => _("Plugin Settings"),
     "advancedSafetyTitle" => _("Plugin Settings"),
     "advancedSafetySubtitle" => _("Safe Mode moves cleanup targets into quarantine instead of permanently deleting them. ZFS dataset delete is only needed for exact dataset-backed rows."),
@@ -215,8 +213,6 @@ $config = array(
     "updatedLabel" => _("Updated"),
     "ignoredHiddenSummary" => _("ignored hidden"),
     "ignoredShownSummary" => _("ignored shown"),
-    "filteredByLabel" => _("Filtered by"),
-    "badgeFilterHint" => _("Click to filter rows by this badge."),
     "badgeReasonOutsideShare" => _("Outside share"),
     "badgeReasonOverrideActive" => _("Override active"),
     "badgeReasonSymlink" => _("Symlink"),
@@ -562,17 +558,8 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
   <section class="acp-toolbar acp-toolbar-panel acp-results-controls-panel">
     <div class="acp-toolbar-inline">
       <label class="acp-field acp-field-grow">
-        <span class="acp-field-label"><?php echo _("Search / Filter"); ?></span>
+        <span class="acp-field-label"><?php echo _("Search"); ?></span>
         <input type="search" id="acp-search" class="acp-input" placeholder="<?php echo _("Filter by app name or path..."); ?>" autocomplete="off">
-      </label>
-
-      <label class="acp-field acp-compact-field">
-        <span class="acp-field-label"><?php echo _("Show"); ?></span>
-        <select id="acp-risk-filter" class="acp-select">
-          <option value="all"><?php echo _("All States"); ?></option>
-          <option value="safe"><?php echo _("Ready"); ?></option>
-          <option value="blocked"><?php echo _("Blocked"); ?></option>
-        </select>
       </label>
 
       <label class="acp-field acp-compact-field acp-sort-field">
@@ -583,26 +570,11 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
           <option value="name"><?php echo _("Name"); ?></option>
         </select>
       </label>
-
-      <label class="acp-field acp-compact-field acp-source-field">
-        <span class="acp-field-label"><?php echo _("Source"); ?></span>
-        <select id="acp-source-filter" class="acp-select">
-          <option value="all"><?php echo _("All Sources"); ?></option>
-        </select>
-      </label>
-
-      <button type="button" class="acp-button acp-button-secondary acp-more-filters" disabled><?php echo _("More Filters"); ?></button>
     </div>
     <div class="acp-toolbar-footer">
-      <label class="acp-toggle">
-        <input type="checkbox" id="acp-show-ignored">
-        <span><?php echo _("Show ignored items"); ?></span>
-      </label>
       <section class="acp-results-meta" id="acp-results-meta" aria-live="polite"></section>
     </div>
   </section>
-
-  <section class="acp-safe-banner" id="acp-safe-banner" aria-live="polite"></section>
 
   <section class="acp-action-toolbar" id="acp-action-toolbar">
     <div class="acp-action-toolbar-copy">

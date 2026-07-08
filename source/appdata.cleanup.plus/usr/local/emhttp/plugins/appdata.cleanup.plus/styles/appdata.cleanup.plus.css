@@ -698,15 +698,6 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   min-width: 0;
 }
 
-.acp-results-meta-filter-label {
-  font-weight: 700;
-}
-
-.acp-results-meta-clear {
-  min-height: 24px;
-  padding: 0 9px;
-}
-
 .acp-mode-strip {
   display: grid;
   gap: 4px;
@@ -1193,23 +1184,6 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   padding: 0 7px;
   text-transform: uppercase;
   white-space: nowrap;
-}
-
-.acp-badge-filter {
-  cursor: pointer;
-  transition: filter 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
-}
-
-.acp-badge-filter:hover,
-.acp-badge-filter:focus-visible {
-  border: 0;
-  box-shadow: none;
-  filter: brightness(1.04);
-}
-
-.acp-badge-filter.is-active {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-  filter: saturate(1.06);
 }
 
 .acp-badge.is-primary {
@@ -2556,8 +2530,6 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   --acp-text: #e2e8f0;
   --acp-muted: #aeb9c7;
   --acp-muted-strong: #c4ccd6;
-  --acp-safe-banner-bg: #0e385e;
-  --acp-safe-banner-border: rgba(59, 130, 246, 0.38);
   --acp-bottom-bg: #171d24;
   background: var(--acp-page);
   border: 1px solid var(--acp-border-faint);
@@ -2777,7 +2749,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   align-items: end;
   display: grid;
   gap: 16px;
-  grid-template-columns: minmax(280px, 1fr) minmax(180px, 220px) minmax(200px, 260px);
+  grid-template-columns: minmax(280px, 1fr) minmax(180px, 220px);
 }
 
 #acp-app .acp-input,
@@ -3054,19 +3026,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   text-align: left;
 }
 
-#acp-app .acp-toolbar-inline {
-  grid-template-columns: minmax(360px, 1fr) minmax(160px, 230px) minmax(180px, 260px) minmax(180px, 280px) 134px;
-}
-
-#acp-app .acp-more-filters {
-  align-self: end;
-}
-
-#acp-app .acp-safe-banner,
 #acp-app .acp-action-toolbar {
   align-items: center;
-  background: var(--acp-safe-banner-bg);
-  border: 1px solid var(--acp-safe-banner-border);
+  background: var(--acp-panel-soft);
+  border: 1px solid var(--acp-border-faint);
   border-radius: 8px;
   display: flex;
   gap: 16px;
@@ -3074,67 +3037,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   padding: 12px 18px;
 }
 
-#acp-app .acp-safe-banner-copy {
-  align-items: center;
-  display: flex;
-  gap: 14px;
-  min-width: 0;
-}
-
-#acp-app .acp-safe-banner-icon {
-  align-items: center;
-  background: #60a5fa;
-  border-radius: 50%;
-  color: #06223d;
-  display: flex;
-  flex: 0 0 auto;
-  font-weight: 900;
-  height: 22px;
-  justify-content: center;
-  width: 22px;
-}
-
-#acp-app .acp-safe-banner-copy div {
-  display: grid;
-  gap: 2px;
-}
-
-#acp-app .acp-safe-banner-copy strong {
-  color: #7cc4ff;
-  font-size: 16px;
-}
-
-#acp-app .acp-safe-banner-copy span {
-  color: var(--acp-text);
-  font-size: 13px;
-}
-
-#acp-app .acp-safe-banner-location {
-  align-items: center;
-  display: flex;
-  gap: 10px;
-  min-width: 0;
-}
-
-#acp-app .acp-safe-banner-location span {
-  color: var(--acp-text);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-#acp-app .acp-safe-banner-location code {
-  background: var(--acp-input-bg);
-  border: 1px solid var(--acp-input-border);
-  border-radius: 6px;
-  color: var(--acp-input-text);
-  font-size: 12px;
-  padding: 8px 14px;
-  white-space: nowrap;
-}
-
 #acp-app .acp-action-toolbar {
-  background: var(--acp-panel-soft);
-  border-color: var(--acp-border-faint);
   padding: 10px 18px;
 }
 
@@ -3242,7 +3145,6 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
     grid-template-columns: repeat(3, minmax(150px, 1fr));
   }
 
-  #acp-app .acp-safe-banner,
   #acp-app .acp-action-toolbar {
     align-items: stretch;
     flex-direction: column;
@@ -3268,8 +3170,6 @@ body[data-acp-host-theme="black"] #acp-app.acp-shell,
   --acp-text: #e2e8f0;
   --acp-muted: #aeb9c7;
   --acp-muted-strong: #c4ccd6;
-  --acp-safe-banner-bg: #0e385e;
-  --acp-safe-banner-border: rgba(59, 130, 246, 0.38);
   --acp-bottom-bg: #171d24;
 }
 
@@ -3295,8 +3195,6 @@ body[data-acp-host-theme="grey"] #acp-app.acp-shell,
   --acp-text: #f1f4f7;
   --acp-muted: #c0c8d2;
   --acp-muted-strong: #d2d9e1;
-  --acp-safe-banner-bg: #233f58;
-  --acp-safe-banner-border: rgba(129, 179, 219, 0.26);
   --acp-bottom-bg: #35393f;
 }
 
@@ -3319,8 +3217,6 @@ body[data-acp-host-theme="azure"] #acp-app.acp-shell,
   --acp-text: #edf7ff;
   --acp-muted: #c4d4e5;
   --acp-muted-strong: #d8e7f6;
-  --acp-safe-banner-bg: #123d62;
-  --acp-safe-banner-border: rgba(126, 200, 255, 0.3);
   --acp-bottom-bg: #273a53;
 }
 
@@ -3353,8 +3249,6 @@ body[data-acp-host-theme="azure"] #acp-app.acp-shell[data-acp-theme-class="light
   --acp-text: #2b3441;
   --acp-muted: rgba(85, 100, 118, 0.86);
   --acp-muted-strong: rgba(65, 78, 95, 0.9);
-  --acp-safe-banner-bg: #e8f3ff;
-  --acp-safe-banner-border: rgba(47, 110, 166, 0.26);
   --acp-bottom-bg: #ffffff;
   --acp-shadow: 0 12px 28px rgba(72, 84, 99, 0.14);
 }
