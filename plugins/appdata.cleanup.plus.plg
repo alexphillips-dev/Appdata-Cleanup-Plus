@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.50">
-<!ENTITY md5 "d5be7cb3fcb27581d763c71ea0802538">
+<!ENTITY version "2026.07.08.51">
+<!ENTITY md5 "737e2369641e79b77527eaa29b3eacd2">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,19 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.51
+- Critical fix: Preserve the configured quarantine root whenever Safe Mode, appdata sources, ZFS mappings, or quarantine purge settings are saved so existing quarantine behavior is not silently reset.
+- Cleanup UX: Keep the simplified dashboard workflow with Ready, Blocked, Selected, and Safe Mode summary cards, including the restored Blocked card with a red lock icon.
+- ZFS: Enable exact ZFS dataset cleanup by default, detect dataset-backed appdata candidates, separate ZFS dataset rows into their own section, and show distinct dataset icons and source badges.
+- ZFS safety: Keep dataset rows gated behind permanent delete mode, highlight the Disable Safe Mode instruction for exact dataset rows, and retain dataset preview/destroy details in the new modal style.
+- UI polish: Improve top summary SVG icons, safe-mode enabled/disabled states, source badges, button icons, dark-mode outlines, bottom action bar icons, and action button colors.
+- Sorting: Default results to Name and add sort options for last used, size, source, type, path, and risk.
+- Help and modals: Simplify the Help, Details, Appdata Sources, History, Tools, delete confirmation, delete progress, and delete result dialogs so they match the redesigned UI.
+- Source management: Improve Appdata Sources and ZFS path mapping dialogs, shorten folder browser scroll areas, and keep Appdata Sources styling consistent with the rest of the action buttons.
+- Documentation and release quality: Add MIT licensing, fix README CI/license badges, add GitHub Actions validation, and enforce real changelog notes for generated package versions.
+- Error handling: Return action-specific fallback messages for unexpected backend failures instead of showing scan-only wording for every request.
+- Copy cleanup: Remove stale references to removed badge and risk filters from the empty search state.
+
 ###2026.07.08.50
 - Settings: Preserve the configured quarantine root when Safe Mode, appdata sources, ZFS mappings, or purge settings are saved.
 - Errors: Return action-specific fallback messages for unexpected backend failures instead of showing scan-only wording for every request.
