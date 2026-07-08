@@ -2,17 +2,20 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.27">
-<!ENTITY md5 "480b9671f9b385c29caf77969c5bf12a">
+<!ENTITY version "2026.07.08.28">
+<!ENTITY md5 "e05ab05c890133d82073d47d87133565">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.28
+- CI: Prepare writable /mnt/user, /mnt/fcache, and /mnt/docker_vm_nvme fixture roots before the behavior smoke test so GitHub Actions matches the Unraid path assumptions.
+
 ###2026.07.08.27
 - Repo badges: Add the missing GitHub Actions CI workflow so the README CI badge resolves and reports real validation status.
 - License: Add a standard root LICENSE file and update README license links so GitHub and shields detect MIT correctly.
@@ -983,7 +986,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
