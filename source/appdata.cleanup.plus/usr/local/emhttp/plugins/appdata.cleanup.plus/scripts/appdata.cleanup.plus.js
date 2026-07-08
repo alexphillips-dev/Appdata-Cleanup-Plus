@@ -644,6 +644,10 @@
       showPendingOperationResults();
     });
 
+    $(document).on("change.acpDeleteConfirm", ".sweet-alert .acp-delete-confirm-checkbox", function() {
+      syncDeleteConfirmationState();
+    });
+
     $(document).on("click.acpRowDetails", ".sweet-alert [data-action='row-detail-select']", function(event) {
       var rowId = String($(this).data("row-id") || "");
       var row = findRowById(rowId);
@@ -4869,6 +4873,27 @@
     return ACP.t(strings, "deleteTypedTitle", "Confirm permanent delete");
   }
 
+  function syncDeleteConfirmationState() {
+    var $modal = getActiveSweetAlertModal();
+    var checked = !!$modal.find(".acp-delete-confirm-checkbox").prop("checked");
+
+    $modal.find(".acp-delete-confirm-error").toggle(!checked);
+    $modal.find("button.confirm").prop("disabled", !checked);
+  }
+
+  function requireDeleteConfirmationChecked() {
+    var $modal = getActiveSweetAlertModal();
+    var checked = !!$modal.find(".acp-delete-confirm-checkbox").prop("checked");
+
+    if (!checked) {
+      $modal.find(".acp-delete-confirm-error").show();
+      $modal.find(".acp-delete-confirm-checkbox").focus();
+      return false;
+    }
+
+    return true;
+  }
+
   function buildOperationPreviewHtml(rows, context, options) {
     var settings = options || {};
     var safeCount = rows.length;
@@ -4928,15 +4953,21 @@
     html.push("</ul></section>");
 
     if (settings.showTypeHint) {
-      var typeHint = ACP.t(strings, "deleteTypedHint", "Type DELETE below to continue.");
+      var typeHint = ACP.t(strings, "deleteTypedHint", "I understand this permanent delete cannot be undone by this plugin.");
 
       if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteDatasetPlural", "datasets")) {
-        typeHint = ACP.t(strings, "destroyTypedHint", "Type DELETE below to destroy the selected datasets.");
+        typeHint = ACP.t(strings, "destroyTypedHint", "I understand these datasets will be permanently destroyed and cannot be quarantined.");
       } else if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
-        typeHint = ACP.t(strings, "deleteMixedTypedHint", "Type DELETE below to delete the selected items.");
+        typeHint = ACP.t(strings, "deleteMixedTypedHint", "I understand these items will be permanently removed and cannot be restored by this plugin.");
       }
 
-      html.push('<div class="acp-delete-simple-hint">' + ACP.escapeHtml(typeHint) + "</div>");
+      html.push(
+        '<label class="acp-delete-confirm-box">' +
+          '<input type="checkbox" class="acp-delete-confirm-checkbox">' +
+          '<span>' + ACP.escapeHtml(typeHint) + "</span>" +
+        "</label>" +
+        '<div class="acp-delete-confirm-error" style="display:none;">' + ACP.escapeHtml(ACP.t(strings, "deleteCheckboxError", "Confirm the permanent delete before continuing.")) + "</div>"
+      );
     }
 
     html.push("</div>");
@@ -5347,19 +5378,13 @@
           swal({
             title: getDeleteTypedTitle(context),
             text: "",
-            type: "input",
+            type: "warning",
             html: true,
             showCancelButton: true,
             closeOnConfirm: false,
-            inputPlaceholder: ACP.t(strings, "deleteTypedPlaceholder", "DELETE"),
             confirmButtonText: confirmButtonText
-          }, function(inputValue) {
-            if (inputValue === false) {
-              return false;
-            }
-
-            if ($.trim(String(inputValue || "")).toUpperCase() !== "DELETE") {
-              swal.showInputError(ACP.t(strings, "deleteTypedError", "Type DELETE to continue."));
+          }, function() {
+            if (!requireDeleteConfirmationChecked()) {
               return false;
             }
 
@@ -5369,6 +5394,7 @@
           ACP.applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildOperationPreviewHtml(previewResults, context, {
             showTypeHint: true
           }));
+          syncDeleteConfirmationState();
         }).fail(function(xhr) {
           setBusy(false);
           swal(context.failureTitle, ACP.extractErrorMessage(xhr, ACP.t(strings, "deletePreviewFailedMessage", "The delete preview could not be prepared right now.")), "error");
@@ -5379,19 +5405,13 @@
       swal({
         title: getDeleteTypedTitle(context),
         text: "",
-        type: "input",
+        type: "warning",
         html: true,
         showCancelButton: true,
         closeOnConfirm: false,
-        inputPlaceholder: ACP.t(strings, "deleteTypedPlaceholder", "DELETE"),
         confirmButtonText: confirmButtonText
-      }, function(inputValue) {
-        if (inputValue === false) {
-          return false;
-        }
-
-        if ($.trim(String(inputValue || "")).toUpperCase() !== "DELETE") {
-          swal.showInputError(ACP.t(strings, "deleteTypedError", "Type DELETE to continue."));
+      }, function() {
+        if (!requireDeleteConfirmationChecked()) {
           return false;
         }
 
@@ -5401,6 +5421,7 @@
       ACP.applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildOperationPreviewHtml(selectedRows, context, {
         showTypeHint: true
       }));
+      syncDeleteConfirmationState();
       return;
     }
 
