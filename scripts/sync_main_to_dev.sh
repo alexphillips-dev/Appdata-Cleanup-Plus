@@ -55,10 +55,10 @@ if [ "${MERGED_CLEANLY}" -eq 0 ]; then
     git add archive plugins/appdata.cleanup.plus.plg appdata.cleanup.plus.xml
 fi
 
-sed -E -i 's|^<!ENTITY pluginURL ".*">|<!ENTITY pluginURL "https://raw.githubusercontent.com/\&github;/refs/heads/dev/plugins/\&name;.plg">|' plugins/appdata.cleanup.plus.plg
-sed -E -i 's|<URL>https://raw.githubusercontent.com/.*?/archive/.*</URL>|<URL>https://raw.githubusercontent.com/\&github;/refs/heads/dev/archive/\&name;-\&version;-x86_64-1.txz</URL>|' plugins/appdata.cleanup.plus.plg
-sed -i 's|<PluginURL>.*</PluginURL>|<PluginURL>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/dev/plugins/appdata.cleanup.plus.plg</PluginURL>|' appdata.cleanup.plus.xml
-sed -i 's|<Icon>.*</Icon>|<Icon>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/dev/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png</Icon>|' appdata.cleanup.plus.xml
+sed -E -i 's|^<!ENTITY pluginURL ".*">|<!ENTITY pluginURL "https://raw.githubusercontent.com/\&github;/dev/plugins/\&name;.plg">|' plugins/appdata.cleanup.plus.plg
+sed -E -i 's|<URL>https://raw.githubusercontent.com/.*?/archive/.*</URL>|<URL>https://raw.githubusercontent.com/\&github;/dev/archive/\&name;-\&version;-x86_64-1.txz</URL>|' plugins/appdata.cleanup.plus.plg
+sed -i 's|<PluginURL>.*</PluginURL>|<PluginURL>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/dev/plugins/appdata.cleanup.plus.plg</PluginURL>|' appdata.cleanup.plus.xml
+sed -i 's|<Icon>.*</Icon>|<Icon>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/dev/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png</Icon>|' appdata.cleanup.plus.xml
 git add plugins/appdata.cleanup.plus.plg appdata.cleanup.plus.xml
 
 if git rev-parse -q --verify MERGE_HEAD >/dev/null; then

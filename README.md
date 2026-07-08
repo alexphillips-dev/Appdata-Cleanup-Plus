@@ -154,8 +154,8 @@ Default quarantine root:
 Compatibility notes:
 
 - The plugin does not depend on the Community Applications helper runtime
-- Stable `main` builds point to `refs/heads/main` metadata and archives
-- Testing `dev` builds point to `refs/heads/dev` metadata and archives
+- Stable `main` builds point to `main` branch metadata and archives
+- Testing `dev` builds point to `dev` branch metadata and archives
 - Package versions use `YYYY.MM.DD.UU` so same-day releases sort correctly in Unraid
 
 ## Install
@@ -163,19 +163,19 @@ Compatibility notes:
 Stable `main` channel:
 
 ```bash
-plugin install https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/main/plugins/appdata.cleanup.plus.plg
+plugin install https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/main/plugins/appdata.cleanup.plus.plg
 ```
 
 Dev `testing` channel:
 
 ```bash
-plugin install https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/dev/plugins/appdata.cleanup.plus.plg
+plugin install https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/dev/plugins/appdata.cleanup.plus.plg
 ```
 
 Community Applications XML:
 
 ```text
-https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/main/appdata.cleanup.plus.xml
+https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/main/appdata.cleanup.plus.xml
 ```
 
 Commit-pinned install pattern:

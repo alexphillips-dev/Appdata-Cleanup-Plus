@@ -201,8 +201,8 @@ rewrite_manifest_branch_metadata() {
         echo "ERROR: rewrite_manifest_branch_metadata requires a file and branch." >&2
         exit 1
     fi
-    sed -E -i 's|^<!ENTITY pluginURL ".*">|<!ENTITY pluginURL "https://raw.githubusercontent.com/\&github;/refs/heads/'"$target_branch"'/plugins/\&name;.plg">|' "$target_file"
-    sed -E -i 's|<URL>https://raw.githubusercontent.com/.*?/archive/.*</URL>|<URL>https://raw.githubusercontent.com/\&github;/refs/heads/'"$target_branch"'/archive/\&name;-\&version;-x86_64-1.txz</URL>|' "$target_file"
+    sed -E -i 's|^<!ENTITY pluginURL ".*">|<!ENTITY pluginURL "https://raw.githubusercontent.com/\&github;/'"$target_branch"'/plugins/\&name;.plg">|' "$target_file"
+    sed -E -i 's|<URL>https://raw.githubusercontent.com/.*?/archive/.*</URL>|<URL>https://raw.githubusercontent.com/\&github;/'"$target_branch"'/archive/\&name;-\&version;-x86_64-1.txz</URL>|' "$target_file"
 }
 
 sync_ca_template_metadata() {
@@ -216,8 +216,8 @@ sync_ca_template_metadata() {
     fi
     target_description="$(plugin_description_for_branch "$target_branch")"
     sed -i "s|<Date>.*</Date>|<Date>${target_date}</Date>|" "$target_file"
-    sed -i "s|<PluginURL>.*</PluginURL>|<PluginURL>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/${target_branch}/plugins/appdata.cleanup.plus.plg</PluginURL>|" "$target_file"
-    sed -i "s|<Icon>.*</Icon>|<Icon>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/${target_branch}/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png</Icon>|" "$target_file"
+    sed -i "s|<PluginURL>.*</PluginURL>|<PluginURL>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/${target_branch}/plugins/appdata.cleanup.plus.plg</PluginURL>|" "$target_file"
+    sed -i "s|<Icon>.*</Icon>|<Icon>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/${target_branch}/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png</Icon>|" "$target_file"
     sed -i "s|<Beta>.*</Beta>|<Beta>False</Beta>|" "$target_file"
     sed -i "s|<Name>.*</Name>|<Name>Appdata Cleanup Plus</Name>|" "$target_file"
     perl -0pi -e 's{<Description>\s*.*?\s*</Description>}{<Description>\n'"$target_description"'\n</Description>}s' "$target_file"
@@ -230,8 +230,8 @@ validate_manifest_branch_matrix() {
         local probe_file=""
         local entity_url=""
         local archive_url=""
-        local expected_entity_url="https://raw.githubusercontent.com/&github;/refs/heads/${branch_name}/plugins/&name;.plg"
-        local expected_archive_url="https://raw.githubusercontent.com/&github;/refs/heads/${branch_name}/archive/&name;-&version;-x86_64-1.txz"
+        local expected_entity_url="https://raw.githubusercontent.com/&github;/${branch_name}/plugins/&name;.plg"
+        local expected_archive_url="https://raw.githubusercontent.com/&github;/${branch_name}/archive/&name;-&version;-x86_64-1.txz"
         probe_file="$(mktemp)"
         cp "$source_file" "$probe_file"
         rewrite_manifest_branch_metadata "$probe_file" "$branch_name"
