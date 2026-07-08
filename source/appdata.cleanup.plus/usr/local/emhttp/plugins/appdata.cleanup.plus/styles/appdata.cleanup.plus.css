@@ -2924,24 +2924,24 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   box-shadow: none;
   display: grid;
   gap: 14px;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
   min-height: 0;
   padding: 0 0 18px;
 }
 
 #acp-app .acp-brand-mark {
   align-items: center;
-  background: var(--acp-accent);
+  background: transparent;
   border-radius: 8px;
   display: flex;
-  height: 48px;
+  height: 58px;
   justify-content: center;
-  width: 48px;
+  width: 58px;
 }
 
 #acp-app .acp-brand-mark img {
-  height: 34px;
-  width: 34px;
+  height: 52px;
+  width: 52px;
 }
 
 #acp-app .acp-title {
