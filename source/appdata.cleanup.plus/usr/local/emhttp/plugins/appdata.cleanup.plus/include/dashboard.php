@@ -202,6 +202,10 @@ function formatBytesLabel($bytes) {
     return "Unknown";
   }
 
+  if ( (int)$bytes === 0 ) {
+    return "Empty";
+  }
+
   $units = array("B", "KB", "MB", "GB", "TB");
   $value = (float)$bytes;
   $unitIndex = 0;
@@ -330,7 +334,9 @@ function collectPathStats($path) {
   }
 
   if ( $sizeBytes === null ) {
-    $measuredSize = measureDirectoryBytes($path);
+    $measuredSize = appdataCleanupPlusDirectoryIsEmpty($path)
+      ? 0
+      : measureDirectoryBytes($path);
 
     if ( $measuredSize !== null ) {
       $sizeBytes = (int)$measuredSize;

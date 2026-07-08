@@ -1160,6 +1160,11 @@ $hydratedStatsRow = buildHydratedCandidateStatRow($hydratedCandidate["candidates
 behaviorSmokeAssertSame($templatedRow["id"], $hydratedStatsRow["id"], "Hydrated stats should map back to the original row id.");
 behaviorSmokeAssertSame(false, ! empty($hydratedStatsRow["statsPending"]), "Hydrated rows should clear the pending-stats marker.");
 behaviorSmokeAssertTrue($hydratedStatsRow["sizeLabel"] !== "Unknown", "Hydrated rows should populate a real size label.");
+$hydratedEmptyCandidate = resolveSnapshotCandidates($dashboard["payload"]["scanToken"], array($staleNestedEmptyParentRow["id"]));
+behaviorSmokeAssertTrue(! empty($hydratedEmptyCandidate["ok"]), "Hydration should resolve the empty parent remnant candidate.");
+$hydratedEmptyStatsRow = buildHydratedCandidateStatRow($hydratedEmptyCandidate["candidates"][0]);
+behaviorSmokeAssertSame(0, $hydratedEmptyStatsRow["sizeBytes"], "Empty folders should hydrate with zero measured bytes.");
+behaviorSmokeAssertSame("Empty", $hydratedEmptyStatsRow["sizeLabel"], "Empty folders should render an explicit Empty size label instead of Unknown.");
 
 $vmManagerPaths = getAppdataCleanupPlusVmManagerManagedPaths();
 behaviorSmokeAssertSame(3, count($vmManagerPaths), "VM Manager config should expose the configured vdisk, ISO, and libvirt paths.");

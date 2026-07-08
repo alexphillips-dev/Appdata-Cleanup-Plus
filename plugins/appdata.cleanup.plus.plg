@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.07.16">
-<!ENTITY md5 "d49bea5610bb1e4f9f62ffd62e89f951">
+<!ENTITY version "2026.07.07.17">
+<!ENTITY md5 "e6d2e3c61a4868a7413e696a0b67bbd4">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.07.17
+- Maintenance: Refresh package metadata and build artifacts
+
 ###2026.07.07.16
 - Maintenance: Refresh package metadata and build artifacts
 
