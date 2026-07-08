@@ -108,7 +108,6 @@ Safety is the core behavior, not an afterthought.
 
 - Real actions default to `Quarantine selected`, not permanent delete
 - `Dry run` previews the current action without changing anything
-- `Allow outside-share cleanup` must be enabled before outside-share review rows can be acted on
 - `Enable permanent delete` must be enabled before irreversible delete becomes the primary action
 - `Enable ZFS dataset delete` must be enabled before ZFS-backed rows can resolve to dataset destroy actions
 - Locked rows stay visible, but they are not selectable

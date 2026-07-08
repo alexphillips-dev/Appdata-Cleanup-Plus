@@ -28,47 +28,6 @@
     }
   };
 
-  ACP.buildLockOverrideButtonState = function(context) {
-    var state = context.state || {};
-    var strings = context.strings || {};
-    var selected = state.selected || {};
-    var rows = $.isArray(state.rows) ? state.rows : [];
-    var selectedRows = $.grep(rows, function(row) {
-      var rowId = String((row && row.id) || "");
-      return !!rowId && !!selected[rowId] && !row.ignored && (!!row.canDelete || !!row.lockOverrideAllowed);
-    });
-    var unlockCount = $.grep(selectedRows, function(row) {
-      return !!row.lockOverrideAllowed && !!row.policyLocked && !row.lockOverridden;
-    }).length;
-    var relockCount = $.grep(selectedRows, function(row) {
-      return !!row.lockOverrideAllowed && !!row.lockOverridden;
-    }).length;
-    var intent = unlockCount > 0 ? "unlock" : (relockCount > 0 ? "relock" : "unlock");
-
-    return {
-      disabled: !!state.busy || !state.scanToken || (unlockCount === 0 && relockCount === 0),
-      intent: intent,
-      label: intent === "relock"
-        ? ACP.t(strings, "lockOverrideRelockLabel", "Relock selected")
-        : ACP.t(strings, "lockOverrideUnlockLabel", "Unlock selected")
-    };
-  };
-
-  ACP.syncModeStripLockOverrideButton = function(context) {
-    var els = context.els || {};
-    var $button = els.$lockOverride || $();
-    var buttonState;
-
-    if (!$button.length) {
-      return;
-    }
-
-    buttonState = ACP.buildLockOverrideButtonState(context);
-    $button.text(buttonState.label);
-    $button.attr("data-lock-intent", buttonState.intent);
-    $button.prop("disabled", !!buttonState.disabled);
-  };
-
   ACP.renderModeStrip = function(context) {
     var state = context.state || {};
     var els = context.els || {};
@@ -437,20 +396,12 @@
       return row.policyReason || ACP.t(strings, "selectionHintZfsMode", "ZFS dataset-backed rows require permanent delete mode and cannot be quarantined.");
     }
 
-    if (row.policyLocked && !row.lockOverridden) {
-      return row.policyReason || row.riskReason || ACP.t(strings, "rowExplainPolicyLocked", "This row needs manual review before it can be cleaned.");
-    }
-
-    if (row.lockOverridden) {
-      return ACP.t(strings, "lockOverrideNote", "Manual unlock override is active for this scan only.");
+    if (row.policyLocked) {
+      return row.policyReason || row.riskReason || ACP.t(strings, "rowExplainPolicyLocked", "This row is blocked by the current cleanup options.");
     }
 
     if (row.zfsMappingMatched && row.storageKind !== "zfs") {
       return row.zfsResolutionDetail || row.zfsResolutionMessage || ACP.t(strings, "rowDetailsOutcomeMappedNoExactDataset", "Mapped share path did not resolve to an exact dataset");
-    }
-
-    if (row.risk === "review") {
-      return row.riskReason || row.reason || ACP.t(strings, "rowExplainReview", "This row needs review before cleanup.");
     }
 
     if (row.storageKind === "zfs") {
@@ -467,18 +418,6 @@
 
     if (ACP.getRowBlockType(row) === "options") {
       return ACP.t(strings, "rowUnlockabilitySettings", "Not unlockable per scan. Change Cleanup Options if you intend to allow this ZFS action.");
-    }
-
-    if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return ACP.t(strings, "rowUnlockabilityPerScan", "Can be unlocked for this scan only after you verify the details.");
-    }
-
-    if (row.lockOverridden) {
-      return ACP.t(strings, "rowUnlockabilityUnlocked", "Unlocked for this scan only. A rescan restores the normal review lock.");
-    }
-
-    if (row.risk === "review") {
-      return ACP.t(strings, "rowUnlockabilityReview", "Review manually before acting. If a policy lock appears, use Unlock for this scan.");
     }
 
     return row.canDelete
@@ -505,7 +444,7 @@
       return "options";
     }
 
-    if (row.policyLocked && !row.lockOverrideAllowed) {
+    if (row.policyLocked) {
       return "options";
     }
 
@@ -518,7 +457,6 @@
     var detailRow = $.extend({}, row || {}, settings);
     var blockType = ACP.getRowBlockType(detailRow);
     var isProtected = !!blockType;
-    var isReview = !!(detailRow.policyLocked || detailRow.risk === "review" || detailRow.lockOverridden);
     var why = getRowExplanationBase(strings, detailRow);
     var how = getRowDetailsNextStep(strings, detailRow);
     var evidence = $.grep([
@@ -530,14 +468,12 @@
     }).join(" ");
 
     return {
-      state: isProtected ? "protected" : (isReview ? "review" : "ready"),
+      state: isProtected ? "protected" : "ready",
       title: isProtected
         ? (blockType === "options"
           ? ACP.t(strings, "rowDetailsOptionsBlockedExplanationTitle", "Why this row is blocked by Cleanup Options")
           : ACP.t(strings, "rowDetailsProtectedExplanationTitle", "Why this row is blocked for safety"))
-        : (isReview
-          ? ACP.t(strings, "rowDetailsReviewExplanationTitle", "Why this row needs review")
-          : ACP.t(strings, "rowDetailsExplanationTitle", "Current explanation")),
+        : ACP.t(strings, "rowDetailsExplanationTitle", "Current explanation"),
       why: why,
       how: how,
       evidence: evidence,
@@ -565,24 +501,12 @@
       }
     }
 
-    if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsOutcomePolicyLocked", "Needs review before cleanup");
-    }
-
-    if (row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsOutcomeUnlocked", "Temporarily unlocked for this scan");
-    }
-
     if (row.zfsMappingMatched && row.storageKind !== "zfs") {
       return ACP.t(strings, "rowDetailsOutcomeMappedNoExactDataset", "Mapped share path did not resolve to an exact dataset");
     }
 
     if (row.storageKind === "zfs") {
       return ACP.t(strings, "rowDetailsOutcomeZfsReady", "Ready for ZFS dataset destroy");
-    }
-
-    if (row.risk === "review") {
-      return ACP.t(strings, "rowDetailsOutcomeReview", "Review row is currently actionable");
     }
 
     return ACP.t(strings, "rowDetailsOutcomeReady", "Ready under current safety settings");
@@ -605,24 +529,12 @@
       return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Open Cleanup Options and enable permanent delete. ZFS-backed rows cannot be quarantined.");
     }
 
-    if (row.policyLocked && row.lockOverrideAllowed && !row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsNextStepUnlock", "Use Unlock for this scan if you have checked the details and want to act on this review item.");
-    }
-
-    if (row.lockOverridden) {
-      return ACP.t(strings, "rowDetailsNextStepUnlocked", "Proceed carefully. Rescanning will restore the normal policy lock.");
-    }
-
     if (row.zfsMappingMatched && row.storageKind !== "zfs") {
       return ACP.t(strings, "rowDetailsNextStepMappedNoExactDataset", "Correct the ZFS mapping so the dataset mount root matches exactly, or continue as a normal folder.");
     }
 
     if (row.storageKind === "zfs") {
       return ACP.t(strings, "rowDetailsNextStepZfsReady", "Only permanent delete mode is supported for ZFS-backed rows. Review the destroy impact below before proceeding.");
-    }
-
-    if (row.risk === "review") {
-      return ACP.t(strings, "rowDetailsNextStepReview", "Confirm that this path really belongs to orphaned appdata before acting on it.");
     }
 
     return ACP.t(strings, "rowDetailsNextStepReady", "You can quarantine it now, or permanently delete it if that mode is enabled.");
@@ -667,9 +579,7 @@
     var childDatasets = $.isArray(row.zfsChildDatasets) ? row.zfsChildDatasets : [];
     var snapshots = $.isArray(row.zfsSnapshots) ? row.zfsSnapshots : [];
     var resolutionVariants = $.isArray(row.zfsResolutionVariants) ? row.zfsResolutionVariants : [];
-    var riskTone = row.policyLocked || row.risk === "blocked"
-      ? "is-blocked"
-      : (row.risk === "review" ? "is-review" : "is-safe");
+    var riskTone = row.policyLocked || row.risk === "blocked" ? "is-blocked" : "is-safe";
     var explanation = ACP.buildRowReviewExplanation(context, row);
     var summaryMessage = explanation.why || row.policyReason || row.securityLockReason || row.riskReason || row.reason || "";
     var nextStepMessage = explanation.how || getRowDetailsNextStep(strings, $.extend({}, row, settings));

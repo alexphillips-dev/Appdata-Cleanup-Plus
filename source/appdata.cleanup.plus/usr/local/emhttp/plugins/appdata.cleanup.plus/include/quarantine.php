@@ -1531,24 +1531,6 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
-  if (
-    isset($candidate["sourceKind"]) &&
-    (string)$candidate["sourceKind"] === "template" &&
-    empty($settings["allowTemplateReferencedCleanup"]) &&
-    ! appdataCleanupPlusCandidateHasLockOverride($candidate)
-  ) {
-    return array(
-      "ok" => false,
-      "path" => $candidatePath,
-      "displayPath" => $candidateDisplayPath,
-      "status" => "blocked",
-      "message" => appdataCleanupPlusTemplateActionLockReason(
-        isset($candidate["sourceNames"]) && is_array($candidate["sourceNames"]) ? $candidate["sourceNames"] : array(),
-        isset($candidate["targetPaths"]) && is_array($candidate["targetPaths"]) ? $candidate["targetPaths"] : array()
-      )
-    );
-  }
-
   $classification = classifyAppdataCandidate($candidatePath);
   $displayPath = resolveExistingPath($classification);
   $currentRealPath = @realpath($displayPath);
@@ -1648,16 +1630,6 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
       "displayPath" => $displayPath,
       "status" => "blocked",
       "message" => $classification["riskReason"]
-    );
-  }
-
-  if ( $classification["risk"] === "review" && empty($settings["allowOutsideShareCleanup"]) && ! appdataCleanupPlusCandidateHasLockOverride($candidate) ) {
-    return array(
-      "ok" => false,
-      "path" => $candidatePath,
-      "displayPath" => $displayPath,
-      "status" => "blocked",
-      "message" => "Outside-share cleanup is disabled in Safety settings."
     );
   }
 

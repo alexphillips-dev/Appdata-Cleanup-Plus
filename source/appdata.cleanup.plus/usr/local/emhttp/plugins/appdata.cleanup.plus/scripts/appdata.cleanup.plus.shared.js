@@ -46,10 +46,8 @@
 
   ACP.defaultSafetySettings = function() {
     return {
-      allowOutsideShareCleanup: false,
       enablePermanentDelete: true,
       enableZfsDatasetDelete: false,
-      allowTemplateReferencedCleanup: false,
       quarantineRoot: "",
       defaultQuarantinePurgeDays: 0,
       manualAppdataSources: [],
