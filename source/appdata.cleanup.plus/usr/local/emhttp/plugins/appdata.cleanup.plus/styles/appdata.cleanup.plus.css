@@ -1621,7 +1621,25 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .sweet-alert.acp-delete-modal .sa-button-container,
 .sweet-alert.acp-delete-modal .sa-confirm-button-container {
+  align-items: center !important;
+  display: flex !important;
+  gap: 10px !important;
+  justify-content: center !important;
   margin-top: 14px !important;
+}
+
+.sweet-alert.acp-delete-modal .sa-button-container button,
+.sweet-alert.acp-delete-modal .sa-confirm-button-container button {
+  margin: 0 !important;
+}
+
+.sweet-alert.acp-delete-modal button.confirm.acp-confirm-disabled,
+.sweet-alert.acp-delete-modal button.confirm.acp-confirm-disabled:hover {
+  background: var(--acp-button-bg) !important;
+  border-color: var(--acp-button-border) !important;
+  color: var(--acp-muted) !important;
+  cursor: not-allowed !important;
+  opacity: 0.56 !important;
 }
 
 .acp-delete-simple-shell {

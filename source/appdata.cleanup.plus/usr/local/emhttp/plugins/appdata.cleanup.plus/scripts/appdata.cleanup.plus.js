@@ -4863,22 +4863,24 @@
 
   function getDeleteTypedTitle(context) {
     if (context.confirmButtonLabel === ACP.t(strings, "deleteDatasetActionLabel", "Destroy")) {
-      return ACP.t(strings, "destroyTypedTitle", "Confirm dataset destroy");
+      return ACP.t(strings, "destroyCheckboxTitle", "Confirm dataset destroy");
     }
 
     if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
-      return ACP.t(strings, "deleteMixedTypedTitle", "Confirm delete");
+      return ACP.t(strings, "deleteMixedCheckboxTitle", "Confirm delete");
     }
 
-    return ACP.t(strings, "deleteTypedTitle", "Confirm permanent delete");
+    return ACP.t(strings, "deleteCheckboxTitle", "Confirm permanent delete");
   }
 
   function syncDeleteConfirmationState() {
     var $modal = getActiveSweetAlertModal();
     var checked = !!$modal.find(".acp-delete-confirm-checkbox").prop("checked");
 
-    $modal.find(".acp-delete-confirm-error").toggle(!checked);
-    $modal.find("button.confirm").prop("disabled", !checked);
+    $modal.find(".acp-delete-confirm-error").hide();
+    $modal.find("button.confirm")
+      .toggleClass("acp-confirm-disabled", !checked)
+      .attr("aria-disabled", checked ? "false" : "true");
   }
 
   function requireDeleteConfirmationChecked() {
@@ -4953,12 +4955,12 @@
     html.push("</ul></section>");
 
     if (settings.showTypeHint) {
-      var typeHint = ACP.t(strings, "deleteTypedHint", "I understand this permanent delete cannot be undone by this plugin.");
+      var typeHint = ACP.t(strings, "deleteCheckboxConfirmLabel", "I confirm I want to permanently delete the selected folders. This action cannot be undone by this plugin.");
 
       if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteDatasetPlural", "datasets")) {
-        typeHint = ACP.t(strings, "destroyTypedHint", "I understand these datasets will be permanently destroyed and cannot be quarantined.");
+        typeHint = ACP.t(strings, "destroyCheckboxConfirmLabel", "I confirm I want to permanently destroy the selected datasets. This action cannot be undone by this plugin.");
       } else if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
-        typeHint = ACP.t(strings, "deleteMixedTypedHint", "I understand these items will be permanently removed and cannot be restored by this plugin.");
+        typeHint = ACP.t(strings, "deleteMixedCheckboxConfirmLabel", "I confirm I want to permanently remove the selected items. This action cannot be undone by this plugin.");
       }
 
       html.push(
