@@ -590,23 +590,16 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
   <section class="acp-results" id="acp-results" aria-live="polite"></section>
 
   <section class="acp-bottom-bar" id="acp-bottom-bar">
+    <span class="acp-bottom-selection-icon" aria-hidden="true"></span>
     <div class="acp-bottom-copy">
       <strong id="acp-selection-summary">0 <?php echo _("folders selected"); ?></strong>
       <span id="acp-selection-detail"><?php echo _("Select ready rows to clean them. Protected paths stay blocked."); ?></span>
     </div>
     <div class="acp-bottom-actions">
-      <div class="acp-bottom-selection-tools">
-        <label class="acp-field acp-selection-preset-field">
-          <span class="acp-field-label"><?php echo _("Select preset"); ?></span>
-          <select id="acp-select-preset" class="acp-select" aria-label="<?php echo _("Select preset"); ?>">
-            <option value="safe"><?php echo _("Ready rows"); ?></option>
-          </select>
-        </label>
-        <button type="button" class="acp-button acp-button-secondary" id="acp-apply-select-preset" disabled><?php echo _("Select"); ?></button>
-      </div>
       <button type="button" class="acp-button acp-button-secondary" id="acp-select-all" disabled><?php echo _("Select ready"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary" id="acp-clear-selection" disabled><?php echo _("Clear selection"); ?></button>
       <button type="button" class="acp-button acp-button-secondary" id="acp-dry-run" disabled><?php echo _("Dry run"); ?></button>
-      <button type="button" class="acp-button acp-button-primary" id="acp-primary-action" disabled><?php echo _("Quarantine selected"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary" id="acp-primary-action" disabled><?php echo _("Quarantine selected"); ?></button>
     </div>
   </section>
 </div>
