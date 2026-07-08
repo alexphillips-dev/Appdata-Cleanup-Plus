@@ -5,198 +5,166 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/releases/latest"><img src="https://img.shields.io/github/v/release/alexphillips-dev/Appdata-Cleanup-Plus?style=flat-square" alt="Latest Release"></a>
-  <a href="https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/releases"><img src="https://img.shields.io/github/release-date/alexphillips-dev/Appdata-Cleanup-Plus?style=flat-square" alt="Release Date"></a>
+  <a href="https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/releases"><img src="https://img.shields.io/github/v/release/alexphillips-dev/Appdata-Cleanup-Plus?style=flat-square" alt="Latest Release"></a>
   <a href="https://unraid.net/"><img src="https://img.shields.io/badge/Unraid-7.0.0%2B-F15A2C?logo=unraid&logoColor=white&style=flat-square" alt="Unraid 7.0.0+"></a>
   <a href="https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues"><img src="https://img.shields.io/github/issues/alexphillips-dev/Appdata-Cleanup-Plus?style=flat-square" alt="Open Issues"></a>
   <a href="https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/commits/main"><img src="https://img.shields.io/github/last-commit/alexphillips-dev/Appdata-Cleanup-Plus/main?style=flat-square" alt="Last Commit"></a>
-  <a href="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/"><img src="https://img.shields.io/badge/Support-Unraid%20Forum-F15A2C?style=flat-square" alt="Support Thread"></a>
+  <a href="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/"><img src="https://img.shields.io/badge/Support-Unraid%20Forum-F15A2C?style=flat-square" alt="Unraid forum support"></a>
+  <a href="https://buymeacoffee.com/alexphillipsdev"><img src="https://img.shields.io/badge/Sponsor-Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=000&style=flat-square" alt="Sponsor"></a>
 </p>
 
-Appdata Cleanup Plus is an Unraid plugin for finding orphaned Docker appdata folders, reviewing why they were surfaced, and then quarantining or deleting only the paths you explicitly choose.
+Appdata Cleanup Plus is a cleanup and recovery plugin for Unraid. It finds orphaned Docker appdata folders, explains why each folder was found, shows size and age information, and lets you quarantine or permanently delete only the folders you select. It is built for servers that have accumulated old containers, renamed apps, template leftovers, and appdata folders that are hard to audit by hand.
 
-It is built around conservative cleanup: grouped scan results, server-side action snapshots, quarantine-first workflow, restore and purge management, hard safety locks for risky filesystem targets, and ZFS-aware permanent delete for dataset-backed appdata roots.
+- Find orphaned appdata folders from configured appdata sources.
+- Review saved-template and filesystem-discovery results in one clean table.
+- Use Safe Mode to quarantine first, restore later, and purge only when ready.
+- Permanently delete with confirmation when Safe Mode is disabled.
+- Track cleanup, quarantine, restore, purge, and failed action results in audit history.
 
-Quick links: [Install](#install) | [Update](#update) | [What It Detects](#what-it-detects) | [ZFS-Backed Appdata](#zfs-backed-appdata) | [Safety Model](#safety-model) | [Quarantine and Restore](#quarantine-and-restore) | [Stored State](#stored-state) | [Development](#development) | [Support](#support)
+Quick links: [Install](#install) | [Features](#features) | [Getting Started](#getting-started) | [Safety Model](#safety-model) | [Advanced Tools](#advanced-tools) | [Documentation](#documentation) | [Support](#support)
 
-## Why Install This
+## Why Appdata Cleanup Plus
 
-- Find leftover appdata folders from removed containers without manually digging through shares.
-- Cross-check saved Docker templates against live container mounts when Docker is online.
-- Catch direct-child orphan folders in the configured appdata share even when no saved template still references them.
-- Resolve mapped `/mnt/user/...` style appdata paths to exact ZFS dataset mountpoints for dataset-aware permanent delete.
-- Review grouped results with search, risk filtering, sorting, badges, and progressive stat loading instead of a raw folder dump.
-- Default real actions to quarantine so cleanup stays reversible until you intentionally purge.
+Unraid appdata shares can collect folders long after containers are removed. Manually deciding what is safe to clean means comparing Docker templates, live container mappings, appdata share contents, filesystem paths, and old folder sizes. Appdata Cleanup Plus brings that review into one Settings page with a safer action flow: scan, review, select, dry run, quarantine, restore, purge, or permanently delete with confirmation.
 
-## What It Detects
+The plugin is intentionally conservative around filesystem operations. Actions use server-side scan snapshots and candidate IDs instead of trusting paths posted from the browser, and protected locations such as share roots, mount points, symlinked paths, quarantine roots, live container mappings, and VM Manager storage paths are guarded before cleanup runs.
 
-The scan combines multiple sources into one result set:
+## Features
 
-- Saved Docker template references from `/boot/config/plugins/dockerMan/templates-user/`
-- Live Docker host mount paths from installed containers when Docker is online
-- Direct child folder discovery inside the configured appdata share when Docker is online
+| Orphaned appdata review | Safe cleanup workflow |
+|---|---|
+| Scan configured appdata sources, Docker template references, and live Docker mappings to surface folders that appear unused. Results show name, source, size, last used age, path, and simple badges. | Keep Safe Mode on for quarantine-first cleanup, run dry runs before changing files, disable Safe Mode only when you intentionally want permanent deletion, and confirm destructive deletes with a checkbox. |
 
-Rows are grouped in the UI as:
+| Quarantine manager | Audit history |
+|---|---|
+| Restore quarantined folders, purge selected entries, set or clear purge timers, and recover tracked entries from quarantine markers when possible. | Review compact history for cleanup, quarantine, restore, purge, submitted item counts, result statuses, paths, destinations, and errors. |
 
-- `Saved template references`
-- `Appdata share discovery`
-- `Ignored`
+| Appdata sources | ZFS-aware delete |
+|---|---|
+| Auto-detect the Docker appdata root when available, browse filesystem paths, and add dedicated appdata roots for non-standard layouts. | Resolve configured user-share paths to exact ZFS dataset mountpoints, preview destroy impact, and use `zfs destroy` for dataset-backed rows when permanent delete is enabled. |
 
-The scan automatically excludes or blocks paths that should not be treated as normal appdata cleanup candidates, including:
-
-- Active live container mappings
-- The plugin quarantine root
-- Share roots and mount points
-- Paths containing symlinked segments
-- Unsafe canonical targets
-- VM Manager storage paths read from `domain.cfg`
-  - vdisk storage
-  - ISO storage
-  - libvirt storage
-
-If Docker is offline, the plugin can still surface template-backed candidates, but those rows should be reviewed more carefully because active container mounts cannot be verified at scan time.
-
-## ZFS-Backed Appdata
-
-The plugin supports ZFS-backed appdata when your user-share path and your real dataset mount root are different, for example:
-
-- User share root: `/mnt/user/appdata`
-- Dataset mount root: `/mnt/docker_vm_nvme/appdata`
-
-Current ZFS support includes:
-
-- A dedicated `ZFS mappings` workflow for mapping the Unraid share root to the real dataset mount root
-- Exact dataset mountpoint resolution using configured mappings
-- Case-sensitive dataset handling
-- Dry run previews that choose standard destroy or recursive destroy only when required
-- Recursive impact summaries for child datasets and snapshots
-- Permanent delete using `zfs destroy` instead of normal folder deletion for resolved dataset-backed rows
-
-Important limits:
-
-- `ZFS mappings` is only shown after `Enable ZFS dataset delete` is enabled in Safety settings
-- ZFS-backed rows still require `Enable permanent delete` before they become actionable
-- ZFS-backed rows cannot be quarantined in the current implementation
-- Only exact dataset mountpoint matches are treated as ZFS-backed delete targets
-- ZFS mappings affect delete resolution, not scan discovery
-
-Recommended workflow:
-
-1. Enable `ZFS dataset delete` in Safety settings.
-2. Open `ZFS mappings`.
-3. Add a mapping from the Unraid share root to the real dataset mount root.
-4. Rescan.
-5. Use `Dry run` first.
-6. Enable `Enable permanent delete` only when you intentionally want dataset destroy.
-
-## What The UI Gives You
-
-- Compact Unraid Settings page built around one scan and one global action bar
-- Grouped result sections for template-backed rows, filesystem discovery rows, and ignored rows
-- Search, risk filtering, sort order, and section-aware rendering
-- Badge-based row summaries with `Ready`, `Review`, and `Locked` action states plus source and reason badges
-- Progressive stat hydration so rows can render first and fill in heavier size data afterward
-- Bulk selection, `Select visible`, and `Select all`
-- Quarantine manager with bulk restore and purge actions
-- Restore collision handling with `Skip conflicts`, `Restore with suffix`, and `Review conflict`
-- Audit history for quarantine, restore, purge, and cleanup activity
-- Ignore and restore controls for paths you do not want surfaced in the active list
-
-## Safety Model
-
-Safety is the core behavior, not an afterthought.
-
-- Real actions default to `Quarantine selected`, not permanent delete
-- `Dry run` previews the current action without changing anything
-- `Enable permanent delete` must be enabled before irreversible delete becomes the primary action
-- `Enable ZFS dataset delete` must be enabled before ZFS-backed rows can resolve to dataset destroy actions
-- Locked rows stay visible, but they are not selectable
-- Actions run from server-side scan snapshots using candidate ids instead of trusting posted client paths
-- CSRF validation is required for action requests
-- Share roots, mount points, symlinked path segments, VM Manager managed paths, and other unsafe targets are blocked at action time
-- Restore operations preflight collisions before moving folders back out of quarantine
-- ZFS-backed rows remain blocked unless both the ZFS toggle and permanent delete mode are enabled
-
-## Quarantine And Restore
-
-Quarantine is the default real action path for a reason: it gives you a reversible buffer before permanent removal.
-
-Quarantine workflow:
-
-- Move selected folders into the plugin quarantine root
-- Track quarantined entries in the built-in quarantine manager
-- Restore entries later to their original path
-- Purge entries permanently only when you intend to
-
-Restore behavior:
-
-- Single and bulk restore are supported
-- If the original path already exists, the plugin stops and shows a conflict flow
-- You can skip the conflicting restore, restore beside it with a generated suffix, or review the conflict before continuing
-
-Default quarantine root:
-
-- Preferred: inside the configured appdata share at `/.appdata-cleanup-plus-quarantine`
-- Fallback: `/mnt/user/system/.appdata-cleanup-plus-quarantine`
-
-## Requirements
-
-- Unraid `7.0.0+`
-- Docker templates stored in the normal Unraid templates-user path for saved-template detection
-- A current major browser:
-  - Chrome
-  - Edge (Chromium)
-  - Firefox
-  - Safari
-- Manual review before destructive actions
-
-Compatibility notes:
-
-- The plugin does not depend on the Community Applications helper runtime
-- Stable `main` builds point to `main` branch metadata and archives
-- Testing `dev` builds point to `dev` branch metadata and archives
-- Package versions use `YYYY.MM.DD.UU` so same-day releases sort correctly in Unraid
+| Modern Unraid UI | Server-side safety |
+|---|---|
+| Uses shared dark and light theme tokens, compact action bars, simple modal dialogs, readable status badges, and a workflow designed for repeated cleanup checks. | CSRF validation, canonical path checks, action snapshots, protected-path locks, restore collision handling, and progress tracking keep filesystem changes auditable. |
 
 ## Install
 
-Stable `main` channel:
+Install from Unraid:
+
+1. Open `Plugins`.
+2. Choose `Install Plugin`.
+3. Paste the stable plugin URL:
 
 ```bash
 plugin install https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/main/plugins/appdata.cleanup.plus.plg
 ```
 
-Dev `testing` channel:
+Dev testing branch:
 
 ```bash
 plugin install https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/dev/plugins/appdata.cleanup.plus.plg
 ```
 
-Community Applications XML:
+Requirements:
 
-```text
-https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/main/appdata.cleanup.plus.xml
-```
+- Unraid `7.0.0+`
+- Docker templates stored in the normal Unraid `templates-user` path for saved-template detection
+- A current major Chrome, Edge, Firefox, or Safari browser
+- Manual review before destructive actions
 
-Commit-pinned install pattern:
-
-```text
-https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/<commit>/plugins/appdata.cleanup.plus.plg
-```
-
-## Update
-
-- Preferred: `Plugins -> Check for Updates`
-- Manual: rerun the same `plugin install` command for the channel you track
-- If GitHub or Unraid caching delays detection, install once from a commit-pinned raw URL, then return to normal `main` or `dev` branch tracking
-
-## Quick Workflow
+## Getting Started
 
 1. Open `Settings -> Appdata Cleanup Plus`.
-2. Click `Rescan`.
-3. Review grouped sections, row badges, size/age metadata, and lock reasons.
-4. Use `Dry run` if you want a no-change preview of the current action.
-5. Leave permanent delete off unless you intentionally want irreversible removal.
-6. Quarantine selected folders first, then use the quarantine manager to restore or purge as needed.
+2. Use `Appdata Sources` to confirm the appdata roots the plugin should scan.
+3. Click `Rescan`.
+4. Review the ready-to-clean table, folder sizes, last-used ages, paths, and source badges.
+5. Select the rows you want to act on.
+6. Use `Dry Run` to preview the action without changing files.
+7. Keep Safe Mode on to quarantine selected folders first, then restore or purge from `Show Quarantine`.
+
+Recommended first cleanup:
+
+- Start with Safe Mode on.
+- Select only folders you recognize.
+- Run a dry run before the first real cleanup.
+- Quarantine instead of deleting until you are comfortable with the results.
+- Use History after cleanup to confirm what happened.
+
+## Safety Model
+
+Appdata Cleanup Plus is designed to make cleanup understandable before it becomes destructive.
+
+- Safe Mode is on by default, so selected folders are quarantined instead of permanently deleted.
+- Permanent delete is only used after Safe Mode is disabled and the delete confirmation checkbox is checked.
+- Dry run previews the current action without modifying folders.
+- Actions run against server-side scan snapshots.
+- Browser requests submit candidate IDs, not arbitrary filesystem paths.
+- CSRF validation is required for action requests.
+- Share roots, mount points, symlinked path segments, VM Manager managed paths, quarantine roots, and active live container mappings are protected.
+- Restore operations preflight collisions before moving folders back out of quarantine.
+- ZFS-backed rows require permanent delete and exact dataset mountpoint resolution.
+
+## Quarantine And Restore
+
+Quarantine gives you a reversible buffer before permanent removal. When Safe Mode is on, selected folders are moved into a hidden quarantine root and tracked in the quarantine manager.
+
+Default quarantine root:
+
+```text
+/mnt/user/appdata/.appdata-cleanup-plus-quarantine
+```
+
+Quarantine manager tools:
+
+- Restore selected folders to their original path.
+- Purge selected folders permanently.
+- Set or clear purge timers.
+- Review original paths, quarantine paths, age, and size.
+- Recover tracked entries from quarantine markers when possible.
+
+Restore behavior:
+
+- If the original path is free, the folder is moved back.
+- If the original path already exists, the plugin stops and shows a conflict flow.
+- Conflicts can be skipped or restored with a generated suffix where supported.
+
+## ZFS-Backed Appdata
+
+ZFS support is available for appdata layouts where the visible user-share path and the real dataset mountpoint are different.
+
+Example:
+
+```text
+User share root: /mnt/user/appdata
+Dataset root:    /mnt/docker_vm_nvme/appdata
+```
+
+Supported behavior:
+
+- Add mappings from user-share roots to real dataset roots.
+- Resolve exact dataset mountpoint matches.
+- Preview child dataset and snapshot impact before destructive actions.
+- Use standard or recursive `zfs destroy` only when required.
+- Keep ZFS-backed rows out of quarantine, because dataset-backed rows cannot be moved like normal folders.
+
+Recommended workflow:
+
+1. Add the ZFS mapping.
+2. Rescan.
+3. Run `Dry Run`.
+4. Disable Safe Mode only when you intentionally want permanent dataset destroy.
+5. Confirm the delete action.
+
+## Advanced Tools
+
+| Tool | What it is for |
+|---|---|
+| Appdata Sources | Review detected appdata roots, browse filesystem paths, and add manual sources for non-standard layouts. |
+| Show Quarantine | Restore, purge, schedule purge timers, and review tracked quarantined folders. |
+| History | Review cleanup, quarantine, restore, purge, skipped, missing, and failed item results. |
+| Tools | Manage supporting workflows such as ZFS path mappings and plugin maintenance tools. |
+| Dry Run | Preview the selected cleanup action before changing files. |
+| Safe Mode | Switch between quarantine-first cleanup and confirmed permanent delete. |
 
 ## Stored State
 
@@ -210,10 +178,10 @@ Important files and directories:
 
 - `ignored-paths.json`: ignored rows hidden from the default result list
 - `cleanup-audit.jsonl`: append-only audit log for cleanup, quarantine, restore, and purge activity
-- `safety-settings.json`: persisted safety toggle state
+- `safety-settings.json`: Safe Mode and delete-related settings
 - `quarantine-records.json`: tracked quarantine entries
 - `path-stats-cache.json`: cached size and mtime lookups
-- `snapshots/`: session-scoped action snapshots used for server-side action validation
+- `snapshots/`: server-side action snapshots used for action validation
 
 ## Development
 
@@ -247,24 +215,6 @@ Validate CA-facing repository readiness:
 bash scripts/ca_readiness_guard.sh
 ```
 
-Ensure the current manifest version has a top changelog entry:
-
-```bash
-bash scripts/ensure_plg_changes_entry.sh
-```
-
-Promote `dev` into `main`, build the stable package, tag the release, publish or update the GitHub release, verify live raw metadata, and print the exact cache-busting install command:
-
-```bash
-bash scripts/release_main.sh
-```
-
-After promoting `main`, sync release artifacts and branch ancestry back into `dev` while restoring `dev` feed URLs:
-
-```bash
-bash scripts/sync_main_to_dev.sh
-```
-
 ## Repo Layout
 
 - `plugins/appdata.cleanup.plus.plg`: Unraid plugin manifest and changelog
@@ -274,21 +224,29 @@ bash scripts/sync_main_to_dev.sh
 - `docs/images/`: banner and repository documentation images
 - `tests/`: behavior smoke coverage and fixtures
 
+## Documentation
+
+- [CA Store Readiness](docs/ca-store-readiness.md)
+- [Bug report](https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues/new?template=bug_report.yml)
+- [Feature request](https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues/new?template=feature_request.yml)
+- [Release / update problem](https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues/new?template=release_update_problem.yml)
+
 ## Support
 
-General usage, screenshots, and testing feedback:
+- Forum support thread: https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/
+- GitHub issues: https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues
 
-- Unraid forum thread: `https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/`
+When reporting a problem, include:
 
-Repository and release tracking:
+- Unraid version
+- Appdata Cleanup Plus version
+- Browser and browser version
+- Screenshot or screen recording if the issue is visual
+- The action you were running: scan, dry run, quarantine, restore, purge, or delete
+- Relevant modal text or audit history result for failed filesystem actions
 
-- Repo: `https://github.com/alexphillips-dev/Appdata-Cleanup-Plus`
-- Latest release: `https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/releases/latest`
+## Sponsor
 
-GitHub issue forms:
+If Appdata Cleanup Plus helps your Unraid setup, you can support ongoing development here:
 
-- `Bug report`: reproducible plugin bugs
-- `Feature request`: workflow, safety, UI, or maintainer-tooling improvements
-- `Release / update problem`: install failures, stale update detection, branch tracking issues, or raw URL problems
-
-Blank issues are disabled so reports get routed into the right support path.
+https://buymeacoffee.com/alexphillipsdev
