@@ -983,6 +983,9 @@ function handleSaveSafetySettings() {
   $settings = array(
     "enablePermanentDelete" => getPostedBoolean("enablePermanentDelete"),
     "enableZfsDatasetDelete" => true,
+    "quarantineRoot" => isset($_POST["quarantineRoot"])
+      ? getPostedString("quarantineRoot")
+      : (isset($currentSettings["quarantineRoot"]) ? $currentSettings["quarantineRoot"] : getDefaultAppdataCleanupPlusQuarantineRoot()),
     "defaultQuarantinePurgeDays" => isset($_POST["defaultQuarantinePurgeDays"])
       ? (int)getPostedString("defaultQuarantinePurgeDays")
       : (int)(isset($currentSettings["defaultQuarantinePurgeDays"]) ? $currentSettings["defaultQuarantinePurgeDays"] : 0),

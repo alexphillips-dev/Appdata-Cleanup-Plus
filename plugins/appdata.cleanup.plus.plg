@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.49">
-<!ENTITY md5 "56221ad0dff75ecfa425355923ccd4f8">
+<!ENTITY version "2026.07.08.50">
+<!ENTITY md5 "d5be7cb3fcb27581d763c71ea0802538">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.50
+- Settings: Preserve the configured quarantine root when Safe Mode, appdata sources, ZFS mappings, or purge settings are saved.
+- Errors: Return action-specific fallback messages for unexpected backend failures instead of showing scan-only wording for every request.
+- UX: Update the empty search state so it no longer references removed badge or risk filters.
+
 ###2026.07.08.49
 - UI: Restore the Blocked summary card to the top row with a red lock SVG icon and four-card summary layout.
 

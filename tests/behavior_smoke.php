@@ -171,6 +171,7 @@ behaviorSmokeAssertSame(array(
     "datasetRoot" => "/mnt/docker_vm_nvme/test-appdata"
   )
 ), $persistedSafetySettings["zfsPathMappings"], "Safety settings should normalize and persist ZFS path mappings.");
+behaviorSmokeAssertSame(getDefaultAppdataCleanupPlusQuarantineRoot(), $persistedSafetySettings["quarantineRoot"], "Safety settings should keep a quarantine root when one was not explicitly posted.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "enablePermanentDelete" => false,
   "enableZfsDatasetDelete" => false,

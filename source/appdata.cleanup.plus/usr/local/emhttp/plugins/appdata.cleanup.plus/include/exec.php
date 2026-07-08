@@ -24,6 +24,39 @@ $actionLocks = array(
   "quarantineManagerAction" => "cleanup-operation"
 );
 
+function appdataCleanupPlusGenericFailureMessage($action) {
+  switch ( (string)$action ) {
+    case "getOrphanAppdata":
+      return "The orphaned appdata scan could not be completed right now.";
+    case "saveSafetySettings":
+      return "The plugin settings could not be saved right now.";
+    case "browseAppdataSourcePath":
+      return "The appdata source browser could not be loaded right now.";
+    case "updateCandidateState":
+      return "The folder state could not be updated right now.";
+    case "executeCandidateAction":
+      return "The cleanup action could not be completed right now.";
+    case "getOperationProgress":
+      return "Cleanup progress could not be loaded right now.";
+    case "hydrateCandidateStats":
+      return "Folder size details could not be loaded right now.";
+    case "getCandidateDetails":
+      return "Folder details could not be loaded right now.";
+    case "getQuarantineSummary":
+    case "getQuarantineEntries":
+    case "updateQuarantinePurgeSchedule":
+    case "inspectQuarantineRestore":
+    case "quarantineManagerAction":
+      return "The quarantine action could not be completed right now.";
+    case "getAuditHistory":
+      return "Audit history could not be loaded right now.";
+    case "getDiagnosticsBundle":
+      return "Diagnostics could not be generated right now.";
+    default:
+      return "The Appdata Cleanup Plus request could not be completed right now.";
+  }
+}
+
 if ( $requestMethod !== "POST" ) {
   header("Allow: POST");
   jsonResponse(array(
@@ -133,6 +166,6 @@ try {
   error_log("Appdata Cleanup Plus exec failure: " . $throwable->getMessage() . " in " . $throwable->getFile() . ":" . $throwable->getLine());
   jsonResponse(array(
     "ok" => false,
-    "message" => "The orphaned appdata scan could not be completed right now."
+    "message" => appdataCleanupPlusGenericFailureMessage($action)
   ), 500);
 }

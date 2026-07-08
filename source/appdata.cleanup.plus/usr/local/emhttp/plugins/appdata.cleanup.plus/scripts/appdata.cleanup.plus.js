@@ -4353,6 +4353,7 @@
       action: "saveSafetySettings",
       enablePermanentDelete: nextSettings.enablePermanentDelete ? "1" : "0",
       enableZfsDatasetDelete: "1",
+      quarantineRoot: nextSettings.quarantineRoot || previousSettings.quarantineRoot || "",
       defaultQuarantinePurgeDays: String(Number(nextSettings.defaultQuarantinePurgeDays || 0)),
       manualAppdataSources: ($.isArray(nextSettings.manualAppdataSources) ? nextSettings.manualAppdataSources : []).join("\n"),
       zfsPathMappings: JSON.stringify($.isArray(nextSettings.zfsPathMappings) ? nextSettings.zfsPathMappings : [])
