@@ -1243,28 +1243,17 @@ function restoreTrackedQuarantineEntry($entry, $options=array()) {
   );
 }
 
-function countNativeDeleteDirectoryItems($path) {
-  $count = 1;
+function appdataCleanupPlusFilesystemDeletePath($path) {
+  $normalizedPath = rtrim(str_replace("\\", "/", trim((string)$path)), "/");
 
-  try {
-    $iterator = new RecursiveIteratorIterator(
-      new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
-      RecursiveIteratorIterator::SELF_FIRST
-    );
-
-    foreach ( $iterator as $item ) {
-      $count++;
-    }
-  } catch ( Exception $exception ) {
-    return 1;
+  if ( startsWith($normalizedPath, "/mnt/cache/") ) {
+    return "/mnt/user/" . substr($normalizedPath, strlen("/mnt/cache/"));
   }
 
-  return $count;
+  return $normalizedPath;
 }
 
-function nativeDeleteDirectory($path, $options=array()) {
-  $allowSymlinkEntries = ! empty($options["allowSymlinkEntries"]);
-  $progressId = isset($options["operationProgressId"]) ? (string)$options["operationProgressId"] : "";
+function appdataCleanupPlusPhpDeleteDirectoryFallback($path, $allowSymlinkEntries=false) {
   $unsafeReason = inspectDirectoryTreeForUnsafeEntries($path, array(
     "allowSymlinkEntries" => $allowSymlinkEntries
   ));
@@ -1274,14 +1263,6 @@ function nativeDeleteDirectory($path, $options=array()) {
       "ok" => false,
       "message" => $unsafeReason
     );
-  }
-
-  if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressAddTotal") ) {
-    appdataCleanupPlusOperationProgressAddTotal($progressId, countNativeDeleteDirectoryItems($path));
-    appdataCleanupPlusUpdateOperationProgress($progressId, array(
-      "currentPath" => $path,
-      "message" => "Deleting files."
-    ), true);
   }
 
   try {
@@ -1300,9 +1281,6 @@ function nativeDeleteDirectory($path, $options=array()) {
             "message" => "A symlink entry could not be removed cleanly."
           );
         }
-        if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressRecordItem") ) {
-          appdataCleanupPlusOperationProgressRecordItem($progressId, $itemPath, "symlink", "deleted");
-        }
         continue;
       }
 
@@ -1313,19 +1291,11 @@ function nativeDeleteDirectory($path, $options=array()) {
             "message" => "A directory could not be removed cleanly."
           );
         }
-        if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressRecordItem") ) {
-          appdataCleanupPlusOperationProgressRecordItem($progressId, $itemPath, "directory", "deleted");
-        }
-      } else {
-        if ( ! @unlink($itemPath) ) {
-          return array(
-            "ok" => false,
-            "message" => "A file could not be removed cleanly."
-          );
-        }
-        if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressRecordItem") ) {
-          appdataCleanupPlusOperationProgressRecordItem($progressId, $itemPath, "file", "deleted");
-        }
+      } elseif ( ! @unlink($itemPath) ) {
+        return array(
+          "ok" => false,
+          "message" => "A file could not be removed cleanly."
+        );
       }
     }
   } catch ( Exception $exception ) {
@@ -1342,11 +1312,93 @@ function nativeDeleteDirectory($path, $options=array()) {
     );
   }
 
-  if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressRecordItem") ) {
-    appdataCleanupPlusOperationProgressRecordItem($progressId, $path, "directory", "deleted");
+  return array(
+    "ok" => true,
+    "message" => "Deleted successfully."
+  );
+}
+
+function nativeDeleteDirectory($path, $options=array()) {
+  $allowSymlinkEntries = ! empty($options["allowSymlinkEntries"]);
+  $progressId = isset($options["operationProgressId"]) ? (string)$options["operationProgressId"] : "";
+  $originalPath = rtrim(str_replace("\\", "/", trim((string)$path)), "/");
+  $deletePath = appdataCleanupPlusFilesystemDeletePath($path);
+  $deleteOutput = array();
+  $exitCode = 0;
+
+  if ( $deletePath === "" || $deletePath === "/" || $deletePath === "/mnt" || $deletePath === "/mnt/" || $deletePath === "/mnt/user" || $deletePath === "/mnt/user/" ) {
+    return array(
+      "ok" => false,
+      "message" => "Delete path was not safe."
+    );
   }
 
+  if ( ! is_dir($deletePath) ) {
+    if ( $originalPath !== "" && $originalPath !== $deletePath && is_dir($originalPath) ) {
+      $deletePath = $originalPath;
+    }
+  }
+
+  if ( ! is_dir($deletePath) ) {
+    return array(
+      "ok" => false,
+      "message" => "Path no longer exists."
+    );
+  }
+
+  if ( @is_link($deletePath) || pathHasSymlinkSegment($deletePath) ) {
+    return array(
+      "ok" => false,
+      "message" => pathHasSymlinkSegment($deletePath)
+        ? buildPathSymlinkSegmentLockReason($deletePath)
+        : buildSymlinkLockReason($deletePath, "Folder")
+    );
+  }
+
+  if ( pathIsMountPoint($deletePath) ) {
+    return array(
+      "ok" => false,
+      "message" => "Mount-point folders are locked for safety."
+    );
+  }
+
+  if ( $progressId !== "" && function_exists("appdataCleanupPlusUpdateOperationProgress") ) {
+    appdataCleanupPlusUpdateOperationProgress($progressId, array(
+      "currentPath" => $deletePath,
+      "message" => "Deleting folder."
+    ), true);
+  }
+
+  if ( PHP_OS_FAMILY === "Windows" || ! is_executable("/bin/rm") ) {
+    $fallbackResult = appdataCleanupPlusPhpDeleteDirectoryFallback($deletePath, $allowSymlinkEntries);
+    if ( ! $fallbackResult["ok"] ) {
+      return $fallbackResult;
+    }
+  } elseif ( ! function_exists("exec") ) {
+    return array(
+      "ok" => false,
+      "message" => "The PHP exec function is not available for folder deletion."
+    );
+  } else {
+    exec("/bin/rm -rf " . escapeshellarg($deletePath) . " 2>&1", $deleteOutput, $exitCode);
+    clearstatcache(true, $deletePath);
+
+    if ( $exitCode !== 0 || file_exists($deletePath) ) {
+      $outputText = trim(implode("\n", array_map("strval", $deleteOutput)));
+      return array(
+        "ok" => false,
+        "message" => $outputText !== ""
+          ? "Delete failed: " . $outputText
+          : "Delete failed. The folder still exists."
+      );
+    }
+  }
+
+  clearstatcache(true, $deletePath);
   clearCachedAppdataCleanupPlusPathStats($path);
+  if ( $deletePath !== $path ) {
+    clearCachedAppdataCleanupPlusPathStats($deletePath);
+  }
 
   return array(
     "ok" => true,
@@ -1854,8 +1906,7 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
     if ( ! empty($resolved["storage"]["kind"]) && $resolved["storage"]["kind"] === "zfs" ) {
       $datasetName = (string)$resolved["storage"]["datasetName"];
       $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName);
-      if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressAddTotal") ) {
-        appdataCleanupPlusOperationProgressAddTotal($progressId, 1);
+      if ( $progressId !== "" && function_exists("appdataCleanupPlusUpdateOperationProgress") ) {
         appdataCleanupPlusUpdateOperationProgress($progressId, array(
           "currentPath" => $datasetName,
           "message" => "Destroying ZFS dataset."
@@ -1868,9 +1919,6 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
       if ( ! empty($deleteResult["ok"]) ) {
         clearCachedAppdataCleanupPlusPathStats($resolved["displayPath"]);
         clearCachedAppdataCleanupPlusPathStats((string)$resolved["storage"]["datasetMountpoint"]);
-        if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressRecordItem") ) {
-          appdataCleanupPlusOperationProgressRecordItem($progressId, $datasetName, "zfs", "deleted");
-        }
       }
 
       $results[] = array(

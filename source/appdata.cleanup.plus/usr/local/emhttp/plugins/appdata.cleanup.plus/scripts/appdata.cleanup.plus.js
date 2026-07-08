@@ -4975,14 +4975,11 @@
     var currentProgress = $.isPlainObject(progress) ? progress : {};
     var ratio = readyForResults ? 1 : getOperationProgressRatio(currentProgress);
     var percent = Math.round(ratio * 100);
-    var processedItems = Number(currentProgress.processedItems || 0);
-    var totalItems = Number(currentProgress.totalItems || 0);
     var completedRoots = Number(currentProgress.completedRoots || 0);
     var totalRoots = Number(currentProgress.totalRoots || currentProgress.requestedCount || 0);
-    var recent = $.isArray(currentProgress.recent) ? currentProgress.recent.slice(-50).reverse() : [];
     var message = readyForResults
       ? ACP.t(strings, "deleteProgressComplete", "Delete finished. Review the results before leaving this screen.")
-      : (currentProgress.message || ACP.t(strings, "deleteProgressRunning", "Removing files now."));
+      : (currentProgress.message || ACP.t(strings, "deleteProgressRunning", "Removing selected folders now."));
     var html = [
       '<div class="acp-modal-summary acp-delete-progress-summary">',
       '<div class="acp-modal-copy">',
@@ -4994,7 +4991,6 @@
       "</div>",
       '<div class="acp-modal-stats">',
       '<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(String(percent)) + "%</span>",
-      '<span class="acp-modal-stat">' + ACP.escapeHtml(String(processedItems)) + (totalItems > 0 ? (" / " + ACP.escapeHtml(String(totalItems))) : "") + " " + ACP.escapeHtml(ACP.t(strings, "deleteProgressFilesLabel", "items")) + "</span>",
       '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(String(completedRoots)) + (totalRoots > 0 ? (" / " + ACP.escapeHtml(String(totalRoots))) : "") + " " + ACP.escapeHtml(ACP.t(strings, "deleteFolderPlural", "folders")) + "</span>",
       "</div>"
     ];
@@ -5007,23 +5003,6 @@
         "</div>"
       );
     }
-
-    html.push(
-      '<div class="acp-modal-panel acp-delete-progress-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "deleteProgressRecentLabel", "Recently deleted")) + "</div>"
-    );
-
-    if (recent.length) {
-      html.push('<ul class="acp-modal-list acp-delete-progress-list">');
-      $.each(recent, function(_, item) {
-        html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(item.path || "") + "</code></li>");
-      });
-      html.push("</ul>");
-    } else {
-      html.push('<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "deleteProgressNoRecent", "Deleted paths will appear here as the operation runs.")) + "</div>");
-    }
-
-    html.push("</div>");
 
     if (readyForResults) {
       html.push(

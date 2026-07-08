@@ -978,8 +978,7 @@ function handleSaveSafetySettings() {
   jsonResponse(array(
     "ok" => true,
     "settings" => $nextSettings,
-    "appdataSourceInfo" => buildAppdataCleanupPlusSourceInfo($nextSettings),
-    "quarantine" => buildQuarantineManagerPayload(true)
+    "appdataSourceInfo" => buildAppdataCleanupPlusSourceInfo($nextSettings)
   ));
 }
 
@@ -1102,8 +1101,7 @@ function handleExecuteCandidateAction() {
     "operation" => $execution["operation"],
     "preview" => $execution["preview"],
     "results" => $execution["results"],
-    "summary" => $execution["summary"],
-    "quarantineSummary" => buildDashboardQuarantineSummaryPayload()
+    "summary" => $execution["summary"]
   ));
 }
 

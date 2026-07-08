@@ -17,17 +17,11 @@ libxml_use_internal_errors(true);
 $requestMethod = strtoupper((string)($_SERVER["REQUEST_METHOD"] ?? ""));
 $action = getPostedString("action");
 $csrfToken = getRequestedCsrfToken();
-$expensiveActions = array(
-  "getOrphanAppdata",
-  "getQuarantineSummary",
-  "hydrateCandidateStats",
-  "getCandidateDetails",
-  "saveSafetySettings",
-  "getQuarantineEntries",
-  "executeCandidateAction",
-  "updateQuarantinePurgeSchedule",
-  "inspectQuarantineRestore",
-  "quarantineManagerAction"
+$actionLocks = array(
+  "getOrphanAppdata" => "scan-operation",
+  "executeCandidateAction" => "cleanup-operation",
+  "updateQuarantinePurgeSchedule" => "cleanup-operation",
+  "quarantineManagerAction" => "cleanup-operation"
 );
 
 if ( $requestMethod !== "POST" ) {
@@ -54,12 +48,15 @@ if ( ! validateAppdataCleanupPlusCsrfToken($csrfToken) ) {
 
 closeAppdataCleanupPlusSession();
 
-if ( in_array($action, $expensiveActions, true) ) {
-  if ( ! acquireAppdataCleanupPlusRuntimeLock("expensive-operation", array("action" => $action)) ) {
+if ( isset($actionLocks[$action]) ) {
+  $lockName = $actionLocks[$action];
+  if ( ! acquireAppdataCleanupPlusRuntimeLock($lockName, array("action" => $action)) ) {
     header("Retry-After: 5");
     jsonResponse(array(
       "ok" => false,
-      "message" => "Appdata Cleanup Plus is already running a scan or cleanup operation. Wait a few seconds, then try again."
+      "message" => $lockName === "cleanup-operation"
+        ? "Appdata Cleanup Plus is already running a cleanup operation. Wait a few seconds, then try again."
+        : "Appdata Cleanup Plus is already running a scan. Wait a few seconds, then try again."
     ), 429);
   }
 }

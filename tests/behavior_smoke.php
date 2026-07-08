@@ -1216,10 +1216,10 @@ $progressDeleteResult = nativeDeleteDirectory($progressDeletePath, array(
 $progressPayload = appdataCleanupPlusReadOperationProgress($progressDeleteId);
 behaviorSmokeAssertSame(true, ! empty($progressDeleteResult["ok"]), "Progress-tracked native deletes should succeed.");
 behaviorSmokeAssertSame(false, is_dir($progressDeletePath), "Progress-tracked native deletes should remove the target folder.");
-behaviorSmokeAssertSame(4, (int)$progressPayload["totalItems"], "Progress tracking should count root, nested directories, and files.");
-behaviorSmokeAssertSame(4, (int)$progressPayload["processedItems"], "Progress tracking should record each deleted filesystem entry.");
-behaviorSmokeAssertTrue(! empty($progressPayload["recent"]) && count($progressPayload["recent"]) >= 2, "Progress tracking should retain recently deleted paths.");
-behaviorSmokeAssertContains("progress-delete", appdataCleanupPlusJsonEncode($progressPayload["recent"]), "Progress tracking should include deleted path names.");
+behaviorSmokeAssertSame(0, (int)$progressPayload["totalItems"], "Progress tracking should avoid expensive recursive item counts.");
+behaviorSmokeAssertSame(0, (int)$progressPayload["processedItems"], "Progress tracking should avoid per-file delete writes.");
+behaviorSmokeAssertSame(array(), $progressPayload["recent"], "Progress tracking should not retain per-file delete paths.");
+behaviorSmokeAssertContains("progress-delete", $progressPayload["currentPath"], "Progress tracking should keep the current root folder.");
 
 behaviorSmokeRemoveTree($stateRoot);
 behaviorSmokeRemoveTree($appdataShareRoot);
