@@ -63,8 +63,8 @@ if [[ "${EXPECTED_BRANCH}" != "dev" ]]; then
     EXPECTED_BRANCH="main"
 fi
 
-EXPECTED_PLUGIN_URL="https://raw.githubusercontent.com/&github;/${EXPECTED_BRANCH}/plugins/&name;.plg"
-EXPECTED_ARCHIVE_URL="https://raw.githubusercontent.com/&github;/${EXPECTED_BRANCH}/archive/&name;-&version;-x86_64-1.txz"
+EXPECTED_PLUGIN_URL="https://raw.githubusercontent.com/&github;/refs/heads/${EXPECTED_BRANCH}/plugins/&name;.plg"
+EXPECTED_ARCHIVE_URL="https://raw.githubusercontent.com/&github;/refs/heads/${EXPECTED_BRANCH}/archive/&name;-&version;-x86_64-1.txz"
 if [[ "${PLUGIN_URL_ENTITY}" != "${EXPECTED_PLUGIN_URL}" ]]; then
     echo "ERROR: pluginURL branch mismatch. expected=${EXPECTED_PLUGIN_URL}, found=${PLUGIN_URL_ENTITY}" >&2
     exit 1
@@ -78,8 +78,8 @@ CA_PLUGIN_URL="$(grep -m1 '<PluginURL>' "${XML_FILE}" | sed -E 's|.*<PluginURL>(
 CA_DATE="$(grep -m1 '<Date>' "${XML_FILE}" | sed -E 's|.*<Date>(.*)</Date>.*|\1|' || true)"
 CA_ICON_URL="$(grep -m1 '<Icon>' "${XML_FILE}" | sed -E 's|.*<Icon>(.*)</Icon>.*|\1|' || true)"
 EXPECTED_CA_DATE="${VERSION_DATE//./-}"
-EXPECTED_CA_PLUGIN_URL="https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/${EXPECTED_BRANCH}/plugins/appdata.cleanup.plus.plg"
-EXPECTED_CA_ICON_URL="https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/${EXPECTED_BRANCH}/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png"
+EXPECTED_CA_PLUGIN_URL="https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/${EXPECTED_BRANCH}/plugins/appdata.cleanup.plus.plg"
+EXPECTED_CA_ICON_URL="https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/${EXPECTED_BRANCH}/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png"
 
 if [[ "${CA_DATE}" != "${EXPECTED_CA_DATE}" ]]; then
     echo "ERROR: CA template date mismatch. expected=${EXPECTED_CA_DATE}, found=${CA_DATE}" >&2
