@@ -5,10 +5,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/actions/workflows/ci.yml"><img src="https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/releases"><img src="https://img.shields.io/github/v/release/alexphillips-dev/Appdata-Cleanup-Plus?style=flat-square" alt="Latest Release"></a>
   <a href="https://unraid.net/"><img src="https://img.shields.io/badge/Unraid-7.0.0%2B-F15A2C?logo=unraid&logoColor=white&style=flat-square" alt="Unraid 7.0.0+"></a>
-  <a href="https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues"><img src="https://img.shields.io/github/issues/alexphillips-dev/Appdata-Cleanup-Plus?style=flat-square" alt="Open Issues"></a>
-  <a href="https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/commits/main"><img src="https://img.shields.io/github/last-commit/alexphillips-dev/Appdata-Cleanup-Plus/main?style=flat-square" alt="Last Commit"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/github/license/alexphillips-dev/Appdata-Cleanup-Plus?style=flat-square" alt="License: MIT"></a>
   <a href="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/"><img src="https://img.shields.io/badge/Support-Unraid%20Forum-F15A2C?style=flat-square" alt="Unraid forum support"></a>
   <a href="https://buymeacoffee.com/alexphillipsdev"><img src="https://img.shields.io/badge/Sponsor-Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=000&style=flat-square" alt="Sponsor"></a>
 </p>
