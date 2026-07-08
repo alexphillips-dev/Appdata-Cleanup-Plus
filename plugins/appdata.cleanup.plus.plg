@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.35">
-<!ENTITY md5 "88b1153e0fe036884c996dc4f5c4dc33">
+<!ENTITY version "2026.07.08.36">
+<!ENTITY md5 "0b967230f9956a2ea245fccca5afdc1b">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.36
+- UI: Rename the disabled Safe Mode card title to Safe Mode Disabled and color the Disabled state red so permanent-delete mode is obvious.
+- UI: Align the disabled Safe Mode warning icon with the card title to match the enabled shield layout.
+
 ###2026.07.08.35
 - UI: Move exact ZFS dataset-backed rows into their own ZFS datasets results section instead of mixing them into Ready to Clean.
 - UI: Give the ZFS datasets section a teal left accent that matches the ZFS dataset row icon color.

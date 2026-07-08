@@ -172,6 +172,7 @@ $config = array(
     "helpWorkflowBody" => _("Rescan, review Ready and Blocked rows, open Details for anything unclear, enable Safe Mode if you want a restorable quarantine step, and permanently delete only when you are confident."),
     "enablePermanentDeleteLabel" => _("Permanent delete mode"),
     "enableSafeModeLabel" => _("Enable Safe Mode"),
+    "disabledLabel" => _("Disabled"),
     "sourceLabel" => _("Source"),
     "storageLabel" => _("Storage"),
     "zfsDatasetLabel" => _("ZFS dataset"),

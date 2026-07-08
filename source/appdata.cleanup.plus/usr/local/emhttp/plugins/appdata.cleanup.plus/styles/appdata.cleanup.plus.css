@@ -3734,7 +3734,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   position: relative;
 }
 
-#acp-app .acp-mode-card.is-safe-mode {
+#acp-app .acp-mode-card.is-safe-mode,
+#acp-app .acp-mode-card.is-delete-mode {
   align-content: start;
   align-items: start;
   box-sizing: border-box;
@@ -3746,7 +3747,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   padding: 16px 18px;
 }
 
-#acp-app .acp-mode-card.is-safe-mode .acp-mode-icon {
+#acp-app .acp-mode-card.is-safe-mode .acp-mode-icon,
+#acp-app .acp-mode-card.is-delete-mode .acp-mode-icon {
   align-self: start;
   background: transparent;
   border-radius: 0;
@@ -3756,6 +3758,20 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   position: relative;
   width: 34px;
   flex: 0 0 34px;
+}
+
+#acp-app .acp-mode-card.is-delete-mode .acp-mode-icon {
+  align-items: center;
+  background: rgba(239, 68, 68, 0.14);
+  border-radius: 50%;
+  color: #f87171;
+  display: flex;
+  font-size: 24px;
+  font-weight: 800;
+  height: 34px;
+  justify-content: center;
+  line-height: 1;
+  width: 34px;
 }
 
 #acp-app .acp-mode-shield-icon {
@@ -3776,11 +3792,6 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   stroke-width: 2.8;
 }
 
-#acp-app .acp-mode-card.is-delete-mode {
-  align-items: center;
-  padding-top: 0;
-}
-
 #acp-app .acp-mode-card > .acp-button {
   display: none;
 }
@@ -3796,6 +3807,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   line-height: 1.1;
 }
 
+#acp-app .acp-mode-card-title .acp-mode-card-state.is-disabled {
+  color: var(--acp-blocked-text);
+}
+
 #acp-app .acp-summary-copy,
 #acp-app .acp-mode-card-copy {
   align-content: start;
@@ -3809,7 +3824,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   align-content: center;
 }
 
-#acp-app .acp-mode-card.is-safe-mode .acp-mode-card-copy {
+#acp-app .acp-mode-card.is-safe-mode .acp-mode-card-copy,
+#acp-app .acp-mode-card.is-delete-mode .acp-mode-card-copy {
   align-self: start;
   box-sizing: border-box;
   display: flex;
