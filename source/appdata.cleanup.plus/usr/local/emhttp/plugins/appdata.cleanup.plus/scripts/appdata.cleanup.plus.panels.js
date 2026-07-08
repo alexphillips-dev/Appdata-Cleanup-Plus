@@ -54,6 +54,31 @@
     els.$modeStrip.html(html.join(""));
   };
 
+  function buildSimpleModalIntro(icon, title, message, metaHtml) {
+    return (
+      '<div class="acp-simple-modal-intro">' +
+        '<div class="acp-simple-modal-icon" aria-hidden="true">' + ACP.escapeHtml(icon || "") + "</div>" +
+        '<div class="acp-simple-modal-intro-copy">' +
+          '<div class="acp-simple-modal-title">' + ACP.escapeHtml(title || "") + "</div>" +
+          '<div class="acp-simple-modal-message">' + ACP.escapeHtml(message || "") + "</div>" +
+        "</div>" +
+        (metaHtml ? ('<div class="acp-simple-modal-meta">' + metaHtml + "</div>") : "") +
+      "</div>"
+    );
+  }
+
+  function buildSimpleModalCard(title, bodyHtml, actionsHtml, className) {
+    return (
+      '<section class="acp-simple-modal-card' + (className ? " " + ACP.escapeHtml(className) : "") + '">' +
+        '<div class="acp-simple-modal-card-head">' +
+          '<div class="acp-simple-modal-card-title">' + ACP.escapeHtml(title || "") + "</div>" +
+          (actionsHtml ? ('<div class="acp-simple-modal-card-actions">' + actionsHtml + "</div>") : "") +
+        "</div>" +
+        '<div class="acp-simple-modal-card-body">' + (bodyHtml || "") + "</div>" +
+      "</section>"
+    );
+  }
+
   ACP.buildQuarantineManagerModalHtml = function(context) {
     var state = context.state || {};
     var strings = context.strings || {};
@@ -77,15 +102,15 @@
     });
     allSelected = entries.length > 0 && selectedCount >= entries.length;
     selectionDisabled = !!quarantine.loading || selectedCount === 0;
-    var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(subtitle) + "</div>",
-      "</div>",
-      '<div class="acp-modal-actions-row acp-quarantine-manager-toolbar">',
-      '<div class="acp-modal-subcopy acp-quarantine-selected-summary">' + ACP.escapeHtml(selectedCount + " " + (selectedCount === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"))) + "</div>",
-      '<div class="acp-quarantine-toolbar-groups">',
-      '<div class="acp-modal-inline-actions acp-quarantine-toolbar-primary">',
+    var selectedSummary = selectedCount + " " + (selectedCount === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
+    var bulkActions = [
+      '<button type="button" class="acp-button acp-button-secondary" data-action="refresh-quarantine"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantineRefreshLabel", "Refresh")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="select-all-quarantine"' + (quarantine.loading || !entries.length || allSelected ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "selectAllLabel", "Select all")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="clear-quarantine-selection"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "clearLabel", "Clear")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="restore-selected-quarantine"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "restoreSelectedLabel", "Restore selected")) + "</button>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="purge-selected-quarantine"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "purgeSelectedLabel", "Purge selected")) + "</button>"
+    ].join("");
+    var scheduleHtml = [
       '<label class="acp-quarantine-schedule-field">',
       '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleDaysLabel", "Purge in days")) + "</span>",
       '<input type="number" min="0" step="1" class="acp-input acp-quarantine-default-purge-input" value="' + ACP.escapeHtml(String(defaultPurgeDays >= 0 ? defaultPurgeDays : 0)) + '"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>',
@@ -95,19 +120,26 @@
       '<input type="datetime-local" class="acp-input acp-quarantine-schedule-at-input" value="' + ACP.escapeHtml(purgeAtInput) + '"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>',
       "</label>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="set-quarantine-purge-schedule"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleSetLabel", "Set purge")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="clear-quarantine-purge-schedule"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleClearLabel", "Clear purge timer")) + "</button>",
-      "</div>",
-      '<div class="acp-modal-inline-actions acp-quarantine-toolbar-secondary">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="refresh-quarantine"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantineRefreshLabel", "Refresh")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="select-all-quarantine"' + (quarantine.loading || !entries.length || allSelected ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "selectAllLabel", "Select all")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="clear-quarantine-selection"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "clearLabel", "Clear")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="restore-selected-quarantine"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "restoreSelectedLabel", "Restore selected")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="purge-selected-quarantine"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "purgeSelectedLabel", "Purge selected")) + "</button>",
-      "</div>",
-      "</div>",
-      "</div>",
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "quarantineTrackedTitle", "Tracked folders")) + "</div>"
+      '<button type="button" class="acp-button acp-button-secondary" data-action="clear-quarantine-purge-schedule"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleClearLabel", "Clear purge timer")) + "</button>"
+    ].join("");
+    var html = [
+      '<div class="acp-simple-modal-shell acp-simple-modal-quarantine">',
+      buildSimpleModalIntro(
+        "Q",
+        ACP.t(strings, "quarantineManagerTitle", "Quarantine"),
+        subtitle,
+        '<span class="acp-simple-pill acp-quarantine-selected-summary">' + ACP.escapeHtml(selectedSummary) + "</span>"
+      ),
+      buildSimpleModalCard(
+        ACP.t(strings, "quarantineActionsTitle", "Actions"),
+        '<div class="acp-simple-modal-actions">' + bulkActions + "</div>" +
+        '<details class="acp-simple-disclosure"><summary>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeTimerTitle", "Purge timer")) + '</summary><div class="acp-simple-modal-form-row">' + scheduleHtml + "</div></details>",
+        "",
+        "acp-simple-modal-card-compact"
+      ),
+      '<section class="acp-simple-modal-card acp-simple-modal-list-card">',
+      '<div class="acp-simple-modal-card-head"><div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "quarantineTrackedTitle", "Tracked folders")) + "</div></div>",
+      '<div class="acp-simple-modal-card-body">'
     ];
 
     if (quarantine.loading) {
@@ -119,16 +151,16 @@
       $.each(entries, function(_, entry) {
         var entryId = String(entry.id || "");
         var isSelected = !!selected[entryId];
-        html.push('<li class="acp-modal-result acp-quarantine-entry' + (isSelected ? ' is-selected' : "") + '" data-entry-id="' + ACP.escapeHtml(entryId) + '">');
-        html.push('<div class="acp-modal-result-head">');
-        html.push('<div class="acp-quarantine-entry-main">');
-        html.push('<label class="acp-quarantine-entry-check">');
+        html.push('<li class="acp-simple-list-item acp-quarantine-entry' + (isSelected ? ' is-selected' : "") + '" data-entry-id="' + ACP.escapeHtml(entryId) + '">');
+        html.push('<div class="acp-simple-list-main">');
+        html.push('<label class="acp-quarantine-entry-check acp-simple-list-check">');
         html.push('<input type="checkbox" class="acp-quarantine-checkbox" data-entry-id="' + ACP.escapeHtml(entryId) + '"' + (isSelected ? ' checked="checked"' : "") + ">");
         html.push("</label>");
-        html.push('<div class="acp-quarantine-title-wrap">');
-        html.push('<div class="acp-modal-inline-title">' + ACP.escapeHtml(entry.name || entry.sourcePath || "") + "</div>");
+        html.push('<div class="acp-simple-list-copy">');
+        html.push('<div class="acp-simple-list-title">' + ACP.escapeHtml(entry.name || entry.sourcePath || "") + "</div>");
+        html.push('<div class="acp-simple-list-subtitle">' + ACP.escapeHtml((entry.quarantinedAtLabel || "") + (entry.quarantinedAgeLabel ? " | " + entry.quarantinedAgeLabel : "") + (entry.sizeLabel ? " | " + entry.sizeLabel : "")) + "</div>");
         if (entry.purgeScheduled && entry.purgeBadgeLabel) {
-          html.push('<div class="acp-quarantine-meta-badges">');
+          html.push('<div class="acp-simple-badge-row">');
           html.push('<span class="acp-modal-stat ' + ACP.escapeHtml(entry.purgeBadgeTone || "is-selected") + '" title="' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduledLabel", "Scheduled purge") + (entry.purgeAtLabel ? ": " + entry.purgeAtLabel : "")) + '">' + ACP.escapeHtml(entry.purgeBadgeLabel) + "</span>");
           if (entry.purgeAtLabel) {
             html.push('<span class="acp-modal-stat is-scheduled" title="' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduledLabel", "Scheduled purge")) + '">' + ACP.escapeHtml(entry.purgeAtLabel) + "</span>");
@@ -137,20 +169,21 @@
         }
         html.push("</div>");
         html.push("</div>");
-        html.push('<div class="acp-modal-inline-actions">');
+        html.push('<div class="acp-simple-list-actions">');
         html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="restore" data-entry-id="' + ACP.escapeHtml(entryId) + '">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreActionLabel", "Restore")) + "</button>");
         html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="purge" data-entry-id="' + ACP.escapeHtml(entryId) + '">' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeActionLabel", "Purge")) + "</button>");
         html.push("</div>");
         html.push("</div>");
-        html.push('<div class="acp-modal-result-message">' + ACP.escapeHtml((entry.quarantinedAtLabel || "") + (entry.quarantinedAgeLabel ? " | " + entry.quarantinedAgeLabel : "") + (entry.sizeLabel ? " | " + entry.sizeLabel : "")) + "</div>");
+        html.push('<details class="acp-simple-disclosure acp-simple-list-details"><summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>");
         html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineSourceLabel", "Original")) + '</span><code class="acp-modal-path">' + ACP.escapeHtml(entry.sourcePath || "") + "</code></div>");
         html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineLocationLabel", "Quarantine path")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(entry.destination || "") + "</code></div>");
+        html.push("</details>");
         html.push("</li>");
       });
       html.push("</ul>");
     }
 
-    html.push("</div></div>");
+    html.push("</div></section></div>");
     return html.join("");
   };
 
@@ -164,12 +197,16 @@
       ? (auditHistory.length + " " + ACP.t(strings, "auditHistoryEntriesLabel", "entries available"))
       : ACP.t(strings, "auditHistoryEmptySummary", "No cleanup history has been recorded yet."));
     var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(subtitle) + "</div>",
-      "</div>",
-      '<div class="acp-modal-panel acp-modal-panel-scroll">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryTitle", "Audit history")) + "</div>"
+      '<div class="acp-simple-modal-shell acp-simple-modal-history">',
+      buildSimpleModalIntro(
+        "H",
+        ACP.t(strings, "auditHistoryTitle", "History"),
+        subtitle,
+        auditHistory.length ? ('<span class="acp-simple-pill">' + ACP.escapeHtml(String(auditHistory.length)) + "</span>") : ""
+      ),
+      '<section class="acp-simple-modal-card acp-simple-modal-list-card acp-modal-panel-scroll">',
+      '<div class="acp-simple-modal-card-head"><div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryTitle", "Audit history")) + "</div></div>",
+      '<div class="acp-simple-modal-card-body">'
     ];
 
     if (state.auditHistoryLoading && !auditHistory.length) {
@@ -177,20 +214,22 @@
     } else if (!auditHistory.length) {
       html.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryEmptyMessage", "No cleanup, restore, or purge actions have been recorded yet.")) + "</div>");
     } else {
-      html.push('<div class="acp-audit-list">');
+      html.push('<div class="acp-audit-list acp-simple-history-list">');
       $.each(auditHistory, function(_, entry) {
-        html.push('<article class="acp-audit-entry">');
-        html.push('<div class="acp-audit-head">');
-        html.push('<div class="acp-audit-head-main">');
+        html.push('<article class="acp-audit-entry acp-simple-list-item">');
+        html.push('<div class="acp-simple-list-main">');
+        html.push('<div class="acp-simple-list-copy">');
+        html.push('<div class="acp-simple-list-title">' + ACP.escapeHtml(entry.operationLabel || ACP.t(strings, "auditHistoryEntryLabel", "Cleanup action")) + "</div>");
+        html.push('<div class="acp-simple-list-subtitle">' + ACP.escapeHtml((entry.timestampLabel || entry.timestamp || "") + (entry.relativeLabel ? " | " + entry.relativeLabel : "")) + "</div>");
+        html.push("</div>");
+        html.push('<div class="acp-simple-badge-row">');
         html.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(entry.operationLabel || "") + "</span>");
-        html.push('<span class="acp-audit-time">' + ACP.escapeHtml(entry.timestampLabel || entry.timestamp || "") + "</span>");
-        if (entry.relativeLabel) {
-          html.push('<span class="acp-audit-time-muted">' + ACP.escapeHtml(entry.relativeLabel) + "</span>");
+        html.push('<span class="acp-modal-stat is-scheduled">' + ACP.escapeHtml(String(entry.requestedCount || 0)) + " " + ACP.escapeHtml(ACP.t(strings, "auditRequestedLabel", "items submitted")) + "</span>");
+        html.push("</div>");
+        html.push("</div>");
+        if (entry.message) {
+          html.push('<div class="acp-simple-list-message">' + ACP.escapeHtml(entry.message || "") + "</div>");
         }
-        html.push("</div>");
-        html.push('<div class="acp-audit-head-meta">' + ACP.escapeHtml(String(entry.requestedCount || 0)) + " " + ACP.escapeHtml(ACP.t(strings, "auditRequestedLabel", "items submitted")) + "</div>");
-        html.push("</div>");
-        html.push('<div class="acp-audit-message">' + ACP.escapeHtml(entry.message || "") + "</div>");
         html.push('<div class="acp-modal-stats">');
         $.each(entry.summary || {}, function(status, count) {
           var statusMeta;
@@ -203,6 +242,7 @@
         html.push("</div>");
 
         if ($.isArray(entry.results) && entry.results.length) {
+          html.push('<details class="acp-simple-disclosure acp-simple-list-details"><summary>' + ACP.escapeHtml(ACP.t(strings, "auditHistoryResultsLabel", "Item results")) + "</summary>");
           html.push('<div class="acp-audit-results">');
           $.each(entry.results, function(_, result) {
             var statusMeta = ACP.formatOperationResultStatus(strings, result.status);
@@ -218,6 +258,7 @@
             html.push("</div>");
           });
           html.push("</div>");
+          html.push("</details>");
         }
 
         html.push("</article>");
@@ -225,7 +266,7 @@
       html.push("</div>");
     }
 
-    html.push("</div></div>");
+    html.push("</div></section></div>");
     return html.join("");
   };
 
@@ -525,27 +566,29 @@
     var strings = context.strings || {};
 
     return [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsSubtitle", "Support and maintainer utilities for exporting the current plugin state.")) + "</div>",
-      '</div>',
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsTitle", "Export diagnostics")) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsMessage", "Downloads a redacted JSON bundle with current scan state, plugin state files, bounded support log excerpts, safety settings, source roots, quarantine summary, audit history, and row metadata for troubleshooting.")) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsPrivacyNote", "App-specific names, template filenames, full filesystem paths, IPs, emails, tokens, and hostnames are redacted or aliased before export. Review before sharing.")) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsCopyMessage", "Copies a redacted text diagnostics summary. Use this if the JSON download fails or a forum post needs plain text.")) + "</div>",
-      '<div class="acp-modal-actions-row">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="export-diagnostics">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsExportLabel", "Download diagnostics")) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="copy-diagnostics-text">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsCopyLabel", "Copy diagnostics text")) + "</button>",
-      "</div>",
-      "</div>",
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "toolsSupportSummaryTitle", "Copy support summary")) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "toolsSupportSummaryMessage", "Copies a concise support summary with version, scan counts, safety toggles, scan roots, ZFS state, and quarantine totals for forum posts or issue reports.")) + "</div>",
-      '<div class="acp-modal-actions-row">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="copy-support-summary">' + ACP.escapeHtml(ACP.t(strings, "toolsSupportSummaryCopyLabel", "Copy support summary")) + "</button>",
-      "</div>",
-      "</div>",
+      '<div class="acp-simple-modal-shell acp-simple-modal-tools">',
+      buildSimpleModalIntro(
+        "T",
+        ACP.t(strings, "toolsTitle", "Tools"),
+        ACP.t(strings, "toolsSubtitle", "Support and maintainer utilities for exporting the current plugin state."),
+        ""
+      ),
+      buildSimpleModalCard(
+        ACP.t(strings, "toolsDiagnosticsTitle", "Diagnostics"),
+        '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsSimpleMessage", "Download a redacted support bundle when troubleshooting a bug or unexpected result.")) + "</p>" +
+        '<details class="acp-simple-disclosure"><summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>" +
+        '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsPrivacyNote", "App-specific names, template filenames, full filesystem paths, IPs, emails, tokens, and hostnames are redacted or aliased before export. Review before sharing.")) + "</p>" +
+        "</details>",
+        '<button type="button" class="acp-button acp-button-secondary" data-action="export-diagnostics">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsExportLabel", "Download diagnostics")) + "</button>" +
+        '<button type="button" class="acp-button acp-button-secondary" data-action="copy-diagnostics-text">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsCopyLabel", "Copy text")) + "</button>",
+        ""
+      ),
+      buildSimpleModalCard(
+        ACP.t(strings, "toolsSupportSummaryTitle", "Support summary"),
+        '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsSupportSummarySimpleMessage", "Copy a short summary for forum posts or issue reports.")) + "</p>",
+        '<button type="button" class="acp-button acp-button-secondary" data-action="copy-support-summary">' + ACP.escapeHtml(ACP.t(strings, "toolsSupportSummaryCopyLabel", "Copy summary")) + "</button>",
+        ""
+      ),
       "</div>"
     ].join("");
   };
@@ -720,17 +763,13 @@
     var entryHtml = [];
     var browserListHtml = [];
     var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesLead", "The Docker appdata root is auto-detected when available. Browse to a non-standard appdata location, then add it to the manual source list.")) + "</div>",
-      '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesHint", "Only add dedicated appdata roots. Direct child folders under each root are treated as discovery candidates.")) + "</div>",
-      "</div>",
-      '<div class="acp-modal-actions-row">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="save-appdata-sources"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesSaveLabel", "Save sources")) + "</button>",
-      "</div>",
-      "</div>",
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesDetectedTitle", "Detected source")) + "</div>"
+      '<div class="acp-simple-modal-shell acp-simple-modal-sources">',
+      buildSimpleModalIntro(
+        "S",
+        ACP.t(strings, "appdataSourcesTitle", "Appdata sources"),
+        ACP.t(strings, "appdataSourcesLead", "Use this only when your appdata folder is somewhere custom. Docker's appdata root is detected automatically when available."),
+        '<button type="button" class="acp-button acp-button-secondary" data-action="save-appdata-sources"' + disabledAttr + '>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesSaveLabel", "Save sources")) + "</button>"
+      )
     ];
 
     $.each(detected.concat(manual), function(_, path) {
@@ -744,6 +783,9 @@
       effective.push(normalizedPath);
     });
 
+    html.push('<section class="acp-simple-modal-card">');
+    html.push('<div class="acp-simple-modal-card-head"><div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesDetectedTitle", "Detected source")) + "</div></div>");
+    html.push('<div class="acp-simple-modal-card-body">');
     if (!detected.length) {
       html.push('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesDetectedEmpty", "No Docker appdata source is auto-detected right now.")) + "</div>");
     } else {
@@ -753,6 +795,7 @@
       });
       html.push("</div>");
     }
+    html.push("</div></section>");
 
     if (browser.loading) {
       pathStatusMessage = ACP.t(strings, "appdataSourcesBrowseLoadingMessage", "Loading folders from the selected path.");
@@ -803,12 +846,18 @@
     browserListHtml = browserListHtml.concat(entryHtml);
 
     html.push(
-      "</div>",
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualTitle", "Manual source paths")) + "</div>",
+      '<section class="acp-simple-modal-card acp-simple-modal-list-card">',
+      '<div class="acp-simple-modal-card-head"><div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualTitle", "Manual source paths")) + "</div></div>",
+      '<div class="acp-simple-modal-card-body">',
       manualHtml.length
         ? ('<div class="acp-appdata-source-manual-list">' + manualHtml.join("") + "</div>")
         : ('<div class="acp-utility-empty">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesManualEmpty", "No manual appdata source paths have been added yet.")) + "</div>"),
+      "</div>",
+      "</section>",
+      '<section class="acp-simple-modal-card">',
+      '<div class="acp-simple-modal-card-head"><div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesAddTitle", "Add a source")) + "</div></div>",
+      '<div class="acp-simple-modal-card-body">',
+      '<p class="acp-simple-modal-copyline">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesHint", "Only add dedicated appdata roots. Direct child folders under each root are treated as cleanup candidates.")) + "</p>",
       '<div class="acp-appdata-browser-shell">',
       '<div class="acp-appdata-browser-current">',
       '<div class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesCurrentPathLabel", "Current path")) + "</div>",
@@ -827,8 +876,9 @@
       '<div class="acp-modal-feedback" data-role="appdata-sources-feedback">' + ACP.escapeHtml(feedbackMessage) + "</div>",
       "</div>",
       "</div>",
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesEffectiveTitle", "Effective scan roots")) + "</div>"
+      "</section>",
+      '<details class="acp-simple-disclosure acp-simple-modal-wide-disclosure">',
+      '<summary>' + ACP.escapeHtml(ACP.t(strings, "appdataSourcesEffectiveTitle", "Effective scan roots")) + "</summary>"
     );
 
     if (!effective.length) {
@@ -841,7 +891,7 @@
       html.push("</div>");
     }
 
-    html.push("</div>");
+    html.push("</details></div>");
     return html.join("");
   };
 

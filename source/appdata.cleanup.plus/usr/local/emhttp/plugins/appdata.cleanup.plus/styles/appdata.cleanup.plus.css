@@ -1782,6 +1782,219 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   margin-top: 10px;
 }
 
+.acp-simple-modal-shell {
+  display: grid;
+  gap: 12px;
+  text-align: left;
+}
+
+.acp-simple-modal-intro {
+  align-items: center;
+  background: var(--acp-card);
+  border: 1px solid var(--acp-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  padding: 12px;
+}
+
+.acp-simple-modal-icon {
+  align-items: center;
+  background: var(--acp-field);
+  border: 1px solid var(--acp-border);
+  border-radius: 8px;
+  color: var(--acp-accent);
+  display: flex;
+  font-size: 15px;
+  font-weight: 900;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.acp-simple-modal-intro-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.acp-simple-modal-title {
+  color: var(--acp-heading);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.acp-simple-modal-message,
+.acp-simple-modal-copyline,
+.acp-simple-modal-card-body p {
+  color: var(--acp-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.acp-simple-modal-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.acp-simple-pill {
+  background: var(--acp-field);
+  border: 1px solid var(--acp-border);
+  border-radius: 6px;
+  color: var(--acp-heading);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 8px 10px;
+}
+
+.acp-simple-modal-card,
+.acp-simple-disclosure.acp-simple-modal-wide-disclosure {
+  background: var(--acp-card);
+  border: 1px solid var(--acp-border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.acp-simple-modal-card-head {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.acp-simple-modal-card-title {
+  color: var(--acp-heading);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.acp-simple-modal-card-actions,
+.acp-simple-modal-actions,
+.acp-simple-list-actions,
+.acp-simple-modal-form-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.acp-simple-modal-card-actions,
+.acp-simple-list-actions {
+  justify-content: flex-end;
+}
+
+.acp-simple-modal-actions .acp-button,
+.acp-simple-modal-card-actions .acp-button,
+.acp-simple-list-actions .acp-button,
+.acp-simple-modal-form-row .acp-button {
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.acp-simple-disclosure {
+  border-top: 1px solid var(--acp-border-faint);
+  color: var(--acp-muted);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.acp-simple-disclosure summary {
+  color: var(--acp-heading);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  list-style-position: inside;
+}
+
+.acp-simple-disclosure > *:not(summary) {
+  margin-top: 10px;
+}
+
+.acp-simple-modal-wide-disclosure {
+  border-top: 1px solid var(--acp-border);
+  margin-top: 0;
+}
+
+.acp-simple-list-item {
+  background: var(--acp-panel-soft);
+  border: 1px solid var(--acp-border-faint);
+  border-radius: 8px;
+  display: block;
+  padding: 10px;
+}
+
+.acp-simple-list-item + .acp-simple-list-item {
+  margin-top: 8px;
+}
+
+.acp-simple-list-main {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.acp-simple-list-check {
+  align-items: center;
+  display: flex;
+  margin: 0;
+}
+
+.acp-simple-list-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.acp-simple-list-title {
+  color: var(--acp-heading);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.acp-simple-list-subtitle,
+.acp-simple-list-message {
+  color: var(--acp-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.acp-simple-list-message {
+  margin-top: 8px;
+}
+
+.acp-simple-badge-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.acp-simple-list-details {
+  margin-left: 0;
+}
+
+.acp-simple-modal-sources .acp-appdata-browser-shell,
+.acp-simple-modal-sources .acp-appdata-source-manual-list,
+.acp-simple-modal-sources .acp-appdata-source-list {
+  margin-top: 0;
+}
+
 @media (max-width: 720px) {
   .acp-row-details-hero,
   .acp-row-details-grid {
@@ -1794,6 +2007,22 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
   .acp-row-details-badges,
   .acp-row-details-actions {
+    justify-content: flex-start;
+  }
+
+  .acp-simple-modal-intro,
+  .acp-simple-list-main {
+    grid-template-columns: 1fr;
+  }
+
+  .acp-simple-modal-icon {
+    display: none;
+  }
+
+  .acp-simple-modal-meta,
+  .acp-simple-modal-card-actions,
+  .acp-simple-list-actions,
+  .acp-simple-badge-row {
     justify-content: flex-start;
   }
 }
