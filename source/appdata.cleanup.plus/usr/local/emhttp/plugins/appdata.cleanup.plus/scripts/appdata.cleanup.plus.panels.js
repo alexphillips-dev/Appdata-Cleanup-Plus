@@ -83,10 +83,10 @@
     var leftMessage = isDeleteMode
       ? ACP.t(strings, "noticeDeleteModeMessage", "Selected folders will be permanently removed after confirmation. Use this mode carefully.")
       : ACP.t(strings, "noticeSafeModeMessage", "The primary action moves selected folders into quarantine instead of permanently deleting them.");
-    var managerMessage = summary.count > 0
-      ? summary.count + " " + (summary.count === 1 ? ACP.t(strings, "quarantineCountSingular", "quarantined folder") : ACP.t(strings, "quarantineCountPlural", "quarantined folders")) + " tracked"
-      : ACP.t(strings, "quarantineSummaryEmpty", "No quarantined folders are tracked right now.");
-    var managerMeta = summary.count > 0 && summary.sizeLabel ? " | " + summary.sizeLabel : "";
+    var safeModeLabel = isDeleteMode ? ACP.t(strings, "offLabel", "OFF") : ACP.t(strings, "onLabel", "ON");
+    var safeModeActionLabel = isDeleteMode
+      ? ACP.t(strings, "enableSafeModeLabel", "Enable Safe Mode")
+      : ACP.t(strings, "disableSafeModeLabel", "Disable Safe Mode");
     var quarantineButtonLabel = state.quarantine && state.quarantine.loading
       ? ACP.t(strings, "quarantineLoadingLabel", "Loading quarantine")
       : ACP.t(strings, "quarantineManagerOpenLabel", "Show quarantine");
@@ -97,16 +97,14 @@
     var html = [
       '<div class="acp-mode-strip-grid">',
       '<article class="acp-mode-card ' + (isDeleteMode ? "is-delete-mode" : "is-safe-mode") + '">',
+      '<div class="acp-mode-icon" aria-hidden="true">' + (isDeleteMode ? "!" : "✓") + "</div>",
       '<div class="acp-mode-card-copy">',
-      '<div class="acp-mode-card-title">' + ACP.escapeHtml(leftTitle) + "</div>",
+      '<div class="acp-mode-card-title"><span>' + ACP.escapeHtml(leftTitle) + '</span><strong>' + ACP.escapeHtml(safeModeLabel) + "</strong></div>",
       '<div class="acp-mode-card-message">' + ACP.escapeHtml(leftMessage) + "</div>",
       "</div>",
+      '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-safe-mode">' + ACP.escapeHtml(safeModeActionLabel) + "</button>",
       "</article>",
       '<article class="acp-mode-card is-manager-card">',
-      '<div class="acp-mode-card-copy">',
-      '<div class="acp-mode-card-title">' + ACP.escapeHtml(ACP.t(strings, "actionBarTitle", "Action bar")) + "</div>",
-      '<div class="acp-mode-card-message">' + ACP.escapeHtml(managerMessage + managerMeta) + "</div>",
-      "</div>",
       '<div class="acp-mode-card-actions">',
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources">' + ACP.escapeHtml(appdataSourcesButtonLabel) + "</button>",
       showZfsPathMappingsButton

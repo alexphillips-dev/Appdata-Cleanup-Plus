@@ -419,6 +419,14 @@
       }
     });
 
+    els.$modeStrip.on("click", "[data-action='toggle-safe-mode']", function() {
+      if (!state.busy) {
+        saveSafetySettings({
+          enablePermanentDelete: !state.settings.enablePermanentDelete
+        });
+      }
+    });
+
     els.$modeStrip.on("click", "[data-action='open-zfs-path-mappings']", function() {
       if (!state.busy) {
         openZfsPathMappingsModal();
@@ -926,7 +934,7 @@
     var settings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
 
     els.$allowExternal.prop("checked", !!settings.allowOutsideShareCleanup);
-    els.$enableDelete.prop("checked", !!settings.enablePermanentDelete);
+    els.$enableDelete.prop("checked", !settings.enablePermanentDelete);
     els.$enableZfsDelete.prop("checked", !!settings.enableZfsDatasetDelete);
     els.$allowTemplateCleanup.prop("checked", !!settings.allowTemplateReferencedCleanup);
   }
@@ -1524,8 +1532,8 @@
     var toggles = [
       {
         key: "enablePermanentDelete",
-        label: ACP.t(strings, "enablePermanentDeleteLabel", "Enable permanent delete"),
-        help: ACP.t(strings, "advancedSafetyPermanentDeleteHelp", "Changes the primary action from quarantine to permanent delete and requires typed confirmation."),
+        label: ACP.t(strings, "enableSafeModeLabel", "Enable Safe Mode"),
+        help: ACP.t(strings, "advancedSafetyPermanentDeleteHelp", "Turn this off to use permanent delete as the primary action. Safe Mode moves selected folders into quarantine instead."),
         impact: impactCounts.enablePermanentDelete
       },
       {
@@ -1561,7 +1569,7 @@
     $.each(toggles, function(_, toggle) {
       html.push(
         '<label class="acp-advanced-safety-toggle">' +
-          '<input type="checkbox" data-safety-setting="' + ACP.escapeHtml(toggle.key) + '"' + (settings[toggle.key] ? ' checked="checked"' : "") + ">" +
+          '<input type="checkbox" data-safety-setting="' + ACP.escapeHtml(toggle.key) + '"' + (toggle.key === "enablePermanentDelete" ? (!settings[toggle.key] ? ' checked="checked"' : "") : (settings[toggle.key] ? ' checked="checked"' : "")) + ">" +
           '<span class="acp-advanced-safety-copy">' +
             '<strong>' + ACP.escapeHtml(toggle.label) + "</strong>" +
             '<span>' + ACP.escapeHtml(toggle.help) + "</span>" +
@@ -1657,7 +1665,8 @@
     var nextSettings = {};
 
     $modal.find("[data-safety-setting]").each(function() {
-      nextSettings[String($(this).data("safety-setting") || "")] = !!$(this).prop("checked");
+      var key = String($(this).data("safety-setting") || "");
+      nextSettings[key] = key === "enablePermanentDelete" ? !$(this).prop("checked") : !!$(this).prop("checked");
     });
 
     $modal.find("[data-role='advanced-safety-feedback']").text(ACP.t(strings, "savingLabel", "Saving..."));
@@ -2847,11 +2856,11 @@
   function renderSummaryCards() {
     var selectedCount = getSelectedRows().length;
     var cards = [
-      { label: ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, tone: "" },
-      { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, tone: "is-accent" },
-      { label: ACP.t(strings, "cardReview", "Needs review"), value: state.summary.review || 0, tone: "is-review" },
-      { label: ACP.t(strings, "cardBlocked", "Protected"), value: state.summary.blocked || 0, tone: "is-blocked" },
-      { label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount, tone: "is-safe" }
+      { label: ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, subtitle: ACP.t(strings, "cardTotalSubtitle", "Total orphaned"), tone: "is-detected", icon: "⌕" },
+      { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, subtitle: ACP.t(strings, "cardDeletableSubtitle", "Safe to clean"), tone: "is-safe", icon: "✓" },
+      { label: ACP.t(strings, "cardReview", "Needs review"), value: state.summary.review || 0, subtitle: ACP.t(strings, "cardReviewSubtitle", "Manual review"), tone: "is-review", icon: "?" },
+      { label: ACP.t(strings, "cardBlocked", "Blocked"), value: state.summary.blocked || 0, subtitle: ACP.t(strings, "cardBlockedSubtitle", "Locked or in use"), tone: "is-blocked", icon: "!" },
+      { label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount, subtitle: ACP.t(strings, "cardSelectedSubtitle", "Marked this scan"), tone: "is-selected", icon: "□" }
     ];
     var html = [];
 
@@ -2859,8 +2868,12 @@
       var glowClass = Number(card.value || 0) > 0 ? " has-glow" : "";
       html.push(
         '<article class="acp-summary-card ' + card.tone + glowClass + '">' +
-          '<span class="acp-summary-label">' + ACP.escapeHtml(card.label) + "</span>" +
-          '<span class="acp-summary-value">' + ACP.escapeHtml(String(card.value)) + "</span>" +
+          '<span class="acp-summary-icon" aria-hidden="true">' + ACP.escapeHtml(card.icon || "") + "</span>" +
+          '<span class="acp-summary-copy">' +
+            '<span class="acp-summary-label">' + ACP.escapeHtml(card.label) + "</span>" +
+            '<span class="acp-summary-value">' + ACP.escapeHtml(String(card.value)) + "</span>" +
+            '<span class="acp-summary-subtitle">' + ACP.escapeHtml(card.subtitle || "") + "</span>" +
+          "</span>" +
         "</article>"
       );
     });
@@ -2882,7 +2895,9 @@
     });
 
     els.$notices.html(html.join(""));
-    els.$resultsContext.toggleClass("has-notices", hasNotices);
+    if (els.$resultsContext && els.$resultsContext.length) {
+      els.$resultsContext.toggleClass("has-notices", hasNotices);
+    }
   }
 
   function renderLoadingState() {
@@ -4650,7 +4665,11 @@
         return false;
       }
 
-      if (state.riskFilter !== "all" && row.risk !== state.riskFilter) {
+      if (state.riskFilter === "blocked" && getRowActionabilityDescriptor(row).value !== "locked") {
+        return false;
+      }
+
+      if (state.riskFilter !== "all" && state.riskFilter !== "blocked" && row.risk !== state.riskFilter) {
         return false;
       }
 
@@ -4733,7 +4752,7 @@
       return row.risk === "review";
     }).length;
     var summaryText = selectedRows.length + " " + (selectedRows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
-    var detailText = ACP.t(strings, "selectionHintIdle", "Select ready rows to quarantine them. Review rows can be unlocked for this scan after checking details. Protected paths stay blocked.");
+    var detailText = ACP.t(strings, "selectionHintIdle", "Select ready rows to delete them. Review rows can be unlocked for this scan after checking details. Protected paths stay blocked.");
 
     if (!state.scanToken && Number(state.summary.total || 0) > 0) {
       detailText = ACP.t(strings, "selectionHintReadOnly", "Scan results are read-only right now because the secure action snapshot could not be created.");
@@ -4803,7 +4822,7 @@
     var wasQuarantineManagerVisible = isQuarantineManagerModalVisible();
     var nextSettings = $.extend({}, previousSettings, {
       allowOutsideShareCleanup: getSafetyToggleValue(els.$allowExternal, previousSettings.allowOutsideShareCleanup),
-      enablePermanentDelete: getSafetyToggleValue(els.$enableDelete, previousSettings.enablePermanentDelete),
+      enablePermanentDelete: !getSafetyToggleValue(els.$enableDelete, !previousSettings.enablePermanentDelete),
       enableZfsDatasetDelete: getSafetyToggleValue(els.$enableZfsDelete, previousSettings.enableZfsDatasetDelete),
       allowTemplateReferencedCleanup: getSafetyToggleValue(els.$allowTemplateCleanup, previousSettings.allowTemplateReferencedCleanup)
     }, normalizedOverrides);

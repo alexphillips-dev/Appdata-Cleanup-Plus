@@ -57,6 +57,8 @@
   padding: 4px 0 72px;
 }
 
+
+
 html[data-acp-host-theme="black"] #acp-app,
 body[data-acp-host-theme="black"] #acp-app,
 #acp-app[data-acp-host-theme="black"] {
@@ -2510,5 +2512,375 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   .acp-row-title-line {
     align-items: start;
     flex-direction: column;
+  }
+}
+
+/* Final dashboard redesign overrides. Keep this block last so legacy theme rules cannot win. */
+#acp-app.acp-shell {
+  --acp-panel: #14191f;
+  --acp-panel-soft: #171d24;
+  --acp-border: rgba(148, 163, 184, 0.18);
+  --acp-shadow: 0 18px 40px rgba(0, 0, 0, 0.26);
+  background: radial-gradient(circle at 8% 0%, rgba(59, 130, 246, 0.11), transparent 28%), radial-gradient(circle at 92% 8%, rgba(249, 115, 22, 0.09), transparent 26%), #0d1116;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 8px;
+  gap: 10px;
+  min-height: calc(100vh - 48px);
+  padding: 18px 20px 88px;
+}
+
+#acp-app .acp-hero {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 0;
+  box-shadow: none;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  min-height: 0;
+  padding: 0 0 18px;
+}
+
+#acp-app .acp-brand-mark {
+  align-items: center;
+  background: linear-gradient(135deg, #fb923c, #ea580c);
+  border-radius: 8px;
+  display: flex;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+
+#acp-app .acp-brand-mark img {
+  height: 34px;
+  width: 34px;
+}
+
+#acp-app .acp-title {
+  font-size: 26px;
+  letter-spacing: 0;
+}
+
+#acp-app .acp-subtitle {
+  color: #c4ccd6;
+  font-size: 14px;
+}
+
+#acp-app .acp-header-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+#acp-app .acp-dashboard-top {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: minmax(0, 1fr) 268px;
+}
+
+#acp-app .acp-summary-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(5, minmax(132px, 1fr));
+  width: 100%;
+}
+
+#acp-app .acp-summary-card {
+  align-items: center;
+  background: linear-gradient(145deg, rgba(27, 34, 43, 0.98), rgba(17, 23, 30, 0.98));
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 58px minmax(0, 1fr);
+  min-height: 116px;
+  padding: 18px 20px;
+}
+
+#acp-app .acp-summary-card::before {
+  display: none;
+}
+
+#acp-app .acp-summary-icon {
+  align-items: center;
+  background: rgba(96, 165, 250, 0.14);
+  border-radius: 50%;
+  color: #60a5fa;
+  display: flex;
+  font-size: 32px;
+  font-weight: 800;
+  height: 58px;
+  justify-content: center;
+  width: 58px;
+}
+
+#acp-app .acp-summary-card.is-safe .acp-summary-icon {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+#acp-app .acp-summary-card.is-review .acp-summary-icon {
+  background: rgba(234, 179, 8, 0.16);
+  color: #facc15;
+}
+
+#acp-app .acp-summary-card.is-blocked .acp-summary-icon {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+}
+
+#acp-app .acp-summary-card.is-selected .acp-summary-icon {
+  background: rgba(168, 85, 247, 0.16);
+  color: #a78bfa;
+}
+
+#acp-app .acp-summary-label {
+  color: #b8c2cf;
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+#acp-app .acp-summary-value {
+  font-size: 32px;
+  justify-self: start;
+  text-shadow: none;
+}
+
+#acp-app .acp-summary-subtitle {
+  color: #c8d0da;
+  font-size: 13px;
+}
+
+#acp-app .acp-mode-card {
+  align-items: center;
+  background: linear-gradient(145deg, rgba(27, 34, 43, 0.98), rgba(17, 23, 30, 0.98));
+  border: 1px solid var(--acp-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 38px minmax(0, 1fr);
+  min-height: 116px;
+  padding: 18px;
+}
+
+#acp-app .acp-mode-card > .acp-button {
+  grid-column: 2;
+  justify-self: start;
+}
+
+#acp-app .acp-mode-icon {
+  align-items: center;
+  background: rgba(34, 197, 94, 0.14);
+  border-radius: 50%;
+  color: #4ade80;
+  display: flex;
+  font-size: 24px;
+  font-weight: 800;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+}
+
+#acp-app .acp-mode-card.is-delete-mode .acp-mode-icon {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+}
+
+#acp-app .acp-mode-card-title {
+  align-items: center;
+  color: #ffffff;
+  display: flex;
+  font-size: 16px;
+  font-weight: 800;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+#acp-app .acp-mode-card-title strong {
+  background: rgba(34, 197, 94, 0.24);
+  border-radius: 999px;
+  color: #b7f7c9;
+  font-size: 11px;
+  padding: 4px 9px;
+}
+
+#acp-app .acp-mode-card.is-delete-mode .acp-mode-card-title strong {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+}
+
+#acp-app .acp-mode-card.is-manager-card {
+  min-height: auto;
+  padding: 10px;
+}
+
+#acp-app .acp-toolbar {
+  background: rgba(23, 29, 36, 0.96);
+  border-radius: 8px;
+  min-height: 0;
+  padding: 18px 20px;
+}
+
+#acp-app .acp-toolbar-inline {
+  align-items: end;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(280px, 1fr) minmax(180px, 220px) minmax(200px, 260px);
+}
+
+#acp-app .acp-input,
+#acp-app .acp-select {
+  background: #10151b;
+  border-color: rgba(148, 163, 184, 0.22);
+  border-radius: 6px;
+  color: #eef2f7;
+  font-size: 14px;
+  min-height: 36px;
+}
+
+#acp-app .acp-results-section {
+  background: rgba(18, 23, 29, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#acp-app .acp-results-section-ready {
+  border-left: 3px solid #22c55e;
+}
+
+#acp-app .acp-results-section-review,
+#acp-app .acp-results-section-template {
+  border-left: 3px solid #eab308;
+}
+
+#acp-app .acp-results-section-protected {
+  border-left: 3px solid #ef4444;
+}
+
+#acp-app .acp-results-section-head {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 18px;
+}
+
+#acp-app .acp-results-section-copy {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+#acp-app .acp-results-section-title {
+  color: #f8fafc;
+  font-size: 18px;
+  margin: 0;
+}
+
+#acp-app .acp-row {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 0;
+  box-shadow: none;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  padding: 11px 18px;
+}
+
+#acp-app .acp-row-primary {
+  align-items: center;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(260px, 1.15fr) minmax(360px, 1.85fr);
+}
+
+#acp-app .acp-row-side {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  justify-items: stretch;
+}
+
+#acp-app .acp-row-side-head {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 0.8fr);
+}
+
+#acp-app .acp-row-path {
+  background: transparent;
+  border: 0;
+  color: #c8d0da;
+  font-size: 12px;
+  max-width: none;
+  padding: 0;
+}
+
+#acp-app .acp-row-action.acp-button,
+#acp-app .acp-button {
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  min-height: 34px;
+  text-transform: none;
+}
+
+#acp-app .acp-button-primary {
+  background: linear-gradient(135deg, #fb923c, #ea580c);
+  border-color: rgba(251, 146, 60, 0.72);
+  color: #fff7ed;
+}
+
+#acp-app .acp-bottom-bar {
+  background: rgba(23, 29, 36, 0.98);
+  border-color: rgba(148, 163, 184, 0.24);
+  border-radius: 8px 8px 0 0;
+  bottom: 0;
+  box-shadow: 0 -18px 36px rgba(0, 0, 0, 0.28);
+  left: 12px;
+  right: 12px;
+  padding: 14px 18px;
+}
+
+@media (max-width: 1320px) {
+  #acp-app .acp-dashboard-top {
+    grid-template-columns: 1fr;
+  }
+
+  #acp-app .acp-summary-grid {
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
+  }
+
+  #acp-app .acp-row-primary,
+  #acp-app .acp-row-side,
+  #acp-app .acp-row-side-head {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  #acp-app.acp-shell {
+    padding: 12px 10px 140px;
+  }
+
+  #acp-app .acp-hero,
+  #acp-app .acp-toolbar-inline,
+  #acp-app .acp-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #acp-app .acp-brand-mark {
+    display: none;
   }
 }

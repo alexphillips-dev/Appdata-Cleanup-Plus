@@ -1428,7 +1428,7 @@ function getDefaultAppdataCleanupPlusQuarantineRoot() {
 function getDefaultAppdataCleanupPlusSafetySettings() {
   return array(
     "allowOutsideShareCleanup" => false,
-    "enablePermanentDelete" => false,
+    "enablePermanentDelete" => true,
     "enableZfsDatasetDelete" => false,
     "allowTemplateReferencedCleanup" => false,
     "quarantineRoot" => getDefaultAppdataCleanupPlusQuarantineRoot(),
@@ -1452,7 +1452,7 @@ function normalizeAppdataCleanupPlusSafetySettings($settings) {
 
   $normalized = array(
     "allowOutsideShareCleanup" => ! empty($settings["allowOutsideShareCleanup"]),
-    "enablePermanentDelete" => ! empty($settings["enablePermanentDelete"]),
+    "enablePermanentDelete" => array_key_exists("enablePermanentDelete", $settings) ? ! empty($settings["enablePermanentDelete"]) : $defaults["enablePermanentDelete"],
     "enableZfsDatasetDelete" => ! empty($settings["enableZfsDatasetDelete"]),
     "allowTemplateReferencedCleanup" => ! empty($settings["allowTemplateReferencedCleanup"]),
     "quarantineRoot" => isset($settings["quarantineRoot"]) ? trim((string)$settings["quarantineRoot"]) : $defaults["quarantineRoot"],
