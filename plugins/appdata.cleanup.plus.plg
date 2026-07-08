@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.25">
-<!ENTITY md5 "1eddccfba88f0f12358ee4beaa828170">
+<!ENTITY version "2026.07.08.26">
+<!ENTITY md5 "aaecc5ba3a5887ee7a1627406f8be152">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.26
+- Layout: Prevent the dashboard from stretching empty vertical space when the browser is zoomed far out by packing the grid to the top.
+- Loading state: Reduce the reserved results loading height so rescans do not create oversized blank gaps.
+
 ###2026.07.08.25
 - Release notes: Replace the generic July dev-build placeholders with actual user-facing notes for each UI, deletion, modal, README, and feed update.
 - Build guard: Require real changelog notes whenever a new package version is generated so future dev pushes cannot ship placeholder release history.
