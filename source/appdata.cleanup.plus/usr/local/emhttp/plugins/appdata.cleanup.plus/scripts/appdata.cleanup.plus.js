@@ -2738,14 +2738,59 @@
   }
 
   function renderLoadingState() {
+    renderSummaryCards();
     renderPanels();
     renderNotices([]);
-    renderStateMessage(
-      ACP.t(strings, "loadingTitle", "Scanning appdata sources and saved Docker templates"),
-      ACP.t(strings, "loadingMessage", "Reviewing orphaned appdata folders and active container mappings."),
-      null,
-      null,
-      true
+
+    if (state.rows.length) {
+      renderResults();
+      return;
+    }
+
+    renderLoadingResultsShell();
+  }
+
+  function renderLoadingResultsShell() {
+    var rowCount = Math.max(3, Math.min(6, Number(state.summary.total || 0) || 3));
+    var rowHtml = [];
+    var index;
+
+    for (index = 0; index < rowCount; index += 1) {
+      rowHtml.push(
+        '<article class="acp-row acp-row-loading" aria-hidden="true">' +
+          '<div class="acp-row-select"><span class="acp-loading-check"></span></div>' +
+          '<div class="acp-row-main">' +
+            '<div class="acp-row-primary">' +
+              '<div class="acp-row-loading-name"><span></span><small></small></div>' +
+              '<div class="acp-row-loading-used"><span></span><small></small></div>' +
+              '<div class="acp-row-loading-size"><span></span></div>' +
+              '<div class="acp-row-loading-path"><span></span></div>' +
+              '<div class="acp-row-loading-badge"><span></span></div>' +
+              '<div class="acp-row-loading-actions"><span></span><span></span></div>' +
+            "</div>" +
+          "</div>" +
+        "</article>"
+      );
+    }
+
+    els.$results.html(
+      '<section class="acp-results-section acp-results-section-ready acp-results-section-loading" aria-busy="true">' +
+        '<header class="acp-results-section-head">' +
+          '<div class="acp-results-section-copy">' +
+            '<h3 class="acp-results-section-title">' + ACP.escapeHtml(ACP.t(strings, "readySectionTitle", "Ready to Clean")) + "</h3>" +
+            '<p class="acp-results-section-message">' + ACP.escapeHtml(ACP.t(strings, "loadingMessage", "Reviewing orphaned appdata folders and active container mappings.")) + "</p>" +
+          "</div>" +
+          '<div class="acp-results-section-meta">' +
+            '<div class="acp-results-section-badges">' +
+              '<span class="acp-badge acp-badge-kind-count">' + ACP.escapeHtml(ACP.t(strings, "loadingShortLabel", "Scanning")) + "</span>" +
+            "</div>" +
+          "</div>" +
+        "</header>" +
+        '<div class="acp-results-table-head">' +
+          '<span></span><span>' + ACP.escapeHtml(ACP.t(strings, "nameLabel", "Name")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "lastUsedLabel", "Last used")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "pathLabel", "Path")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sourceLabel", "Source")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "actionsLabel", "Actions")) + '</span>' +
+        "</div>" +
+        '<div class="acp-results-section-body">' + rowHtml.join("") + "</div>" +
+      "</section>"
     );
   }
 
