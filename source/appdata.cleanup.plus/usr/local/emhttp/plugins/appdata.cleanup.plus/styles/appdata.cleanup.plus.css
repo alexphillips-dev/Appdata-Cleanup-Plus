@@ -1136,10 +1136,31 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 .acp-row-title-line {
-  align-items: flex-start;
+  align-items: center;
   display: flex;
-  gap: 0;
+  gap: 8px;
   justify-content: flex-start;
+}
+
+.acp-row-folder-icon {
+  align-items: center;
+  color: #4aa3ff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 22px;
+  justify-content: center;
+  width: 22px;
+}
+
+.acp-row-folder-icon svg {
+  display: block;
+  fill: rgba(30, 64, 126, 0.26);
+  height: 22px;
+  overflow: visible;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+  width: 22px;
 }
 
 .acp-row-title {

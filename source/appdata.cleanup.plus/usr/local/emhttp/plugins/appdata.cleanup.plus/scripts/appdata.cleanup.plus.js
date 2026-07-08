@@ -3839,6 +3839,16 @@
     return "";
   }
 
+  function buildRowFolderIconHtml() {
+    return (
+      '<span class="acp-row-folder-icon" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" focusable="false">' +
+          '<path d="M3.75 6.75a2 2 0 0 1 2-2h4.15l2.1 2h6.25a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2Z"></path>' +
+        "</svg>" +
+      "</span>"
+    );
+  }
+
   function buildResultsSectionDefinitions() {
     return [
       {
@@ -4334,6 +4344,7 @@
           '<div class="acp-row-primary">' +
             '<div class="acp-row-title-wrap">' +
               '<div class="acp-row-title-line">' +
+                buildRowFolderIconHtml() +
                 '<h3 class="acp-row-title">' + ACP.escapeHtml(row.name || row.displayPath || "") + "</h3>" +
               "</div>" +
               '<div class="acp-row-meta">' +
