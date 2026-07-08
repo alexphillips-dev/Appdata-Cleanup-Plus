@@ -2,17 +2,25 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.55">
-<!ENTITY md5 "1ad56d3929f86c020a3820a9fe8a2232">
+<!ENTITY version "2026.07.08.56">
+<!ENTITY md5 "ba8b01012b5814f07ee8e20cdd19a8ca">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.56
+- Ignored items: Add a Show ignored / Hide ignored action directly to the Ignore list active notice, and display hidden paths in a separate gray-accent Ignored section with Details and Restore actions.
+- Test fixtures: Add a built-in Tools modal fixture helper that creates and removes safe acp-test-* appdata test rows for validating scan, dry run, quarantine, delete, and restore workflows.
+- Audit history: Add search, compact path previews, richer result counts, and copyable audit summaries so cleanup history is easier to review and share.
+- Plugin metadata: Update the CA/plugin description so it reflects the current guided cleanup dashboard, quarantine/restore flow, audit history, and ZFS dataset candidate support.
+- UI/CSS: Reorganize modal CSS sections for tools, audit history, and theme-token overrides while keeping the current dashboard theme behavior intact.
+- Validation: Add smoke coverage for fixture create/status/remove and keep ignored rows unselectable until restored so cleanup actions cannot run against hidden items accidentally.
+
 ###2026.07.08.55
 - Added a Show ignored action directly to the Ignore list active notice.
 - Added an Ignored results section with a gray left accent so hidden paths can be reviewed and restored without reintroducing filter clutter.
@@ -1094,7 +1102,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
