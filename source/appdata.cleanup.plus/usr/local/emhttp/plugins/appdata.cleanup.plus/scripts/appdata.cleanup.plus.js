@@ -1343,71 +1343,81 @@
   }
 
   function buildHelpModalHtml() {
-    var sections = [
+    var steps = [
       {
-        title: ACP.t(strings, "helpOverviewTitle", "Overview"),
-        body: ACP.t(strings, "helpOverviewBody", "Appdata Cleanup Plus finds Docker appdata folders that appear unused. It compares configured appdata scan paths, saved Docker templates, installed container mappings, ignore entries, safety settings, and storage details. Quarantine is the default action because it can be restored from this plugin.")
+        marker: "1",
+        title: ACP.t(strings, "helpStepReviewTitle", "Review"),
+        body: ACP.t(strings, "helpStepReviewBody", "Ready rows look unused. Open Details only when a folder name, path, or source badge is unclear.")
       },
       {
-        title: ACP.t(strings, "helpScannedTitle", "What gets scanned"),
-        body: ACP.t(strings, "helpScannedBody", "The plugin scans the detected Docker appdata path first, then any added appdata scan paths. It also reads saved Docker templates and installed container paths so template-only folders and currently used folders can be separated. Direct child folders under each scan path are treated as candidates.")
+        marker: "2",
+        title: ACP.t(strings, "helpStepPreviewTitle", "Preview"),
+        body: ACP.t(strings, "helpStepPreviewBody", "Use Dry run to see what would happen before anything is changed.")
       },
       {
-        title: ACP.t(strings, "helpStatesTitle", "Result states"),
-        body: ACP.t(strings, "helpStatesBody", "Ready rows look unused and can be selected. Safety-blocked rows cannot be cleaned here. Ignored rows are hidden until restored.")
+        marker: "3",
+        title: ACP.t(strings, "helpStepCleanTitle", "Clean"),
+        body: ACP.t(strings, "helpStepCleanBody", "Select ready rows, then quarantine or delete them depending on Safe Mode.")
+      }
+    ];
+    var cards = [
+      {
+        title: ACP.t(strings, "helpSafeModeSimpleTitle", "Safe Mode"),
+        body: ACP.t(strings, "helpSafeModeSimpleBody", "Safe Mode moves folders to quarantine. Disable it only when you intentionally want permanent delete.")
       },
       {
-        title: ACP.t(strings, "helpWhyRowsTitle", "Why rows appear"),
-        body: ACP.t(strings, "helpWhyRowsBody", "Rows may appear because a saved template still points to the folder, because a folder exists directly inside a scan path with no installed container using it, because Docker is offline and live mappings cannot be verified, or because a configured ZFS mapping matched the path.")
+        title: ACP.t(strings, "helpZfsSimpleTitle", "ZFS datasets"),
+        body: ACP.t(strings, "helpZfsSimpleBody", "Exact ZFS dataset rows cannot be quarantined. Disable Safe Mode before acting on those rows.")
       },
       {
-        title: ACP.t(strings, "helpActionsTitle", "Actions"),
-        body: ACP.t(strings, "helpActionsBody", "Details shows a short explanation, what cleanup will do, and optional technical information. Select ready chooses rows that are currently actionable. Ignore hides a row from normal results. Dry run previews what would happen. Quarantine selected moves folders into the quarantine root. Permanent delete removes folders immediately after typed confirmation.")
-      },
-      {
-        title: ACP.t(strings, "helpOptionsTitle", "Safe Mode"),
-        body: ACP.t(strings, "helpOptionsBody", "Permanent delete changes the main action from quarantine to delete. ZFS dataset delete allows exact dataset-backed rows to use dataset destroy and still requires permanent delete mode. The affected-row count shows how many current rows that option relates to.")
-      },
-      {
-        title: ACP.t(strings, "helpQuarantineTitle", "Quarantine"),
-        body: ACP.t(strings, "helpQuarantineBody", "Quarantined folders are moved into the configured quarantine root and tracked by this plugin. You can restore them, purge them permanently, or set purge timing. If the original restore path already exists, the restore conflict flow lets you skip the conflict or restore with an edited folder name.")
-      },
-      {
-        title: ACP.t(strings, "helpZfsTitle", "ZFS rows"),
-        body: ACP.t(strings, "helpZfsBody", "Exact ZFS dataset-backed appdata rows cannot be quarantined as normal folders. They require permanent delete mode and ZFS dataset delete, then use dataset destroy. Details shows the dataset name, mountpoint, and destroy impact when available.")
-      },
-      {
-        title: ACP.t(strings, "helpSafetyTitle", "Safety rules"),
-        body: ACP.t(strings, "helpSafetyBody", "Safety-blocked rows include share roots, mount roots, symlinked paths, managed Docker or VM storage paths, paths that changed since the scan, missing paths, and unsafe canonical paths. These are blocked at action time too, even if the browser state is stale.")
-      },
-      {
-        title: ACP.t(strings, "helpTroubleshootingTitle", "Common questions"),
-        body: ACP.t(strings, "helpTroubleshootingBody", "If a row is locked, open Details and read why cleanup is unavailable. If no rows appear, confirm Appdata sources and rescan. If Unraid does not pull an update, verify the raw dev manifest version and package MD5.")
-      },
-      {
-        title: ACP.t(strings, "helpWorkflowTitle", "Recommended workflow"),
-        body: ACP.t(strings, "helpWorkflowBody", "Rescan, review Ready and Blocked rows, open Details for anything unclear, quarantine before permanent delete, restore if something was still needed, and use permanent delete only when you are confident.")
+        title: ACP.t(strings, "helpDetailsSimpleTitle", "Need more info?"),
+        body: ACP.t(strings, "helpDetailsSimpleBody", "Use a row's Details button for the short reason it appeared and what the cleanup action will do.")
       }
     ];
     var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "helpSubtitle", "Use this reference when you are not sure why a row appears, why it is blocked, or what an action will do.")) + "</div>",
-      "</div>",
-      "</div>",
-      '<div class="acp-help-grid">'
+      '<div class="acp-simple-modal-shell acp-help-shell">',
+        '<section class="acp-simple-modal-intro">',
+          '<div class="acp-simple-modal-icon" aria-hidden="true">?</div>',
+          '<div class="acp-simple-modal-intro-copy">',
+            '<div class="acp-simple-modal-title">' + ACP.escapeHtml(ACP.t(strings, "helpIntroTitle", "Clean up appdata safely")) + "</div>",
+            '<p class="acp-simple-modal-message">' + ACP.escapeHtml(ACP.t(strings, "helpSubtitle", "A quick guide for reviewing and cleaning unused appdata without digging through technical details.")) + "</p>",
+          "</div>",
+        "</section>",
+        '<section class="acp-simple-modal-card">',
+          '<div class="acp-simple-modal-card-head">',
+            '<div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "helpFlowTitle", "Simple workflow")) + "</div>",
+          "</div>",
+          '<div class="acp-help-step-list">'
     ];
 
-    $.each(sections, function(_, section) {
+    $.each(steps, function(_, step) {
       html.push(
-        '<article class="acp-help-section">' +
-          '<div class="acp-modal-panel-title">' + ACP.escapeHtml(section.title || "") + "</div>" +
-          '<div class="acp-help-section-copy">' + ACP.escapeHtml(section.body || "") + "</div>" +
+        '<article class="acp-help-step">' +
+          '<div class="acp-help-step-marker">' + ACP.escapeHtml(step.marker || "") + "</div>" +
+          '<div class="acp-help-step-copy">' +
+            '<div class="acp-help-step-title">' + ACP.escapeHtml(step.title || "") + "</div>" +
+            '<p>' + ACP.escapeHtml(step.body || "") + "</p>" +
+          "</div>" +
         "</article>"
       );
     });
 
-    html.push("</div>");
+    html.push(
+          "</div>",
+        "</section>",
+        '<div class="acp-help-card-grid">'
+    );
+
+    $.each(cards, function(_, card) {
+      html.push(
+        '<article class="acp-simple-modal-card acp-help-card">' +
+          '<div class="acp-simple-modal-card-title">' + ACP.escapeHtml(card.title || "") + "</div>" +
+          '<p class="acp-simple-modal-card-body">' + ACP.escapeHtml(card.body || "") + "</p>" +
+        "</article>"
+      );
+    });
+
+    html.push("</div>", "</div>");
     return html.join("");
   }
 

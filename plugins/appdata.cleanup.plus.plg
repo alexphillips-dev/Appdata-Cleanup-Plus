@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.40">
-<!ENTITY md5 "4953c0f30d8bbb52db1f839b6ed0e047">
+<!ENTITY version "2026.07.08.41">
+<!ENTITY md5 "6321be9a6b9ca43cd42ffabf10bb0b20">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.41
+- UI: Replace the Help modal information dump with a compact workflow guide and simple safety notes that match the updated modal design.
+
 ###2026.07.08.40
 - UI: Color the bottom Dry run action light yellow and the permanent Delete selected action red when enabled.
 
