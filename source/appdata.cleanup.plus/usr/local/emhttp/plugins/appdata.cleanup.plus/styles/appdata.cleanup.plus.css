@@ -3735,9 +3735,12 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 #acp-app .acp-mode-card.is-safe-mode {
   align-content: start;
   align-items: start;
+  box-sizing: border-box;
   display: grid;
   gap: 10px;
   grid-template-columns: 34px minmax(0, 1fr);
+  height: 118px;
+  min-height: 118px;
   padding: 16px 18px;
 }
 
