@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.24">
-<!ENTITY md5 "1eddccfba88f0f12358ee4beaa828170">
+<!ENTITY version "2026.07.08.25">
+<!ENTITY md5 "1666f4735f6a45a333a08df585635ed0">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,137 +13,144 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.25
+- Release notes: Replace the generic July dev-build placeholders with actual user-facing notes for each UI, deletion, modal, README, and feed update.
+- Build guard: Require real changelog notes whenever a new package version is generated so future dev pushes cannot ship placeholder release history.
+
 ###2026.07.08.24
-- Release: Promote the full July 7-8 development cycle to the stable `main` channel with main-channel manifest, CA feed, package archive, tag, and release metadata
-- UI: Replace the cleanup dashboard with the mockup-aligned top summary cards, action bar, ready-to-clean table, compact badges, folder icons, size column, bottom action bar, and theme-token styling
-- UX: Simplify cleanup decisions by removing saved-template/outside-share review gates from the main workflow, removing redundant filters and banners, making Safe Mode the quarantine-first option, and keeping rows focused on ready cleanup
-- Modals: Redesign details, appdata sources, quarantine, history, tools, delete confirmation, delete results, and delete progress dialogs around the new compact UI
-- Delete flow: Move folder deletion to a shell-backed path for reliability, use checkbox confirmation for permanent delete, show a running progress state while deletion is active, and keep results easy to review
-- Docs: Replace the README banner, overhaul the README presentation to match FolderView Plus, add matching badges, trim developer-only sections, and add an MIT license
-- Safety: Keep server-side scan snapshots, candidate-id actions, CSRF validation, protected path locks, restore collision checks, quarantine tracking, and ZFS dataset-delete safeguards in place
+- Critical fix: Rework cleanup deletion back to the simple shell-backed behavior proven by the original Cleanup Appdata plugin so permanent delete and quarantine jobs complete reliably instead of throwing backend-busy/internal-server errors.
+- UX overhaul: Replace the confusing review-heavy dashboard with a much simpler Ready to Clean workflow, fewer decisions, clearer Safe Mode behavior, and a table that explains what will happen without making users decode lock states.
+- UI overhaul: Rebuild the dashboard around the mockup-aligned header, summary cards, action bar, ready table, compact badges, folder icons, size column, sticky bottom action bar, and Unraid theme-aware colors.
+- Simplification: Remove the saved-template and outside-share cleanup gates from the normal workflow, remove the redundant Needs Review/Blocked flow, remove extra filter/status bars, and keep found folders actionable in one Ready to Clean list.
+- Delete workflow: Add checkbox-based permanent-delete confirmation, live delete progress, disabled completion actions while deletion is running, clearer warning/results screens, and compact result summaries.
+- Modals: Redesign Details, Appdata Sources, Quarantine, Audit History, Tools, delete confirmation, delete progress, and delete results dialogs so they match the new UI and are easier to understand.
+- Polish: Tighten badge sizing/alignment, button colors, card alignment, safe-mode shield/status placement, source-column layout, folder icons, age labels, empty-folder size labels, and loading layout stability.
+- Docs: Replace the README banner, rebuild the README to match FolderView Plus, align badges, remove developer-only sections, and add the MIT license.
+- Safety retained: Keep server-side scan snapshots, candidate-id actions, CSRF validation, protected path locks, restore collision checks, quarantine tracking, and ZFS dataset-delete safeguards in place.
 
 ###2026.07.08.23
-- Maintenance: Prepare the dev feed for the main release promotion
+- Release prep: Refresh the dev feed and archive metadata for the stable main promotion after the UI, deletion, modal, README, and safety updates were complete.
 
 ###2026.07.08.22
-- Maintenance: Refresh package metadata and build artifacts
+- Delete progress: Keep the OK button disabled while cleanup is still running and show a real in-progress state before results can be dismissed.
 
 ###2026.07.08.21
-- Maintenance: Refresh package metadata and build artifacts
+- Licensing: Add the MIT license and keep the repository ready for public distribution.
+- UI: Fix Safe Mode card height so it lines up with the other top summary cards.
 
 ###2026.07.08.20
-- Maintenance: Refresh package metadata and build artifacts
+- README: Remove developer-only sections and keep the install instructions focused on the main and dev plugin feeds.
 
 ###2026.07.08.19
-- Maintenance: Refresh package metadata and build artifacts
+- README: Match the README badge style to FolderView Plus so release, date, Unraid, issue, commit, and support badges are consistent.
 
 ###2026.07.08.18
-- Maintenance: Refresh package metadata and build artifacts
+- README: Replace the banner and overhaul the README presentation around user-facing plugin information.
 
 ###2026.07.08.17
-- Maintenance: Refresh package metadata and build artifacts
+- Safe Mode: Correct title/body alignment in the Safe Mode summary card after switching to the shield icon layout.
 
 ###2026.07.08.16
-- Maintenance: Refresh package metadata and build artifacts
+- Results modal: Simplify the cleanup-finished screen so warnings, completed/skipped/error counts, and failed paths are readable in the new modal style.
 
 ###2026.07.08.15
-- Maintenance: Refresh package metadata and build artifacts
+- Safe Mode: Refine the shield icon placement and card layout so the status content stays aligned with the other summary cards.
 
 ###2026.07.08.14
-- Maintenance: Refresh package metadata and build artifacts
+- Delete confirmation: Align the Delete and Cancel buttons and remove the disabled-button loading dots before confirmation is checked.
 
 ###2026.07.08.13
-- Maintenance: Refresh package metadata and build artifacts
+- Delete confirmation: Replace the typed DELETE prompt with a checkbox that clearly confirms permanent deletion cannot be undone.
 
 ###2026.07.08.12
-- Maintenance: Refresh package metadata and build artifacts
+- Delete modal: Redesign the permanent-delete warning screen around the new card, badge, folder-list, and action-button style.
 
 ###2026.07.08.11
-- Maintenance: Refresh package metadata and build artifacts
+- History modal: Make audit history entries more compact so more cleanup runs are visible without oversized cards.
 
 ###2026.07.08.10
-- Maintenance: Refresh package metadata and build artifacts
+- Safe Mode: Pin the ON/OFF badge to the top right of the card and remove the unwanted gap beside the Selected summary card.
 
 ###2026.07.08.09
-- Maintenance: Refresh package metadata and build artifacts
+- Appdata Sources: Constrain the visible source browser area so the modal can be closed without scrolling the whole dialog.
 
 ###2026.07.08.08
-- Maintenance: Refresh package metadata and build artifacts
+- Header: Replace the filled orange app icon box with a larger transparent-background logo treatment.
 
 ###2026.07.08.07
-- Maintenance: Refresh package metadata and build artifacts
+- Action bar modals: Redesign Appdata Sources, Quarantine, History, and Tools popups to match the new compact UI and use simpler language.
 
 ###2026.07.08.06
-- Maintenance: Refresh package metadata and build artifacts
+- Scan loading: Stabilize the dashboard layout while initial scans and rescans are running so the UI no longer jumps when results arrive.
 
 ###2026.07.08.05
-- Maintenance: Refresh package metadata and build artifacts
+- Details modal: Simplify row details into a short, understandable explanation with the important path/source information first.
 
 ###2026.07.08.04
-- Maintenance: Refresh package metadata and build artifacts
+- Critical delete fix: Replace the problematic backend delete path with shell-backed cleanup operations modeled after the original Cleanup Appdata behavior.
 
 ###2026.07.08.03
-- Maintenance: Refresh package metadata and build artifacts
+- Bottom action bar: Tighten the sticky action bar width, button sizing, and viewport spacing so it no longer extends past the results area or gets cut off.
 
 ###2026.07.08.02
-- Maintenance: Refresh package metadata and build artifacts
+- Buttons and age labels: Use theme-aware button text colors and expand abbreviated ages like `yr` and `mo` into full words.
 
 ###2026.07.08.01
-- Maintenance: Refresh package metadata and build artifacts
+- Bottom action bar: Rebuild the selection controls to match the mockup while excluding removed review-only actions.
 
 ###2026.07.07.25
-- Maintenance: Refresh package metadata and build artifacts
+- Buttons: Make action buttons use theme-aware text colors and remove the special orange treatment from Appdata Sources.
 
 ###2026.07.07.24
-- Maintenance: Refresh package metadata and build artifacts
+- Dashboard top row: Remove the Blocked summary card, remove visible/detected counts from search, and expand Safe Mode into the freed space.
 
 ###2026.07.07.23
-- Maintenance: Refresh package metadata and build artifacts
+- Source column: Remove the redundant Ready badge and restore distinct colors for Discovery and Template source badges.
 
 ###2026.07.07.22
-- Maintenance: Refresh package metadata and build artifacts
+- Sizes: Show empty folders as Empty instead of Unknown in the Size column.
 
 ###2026.07.07.21
-- Maintenance: Refresh package metadata and build artifacts
+- Search controls: Remove the Safe Mode banner, filtered-by chips, clear-filters status, and the extra filter feature from the dashboard.
 
 ###2026.07.07.20
-- Maintenance: Refresh package metadata and build artifacts
+- Theme support: Replace gradient styling with solid Unraid theme tokens based on the FolderView Plus theme approach.
 
 ###2026.07.07.19
-- Maintenance: Refresh package metadata and build artifacts
+- Results table: Add the Size column and align folder subpaths under the folder name instead of under the icon.
 
 ###2026.07.07.18
-- Maintenance: Refresh package metadata and build artifacts
+- Results table: Add blue folder icons beside appdata folder names to match the mockup.
 
 ###2026.07.07.17
-- Maintenance: Refresh package metadata and build artifacts
+- Badges: Remove glow effects, make badges narrower, and left-align them in the Source column.
 
 ###2026.07.07.16
-- Maintenance: Refresh package metadata and build artifacts
+- Workflow: Remove saved-template and outside-share review gates from the normal cleanup flow so those rows land in Ready to Clean by default.
 
 ###2026.07.07.15
-- Maintenance: Refresh package metadata and build artifacts
+- Badges: Reduce badge height and width so source badges match the thinner mockup style.
 
 ###2026.07.07.14
-- Maintenance: Refresh package metadata and build artifacts
+- Dev feed: Restore dev branch manifest/archive URLs after the main release sync.
 
 ###2026.07.07.13
-- Maintenance: Refresh package metadata and build artifacts
+- Dev feed: Verify and correct the dev package feed after moving to refs/heads raw URLs.
 
 ###2026.07.07.12
-- Maintenance: Refresh package metadata and build artifacts
+- Release feed: Switch dev manifest, archive, CA metadata, and install examples to refs/heads raw GitHub URLs so Unraid avoids stale shorthand branch cache.
 
 ###2026.07.07.11
-- Maintenance: Refresh package metadata and build artifacts
+- Top cards: Center the dashboard summary cards so labels, icons, and numbers sit inside their boxes.
 
 ###2026.07.07.10
-- Maintenance: Refresh package metadata and build artifacts
+- Badges: Restyle result chips into squared state/source badges for ready, discovery, needs-review, and template states.
 
 ###2026.07.07.09
-- Maintenance: Refresh package metadata and build artifacts
+- Mockup alignment: Refine dashboard spacing and table layout to more closely match the requested design.
 
 ###2026.07.07.08
-- Maintenance: Refresh package metadata and build artifacts
+- UI overhaul: Start the full dashboard redesign with larger header, visual summary cards, compact filters, grouped result panels, and sticky batch actions.
 
 ###2026.07.07.07
 - Release feed: Switch dev manifest, archive, CA metadata, and install examples to refs/heads raw GitHub URLs so Unraid avoids the stale shorthand branch cache
@@ -168,7 +175,7 @@
 - Cleanup: Make permanent delete the default action for fresh/default settings and turn Safe Mode into the optional quarantine workflow
 
 ###2026.07.07.01
-- Maintenance: Refresh package metadata and build artifacts
+- Dev baseline: Create the first July dev build before the dashboard redesign work began.
 
 ###2026.06.11.09
 - Release: Promote the full `2026.05.27.01` through `2026.06.11.08` development cycle to the stable `main` channel while keeping the manifest, CA feed, package archive, and plugin install link pointed at `main`
