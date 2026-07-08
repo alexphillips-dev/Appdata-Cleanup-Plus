@@ -4859,63 +4859,64 @@
 
   function getDeleteTypedTitle(context) {
     if (context.confirmButtonLabel === ACP.t(strings, "deleteDatasetActionLabel", "Destroy")) {
-      return ACP.t(strings, "destroyTypedTitle", "Type DELETE to confirm dataset destroy");
+      return ACP.t(strings, "destroyTypedTitle", "Confirm dataset destroy");
     }
 
     if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
-      return ACP.t(strings, "deleteMixedTypedTitle", "Type DELETE to confirm item delete");
+      return ACP.t(strings, "deleteMixedTypedTitle", "Confirm delete");
     }
 
-    return ACP.t(strings, "deleteTypedTitle", "Type DELETE to confirm permanent delete");
+    return ACP.t(strings, "deleteTypedTitle", "Confirm permanent delete");
   }
 
   function buildOperationPreviewHtml(rows, context, options) {
     var settings = options || {};
     var safeCount = rows.length;
     var preview = rows.slice(0, 6);
+    var selectedLabel = rows.length + " " + (rows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
+    var actionLabel = context.baseOperation === "delete"
+      ? ACP.t(strings, "deleteImmediateLabel", "Permanent delete")
+      : ACP.t(strings, "quarantineActionLabel", "Quarantine");
+    var icon = context.baseOperation === "delete" ? "!" : "Q";
     var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-flag">' + ACP.escapeHtml(ACP.t(strings, "deleteWarningLabel", "WARNING")) + "</div>",
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-lead">' + ACP.escapeHtml(context.confirmMessage) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(context.detailMessage) + "</div>",
+      '<div class="acp-delete-simple-shell">',
+      '<div class="acp-delete-simple-intro">',
+      '<div class="acp-delete-simple-icon" aria-hidden="true">' + ACP.escapeHtml(icon) + "</div>",
+      '<div class="acp-delete-simple-copy">',
+      '<div class="acp-delete-simple-title">' + ACP.escapeHtml(actionLabel) + "</div>",
+      '<div class="acp-delete-simple-message">' + ACP.escapeHtml(context.confirmMessage) + " " + ACP.escapeHtml(context.detailMessage) + "</div>",
       "</div>",
-      '<div class="acp-modal-stats">',
-      '<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(String(rows.length)) + " selected</span>",
-      '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "deleteSafeLabel", "Ready")) + ": " + ACP.escapeHtml(String(safeCount)) + "</span>"
+      '<div class="acp-delete-simple-pills">',
+      '<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(selectedLabel) + "</span>",
+      '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "deleteSafeLabel", "Ready")) + ": " + ACP.escapeHtml(String(safeCount)) + "</span>",
+      "</div>",
+      "</div>",
+      '<section class="acp-delete-simple-card">',
+      '<div class="acp-delete-simple-card-title">' + ACP.escapeHtml(context.listTitle) + "</div>",
+      '<ul class="acp-delete-simple-list">'
     ];
 
-    html.push("</div>");
-
-    if (settings.showTypeHint) {
-      var typeHint = ACP.t(strings, "deleteTypedHint", "Type DELETE to continue with this permanent delete.");
-
-      if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteDatasetPlural", "datasets")) {
-        typeHint = ACP.t(strings, "destroyTypedHint", "Type DELETE to continue with this dataset destroy.");
-      } else if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
-        typeHint = ACP.t(strings, "deleteMixedTypedHint", "Type DELETE to continue with this delete.");
-      }
-
-      html.push('<div class="acp-modal-hint">' + ACP.escapeHtml(typeHint) + "</div>");
-    }
-
-    html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(context.listTitle) + "</div>");
-    html.push('<ul class="acp-modal-list">');
-
     $.each(preview, function(_, row) {
-      html.push('<li><code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code>");
+      var details = [];
+
+      html.push('<li class="acp-delete-simple-list-item">');
+      html.push('<code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code>");
+
       if (row.datasetName) {
-        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDatasetLabel", "ZFS dataset")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.datasetName) + "</code></div>");
+        details.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDatasetLabel", "ZFS dataset")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.datasetName) + "</code></div>");
       }
       if (row.zfsImpactSummary) {
-        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDestroyImpactLabel", "Impact")) + '</span><span class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.zfsImpactSummary) + "</span></div>");
+        details.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsDestroyImpactLabel", "Impact")) + '</span><span class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(row.zfsImpactSummary) + "</span></div>");
       }
       if ($.isArray(row.zfsChildDatasets) && row.zfsChildDatasets.length) {
-        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsChildDatasetsLabel", "Child datasets")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(formatPreviewList(row.zfsChildDatasets, Number(row.zfsChildDatasetCount || row.zfsChildDatasets.length))) + "</code></div>");
+        details.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsChildDatasetsLabel", "Child datasets")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(formatPreviewList(row.zfsChildDatasets, Number(row.zfsChildDatasetCount || row.zfsChildDatasets.length))) + "</code></div>");
       }
       if ($.isArray(row.zfsSnapshots) && row.zfsSnapshots.length) {
-        html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsSnapshotsLabel", "Snapshots")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(formatPreviewList(row.zfsSnapshots, Number(row.zfsSnapshotCount || row.zfsSnapshots.length))) + "</code></div>");
+        details.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "zfsSnapshotsLabel", "Snapshots")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(formatPreviewList(row.zfsSnapshots, Number(row.zfsSnapshotCount || row.zfsSnapshots.length))) + "</code></div>");
+      }
+
+      if (details.length) {
+        html.push('<details class="acp-simple-disclosure acp-delete-simple-details"><summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>" + details.join("") + "</details>");
       }
       html.push("</li>");
     });
@@ -4924,7 +4925,21 @@
       html.push('<li class="acp-modal-list-more">+' + ACP.escapeHtml(String(rows.length - preview.length)) + " more</li>");
     }
 
-    html.push("</ul></div></div>");
+    html.push("</ul></section>");
+
+    if (settings.showTypeHint) {
+      var typeHint = ACP.t(strings, "deleteTypedHint", "Type DELETE below to continue.");
+
+      if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteDatasetPlural", "datasets")) {
+        typeHint = ACP.t(strings, "destroyTypedHint", "Type DELETE below to destroy the selected datasets.");
+      } else if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
+        typeHint = ACP.t(strings, "deleteMixedTypedHint", "Type DELETE below to delete the selected items.");
+      }
+
+      html.push('<div class="acp-delete-simple-hint">' + ACP.escapeHtml(typeHint) + "</div>");
+    }
+
+    html.push("</div>");
     return html.join("");
   }
 
@@ -4937,10 +4952,21 @@
       : (warningCount > 0
         ? ACP.t(strings, "operationResultsWarningLead", "The action finished, but some rows were skipped, blocked, missing, or failed. Review the list before leaving this screen.")
         : ACP.t(strings, "operationResultsSuccessLead", "The action completed successfully. Review the final status for each row below."));
-    var html = ['<div class="acp-modal-summary">'];
+    var icon = context.preview ? "P" : (warningCount > 0 ? "!" : "✓");
+    var title = context.preview
+      ? ACP.t(strings, "operationPreviewTitle", "Preview")
+      : (warningCount > 0 ? context.resultTitleWarning : context.resultTitleSuccess);
+    var html = [
+      '<div class="acp-delete-simple-shell acp-delete-results-simple">',
+      '<div class="acp-delete-simple-intro">',
+      '<div class="acp-delete-simple-icon" aria-hidden="true">' + ACP.escapeHtml(icon) + "</div>",
+      '<div class="acp-delete-simple-copy">',
+      '<div class="acp-delete-simple-title">' + ACP.escapeHtml(title) + "</div>",
+      '<div class="acp-delete-simple-message">' + ACP.escapeHtml(leadMessage) + "</div>",
+      "</div>"
+    ];
 
     if (context.preview) {
-      html.push('<div class="acp-modal-flag is-preview">' + ACP.escapeHtml(context.warningLabel) + "</div>");
       stats.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(ACP.t(strings, "previewReadyLabel", "Ready")) + ": " + ACP.escapeHtml(String(summary.ready || 0)) + "</span>");
     } else if (context.baseOperation === "delete") {
       stats.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(ACP.t(strings, "resultDeletedLabel", "Deleted")) + ": " + ACP.escapeHtml(String(summary.deleted || 0)) + "</span>");
@@ -4956,11 +4982,11 @@
     stats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(ACP.t(strings, "resultMissingLabel", "Missing")) + ": " + ACP.escapeHtml(String(summary.missing || 0)) + "</span>");
     stats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(ACP.t(strings, "resultErrorLabel", "Error")) + ": " + ACP.escapeHtml(String(summary.errors || 0)) + "</span>");
 
-    html.push('<div class="acp-modal-copy"><div class="acp-modal-lead">' + ACP.escapeHtml(leadMessage) + "</div></div>");
-    html.push('<div class="acp-modal-stats">' + stats.join("") + "</div>");
-    html.push('<div class="acp-modal-panel">');
-    html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(context.listTitle) + "</div>");
-    html.push('<ul class="acp-modal-list acp-modal-result-list">');
+    html.push('<div class="acp-delete-simple-pills">' + stats.join("") + "</div>");
+    html.push("</div>");
+    html.push('<section class="acp-delete-simple-card">');
+    html.push('<div class="acp-delete-simple-card-title">' + ACP.escapeHtml(context.listTitle) + "</div>");
+    html.push('<ul class="acp-delete-simple-list acp-delete-result-list">');
 
     $.each(results || [], function(_, result) {
       var statusMeta = ACP.formatOperationResultStatus(strings, result.status);
@@ -5016,8 +5042,8 @@
       }
 
       html.push(
-        '<li class="acp-modal-result">' +
-          '<div class="acp-modal-result-head">' +
+        '<li class="acp-delete-simple-list-item">' +
+          '<div class="acp-delete-result-head">' +
             '<span class="acp-modal-stat ' + statusMeta.tone + '">' + ACP.escapeHtml(statusMeta.label) + "</span>" +
             '<code class="acp-modal-path">' + ACP.escapeHtml(result.displayPath || result.path || "") + '</code>' +
           "</div>" +
@@ -5027,7 +5053,7 @@
       );
     });
 
-    html.push("</ul></div></div>");
+    html.push("</ul></section></div>");
     return html.join("");
   }
 
@@ -5062,11 +5088,15 @@
       ? ACP.t(strings, "deleteProgressComplete", "Delete finished. Review the results before leaving this screen.")
       : (currentProgress.message || ACP.t(strings, "deleteProgressRunning", "Removing selected folders now."));
     var html = [
-      '<div class="acp-modal-summary acp-delete-progress-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-lead">' + ACP.escapeHtml(message) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(context.detailMessage || ACP.t(strings, "deletingMessage", "Large folders can take a moment to remove.")) + "</div>",
+      '<div class="acp-delete-simple-shell acp-delete-progress-summary">',
+      '<div class="acp-delete-simple-intro">',
+      '<div class="acp-delete-simple-icon" aria-hidden="true">' + (readyForResults ? "✓" : "...") + "</div>",
+      '<div class="acp-delete-simple-copy">',
+      '<div class="acp-delete-simple-title">' + ACP.escapeHtml(readyForResults ? ACP.t(strings, "deleteProgressCompleteTitle", "Delete complete") : context.loadingTitle) + "</div>",
+      '<div class="acp-delete-simple-message">' + ACP.escapeHtml(message) + "</div>",
       "</div>",
+      "</div>",
+      '<section class="acp-delete-simple-card">',
       '<div class="acp-delete-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + ACP.escapeHtml(String(percent)) + '">',
       '<span style="width:' + ACP.escapeHtml(String(percent)) + '%"></span>',
       "</div>",
@@ -5085,9 +5115,11 @@
       );
     }
 
+    html.push("</section>");
+
     if (readyForResults) {
       html.push(
-        '<div class="acp-modal-actions-row">' +
+        '<div class="acp-delete-simple-actions">' +
           '<button type="button" class="acp-button acp-button-primary" data-action="view-operation-results">' + ACP.escapeHtml(ACP.t(strings, "deleteProgressViewResults", "View results")) + "</button>" +
         "</div>"
       );

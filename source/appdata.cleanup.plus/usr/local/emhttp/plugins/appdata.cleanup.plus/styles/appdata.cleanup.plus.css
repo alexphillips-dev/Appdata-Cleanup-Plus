@@ -1358,17 +1358,17 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   background: var(--acp-panel) !important;
   border: 1px solid var(--acp-border) !important;
   box-sizing: border-box !important;
-  border-radius: 16px !important;
+  border-radius: 8px !important;
   box-shadow: var(--acp-shadow) !important;
   left: 50% !important;
   margin-left: 0 !important;
   margin-top: 0 !important;
-  padding: 20px 24px 18px !important;
+  padding: 18px 18px 16px !important;
   right: auto !important;
   top: 50% !important;
   transform: translate(-50%, -50%) !important;
   width: calc(100vw - 28px) !important;
-  max-width: 560px !important;
+  max-width: 620px !important;
 }
 
 .sweet-alert.acp-delete-modal h2 {
@@ -1472,11 +1472,12 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .sweet-alert.acp-delete-modal input {
   background: var(--acp-input-bg);
   border: 1px solid var(--acp-input-border);
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: none;
   color: var(--acp-input-text);
   font-size: 13px;
-  height: 38px;
+  height: 36px;
+  margin-top: 10px;
 }
 
 .sweet-alert.acp-delete-modal input:focus {
@@ -1488,7 +1489,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .sweet-alert.acp-delete-modal button.confirm {
   background: var(--acp-button-bg) !important;
   border: 1px solid var(--acp-button-border) !important;
-  border-radius: 10px !important;
+  border-radius: 8px !important;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.88), inset 0 0 0 1px rgba(255, 255, 255, 0.03) !important;
   color: var(--acp-button-text) !important;
   font-size: 11px !important;
@@ -1612,6 +1613,132 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   overflow-x: hidden !important;
   overflow-y: auto !important;
   padding-right: 4px;
+}
+
+.sweet-alert.acp-delete-modal .sa-icon {
+  display: none !important;
+}
+
+.sweet-alert.acp-delete-modal .sa-button-container,
+.sweet-alert.acp-delete-modal .sa-confirm-button-container {
+  margin-top: 14px !important;
+}
+
+.acp-delete-simple-shell {
+  display: grid;
+  gap: 12px;
+  text-align: left;
+}
+
+.acp-delete-simple-intro {
+  align-items: center;
+  background: var(--acp-card);
+  border: 1px solid var(--acp-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  padding: 12px;
+}
+
+.acp-delete-simple-icon {
+  align-items: center;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  color: #f87171;
+  display: flex;
+  font-size: 15px;
+  font-weight: 900;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.acp-delete-simple-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.acp-delete-simple-title {
+  color: var(--acp-heading);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.acp-delete-simple-message,
+.acp-delete-simple-hint {
+  color: var(--acp-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.acp-delete-simple-pills,
+.acp-delete-simple-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.acp-delete-simple-card {
+  background: var(--acp-card);
+  border: 1px solid var(--acp-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.acp-delete-simple-card-title {
+  color: var(--acp-heading);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.acp-delete-simple-list {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  max-height: min(30vh, 240px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.acp-delete-simple-list-item {
+  background: var(--acp-panel-soft);
+  border: 1px solid var(--acp-border-faint);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+}
+
+.acp-delete-simple-list-item .acp-modal-path {
+  display: block;
+  max-width: 100%;
+}
+
+.acp-delete-simple-details {
+  margin-top: 0;
+  padding-top: 6px;
+}
+
+.acp-delete-result-head {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.acp-delete-result-list .acp-modal-result-message {
+  margin-top: 0;
 }
 
 .sweet-alert.acp-zfs-path-mappings-modal .acp-modal-host {
