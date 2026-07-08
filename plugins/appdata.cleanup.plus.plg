@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.54">
-<!ENTITY md5 "49156dc55823427ad06df189883f9410">
+<!ENTITY version "2026.07.08.55">
+<!ENTITY md5 "1ad56d3929f86c020a3820a9fe8a2232">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.55
+- Added a Show ignored action directly to the Ignore list active notice.
+- Added an Ignored results section with a gray left accent so hidden paths can be reviewed and restored without reintroducing filter clutter.
+- Kept ignored rows unselectable until restored so cleanup actions cannot run against hidden items accidentally.
+
 ###2026.07.08.54
 - Updated the plugin description to reflect the current guided cleanup dashboard, quarantine/restore flow, audit history, and ZFS dataset candidate support.
 

@@ -7,6 +7,7 @@
   var state = {
     rows: [],
     summary: { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 },
+    showIgnored: false,
     selected: {},
     scanToken: "",
     dockerRunning: true,
@@ -397,6 +398,12 @@
       if (!state.busy) {
         openToolsModal();
       }
+    });
+
+    els.$app.on("click", "[data-action='toggle-ignored-visibility']", function() {
+      state.showIgnored = !state.showIgnored;
+      reconcileSelection();
+      renderAll();
     });
 
     $(document).on("click.acpQuarantine", ".sweet-alert [data-action='refresh-quarantine']", function(event) {
@@ -954,6 +961,7 @@
   function resetDashboardState() {
     state.rows = [];
     state.summary = { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 };
+    state.showIgnored = false;
     state.selected = {};
     state.scanToken = "";
     state.dockerRunning = true;
@@ -2329,7 +2337,11 @@
       notices.push({
         type: "info",
         title: ACP.t(strings, "noticeIgnoredTitle", "Ignore list active"),
-        message: Number(summary.ignored || 0) + " " + (Number(summary.ignored || 0) === 1 ? "path is" : "paths are") + " currently hidden from normal cleanup results. Turn on Show ignored to review or restore them."
+        message: Number(summary.ignored || 0) + " " + (Number(summary.ignored || 0) === 1 ? "path is" : "paths are") + (state.showIgnored ? " visible below for review or restore." : " currently hidden from normal cleanup results."),
+        action: "toggle-ignored-visibility",
+        actionLabel: state.showIgnored
+          ? ACP.t(strings, "hideIgnoredLabel", "Hide ignored")
+          : ACP.t(strings, "showIgnoredLabel", "Show ignored")
       });
     }
 
@@ -2606,10 +2618,16 @@
     var hasNotices = $.isArray(notices) && notices.length > 0;
 
     $.each(notices || [], function(_, notice) {
+      var actionHtml = notice.action
+        ? '<button type="button" class="acp-button acp-button-secondary acp-notice-action" data-action="' + ACP.escapeHtml(notice.action) + '">' + ACP.escapeHtml(notice.actionLabel || "") + "</button>"
+        : "";
       html.push(
         '<article class="acp-notice is-' + ACP.escapeHtml(notice.type || "info") + '">' +
-          '<div class="acp-notice-title">' + ACP.escapeHtml(notice.title || "") + "</div>" +
-          '<div class="acp-notice-message">' + (notice.messageHtml || ACP.escapeHtml(notice.message || "")) + "</div>" +
+          '<div class="acp-notice-main">' +
+            '<div class="acp-notice-title">' + ACP.escapeHtml(notice.title || "") + "</div>" +
+            '<div class="acp-notice-message">' + (notice.messageHtml || ACP.escapeHtml(notice.message || "")) + "</div>" +
+          "</div>" +
+          actionHtml +
         "</article>"
       );
     });
@@ -3895,6 +3913,10 @@
   }
 
   function getActionabilityLabel(actionability) {
+    if (actionability === "ignored") {
+      return ACP.t(strings, "ignoredSectionTitle", "Ignored");
+    }
+
     if (actionability === "locked") {
       return ACP.t(strings, "cardBlocked", "Blocked");
     }
@@ -3904,6 +3926,18 @@
 
   function getRowActionabilityDescriptor(row) {
     var blockType = ACP.getRowBlockType ? ACP.getRowBlockType(row) : "";
+
+    if (row.ignored) {
+      return {
+        kind: "actionability",
+        value: "ignored",
+        label: ACP.t(strings, "ignoredSectionTitle", "Ignored"),
+        tone: "neutral",
+        title: row.ignoredReason || "",
+        kindClass: "actionability",
+        isPrimary: true
+      };
+    }
 
     if (row.policyLocked || row.risk === "blocked") {
       return {
@@ -4109,7 +4143,7 @@
   }
 
   function buildSectionActionabilitySummary(rows) {
-    var summary = { ready: 0, review: 0, locked: 0 };
+    var summary = { ready: 0, review: 0, locked: 0, ignored: 0 };
 
     $.each(rows || [], function(_, row) {
       var actionability = getRowActionabilityDescriptor(row).value;
@@ -4166,7 +4200,7 @@
       kindClass: "count"
     }));
 
-    $.each(["locked", "review", "ready"], function(_, actionability) {
+    $.each(["locked", "review", "ready", "ignored"], function(_, actionability) {
       var count = Number(summary[actionability] || 0);
 
       if (!count) {
@@ -4260,7 +4294,7 @@
       if (Number(state.summary.total || 0) === 0 && Number(state.summary.ignored || 0) > 0) {
         renderStateMessage(
           ACP.t(strings, "ignoredOnlyTitle", "Only ignored paths remain"),
-          ACP.t(strings, "ignoredOnlyMessage", "Every detected candidate is hidden by your ignore list."),
+          ACP.t(strings, "ignoredOnlyMessage", "Every detected candidate is hidden by your ignore list. Turn on Show ignored to review or restore hidden paths."),
           null,
           null
         );
@@ -4326,7 +4360,7 @@
       var haystack = ((row.name || "") + " " + (row.displayPath || "") + " " + (row.sourceSummary || "") + " " + (row.targetSummary || "")).toLowerCase();
 
       if (row.ignored) {
-        return false;
+        return !!state.showIgnored;
       }
 
       if (term && haystack.indexOf(term) === -1) {

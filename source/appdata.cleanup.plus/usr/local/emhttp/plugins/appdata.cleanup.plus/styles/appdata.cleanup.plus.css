@@ -961,11 +961,26 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 .acp-notice {
+  align-items: center;
   background: var(--acp-panel-soft);
   border-radius: 12px;
+  display: flex;
+  gap: 4px;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.acp-notice-main {
   display: grid;
   gap: 4px;
-  padding: 10px 12px;
+  min-width: 0;
+}
+
+.acp-notice-action {
+  flex: 0 0 auto;
+  min-height: 30px;
+  min-width: 110px;
+  padding: 0 12px;
 }
 
 .acp-notice.is-warning {
@@ -3271,6 +3286,15 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
     flex-direction: column;
   }
 
+  .acp-notice {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .acp-notice-action {
+    width: 100%;
+  }
+
   .acp-summary-grid {
     grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
     width: 100%;
@@ -3729,6 +3753,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 #acp-app .acp-results-section-zfs {
   border-left: 3px solid #26d3c2;
+}
+
+#acp-app .acp-results-section-ignored {
+  border-left: 3px solid #8b949e;
 }
 
 #acp-app .acp-results-section-review,
