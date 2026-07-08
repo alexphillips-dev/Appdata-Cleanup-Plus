@@ -244,12 +244,12 @@ verify_remote_release_metadata() {
         exit 1
     fi
 
-    if [[ "${manifest_content}" != *"/${branch_name}/plugins/&name;.plg"* ]]; then
+    if [[ "${manifest_content}" != *"/${branch_ref}/plugins/&name;.plg"* ]]; then
         echo "ERROR: Live manifest pluginURL is not pointing at ${branch_name}." >&2
         exit 1
     fi
 
-    if [[ "${xml_content}" != *"<PluginURL>https://raw.githubusercontent.com/${remote_slug}/${branch_name}/plugins/appdata.cleanup.plus.plg</PluginURL>"* ]]; then
+    if [[ "${xml_content}" != *"<PluginURL>https://raw.githubusercontent.com/${remote_slug}/${branch_ref}/plugins/appdata.cleanup.plus.plg</PluginURL>"* ]]; then
         echo "ERROR: Live CA XML PluginURL is not pointing at ${branch_name}." >&2
         exit 1
     fi
