@@ -3822,6 +3822,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 #acp-app .acp-summary-copy {
   align-content: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  justify-content: center;
 }
 
 #acp-app .acp-mode-card.is-safe-mode .acp-mode-card-copy,
@@ -3839,7 +3843,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-summary-value {
-  line-height: 1;
+  line-height: 0.9;
+  transform: translateY(-1px);
 }
 
 #acp-app .acp-summary-subtitle,

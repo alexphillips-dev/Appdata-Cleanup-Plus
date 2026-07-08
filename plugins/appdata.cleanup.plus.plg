@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.36">
-<!ENTITY md5 "0b967230f9956a2ea245fccca5afdc1b">
+<!ENTITY version "2026.07.08.37">
+<!ENTITY md5 "dbad70c8bce8037fc70ff8b85daaa303">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.37
+- UI: Center the top summary card counts in their text stack so the numbers no longer sit low in the cards.
+
 ###2026.07.08.36
 - UI: Rename the disabled Safe Mode card title to Safe Mode Disabled and color the Disabled state red so permanent-delete mode is obvious.
 - UI: Align the disabled Safe Mode warning icon with the card title to match the enabled shield layout.
