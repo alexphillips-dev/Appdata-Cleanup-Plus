@@ -544,7 +544,16 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
     </div>
     <div class="acp-header-actions">
       <button type="button" class="acp-button acp-button-secondary" id="acp-rescan"><?php echo _("Rescan"); ?></button>
-      <button type="button" class="acp-button acp-button-secondary" id="acp-help"><?php echo _("Help"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary acp-button-with-icon" id="acp-help">
+        <span class="acp-button-icon acp-button-help-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M9.75 9.25a2.35 2.35 0 0 1 4.5 1c0 1.7-2.25 1.9-2.25 3.45"></path>
+            <path d="M12 16.8h.01"></path>
+          </svg>
+        </span>
+        <span><?php echo _("Help"); ?></span>
+      </button>
     </div>
   </header>
 
@@ -577,10 +586,41 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
       <span><?php echo _("No items selected"); ?></span>
     </div>
     <div class="acp-action-toolbar-actions">
-      <button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources"><?php echo _("Appdata Sources"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary acp-button-with-icon" data-action="open-appdata-sources">
+        <span class="acp-button-icon acp-button-dataset-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M5 6.75c0-1.24 3.13-2.25 7-2.25s7 1.01 7 2.25v10.5c0 1.24-3.13 2.25-7 2.25s-7-1.01-7-2.25Z"></path>
+            <path d="M5 6.75c0 1.24 3.13 2.25 7 2.25s7-1.01 7-2.25"></path>
+            <path d="M5 12c0 1.24 3.13 2.25 7 2.25s7-1.01 7-2.25"></path>
+            <path d="M5 17.25c0 1.24 3.13 2.25 7 2.25s7-1.01 7-2.25"></path>
+          </svg>
+        </span>
+        <span><?php echo _("Appdata Sources"); ?></span>
+      </button>
       <button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine"><?php echo _("Show Quarantine"); ?></button>
-      <button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history"><?php echo _("History"); ?></button>
-      <button type="button" class="acp-button acp-button-secondary" data-action="open-tools"><?php echo _("Tools"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary acp-button-with-icon" data-action="open-audit-history">
+        <span class="acp-button-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+            <path d="M3 4.5v5h5"></path>
+            <path d="M12 7.5v5l3.25 1.9"></path>
+          </svg>
+        </span>
+        <span><?php echo _("History"); ?></span>
+      </button>
+      <button type="button" class="acp-button acp-button-secondary acp-button-with-icon" data-action="open-tools">
+        <span class="acp-button-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M14.7 6.3a4 4 0 0 0-5 5L4 17v3h3l5.7-5.7a4 4 0 0 0 5-5l-2.6 2.6-2.9-2.9Z"></path>
+          </svg>
+        </span>
+        <span><?php echo _("Tools"); ?></span>
+        <span class="acp-button-icon acp-button-chevron-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="m7 10 5 5 5-5"></path>
+          </svg>
+        </span>
+      </button>
     </div>
   </section>
 

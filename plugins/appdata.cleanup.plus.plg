@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.41">
-<!ENTITY md5 "6321be9a6b9ca43cd42ffabf10bb0b20">
+<!ENTITY version "2026.07.08.42">
+<!ENTITY md5 "2c398c2ca98efb10793f931307a374f9">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.42
+- UI: Add matching inline icons to the Help, Appdata Sources, History, and Tools buttons.
+
 ###2026.07.08.41
 - UI: Replace the Help modal information dump with a compact workflow guide and simple safety notes that match the updated modal design.
 

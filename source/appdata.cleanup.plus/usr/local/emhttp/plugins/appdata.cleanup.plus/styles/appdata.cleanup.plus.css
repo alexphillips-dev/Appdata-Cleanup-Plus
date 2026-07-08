@@ -587,6 +587,60 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   background: var(--acp-button-bg);
 }
 
+.acp-button-with-icon {
+  gap: 7px;
+}
+
+.acp-button-icon {
+  align-items: center;
+  color: currentColor;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 17px;
+  justify-content: center;
+  width: 17px;
+}
+
+.acp-button-icon svg {
+  display: block;
+  fill: none;
+  height: 17px;
+  overflow: visible;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  width: 17px;
+}
+
+.acp-button-help-icon {
+  color: var(--acp-button-text);
+}
+
+.acp-button-help-icon svg {
+  stroke-width: 2.1;
+}
+
+.acp-button-dataset-icon {
+  color: var(--acp-accent);
+}
+
+.acp-button-dataset-icon svg {
+  fill: var(--acp-accent-soft);
+  stroke-width: 1.9;
+}
+
+.acp-button-chevron-icon {
+  height: 14px;
+  margin-left: -2px;
+  width: 14px;
+}
+
+.acp-button-chevron-icon svg {
+  height: 14px;
+  width: 14px;
+}
+
 .acp-toolbar-actions .acp-button {
   min-height: 34px;
 }
