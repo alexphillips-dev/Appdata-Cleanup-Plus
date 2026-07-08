@@ -1132,6 +1132,15 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   width: 22px;
 }
 
+.acp-row-dataset-icon {
+  color: #26d3c2;
+}
+
+.acp-row-dataset-icon svg {
+  fill: rgba(20, 184, 166, 0.14);
+  stroke-linecap: round;
+}
+
 .acp-row-title {
   color: var(--acp-heading);
   font-size: 14px;
@@ -3589,6 +3598,12 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   background: rgba(88, 46, 151, 0.86);
   border-color: rgba(168, 85, 247, 0.24);
   color: #b98cff;
+}
+
+#acp-app .acp-badge.acp-badge-tone-zfs {
+  background: rgba(15, 118, 110, 0.86);
+  border-color: rgba(45, 212, 191, 0.26);
+  color: #5eead4;
 }
 
 #acp-app .acp-badge.acp-badge-tone-locked,

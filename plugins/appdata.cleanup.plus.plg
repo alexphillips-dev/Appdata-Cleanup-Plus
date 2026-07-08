@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.32">
-<!ENTITY md5 "00a4164e256c33c271cc0b4e5055db1f">
+<!ENTITY version "2026.07.08.33">
+<!ENTITY md5 "f290f0a34793b8bc1fcf973b58ada57e">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.33
+- UI: Give exact ZFS dataset rows a dedicated dataset icon instead of the normal folder icon so they are visually distinct before cleanup.
+- UI: Keep the original Discovery or Template source badge visible and add a separate ZFS dataset badge so users can tell why a row was found and how it will be deleted.
+- UX: Add a dedicated ZFS badge color to make dataset-backed cleanup candidates easier to scan in the Ready to Clean table.
+
 ###2026.07.08.32
 - Safety: Protect appdata folders referenced by Docker Compose Manager projects so stopped/down compose stacks are not mistaken for orphaned cleanup candidates.
 - Safety: Add an explicit Docker engine health check so scans fail closed when Docker appears running but container inventory cannot be verified.

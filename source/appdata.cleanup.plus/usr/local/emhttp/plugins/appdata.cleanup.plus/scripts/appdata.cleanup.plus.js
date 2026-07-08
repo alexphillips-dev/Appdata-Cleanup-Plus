@@ -3648,7 +3648,20 @@
     return "";
   }
 
-  function buildRowFolderIconHtml() {
+  function buildRowFolderIconHtml(row) {
+    if (row && row.storageKind === "zfs") {
+      return (
+        '<span class="acp-row-folder-icon acp-row-dataset-icon" aria-hidden="true">' +
+          '<svg viewBox="0 0 24 24" focusable="false">' +
+            '<path d="M5 6.75c0-1.24 3.13-2.25 7-2.25s7 1.01 7 2.25v10.5c0 1.24-3.13 2.25-7 2.25s-7-1.01-7-2.25Z"></path>' +
+            '<path d="M5 6.75c0 1.24 3.13 2.25 7 2.25s7-1.01 7-2.25"></path>' +
+            '<path d="M5 12c0 1.24 3.13 2.25 7 2.25s7-1.01 7-2.25"></path>' +
+            '<path d="M5 17.25c0 1.24 3.13 2.25 7 2.25s7-1.01 7-2.25"></path>' +
+          "</svg>" +
+        "</span>"
+      );
+    }
+
     return (
       '<span class="acp-row-folder-icon" aria-hidden="true">' +
         '<svg viewBox="0 0 24 24" focusable="false">' +
@@ -3764,17 +3777,6 @@
   }
 
   function getRowSourceDescriptor(row) {
-    if (row.storageKind === "zfs") {
-      return {
-        kind: "source",
-        value: "zfs",
-        label: ACP.t(strings, "badgeStorageZfs", "ZFS dataset"),
-        tone: "discovery",
-        title: row.datasetName || row.datasetMountpoint || row.sourceDisplay || row.sourceSummary || "",
-        kindClass: "source"
-      };
-    }
-
     return {
       kind: "source",
       value: String(row.sourceKind || "template"),
@@ -3794,7 +3796,7 @@
       kind: "storage",
       value: "zfs",
       label: ACP.t(strings, "badgeStorageZfs", "ZFS dataset"),
-      tone: "neutral",
+      tone: "zfs",
       title: row.datasetName || row.datasetMountpoint || "",
       kindClass: "storage"
     };
@@ -3926,7 +3928,9 @@
   }
 
   function getRowBadgeDescriptors(row) {
-    return [getRowSourceDescriptor(row)];
+    var descriptors = [getRowSourceDescriptor(row)];
+    pushBadgeDescriptor(descriptors, getRowStorageDescriptor(row));
+    return descriptors;
   }
 
   function buildSectionActionabilitySummary(rows) {
@@ -4038,7 +4042,7 @@
           '<div class="acp-row-primary">' +
             '<div class="acp-row-title-wrap">' +
               '<div class="acp-row-title-line">' +
-                buildRowFolderIconHtml() +
+                buildRowFolderIconHtml(row) +
                 '<h3 class="acp-row-title">' + ACP.escapeHtml(row.name || row.displayPath || "") + "</h3>" +
               "</div>" +
               '<div class="acp-row-meta">' +
