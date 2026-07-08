@@ -39,5 +39,10 @@ jobs:
           bash scripts/release_guard.sh
           bash scripts/ca_readiness_guard.sh
 
+      - name: Prepare Unraid path fixtures
+        run: |
+          sudo mkdir -p /mnt/user /mnt/fcache /mnt/docker_vm_nvme
+          sudo chmod 0777 /mnt/user /mnt/fcache /mnt/docker_vm_nvme
+
       - name: Run behavior smoke test
         run: bash scripts/test_behavior.sh
