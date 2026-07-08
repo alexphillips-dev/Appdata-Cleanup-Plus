@@ -14,6 +14,13 @@ if [[ ! -f "${XML_FILE}" ]]; then
     echo "ERROR: Missing CA template: ${XML_FILE}" >&2
     exit 1
 fi
+if grep -R -n -E '^(<<<<<<<|=======|>>>>>>>)' "${PLG_FILE}" "${XML_FILE}" "${ROOT_DIR}/source" "${ROOT_DIR}/scripts" >/tmp/appdata-cleanup-plus-conflict-markers.txt; then
+    echo "ERROR: Conflict markers found in release files:" >&2
+    cat /tmp/appdata-cleanup-plus-conflict-markers.txt >&2
+    rm -f /tmp/appdata-cleanup-plus-conflict-markers.txt
+    exit 1
+fi
+rm -f /tmp/appdata-cleanup-plus-conflict-markers.txt
 
 VERSION="$(grep -m1 '^<!ENTITY version ' "${PLG_FILE}" | sed -E 's/^<!ENTITY version "([^"]+)".*/\1/' || true)"
 MD5_ENTITY="$(grep -m1 '^<!ENTITY md5 ' "${PLG_FILE}" | sed -E 's/^<!ENTITY md5 "([^"]+)".*/\1/' || true)"

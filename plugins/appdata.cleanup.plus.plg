@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.29">
+<!ENTITY version "2026.07.08.30">
 <!ENTITY md5 "480b9671f9b385c29caf77969c5bf12a">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.30
+- Release feed: Remove accidental manifest conflict markers from the main feed and publish a clean package version.
+- Release guard: Fail builds if conflict markers are present in manifest, CA metadata, source, or scripts.
+
 ###2026.07.08.29
 - CI: Initialize the smoke-test PHP session after temporary state cleanup so GitHub Actions can persist snapshots and complete behavior validation.
 
