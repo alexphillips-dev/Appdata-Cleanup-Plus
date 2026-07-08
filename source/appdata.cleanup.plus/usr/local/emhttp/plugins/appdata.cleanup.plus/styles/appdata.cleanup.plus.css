@@ -2518,6 +2518,9 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   --acp-input-text: #eef2f7;
   --acp-heading: #f8fafc;
   --acp-text: #e2e8f0;
+  --acp-button-text: var(--acp-text);
+  --acp-button-hover-text: var(--acp-text);
+  --acp-button-primary-text: var(--acp-text);
   --acp-muted: #aeb9c7;
   --acp-muted-strong: #c4ccd6;
   --acp-bottom-bg: #171d24;
@@ -2901,6 +2904,34 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   background: var(--acp-button-primary-bg);
   border-color: var(--acp-button-primary-border);
   color: var(--acp-button-primary-text);
+}
+
+#acp-app .acp-button,
+#acp-app a.acp-button,
+#acp-app button.acp-button,
+#acp-app .acp-row-action.acp-button,
+#acp-app .acp-button-secondary {
+  color: var(--acp-button-text) !important;
+}
+
+#acp-app .acp-button:hover:not(:disabled),
+#acp-app .acp-button:focus-visible:not(:disabled),
+#acp-app a.acp-button:hover:not(:disabled),
+#acp-app a.acp-button:focus-visible:not(:disabled),
+#acp-app button.acp-button:hover:not(:disabled),
+#acp-app button.acp-button:focus-visible:not(:disabled) {
+  color: var(--acp-button-hover-text) !important;
+}
+
+#acp-app .acp-button-primary,
+#acp-app a.acp-button-primary,
+#acp-app button.acp-button-primary {
+  color: var(--acp-button-primary-text) !important;
+}
+
+#acp-app .acp-button:disabled,
+#acp-app .acp-button[disabled] {
+  color: var(--acp-button-text) !important;
 }
 
 #acp-app .acp-bottom-bar {

@@ -244,6 +244,12 @@ $measuredStats = collectPathStats($sizeFixture);
 behaviorSmokeAssertTrue(isset($measuredStats["sizeBytes"]) && $measuredStats["sizeBytes"] >= 2048, "collectPathStats should measure a real directory size when no cache entry exists.");
 $measuredCache = getCachedAppdataCleanupPlusPathStats($sizeFixture);
 behaviorSmokeAssertSame($measuredStats["sizeBytes"], $measuredCache["sizeBytes"], "Measured directory size should be written back to the stats cache.");
+behaviorSmokeAssertSame("1 minute ago", formatRelativeAgeLabel(time() - 60), "Relative age labels should spell out singular minutes.");
+behaviorSmokeAssertSame("2 hours ago", formatRelativeAgeLabel(time() - 7200), "Relative age labels should spell out plural hours.");
+behaviorSmokeAssertSame("1 month ago", formatRelativeAgeLabel(time() - 2592000), "Relative age labels should spell out singular months.");
+behaviorSmokeAssertSame("3 months ago", formatRelativeAgeLabel(time() - (3 * 2592000)), "Relative age labels should spell out plural months.");
+behaviorSmokeAssertSame("1 year ago", formatRelativeAgeLabel(time() - 31536000), "Relative age labels should spell out singular years.");
+behaviorSmokeAssertSame("2 years ago", formatRelativeAgeLabel(time() - (2 * 31536000)), "Relative age labels should spell out plural years.");
 
 $quarantineRoot = $stateRoot . "/quarantine";
 $quarantineDestination = $quarantineRoot . "/20260330-120000/mnt/user/appdata/sample";

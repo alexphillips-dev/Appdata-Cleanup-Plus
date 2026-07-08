@@ -242,27 +242,27 @@ function formatRelativeAgeLabel($timestamp) {
   }
 
   if ( $delta < 3600 ) {
-    $minutes = max(1, floor($delta / 60));
-    return $minutes . " min ago";
+    $minutes = (int) max(1, floor($delta / 60));
+    return $minutes . " minute" . ($minutes === 1 ? "" : "s") . " ago";
   }
 
   if ( $delta < 86400 ) {
-    $hours = max(1, floor($delta / 3600));
-    return $hours . " hr ago";
+    $hours = (int) max(1, floor($delta / 3600));
+    return $hours . " hour" . ($hours === 1 ? "" : "s") . " ago";
   }
 
   if ( $delta < 2592000 ) {
-    $days = max(1, floor($delta / 86400));
+    $days = (int) max(1, floor($delta / 86400));
     return $days . " day" . ($days === 1 ? "" : "s") . " ago";
   }
 
   if ( $delta < 31536000 ) {
-    $months = max(1, floor($delta / 2592000));
-    return $months . " mo ago";
+    $months = (int) max(1, floor($delta / 2592000));
+    return $months . " month" . ($months === 1 ? "" : "s") . " ago";
   }
 
-  $years = max(1, floor($delta / 31536000));
-  return $years . " yr ago";
+  $years = (int) max(1, floor($delta / 31536000));
+  return $years . " year" . ($years === 1 ? "" : "s") . " ago";
 }
 
 function measureDirectoryBytesWithDu($path) {
