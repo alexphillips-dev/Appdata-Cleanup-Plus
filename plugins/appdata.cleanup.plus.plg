@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.23">
-<!ENTITY md5 "8220fe823ed12c45a6c379005d3db0ea">
+<!ENTITY version "2026.07.08.24">
+<!ENTITY md5 "1eddccfba88f0f12358ee4beaa828170">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,15 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.24
+- Release: Promote the full July 7-8 development cycle to the stable `main` channel with main-channel manifest, CA feed, package archive, tag, and release metadata
+- UI: Replace the cleanup dashboard with the mockup-aligned top summary cards, action bar, ready-to-clean table, compact badges, folder icons, size column, bottom action bar, and theme-token styling
+- UX: Simplify cleanup decisions by removing saved-template/outside-share review gates from the main workflow, removing redundant filters and banners, making Safe Mode the quarantine-first option, and keeping rows focused on ready cleanup
+- Modals: Redesign details, appdata sources, quarantine, history, tools, delete confirmation, delete results, and delete progress dialogs around the new compact UI
+- Delete flow: Move folder deletion to a shell-backed path for reliability, use checkbox confirmation for permanent delete, show a running progress state while deletion is active, and keep results easy to review
+- Docs: Replace the README banner, overhaul the README presentation to match FolderView Plus, add matching badges, trim developer-only sections, and add an MIT license
+- Safety: Keep server-side scan snapshots, candidate-id actions, CSRF validation, protected path locks, restore collision checks, quarantine tracking, and ZFS dataset-delete safeguards in place
+
 ###2026.07.08.23
 - Maintenance: Prepare the dev feed for the main release promotion
 
@@ -160,6 +169,16 @@
 
 ###2026.07.07.01
 - Maintenance: Refresh package metadata and build artifacts
+
+###2026.06.11.09
+- Release: Promote the full `2026.05.27.01` through `2026.06.11.08` development cycle to the stable `main` channel while keeping the manifest, CA feed, package archive, and plugin install link pointed at `main`
+- UX: Rework the cleanup dashboard around clearer `Ready`, `Needs review`, `Blocked`, and `Ignored` outcomes, merge search/sort/filter controls, remove the scanned appdata paths block, simplify row badges/actions, and keep the Controls panel focused on Rescan, Cleanup Options, and Help
+- UX: Add a detailed Help reference, richer row Details diagnostics, inline explanations for review/blocked rows, clearer result/status messaging, and Cleanup Options affected-row counts so users can understand why an item is safe, review-gated, or blocked
+- UX: Move review unlock controls closer to selection workflows, autosave Cleanup Options switches, rename Advanced safety to Cleanup Options, restore the full non-tabbed Help layout, and tighten dashboard spacing across the top controls and results status areas
+- Safety: Preserve hard locks for unsafe paths, Docker inventory uncertainty, ZFS dataset delete requirements, permanent-delete requirements, outside-share review gates, and saved-template cleanup gates while allowing per-scan unlocks for review rows
+- Delete flow: Add a live permanent-delete progress window with counters, a progress bar, recently deleted paths, and a View results step before the final completion screen
+- Fix: Improve Unraid theme handling, row Details modal rendering/content, light-theme palette detection, and cleanup review workflow regressions from the development cycle
+- Test: Extend behavior smoke coverage for scan-scoped unlocks, settings persistence, delete/progress behavior, details data, row actionability, and safety bypass boundaries
 
 ###2026.06.11.08
 - UX: Restore the Help window to the original full reference layout without tabs
