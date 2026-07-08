@@ -61,7 +61,7 @@ require_commands() {
 }
 
 plugin_summary_text() {
-    printf '%s' "Appdata Cleanup Plus finds orphaned appdata folders from removed Docker containers so you can review and delete them."
+    printf '%s' "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard."
 }
 
 plugin_readme_title_for_branch() {

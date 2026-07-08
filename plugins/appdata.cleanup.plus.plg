@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.53">
-<!ENTITY md5 "19eb9c1ac86e849b0730d078ccc31fb7">
+<!ENTITY version "2026.07.08.54">
+<!ENTITY md5 "49156dc55823427ad06df189883f9410">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.54
+- Updated the plugin description to reflect the current guided cleanup dashboard, quarantine/restore flow, audit history, and ZFS dataset candidate support.
+
 ###2026.07.08.53
 - Added a built-in Test Fixtures tool for creating and removing safe acp-test-* appdata folders from the Tools modal.
 - Improved Audit History with search, compact path previews, richer result counts, and copyable summaries.
