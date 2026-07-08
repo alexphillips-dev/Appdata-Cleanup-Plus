@@ -1446,6 +1446,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .sweet-alert.acp-appdata-sources-modal {
   max-width: 820px !important;
+  overflow-y: hidden !important;
 }
 
 .sweet-alert.acp-zfs-path-mappings-modal {
@@ -1607,7 +1608,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 .sweet-alert.acp-appdata-sources-modal .acp-modal-host {
-  max-height: none !important;
+  max-height: calc(100vh - 150px) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding-right: 4px;
 }
 
 .sweet-alert.acp-zfs-path-mappings-modal .acp-modal-host {
@@ -1993,6 +1997,17 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .acp-simple-modal-sources .acp-appdata-source-manual-list,
 .acp-simple-modal-sources .acp-appdata-source-list {
   margin-top: 0;
+}
+
+.sweet-alert.acp-appdata-sources-modal .acp-appdata-browser-list {
+  border: 1px solid var(--acp-border-faint);
+  border-radius: 8px;
+  max-height: min(22vh, 180px);
+}
+
+.sweet-alert.acp-appdata-sources-modal .acp-appdata-browser-entry {
+  min-height: 34px;
+  padding: 4px 8px;
 }
 
 @media (max-width: 720px) {
