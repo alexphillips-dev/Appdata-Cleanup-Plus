@@ -2838,6 +2838,57 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   text-transform: none;
 }
 
+#acp-app .acp-badge {
+  border: 1px solid transparent;
+  border-radius: 5px;
+  box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.04), 0 0 10px rgba(0, 0, 0, 0.22);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+  min-height: 28px;
+  min-width: 94px;
+  padding: 7px 13px;
+  text-align: center;
+  text-shadow: 0 0 8px currentColor;
+}
+
+#acp-app .acp-badge.acp-badge-tone-ready,
+#acp-app .acp-badge.acp-badge-tone-safe,
+#acp-app .acp-badge.acp-badge-tone-selected {
+  background: linear-gradient(180deg, rgba(22, 101, 52, 0.84), rgba(20, 83, 45, 0.72));
+  border-color: rgba(34, 197, 94, 0.24);
+  color: #4dff88;
+}
+
+#acp-app .acp-badge.acp-badge-tone-discovery,
+#acp-app .acp-badge.acp-badge-tone-info,
+#acp-app .acp-badge.acp-badge-tone-neutral.acp-badge-kind-source {
+  background: linear-gradient(180deg, rgba(30, 64, 126, 0.86), rgba(30, 58, 108, 0.74));
+  border-color: rgba(59, 130, 246, 0.24);
+  color: #60a5ff;
+}
+
+#acp-app .acp-badge.acp-badge-tone-review,
+#acp-app .acp-badge.acp-badge-tone-warning {
+  background: linear-gradient(180deg, rgba(120, 82, 0, 0.9), rgba(92, 67, 0, 0.78));
+  border-color: rgba(234, 179, 8, 0.24);
+  color: #ffd21a;
+}
+
+#acp-app .acp-badge.acp-badge-tone-neutral.acp-badge-kind-source[data-badge-value="template"] {
+  background: linear-gradient(180deg, rgba(88, 46, 151, 0.86), rgba(67, 38, 121, 0.76));
+  border-color: rgba(168, 85, 247, 0.24);
+  color: #b98cff;
+}
+
+#acp-app .acp-badge.acp-badge-tone-locked,
+#acp-app .acp-badge.acp-badge-tone-blocked {
+  background: linear-gradient(180deg, rgba(127, 29, 29, 0.86), rgba(99, 27, 27, 0.76));
+  border-color: rgba(248, 113, 113, 0.24);
+  color: #ff8b8b;
+}
+
 #acp-app .acp-button-primary {
   background: linear-gradient(135deg, #fb923c, #ea580c);
   border-color: rgba(251, 146, 60, 0.72);

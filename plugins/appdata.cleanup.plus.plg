@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.07.04">
-<!ENTITY md5 "20039f4f4f1ddf1e562f23fa916f8ed9">
+<!ENTITY version "2026.07.07.05">
+<!ENTITY md5 "ccaf79c0b67799178b018d406bece3c6">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.07.05
+- UI: Restyle result chips into larger squared neon badges for ready, discovery, needs-review, and template states
+
 ###2026.07.07.04
 - UI: Center the top summary and Safe Mode card contents inside fixed-height cards so the header row no longer spills or hugs the top edge
 
