@@ -3885,7 +3885,7 @@
       kind: "source",
       value: String(row.sourceKind || "template"),
       label: row.sourceLabel || ACP.t(strings, "sourceLabel", "Source"),
-      tone: row.sourceKind === "filesystem" ? "discovery" : "neutral",
+      tone: row.sourceKind === "filesystem" ? "discovery" : "template",
       title: row.sourceDisplay || row.sourceSummary || "",
       kindClass: "source"
     };
@@ -4043,7 +4043,7 @@
   }
 
   function getRowBadgeDescriptors(row) {
-    return [getRowActionabilityDescriptor(row), getRowSourceDescriptor(row)];
+    return [getRowSourceDescriptor(row)];
   }
 
   function buildSectionActionabilitySummary(rows) {

@@ -1211,6 +1211,11 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   color: var(--acp-discovery-text);
 }
 
+.acp-badge-tone-template {
+  background: rgba(88, 46, 151, 0.28);
+  color: #b98cff;
+}
+
 .acp-badge-tone-locked {
   background: var(--acp-locked-soft);
   color: var(--acp-locked-text);
@@ -2881,8 +2886,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-badge.acp-badge-tone-discovery,
-#acp-app .acp-badge.acp-badge-tone-info,
-#acp-app .acp-badge.acp-badge-tone-neutral.acp-badge-kind-source {
+#acp-app .acp-badge.acp-badge-tone-info {
   background: rgba(30, 64, 126, 0.86);
   border-color: rgba(59, 130, 246, 0.24);
   color: #60a5ff;
@@ -2895,7 +2899,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   color: #ffd21a;
 }
 
-#acp-app .acp-badge.acp-badge-tone-neutral.acp-badge-kind-source[data-badge-value="template"] {
+#acp-app .acp-badge.acp-badge-tone-template {
   background: rgba(88, 46, 151, 0.86);
   border-color: rgba(168, 85, 247, 0.24);
   color: #b98cff;
