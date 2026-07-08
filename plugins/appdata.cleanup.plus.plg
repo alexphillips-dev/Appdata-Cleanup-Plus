@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.46">
-<!ENTITY md5 "e5e0e79662ebe27aa75cf9a14c115431">
+<!ENTITY version "2026.07.08.47">
+<!ENTITY md5 "13fbaf960cb37081f35fe5c20312eaaf">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.47
+- UI: Match the Appdata Sources button label color to its orange dataset icon.
+
 ###2026.07.08.46
 - UI: Replace the top summary card glyphs with cleaner inline SVG icons for Detected, Ready, and Selected.
 

@@ -632,6 +632,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   stroke-width: 1.9;
 }
 
+.acp-button-accent-label {
+  color: var(--acp-accent);
+}
+
 .acp-button-chevron-icon {
   height: 14px;
   margin-left: -2px;
