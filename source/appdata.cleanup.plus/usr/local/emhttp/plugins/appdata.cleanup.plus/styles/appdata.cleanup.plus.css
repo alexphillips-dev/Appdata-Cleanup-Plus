@@ -3661,7 +3661,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 /* Mockup precision pass */
 #acp-app .acp-dashboard-top {
   gap: 8px;
-  grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
 }
 
 #acp-app .acp-summary-grid {
@@ -3676,54 +3676,38 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-mode-card.is-safe-mode {
-  align-items: flex-start;
-  padding-top: 28px;
+  align-items: center;
+  padding-top: 0;
 }
 
 #acp-app .acp-mode-card.is-safe-mode .acp-mode-icon {
-  align-self: flex-start;
-  background: #22c55e;
-  border-radius: 9px 9px 12px 12px;
-  color: #050608;
-  height: 32px;
-  margin-top: -2px;
+  align-self: start;
+  background: transparent;
+  border-radius: 0;
+  color: inherit;
+  height: 34px;
+  margin-top: 2px;
   position: relative;
-  width: 30px;
-  flex: 0 0 30px;
+  width: 34px;
+  flex: 0 0 34px;
 }
 
-#acp-app .acp-mode-card.is-safe-mode .acp-mode-icon::before {
-  background: #22c55e;
-  border-radius: 8px 8px 4px 4px;
-  content: "";
-  height: 18px;
-  left: 0;
-  position: absolute;
-  top: 0;
-  width: 30px;
+#acp-app .acp-mode-shield-icon {
+  display: block;
+  height: 32px;
+  width: 32px;
 }
 
-#acp-app .acp-mode-card.is-safe-mode .acp-mode-icon::after {
-  background: #22c55e;
-  border-radius: 0 0 10px 10px;
-  bottom: -5px;
-  content: "";
-  height: 18px;
-  left: 5px;
-  position: absolute;
-  transform: rotate(45deg);
-  width: 20px;
+#acp-app .acp-mode-shield-shape {
+  fill: #22c55e;
 }
 
 #acp-app .acp-mode-shield-check {
-  border-bottom: 3px solid #050608;
-  border-right: 3px solid #050608;
-  display: block;
-  height: 12px;
-  position: relative;
-  transform: rotate(45deg) translate(-1px, -1px);
-  width: 7px;
-  z-index: 1;
+  fill: none;
+  stroke: #050608;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.8;
 }
 
 #acp-app .acp-mode-card.is-delete-mode {
@@ -3760,7 +3744,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-mode-card.is-safe-mode .acp-mode-card-copy {
-  align-self: flex-start;
+  align-self: start;
 }
 
 #acp-app .acp-summary-label {
