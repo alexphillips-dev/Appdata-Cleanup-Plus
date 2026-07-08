@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.30">
-<!ENTITY md5 "480b9671f9b385c29caf77969c5bf12a">
+<!ENTITY version "2026.07.08.31">
+<!ENTITY md5 "6ee53d0cd9c96f3867ff2f4a1a556294">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.31
+- UI: Remove the Plugin Settings button and modal completely; Safe Mode is controlled only from the top-right Safe Mode card.
+- ZFS: Keep exact ZFS dataset cleanup enabled by default and force older saved settings to enabled so dataset rows can appear in Ready to Clean with a ZFS dataset source badge.
+
 ###2026.07.08.30
 - Release feed: Remove accidental manifest conflict markers from the main feed and publish a clean package version.
 - Release guard: Fail builds if conflict markers are present in manifest, CA metadata, source, or scripts.

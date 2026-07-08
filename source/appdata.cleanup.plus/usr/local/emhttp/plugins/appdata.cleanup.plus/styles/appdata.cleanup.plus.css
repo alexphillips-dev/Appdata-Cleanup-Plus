@@ -1406,8 +1406,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .sweet-alert.acp-zfs-path-mappings-modal .sa-icon,
 .sweet-alert.acp-tools-modal .sa-icon,
 .sweet-alert.acp-help-modal .sa-icon,
-.sweet-alert.acp-row-details-modal .sa-icon,
-.sweet-alert.acp-advanced-safety-modal .sa-icon {
+.sweet-alert.acp-row-details-modal .sa-icon {
   display: none !important;
 }
 
@@ -1417,8 +1416,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .sweet-alert.acp-zfs-path-mappings-modal,
 .sweet-alert.acp-tools-modal,
 .sweet-alert.acp-help-modal,
-.sweet-alert.acp-row-details-modal,
-.sweet-alert.acp-advanced-safety-modal {
+.sweet-alert.acp-row-details-modal {
   box-sizing: border-box !important;
   left: 50% !important;
   margin-left: 0 !important;
@@ -1443,8 +1441,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .sweet-alert.acp-zfs-path-mappings-modal h2,
 .sweet-alert.acp-tools-modal h2,
 .sweet-alert.acp-help-modal h2,
-.sweet-alert.acp-row-details-modal h2,
-.sweet-alert.acp-advanced-safety-modal h2 {
+.sweet-alert.acp-row-details-modal h2 {
   margin-top: 0 !important;
 }
 
@@ -1463,10 +1460,6 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .sweet-alert.acp-help-modal {
   max-width: 980px !important;
-}
-
-.sweet-alert.acp-advanced-safety-modal {
-  max-width: 760px !important;
 }
 
 .sweet-alert.acp-row-details-modal {
@@ -1868,8 +1861,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .sweet-alert.acp-tools-modal .acp-modal-host,
 .sweet-alert.acp-help-modal .acp-modal-host,
-.sweet-alert.acp-row-details-modal .acp-modal-host,
-.sweet-alert.acp-advanced-safety-modal .acp-modal-host {
+.sweet-alert.acp-row-details-modal .acp-modal-host {
   max-height: none !important;
 }
 
@@ -1891,8 +1883,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .sweet-alert.acp-tools-modal .acp-modal-panel,
 .sweet-alert.acp-help-modal .acp-modal-panel,
-.sweet-alert.acp-row-details-modal .acp-modal-panel,
-.sweet-alert.acp-advanced-safety-modal .acp-modal-panel {
+.sweet-alert.acp-row-details-modal .acp-modal-panel {
   padding: 10px 12px;
 }
 
@@ -2357,55 +2348,6 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   .acp-simple-badge-row {
     justify-content: flex-start;
   }
-}
-
-.acp-advanced-safety-list {
-  display: grid;
-  gap: 10px;
-}
-
-.acp-advanced-safety-toggle {
-  align-items: flex-start;
-  border: 1px solid var(--acp-border);
-  border-radius: 8px;
-  color: var(--acp-text);
-  cursor: pointer;
-  display: grid;
-  gap: 10px;
-  grid-template-columns: 18px minmax(0, 1fr);
-  padding: 10px;
-}
-
-.acp-advanced-safety-toggle input {
-  accent-color: var(--acp-accent);
-  height: 14px;
-  margin-top: 2px;
-  width: 14px;
-}
-
-.acp-advanced-safety-copy {
-  display: grid;
-  gap: 4px;
-}
-
-.acp-advanced-safety-copy strong {
-  color: var(--acp-heading);
-  font-size: 12px;
-  line-height: 1.2;
-}
-
-.acp-advanced-safety-copy span {
-  color: var(--acp-muted);
-  font-size: 11px;
-  line-height: 1.35;
-}
-
-.acp-advanced-safety-copy em {
-  color: var(--acp-accent-text);
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 700;
-  line-height: 1.3;
 }
 
 .acp-help-grid {

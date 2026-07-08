@@ -221,9 +221,6 @@
     els.$app = $("#acp-app");
     els.$summaryCards = $("#acp-summary-cards");
     els.$search = $("#acp-search");
-    els.$enableDelete = $("#acp-enable-delete");
-    els.$enableZfsDelete = $("#acp-enable-zfs-delete");
-    els.$advancedSafety = $("#acp-advanced-safety");
     els.$help = $("#acp-help");
     els.$sort = $("#acp-sort");
     els.$rescan = $("#acp-rescan");
@@ -282,13 +279,6 @@
     els.$dryRun.on("click", startDryRunFlow);
     els.$primaryAction.on("click", startPrimaryActionFlow);
 
-    els.$enableDelete.on("change", saveSafetySettings);
-    els.$enableZfsDelete.on("change", saveSafetySettings);
-    els.$advancedSafety.on("click", function() {
-      if (!state.busy) {
-        openAdvancedSafetyModal();
-      }
-    });
     els.$help.on("click", function() {
       if (!state.busy) {
         openHelpModal();
@@ -399,17 +389,6 @@
     els.$app.on("click", "[data-action='open-tools']", function() {
       if (!state.busy) {
         openToolsModal();
-      }
-    });
-
-    $(document).on("change.acpAdvancedSafety", ".sweet-alert [data-safety-setting]", function(event) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (!state.busy) {
-        saveAdvancedSafetySettingsFromModal();
-      } else if (isAdvancedSafetyModalVisible()) {
-        renderAdvancedSafetyModal();
       }
     });
 
@@ -889,18 +868,9 @@
   }
 
   function syncSafetyControls() {
-    var settings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
-
-    els.$enableDelete.prop("checked", !settings.enablePermanentDelete);
-    els.$enableZfsDelete.prop("checked", !!settings.enableZfsDatasetDelete);
-  }
-
-  function getSafetyToggleValue($element, fallback) {
-    if ($element && $element.length) {
-      return !!$element.prop("checked");
-    }
-
-    return !!fallback;
+    state.settings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {}, {
+      enableZfsDatasetDelete: true
+    });
   }
 
   function getPrimaryOperation() {
@@ -926,9 +896,6 @@
     els.$app.toggleClass("is-busy", state.busy);
     els.$rescan.prop("disabled", state.busy);
     els.$search.prop("disabled", state.busy);
-    els.$enableDelete.prop("disabled", state.busy);
-    els.$enableZfsDelete.prop("disabled", state.busy);
-    els.$advancedSafety.prop("disabled", state.busy);
     els.$help.prop("disabled", state.busy);
     els.$sort.prop("disabled", state.busy);
     syncBulkSelectionPresetControls();
@@ -1387,7 +1354,7 @@
       },
       {
         title: ACP.t(strings, "helpStatesTitle", "Result states"),
-        body: ACP.t(strings, "helpStatesBody", "Ready rows look unused and can be selected. Blocked for safety rows cannot be cleaned here. Blocked by options rows need the relevant Cleanup Options switch enabled. Ignored rows are hidden until restored.")
+        body: ACP.t(strings, "helpStatesBody", "Ready rows look unused and can be selected. Safety-blocked rows cannot be cleaned here. Ignored rows are hidden until restored.")
       },
       {
         title: ACP.t(strings, "helpWhyRowsTitle", "Why rows appear"),
@@ -1398,7 +1365,7 @@
         body: ACP.t(strings, "helpActionsBody", "Details shows a short explanation, what cleanup will do, and optional technical information. Select ready chooses rows that are currently actionable. Ignore hides a row from normal results. Dry run previews what would happen. Quarantine selected moves folders into the quarantine root. Permanent delete removes folders immediately after typed confirmation.")
       },
       {
-        title: ACP.t(strings, "helpOptionsTitle", "Cleanup Options"),
+        title: ACP.t(strings, "helpOptionsTitle", "Safe Mode"),
         body: ACP.t(strings, "helpOptionsBody", "Permanent delete changes the main action from quarantine to delete. ZFS dataset delete allows exact dataset-backed rows to use dataset destroy and still requires permanent delete mode. The affected-row count shows how many current rows that option relates to.")
       },
       {
@@ -1415,7 +1382,7 @@
       },
       {
         title: ACP.t(strings, "helpTroubleshootingTitle", "Common questions"),
-        body: ACP.t(strings, "helpTroubleshootingBody", "If a row is locked, open Details and read why cleanup is unavailable. If ZFS cannot be selected, enable the required Cleanup Options. If no rows appear, confirm Appdata sources and rescan. If Unraid does not pull an update, verify the raw dev manifest version and package MD5.")
+        body: ACP.t(strings, "helpTroubleshootingBody", "If a row is locked, open Details and read why cleanup is unavailable. If no rows appear, confirm Appdata sources and rescan. If Unraid does not pull an update, verify the raw dev manifest version and package MD5.")
       },
       {
         title: ACP.t(strings, "helpWorkflowTitle", "Recommended workflow"),
@@ -1465,146 +1432,6 @@
     return getActiveSweetAlertModal().hasClass("acp-tools-modal");
   }
 
-  function buildAdvancedSafetyModalHtml() {
-    var settings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
-    var impactCounts = buildCleanupOptionsImpactCounts();
-    var toggles = [
-      {
-        key: "enablePermanentDelete",
-        label: ACP.t(strings, "enableSafeModeLabel", "Enable Safe Mode"),
-        help: ACP.t(strings, "advancedSafetyPermanentDeleteHelp", "Turn this off to use permanent delete as the primary action. Safe Mode moves selected folders into quarantine instead."),
-        impact: impactCounts.enablePermanentDelete
-      },
-      {
-        key: "enableZfsDatasetDelete",
-        label: ACP.t(strings, "enableZfsDatasetDeleteLabel", "Enable ZFS dataset delete"),
-        help: ACP.t(strings, "advancedSafetyZfsHelp", "Allows exact ZFS dataset-backed rows to use dataset destroy. ZFS rows still require permanent delete mode."),
-        impact: impactCounts.enableZfsDatasetDelete
-      }
-    ];
-    var html = [
-      '<div class="acp-modal-summary">',
-      '<div class="acp-modal-copy">',
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.t(strings, "advancedSafetySubtitle", "Safe Mode moves cleanup targets into quarantine instead of permanently deleting them. ZFS dataset delete is only needed for exact dataset-backed rows.")) + "</div>",
-      "</div>",
-      "</div>",
-      '<div class="acp-modal-panel">',
-      '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "advancedSafetyTitle", "Cleanup Options")) + "</div>",
-      '<div class="acp-advanced-safety-list">'
-    ];
-
-    $.each(toggles, function(_, toggle) {
-      html.push(
-        '<label class="acp-advanced-safety-toggle">' +
-          '<input type="checkbox" data-safety-setting="' + ACP.escapeHtml(toggle.key) + '"' + (toggle.key === "enablePermanentDelete" ? (!settings[toggle.key] ? ' checked="checked"' : "") : (settings[toggle.key] ? ' checked="checked"' : "")) + ">" +
-          '<span class="acp-advanced-safety-copy">' +
-            '<strong>' + ACP.escapeHtml(toggle.label) + "</strong>" +
-            '<span>' + ACP.escapeHtml(toggle.help) + "</span>" +
-            '<em>' + ACP.escapeHtml(buildCleanupOptionImpactText(toggle.impact)) + "</em>" +
-          "</span>" +
-        "</label>"
-      );
-    });
-
-    html.push(
-      "</div>",
-      '<div class="acp-modal-feedback" data-role="advanced-safety-feedback"></div>',
-      "</div>"
-    );
-
-    return html.join("");
-  }
-
-  function buildCleanupOptionsImpactCounts() {
-    var counts = {
-      enablePermanentDelete: 0,
-      enableZfsDatasetDelete: 0
-    };
-
-    $.each(state.rows || [], function(_, row) {
-      var policyReason = String((row && row.policyReason) || "");
-
-      if (!row || row.ignored) {
-        return;
-      }
-
-      if (row.canDelete || (row.storageKind === "zfs" && /permanent delete/i.test(policyReason))) {
-        counts.enablePermanentDelete += 1;
-      }
-
-      if (row.storageKind === "zfs") {
-        counts.enableZfsDatasetDelete += 1;
-      }
-
-    });
-
-    return counts;
-  }
-
-  function buildCleanupOptionImpactText(count) {
-    var rowCount = Number(count || 0);
-
-    if (rowCount <= 0) {
-      return ACP.t(strings, "advancedSafetyAffectsNone", "Currently affects 0 rows in this scan.");
-    }
-
-    return ACP.t(strings, "advancedSafetyAffectsRows", "Currently affects {count} rows in this scan.")
-      .replace("{count}", String(rowCount));
-  }
-
-  function renderAdvancedSafetyModal() {
-    ACP.applyDeleteModalClass("acp-advanced-safety-modal", buildAdvancedSafetyModalHtml());
-  }
-
-  function openAdvancedSafetyModal() {
-    swal({
-      title: ACP.t(strings, "advancedSafetyTitle", "Cleanup Options"),
-      text: "",
-      type: "warning",
-      html: true,
-      showCancelButton: false,
-      confirmButtonText: ACP.t(strings, "doneLabel", "Done"),
-      closeOnConfirm: true
-    }, function() {
-      window.setTimeout(function() {
-        ACP.releaseModalScrollLock(false);
-        renderPanels();
-      }, 180);
-    });
-    renderAdvancedSafetyModal();
-  }
-
-  function isAdvancedSafetyModalVisible() {
-    return getActiveSweetAlertModal().hasClass("acp-advanced-safety-modal");
-  }
-
-  function saveAdvancedSafetySettingsFromModal() {
-    var $modal = getActiveSweetAlertModal();
-    var nextSettings = {};
-
-    $modal.find("[data-safety-setting]").each(function() {
-      var key = String($(this).data("safety-setting") || "");
-      nextSettings[key] = key === "enablePermanentDelete" ? !$(this).prop("checked") : !!$(this).prop("checked");
-    });
-
-    $modal.find("[data-role='advanced-safety-feedback']").text(ACP.t(strings, "savingLabel", "Saving..."));
-    $modal.find("[data-safety-setting]").prop("disabled", true);
-    saveSafetySettings(nextSettings, {
-      onSuccess: function() {
-        if (isAdvancedSafetyModalVisible()) {
-          renderAdvancedSafetyModal();
-          getActiveSweetAlertModal().find("[data-role='advanced-safety-feedback']").text(ACP.t(strings, "advancedSafetySavedMessage", "Cleanup options saved."));
-        }
-      },
-      onFailure: function(xhr) {
-        if (isAdvancedSafetyModalVisible()) {
-          renderAdvancedSafetyModal();
-          getActiveSweetAlertModal().find("[data-role='advanced-safety-feedback']").text(ACP.extractErrorMessage(xhr, ACP.t(strings, "advancedSafetyFailedMessage", "Cleanup options could not be saved right now.")));
-        }
-      }
-    });
-  }
-
   function openRowDetailsModal(row) {
     if (!row) {
       return;
@@ -1650,15 +1477,6 @@
   }
 
   function openZfsPathMappingsModal() {
-    if (!state.settings.enableZfsDatasetDelete) {
-      swal(
-        ACP.t(strings, "zfsPathMappingsUnavailableTitle", "Enable ZFS dataset delete first"),
-        ACP.t(strings, "zfsPathMappingsUnavailableMessage", "Turn on ZFS dataset delete in Safety settings before configuring ZFS mappings."),
-        "warning"
-      );
-      return;
-    }
-
     syncZfsPathMappingBrowserFromSettings();
     state.zfsPathMappingBrowser.feedbackMessage = "";
     ensureZfsPathMappingsModal();
@@ -2339,13 +2157,6 @@
     }
 
     if (nextRow.storageKind === "zfs") {
-      if (!state.settings.enableZfsDatasetDelete) {
-        nextRow.canDelete = false;
-        nextRow.policyLocked = true;
-        nextRow.policyReason = "ZFS dataset delete is disabled in Safety settings.";
-        return nextRow;
-      }
-
       if (!state.settings.enablePermanentDelete) {
         nextRow.canDelete = false;
         nextRow.policyLocked = true;
@@ -2476,17 +2287,11 @@
 
     if (hasZfsRows) {
       notices.push({
-        type: state.settings.enableZfsDatasetDelete ? "info" : "warning",
-        title: state.settings.enableZfsDatasetDelete
-          ? ACP.t(strings, "noticeZfsDatasetTitle", "ZFS dataset candidates found")
-          : ACP.t(strings, "noticeZfsDeleteDisabledTitle", "ZFS dataset delete is disabled"),
-        message: state.settings.enableZfsDatasetDelete
-          ? (
-            state.settings.enablePermanentDelete
-              ? ACP.t(strings, "noticeZfsDatasetMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows.")
-              : ACP.t(strings, "noticeZfsDatasetDeleteModeMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows, so permanent delete mode must also be enabled before they become actionable.")
-          )
-          : ACP.t(strings, "noticeZfsDeleteDisabledMessage", "ZFS-backed rows stay visible but protected until ZFS dataset delete is enabled in Cleanup Options.")
+        type: "info",
+        title: ACP.t(strings, "noticeZfsDatasetTitle", "ZFS dataset candidates found"),
+        message: state.settings.enablePermanentDelete
+          ? ACP.t(strings, "noticeZfsDatasetMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows.")
+          : ACP.t(strings, "noticeZfsDatasetDeleteModeMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Disable Safe Mode before acting on exact dataset rows.")
       });
     }
 
@@ -3863,7 +3668,7 @@
       {
         key: "locked",
         title: ACP.t(strings, "protectedSectionTitle", "Blocked"),
-        message: ACP.t(strings, "protectedSectionMessage", "Safety-blocked rows cannot be unlocked here. Cleanup Options-blocked rows need the relevant option enabled first.")
+        message: ACP.t(strings, "protectedSectionMessage", "Safety-blocked rows cannot be unlocked here.")
       },
       {
         key: "ignored",
@@ -3959,6 +3764,17 @@
   }
 
   function getRowSourceDescriptor(row) {
+    if (row.storageKind === "zfs") {
+      return {
+        kind: "source",
+        value: "zfs",
+        label: ACP.t(strings, "badgeStorageZfs", "ZFS dataset"),
+        tone: "discovery",
+        title: row.datasetName || row.datasetMountpoint || row.sourceDisplay || row.sourceSummary || "",
+        kindClass: "source"
+      };
+    }
+
     return {
       kind: "source",
       value: String(row.sourceKind || "template"),
@@ -4063,17 +3879,6 @@
         value: "template_reference",
         label: ACP.t(strings, "badgeReasonTemplateReference", "Template reference"),
         tone: "review",
-        title: policyReason,
-        kindClass: "reason"
-      });
-    }
-
-    if (row.storageKind === "zfs" && /zfs dataset delete is disabled/i.test(policyReason)) {
-      pushBadgeDescriptor(descriptors, {
-        kind: "reason",
-        value: "zfs_delete_disabled",
-        label: ACP.t(strings, "badgeReasonZfsDeleteDisabled", "ZFS delete off"),
-        tone: "locked",
         title: policyReason,
         kindClass: "reason"
       });
@@ -4462,9 +4267,9 @@
     var previousAppdataSources = $.extend(true, { detected: [], manual: [], effective: [], zfsPathMappings: [] }, state.appdataSources || {});
     var wasQuarantineManagerVisible = isQuarantineManagerModalVisible();
     var nextSettings = $.extend({}, previousSettings, {
-      enablePermanentDelete: !getSafetyToggleValue(els.$enableDelete, !previousSettings.enablePermanentDelete),
-      enableZfsDatasetDelete: getSafetyToggleValue(els.$enableZfsDelete, previousSettings.enableZfsDatasetDelete)
+      enableZfsDatasetDelete: true
     }, normalizedOverrides);
+    nextSettings.enableZfsDatasetDelete = true;
     var nextDefaultPurgeDays = normalizeDefaultQuarantinePurgeDaysValue(nextSettings.defaultQuarantinePurgeDays);
 
     if (nextDefaultPurgeDays === null) {
@@ -4489,7 +4294,7 @@
     var requestData = {
       action: "saveSafetySettings",
       enablePermanentDelete: nextSettings.enablePermanentDelete ? "1" : "0",
-      enableZfsDatasetDelete: nextSettings.enableZfsDatasetDelete ? "1" : "0",
+      enableZfsDatasetDelete: "1",
       defaultQuarantinePurgeDays: String(Number(nextSettings.defaultQuarantinePurgeDays || 0)),
       manualAppdataSources: ($.isArray(nextSettings.manualAppdataSources) ? nextSettings.manualAppdataSources : []).join("\n"),
       zfsPathMappings: JSON.stringify($.isArray(nextSettings.zfsPathMappings) ? nextSettings.zfsPathMappings : [])
@@ -4524,13 +4329,7 @@
       if (isAppdataSourcesModalVisible()) {
         renderAppdataSourcesModal();
       }
-      if (zfsModalWasVisible && previousSettings.enableZfsDatasetDelete && !state.settings.enableZfsDatasetDelete) {
-        swal(
-          ACP.t(strings, "zfsPathMappingsDisabledTitle", "ZFS mappings closed"),
-          ACP.t(strings, "zfsPathMappingsDisabledMessage", "ZFS dataset delete was turned off, so the ZFS mappings editor has been closed."),
-          "info"
-        );
-      } else if (isZfsPathMappingsModalVisible()) {
+      if (isZfsPathMappingsModalVisible()) {
         renderZfsPathMappingsModal();
       }
       if (wasQuarantineManagerVisible || normalizedOptions.syncQuarantineModal) {

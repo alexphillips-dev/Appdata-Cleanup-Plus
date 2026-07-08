@@ -137,7 +137,7 @@ session_start();
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusConfigDir(), "State root should be created.");
 $defaultSafetySettings = getAppdataCleanupPlusSafetySettings();
 behaviorSmokeAssertSame(0, (int)$defaultSafetySettings["defaultQuarantinePurgeDays"], "Default safety settings should start with no quarantine purge timer.");
-behaviorSmokeAssertSame(false, ! empty($defaultSafetySettings["enableZfsDatasetDelete"]), "Default safety settings should start with ZFS dataset delete disabled.");
+behaviorSmokeAssertSame(true, ! empty($defaultSafetySettings["enableZfsDatasetDelete"]), "Default safety settings should start with ZFS dataset delete enabled.");
 behaviorSmokeAssertSame(array(), $defaultSafetySettings["zfsPathMappings"], "Default safety settings should start without ZFS path mappings.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "enablePermanentDelete" => false,
@@ -158,7 +158,7 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
 )), "Safety settings persistence should succeed.");
 $persistedSafetySettings = getAppdataCleanupPlusSafetySettings();
 behaviorSmokeAssertSame(21, (int)$persistedSafetySettings["defaultQuarantinePurgeDays"], "Safety settings should persist the default quarantine purge days value.");
-behaviorSmokeAssertSame(true, ! empty($persistedSafetySettings["enableZfsDatasetDelete"]), "Safety settings should persist the ZFS dataset delete toggle.");
+behaviorSmokeAssertSame(true, ! empty($persistedSafetySettings["enableZfsDatasetDelete"]), "Safety settings should keep ZFS dataset delete enabled.");
 behaviorSmokeAssertSame(array(
   "/mnt/fcache/test-appdata",
   "/mnt/fcache/second-appdata"
@@ -176,6 +176,7 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "zfsPathMappings" => array(),
   "defaultQuarantinePurgeDays" => 0
 )), "Safety settings reset should succeed.");
+behaviorSmokeAssertSame(true, ! empty(getAppdataCleanupPlusSafetySettings()["enableZfsDatasetDelete"]), "ZFS dataset delete should stay enabled even if old settings post it as disabled.");
 
 $snapshot = writeAppdataCleanupPlusSnapshot(array(
   "alpha" => array(
@@ -851,9 +852,8 @@ behaviorSmokeAssertSame(null, $quarantineRow, "The plugin quarantine root should
 behaviorSmokeAssertSame("template", $templatedRow["sourceKind"], "Template-backed rows should preserve their source kind.");
 behaviorSmokeAssertSame("zfs", $templatedRow["storageKind"], "Mapped template-backed rows should resolve to ZFS dataset storage.");
 behaviorSmokeAssertSame("docker_vm_nvme/" . $appdataShareName . "/templated-orphan", $templatedRow["datasetName"], "Mapped template-backed rows should expose the resolved ZFS dataset name.");
-behaviorSmokeAssertSame(true, ! empty($templatedRow["policyLocked"]), "ZFS-backed template rows should stay locked while ZFS dataset delete is disabled.");
-behaviorSmokeAssertSame(false, ! empty($templatedRow["canDelete"]), "ZFS-backed template rows should not be actionable until ZFS dataset delete is enabled.");
-behaviorSmokeAssertContains("ZFS dataset delete is disabled", $templatedRow["policyReason"], "ZFS-backed template row locks should explain the required option.");
+behaviorSmokeAssertSame(false, ! empty($templatedRow["policyLocked"]), "ZFS-backed template rows should not be policy-locked by a ZFS option.");
+behaviorSmokeAssertSame(true, ! empty($templatedRow["canDelete"]), "ZFS-backed template rows should be actionable when ZFS datasets are enabled.");
 behaviorSmokeAssertSame("docker_vm_nvme/" . $appdataShareName . "/Sonarr", $zfsCaseRow["datasetName"], "ZFS dataset resolution should preserve case-sensitive dataset names.");
 behaviorSmokeAssertSame("filesystem", $filesystemRow["sourceKind"], "Filesystem-only rows should be marked as discovery candidates.");
 behaviorSmokeAssertSame("filesystem", $staleNestedEmptyParentRow["sourceKind"], "Empty stale parent remnants should be surfaced as discovery candidates.");
@@ -929,15 +929,15 @@ $manualSourceActionResolution = resolveCandidateForAction(array(
   "realPath" => (string)@realpath($manualCustomOrphanPath)
 ), getAppdataCleanupPlusSafetySettings(), "quarantine");
 behaviorSmokeAssertSame(true, ! empty($manualSourceActionResolution["ok"]), "Paths inside manual appdata sources should stay actionable.");
-$zfsDeleteDisabledResolution = resolveCandidateForAction(array(
+$zfsPermanentDeleteDisabledResolution = resolveCandidateForAction(array(
   "path" => $templatedOrphanPath,
   "displayPath" => $templatedOrphanPath,
   "realPath" => (string)@realpath($templatedOrphanPath),
   "storageKind" => "zfs",
   "datasetName" => "docker_vm_nvme/" . $appdataShareName . "/templated-orphan"
 ), getAppdataCleanupPlusSafetySettings(), "delete");
-behaviorSmokeAssertSame(false, ! empty($zfsDeleteDisabledResolution["ok"]), "ZFS-backed rows should stay blocked while ZFS dataset delete is disabled.");
-behaviorSmokeAssertContains("Permanent delete mode is disabled", $zfsDeleteDisabledResolution["message"], "Delete actions should still respect the global permanent delete toggle before ZFS dataset destroy can run.");
+behaviorSmokeAssertSame(false, ! empty($zfsPermanentDeleteDisabledResolution["ok"]), "ZFS-backed delete should stay blocked while permanent delete mode is disabled.");
+behaviorSmokeAssertContains("Permanent delete mode is disabled", $zfsPermanentDeleteDisabledResolution["message"], "Delete actions should still respect the global permanent delete toggle before ZFS dataset destroy can run.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "enablePermanentDelete" => false,
   "enableZfsDatasetDelete" => true,
@@ -952,7 +952,7 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
     )
   ),
   "defaultQuarantinePurgeDays" => 0
-)), "ZFS dataset delete should be enabled before action-time checks.");
+)), "Permanent delete should stay disabled before action-time checks.");
 $zfsQuarantineBlockedResolution = resolveCandidateForAction(array(
   "path" => $templatedOrphanPath,
   "displayPath" => $templatedOrphanPath,
@@ -976,7 +976,7 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
     )
   ),
   "defaultQuarantinePurgeDays" => 0
-)), "Permanent delete and ZFS dataset delete should be enabled before the ZFS delete workflow.");
+)), "Permanent delete should be enabled before the ZFS delete workflow.");
 $zfsDeleteReadyResolution = resolveCandidateForAction(array(
   "path" => $templatedOrphanPath,
   "displayPath" => $templatedOrphanPath,
@@ -984,7 +984,7 @@ $zfsDeleteReadyResolution = resolveCandidateForAction(array(
   "storageKind" => "zfs",
   "datasetName" => "docker_vm_nvme/" . $appdataShareName . "/templated-orphan"
 ), getAppdataCleanupPlusSafetySettings(), "delete");
-behaviorSmokeAssertSame(true, ! empty($zfsDeleteReadyResolution["ok"]), "ZFS-backed rows should become actionable in permanent delete mode once ZFS dataset delete is enabled.");
+behaviorSmokeAssertSame(true, ! empty($zfsDeleteReadyResolution["ok"]), "ZFS-backed rows should become actionable in permanent delete mode.");
 $zfsPreviewExecution = executeCandidateOperation(array(array(
   "id" => "templated-zfs",
   "name" => "templated-orphan",

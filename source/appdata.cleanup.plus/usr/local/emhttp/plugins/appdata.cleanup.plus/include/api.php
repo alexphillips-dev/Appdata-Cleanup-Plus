@@ -954,7 +954,7 @@ function handleSaveSafetySettings() {
 
   $settings = array(
     "enablePermanentDelete" => getPostedBoolean("enablePermanentDelete"),
-    "enableZfsDatasetDelete" => getPostedBoolean("enableZfsDatasetDelete"),
+    "enableZfsDatasetDelete" => true,
     "defaultQuarantinePurgeDays" => isset($_POST["defaultQuarantinePurgeDays"])
       ? (int)getPostedString("defaultQuarantinePurgeDays")
       : (int)(isset($currentSettings["defaultQuarantinePurgeDays"]) ? $currentSettings["defaultQuarantinePurgeDays"] : 0),

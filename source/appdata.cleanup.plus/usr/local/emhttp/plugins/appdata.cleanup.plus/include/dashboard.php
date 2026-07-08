@@ -1095,13 +1095,6 @@ function applySafetyPolicyToRow($row, $settings) {
     return $row;
   }
 
-  if ( isset($row["storageKind"]) && $row["storageKind"] === "zfs" && empty($settings["enableZfsDatasetDelete"]) ) {
-    $row["policyLocked"] = true;
-    $row["policyReason"] = "ZFS dataset delete is disabled in Safety settings.";
-    $row["canDelete"] = false;
-    return $row;
-  }
-
   return $row;
 }
 

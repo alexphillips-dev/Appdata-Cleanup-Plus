@@ -1420,7 +1420,7 @@ function getDefaultAppdataCleanupPlusQuarantineRoot() {
 function getDefaultAppdataCleanupPlusSafetySettings() {
   return array(
     "enablePermanentDelete" => true,
-    "enableZfsDatasetDelete" => false,
+    "enableZfsDatasetDelete" => true,
     "quarantineRoot" => getDefaultAppdataCleanupPlusQuarantineRoot(),
     "defaultQuarantinePurgeDays" => 0,
     "manualAppdataSources" => array(),
@@ -1442,7 +1442,7 @@ function normalizeAppdataCleanupPlusSafetySettings($settings) {
 
   $normalized = array(
     "enablePermanentDelete" => array_key_exists("enablePermanentDelete", $settings) ? ! empty($settings["enablePermanentDelete"]) : $defaults["enablePermanentDelete"],
-    "enableZfsDatasetDelete" => ! empty($settings["enableZfsDatasetDelete"]),
+    "enableZfsDatasetDelete" => true,
     "quarantineRoot" => isset($settings["quarantineRoot"]) ? trim((string)$settings["quarantineRoot"]) : $defaults["quarantineRoot"],
     "defaultQuarantinePurgeDays" => $defaultQuarantinePurgeDays,
     "manualAppdataSources" => appdataCleanupPlusNormalizeManualAppdataSources(isset($settings["manualAppdataSources"]) ? $settings["manualAppdataSources"] : $defaults["manualAppdataSources"]),

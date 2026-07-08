@@ -1706,16 +1706,6 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
   }
 
   if ( $storageMeta["kind"] === "zfs" ) {
-    if ( empty($settings["enableZfsDatasetDelete"]) ) {
-      return array(
-        "ok" => false,
-        "path" => $candidatePath,
-        "displayPath" => $displayPath,
-        "status" => "blocked",
-        "message" => "ZFS dataset delete is disabled in Safety settings."
-      );
-    }
-
     if ( $baseOperation !== "delete" ) {
       return array(
         "ok" => false,

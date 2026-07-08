@@ -439,7 +439,7 @@
     }
 
     if (ACP.getRowBlockType(row) === "options") {
-      return ACP.t(strings, "rowUnlockabilitySettings", "Not unlockable per scan. Change Cleanup Options if you intend to allow this ZFS action.");
+      return ACP.t(strings, "rowUnlockabilitySettings", "Not unlockable per scan. Change Safe Mode if this row requires permanent delete.");
     }
 
     return row.canDelete
@@ -461,7 +461,7 @@
     if (
       row.storageKind === "zfs" &&
       row.policyLocked &&
-      (/zfs dataset delete is disabled/i.test(policyReason) || /permanent delete/i.test(policyReason))
+      /permanent delete/i.test(policyReason)
     ) {
       return "options";
     }
@@ -493,7 +493,7 @@
       state: isProtected ? "protected" : "ready",
       title: isProtected
         ? (blockType === "options"
-          ? ACP.t(strings, "rowDetailsOptionsBlockedExplanationTitle", "Why this row is blocked by Cleanup Options")
+          ? ACP.t(strings, "rowDetailsOptionsBlockedExplanationTitle", "Why this row needs permanent delete mode")
           : ACP.t(strings, "rowDetailsProtectedExplanationTitle", "Why this row is blocked for safety"))
         : ACP.t(strings, "rowDetailsExplanationTitle", "Current explanation"),
       why: why,
@@ -514,10 +514,6 @@
     }
 
     if (row.storageKind === "zfs" && row.policyLocked) {
-      if (!row.enableZfsDatasetDelete) {
-        return ACP.t(strings, "rowDetailsOutcomeZfsDisabled", "Blocked until ZFS dataset delete is enabled");
-      }
-
       if (!row.enablePermanentDelete) {
         return ACP.t(strings, "rowDetailsOutcomePermanentDeleteRequired", "Blocked until permanent delete mode is enabled");
       }
@@ -543,12 +539,8 @@
       return ACP.t(strings, "rowDetailsNextStepHardLocked", "No action is available here. The path resolves to a managed or unsafe target.");
     }
 
-    if (row.storageKind === "zfs" && !row.enableZfsDatasetDelete) {
-      return ACP.t(strings, "rowDetailsNextStepEnableZfs", "Open Cleanup Options and enable ZFS dataset delete, then review the dataset details.");
-    }
-
     if (row.storageKind === "zfs" && !row.enablePermanentDelete) {
-      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Open Cleanup Options and enable permanent delete. ZFS-backed rows cannot be quarantined.");
+      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Disable Safe Mode to use permanent delete. ZFS-backed rows cannot be quarantined.");
     }
 
     if (row.zfsMappingMatched && row.storageKind !== "zfs") {
