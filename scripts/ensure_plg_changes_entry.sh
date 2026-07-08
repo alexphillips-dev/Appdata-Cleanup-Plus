@@ -10,7 +10,7 @@ if [[ -z "${VERSION}" ]]; then
     exit 1
 fi
 
-if grep -q "^###${VERSION}$" "${PLG_FILE}"; then
+if awk -v marker="###${VERSION}" '{ sub(/\r$/, ""); if ($0 == marker) found = 1 } END { exit found ? 0 : 1 }' "${PLG_FILE}"; then
     exit 0
 fi
 
@@ -18,7 +18,7 @@ tmp_file="$(mktemp)"
 awk -v version="${VERSION}" '
     {
         print
-        if ($0 == "<CHANGES>") {
+        if ($0 ~ /^<CHANGES>\r?$/) {
             print "###" version
             print "- Maintenance: Refresh package metadata and build artifacts"
             print ""
