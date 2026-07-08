@@ -644,6 +644,42 @@
       showPendingOperationResults();
     });
 
+    $(document).on("click.acpRowDetails", ".sweet-alert [data-action='row-detail-select']", function(event) {
+      var rowId = String($(this).data("row-id") || "");
+      var row = findRowById(rowId);
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!row || !isRowSelectable(row)) {
+        return;
+      }
+
+      state.selected[rowId] = true;
+      renderResults();
+      renderSummaryCards();
+      updateActionBar();
+      renderOpenRowDetailsModal();
+    });
+
+    $(document).on("click.acpRowDetails", ".sweet-alert [data-action='row-detail-ignore'], .sweet-alert [data-action='row-detail-restore']", function(event) {
+      var rowId = String($(this).data("row-id") || "");
+      var action = $(this).data("action") === "row-detail-restore" ? "unignore" : "ignore";
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!rowId || state.busy) {
+        return;
+      }
+
+      swal.close();
+      state.rowDetails.activeRowId = "";
+      state.rowDetails.requestToken = "";
+      ACP.releaseModalScrollLock(false);
+      postRowAction(action, rowId);
+    });
+
     $(document).on("click.acpSources", ".sweet-alert [data-action='add-current-appdata-source']", function(event) {
       event.preventDefault();
       event.stopPropagation();
@@ -1355,7 +1391,7 @@
       },
       {
         title: ACP.t(strings, "helpActionsTitle", "Actions"),
-        body: ACP.t(strings, "helpActionsBody", "Details explains the row evidence. Select ready chooses rows that are currently actionable. Ignore hides a row from normal results. Dry run previews what would happen. Quarantine selected moves folders into the quarantine root. Permanent delete removes folders immediately after typed confirmation.")
+        body: ACP.t(strings, "helpActionsBody", "Details shows a short explanation, what cleanup will do, and optional technical information. Select ready chooses rows that are currently actionable. Ignore hides a row from normal results. Dry run previews what would happen. Quarantine selected moves folders into the quarantine root. Permanent delete removes folders immediately after typed confirmation.")
       },
       {
         title: ACP.t(strings, "helpOptionsTitle", "Cleanup Options"),
@@ -1367,7 +1403,7 @@
       },
       {
         title: ACP.t(strings, "helpZfsTitle", "ZFS rows"),
-        body: ACP.t(strings, "helpZfsBody", "Exact ZFS dataset-backed appdata rows cannot be quarantined as normal folders. They require permanent delete mode and ZFS dataset delete, then use dataset destroy. Details shows the dataset name, mountpoint, destroy mode, child datasets, snapshots, and mapping evidence when available.")
+        body: ACP.t(strings, "helpZfsBody", "Exact ZFS dataset-backed appdata rows cannot be quarantined as normal folders. They require permanent delete mode and ZFS dataset delete, then use dataset destroy. Details shows the dataset name, mountpoint, and destroy impact when available.")
       },
       {
         title: ACP.t(strings, "helpSafetyTitle", "Safety rules"),
@@ -1375,7 +1411,7 @@
       },
       {
         title: ACP.t(strings, "helpTroubleshootingTitle", "Common questions"),
-        body: ACP.t(strings, "helpTroubleshootingBody", "If a row is locked, open Details and read Verdict and Action gate. If ZFS cannot be selected, enable the required Cleanup Options. If no rows appear, confirm Appdata sources and rescan. If Unraid does not pull an update, verify the raw dev manifest version and package MD5.")
+        body: ACP.t(strings, "helpTroubleshootingBody", "If a row is locked, open Details and read why cleanup is unavailable. If ZFS cannot be selected, enable the required Cleanup Options. If no rows appear, confirm Appdata sources and rescan. If Unraid does not pull an update, verify the raw dev manifest version and package MD5.")
       },
       {
         title: ACP.t(strings, "helpWorkflowTitle", "Recommended workflow"),
@@ -1573,7 +1609,7 @@
     state.rowDetails.activeRowId = String(row.id || "");
 
     swal({
-      title: ACP.t(strings, "rowDetailsTitle", "Row details"),
+      title: ACP.t(strings, "rowDetailsTitle", "Folder details"),
       text: "",
       type: "info",
       html: true,
