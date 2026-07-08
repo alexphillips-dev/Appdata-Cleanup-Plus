@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.26">
+<!ENTITY version "2026.07.08.27">
 <!ENTITY md5 "aaecc5ba3a5887ee7a1627406f8be152">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.27
+- Repo badges: Add the missing GitHub Actions CI workflow so the README CI badge resolves and reports real validation status.
+- License: Add a standard root LICENSE file and update README license links so GitHub and shields detect MIT correctly.
+
 ###2026.07.08.26
 - Layout: Prevent the dashboard from stretching empty vertical space when the browser is zoomed far out by packing the grid to the top.
 - Loading state: Reduce the reserved results loading height so rescans do not create oversized blank gaps.
