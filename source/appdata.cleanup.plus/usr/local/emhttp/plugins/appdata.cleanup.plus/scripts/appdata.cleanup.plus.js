@@ -247,6 +247,8 @@
     els.$modeStrip = $("#acp-mode-strip");
     els.$resultsContext = $("#acp-results-context-row");
     els.$notices = $("#acp-notices");
+    els.$safeBanner = $("#acp-safe-banner");
+    els.$actionToolbar = $("#acp-action-toolbar");
     els.$results = $("#acp-results");
     els.$selectionSummary = $("#acp-selection-summary");
     els.$selectionDetail = $("#acp-selection-detail");
@@ -407,19 +409,19 @@
       }
     });
 
-    els.$modeStrip.on("click", "[data-action='toggle-quarantine']", function() {
+    els.$app.on("click", "[data-action='toggle-quarantine']", function() {
       if (!state.busy) {
         openQuarantineManagerModal(false);
       }
     });
 
-    els.$modeStrip.on("click", "[data-action='open-appdata-sources']", function() {
+    els.$app.on("click", "[data-action='open-appdata-sources']", function() {
       if (!state.busy) {
         openAppdataSourcesModal();
       }
     });
 
-    els.$modeStrip.on("click", "[data-action='toggle-safe-mode']", function() {
+    els.$app.on("click", "[data-action='toggle-safe-mode']", function() {
       if (!state.busy) {
         saveSafetySettings({
           enablePermanentDelete: !state.settings.enablePermanentDelete
@@ -427,19 +429,19 @@
       }
     });
 
-    els.$modeStrip.on("click", "[data-action='open-zfs-path-mappings']", function() {
+    els.$app.on("click", "[data-action='open-zfs-path-mappings']", function() {
       if (!state.busy) {
         openZfsPathMappingsModal();
       }
     });
 
-    els.$modeStrip.on("click", "[data-action='open-audit-history']", function() {
+    els.$app.on("click", "[data-action='open-audit-history']", function() {
       if (!state.busy) {
         openAuditHistoryModal();
       }
     });
 
-    els.$modeStrip.on("click", "[data-action='open-tools']", function() {
+    els.$app.on("click", "[data-action='open-tools']", function() {
       if (!state.busy) {
         openToolsModal();
       }
@@ -2607,13 +2609,7 @@
     }
 
     if (reviewCount > 0) {
-      if (!state.settings.allowOutsideShareCleanup) {
-        notices.push({
-          type: "info",
-          title: ACP.t(strings, "noticeOutsideShareDisabledTitle", "Review items need confirmation"),
-          message: ACP.t(strings, "noticeOutsideShareDisabledMessage", "Review paths stay visible and start locked. Unlock them for this scan after checking details.")
-        });
-      } else {
+      if (state.settings.allowOutsideShareCleanup) {
         notices.push({
           type: "warning",
           title: ACP.t(strings, "noticeOutsideShareEnabledTitle", "Review bypass is enabled"),
@@ -4499,10 +4495,11 @@
     var selectable = isRowSelectable(row);
     var rowClass = "acp-row";
     var rowActionHtml = buildRowActionHtml(row);
-    var rowNotesHtml = buildRowNotesHtml(row);
     var badgeHtml = $.map(getRowBadgeDescriptors(row), function(badge) {
       return buildBadgeHtml(badge);
     }).join("");
+    var sourceText = row.sourceDisplay || row.sourceSummary || row.name || "";
+    var targetText = row.targetSummary || "";
 
     if (isSelected) {
       rowClass += " is-selected";
@@ -4527,16 +4524,18 @@
               '<div class="acp-row-title-line">' +
                 '<h3 class="acp-row-title">' + ACP.escapeHtml(row.name || row.displayPath || "") + "</h3>" +
               "</div>" +
-              '<div class="acp-row-meta">' + buildRowMetaHtml(row) + "</div>" +
-              (rowNotesHtml ? '<div class="acp-row-notes">' + rowNotesHtml + "</div>" : "") +
-            "</div>" +
-            '<div class="acp-row-side">' +
-              '<div class="acp-row-side-head">' +
-                '<div class="acp-row-badges">' +
-                  badgeHtml +
-                "</div>" +
-                '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
+              '<div class="acp-row-meta">' +
+                '<span class="acp-row-meta-item">' + ACP.escapeHtml(sourceText) + "</span>" +
+                (targetText ? '<span class="acp-row-meta-separator">•</span><span class="acp-row-meta-item">' + ACP.escapeHtml(targetText) + "</span>" : "") +
               "</div>" +
+            "</div>" +
+            '<div class="acp-row-used">' +
+              '<span>' + ACP.escapeHtml(row.lastModifiedLabel || "Unknown") + "</span>" +
+              '<small>' + ACP.escapeHtml(ACP.t(strings, "updatedLabel", "Updated")) + "</small>" +
+            "</div>" +
+            '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
+            '<div class="acp-row-badges">' + badgeHtml + "</div>" +
+            '<div class="acp-row-side">' +
               rowActionHtml +
             "</div>" +
           "</div>" +
@@ -4598,6 +4597,9 @@
             "</div>" +
             '<div class="acp-results-section-meta">' + buildSectionMetaHtml(section.rows || []) + "</div>" +
           "</header>" +
+          '<div class="acp-results-table-head">' +
+            '<span></span><span>' + ACP.escapeHtml(ACP.t(strings, "nameLabel", "Name")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "lastUsedLabel", "Last used")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "pathLabel", "Path")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sourceLabel", "Source")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "actionsLabel", "Actions")) + '</span>' +
+          "</div>" +
           '<div class="acp-results-section-body">' + rowHtml.join("") + "</div>" +
         "</section>"
       );
@@ -4752,6 +4754,7 @@
       return row.risk === "review";
     }).length;
     var summaryText = selectedRows.length + " " + (selectedRows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
+    var totalText = String(Number(state.summary.total || 0)) + " " + ACP.t(strings, "itemsTotalLabel", "items total");
     var detailText = ACP.t(strings, "selectionHintIdle", "Select ready rows to delete them. Review rows can be unlocked for this scan after checking details. Protected paths stay blocked.");
 
     if (!state.scanToken && Number(state.summary.total || 0) > 0) {
@@ -4769,7 +4772,10 @@
     }
 
     els.$selectionSummary.text(summaryText);
-    els.$selectionDetail.text(detailText);
+    els.$selectionDetail.text(totalText);
+    if (els.$actionToolbar && els.$actionToolbar.length) {
+      els.$actionToolbar.find(".acp-action-toolbar-copy span").text(selectedRows.length ? summaryText : ACP.t(strings, "noItemsSelectedLabel", "No items selected"));
+    }
     els.$primaryAction.text(getPrimaryActionLabel());
     els.$primaryAction.prop("disabled", state.busy || !state.scanToken || selectedActionRows.length === 0);
     els.$dryRun.prop("disabled", state.busy || !state.scanToken || selectedActionRows.length === 0);

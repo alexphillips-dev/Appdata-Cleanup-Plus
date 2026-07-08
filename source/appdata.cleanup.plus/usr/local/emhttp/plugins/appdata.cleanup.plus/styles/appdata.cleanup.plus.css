@@ -2884,3 +2884,224 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
     display: none;
   }
 }
+
+/* Mockup precision pass */
+#acp-app .acp-dashboard-top {
+  grid-template-columns: minmax(0, 5fr) minmax(220px, 0.86fr);
+}
+
+#acp-app .acp-summary-grid {
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+}
+
+#acp-app .acp-mode-card {
+  grid-template-columns: 36px minmax(0, 1fr);
+  min-height: 118px;
+}
+
+#acp-app .acp-mode-card > .acp-button {
+  display: none;
+}
+
+#acp-app .acp-mode-card-title {
+  align-items: start;
+}
+
+#acp-app .acp-mode-card-title span {
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+#acp-app .acp-mode-link {
+  background: transparent;
+  border: 0;
+  color: #fb923c;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 4px 0 0;
+  text-align: left;
+}
+
+#acp-app .acp-toolbar-inline {
+  grid-template-columns: minmax(360px, 1fr) minmax(160px, 230px) minmax(180px, 260px) minmax(180px, 280px) 134px;
+}
+
+#acp-app .acp-more-filters {
+  align-self: end;
+}
+
+#acp-app .acp-safe-banner,
+#acp-app .acp-action-toolbar {
+  align-items: center;
+  background: linear-gradient(90deg, rgba(14, 56, 94, 0.72), rgba(14, 56, 94, 0.42));
+  border: 1px solid rgba(59, 130, 246, 0.38);
+  border-radius: 8px;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 12px 18px;
+}
+
+#acp-app .acp-safe-banner-copy {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  min-width: 0;
+}
+
+#acp-app .acp-safe-banner-icon {
+  align-items: center;
+  background: #60a5fa;
+  border-radius: 50%;
+  color: #06223d;
+  display: flex;
+  flex: 0 0 auto;
+  font-weight: 900;
+  height: 22px;
+  justify-content: center;
+  width: 22px;
+}
+
+#acp-app .acp-safe-banner-copy div {
+  display: grid;
+  gap: 2px;
+}
+
+#acp-app .acp-safe-banner-copy strong {
+  color: #7cc4ff;
+  font-size: 16px;
+}
+
+#acp-app .acp-safe-banner-copy span {
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+#acp-app .acp-safe-banner-location {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+#acp-app .acp-safe-banner-location span {
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#acp-app .acp-safe-banner-location code {
+  background: rgba(8, 12, 18, 0.76);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 6px;
+  color: #f8fafc;
+  font-size: 12px;
+  padding: 8px 14px;
+  white-space: nowrap;
+}
+
+#acp-app .acp-action-toolbar {
+  background: rgba(23, 29, 36, 0.96);
+  border-color: rgba(148, 163, 184, 0.16);
+  padding: 10px 18px;
+}
+
+#acp-app .acp-action-toolbar-copy {
+  display: grid;
+  gap: 2px;
+}
+
+#acp-app .acp-action-toolbar-copy strong {
+  color: #f8fafc;
+  font-size: 14px;
+}
+
+#acp-app .acp-action-toolbar-copy span {
+  color: #aeb9c7;
+  font-size: 12px;
+}
+
+#acp-app .acp-action-toolbar-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+#acp-app .acp-results-table-head {
+  display: grid;
+  grid-template-columns: 28px minmax(220px, 1.45fr) minmax(110px, 0.72fr) minmax(260px, 1.45fr) minmax(150px, 0.9fr) minmax(220px, auto);
+}
+
+#acp-app .acp-row-primary {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.45fr) minmax(110px, 0.72fr) minmax(260px, 1.45fr) minmax(150px, 0.9fr) minmax(220px, auto);
+}
+
+#acp-app .acp-results-table-head {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.018);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  color: #aeb9c7;
+  font-size: 12px;
+  padding: 6px 18px;
+}
+
+#acp-app .acp-row {
+  grid-template-columns: 28px minmax(0, 1fr);
+  padding: 8px 18px;
+}
+
+#acp-app .acp-row-primary {
+  align-items: center;
+  gap: 0;
+}
+
+#acp-app .acp-row-used {
+  color: #d6dde7;
+  display: grid;
+  font-size: 13px;
+  gap: 1px;
+}
+
+#acp-app .acp-row-used small {
+  color: #9aa6b5;
+  font-size: 11px;
+}
+
+#acp-app .acp-row-side {
+  display: block;
+}
+
+#acp-app .acp-row-actions {
+  justify-content: flex-end;
+}
+
+#acp-app .acp-row-notes {
+  display: none;
+}
+
+#acp-app .acp-bottom-bar {
+  min-height: 58px;
+}
+
+@media (max-width: 1320px) {
+  #acp-app .acp-dashboard-top,
+  #acp-app .acp-toolbar-inline,
+  #acp-app .acp-results-table-head,
+  #acp-app .acp-row-primary {
+    grid-template-columns: 1fr;
+  }
+
+  #acp-app .acp-summary-grid {
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
+  }
+
+  #acp-app .acp-safe-banner,
+  #acp-app .acp-action-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

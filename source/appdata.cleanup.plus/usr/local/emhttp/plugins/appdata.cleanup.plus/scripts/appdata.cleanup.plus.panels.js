@@ -74,9 +74,7 @@
     var els = context.els || {};
     var strings = context.strings || {};
     var settings = state.settings || {};
-    var summary = (state.quarantine && state.quarantine.summary) || { count: 0, sizeLabel: "0 B" };
     var isDeleteMode = !!(state.settings && state.settings.enablePermanentDelete);
-    var showZfsPathMappingsButton = !!settings.enableZfsDatasetDelete;
     var leftTitle = isDeleteMode
       ? ACP.t(strings, "noticeDeleteModeTitle", "Permanent delete mode is enabled")
       : ACP.t(strings, "noticeSafeModeTitle", "Safe mode is on");
@@ -87,38 +85,33 @@
     var safeModeActionLabel = isDeleteMode
       ? ACP.t(strings, "enableSafeModeLabel", "Enable Safe Mode")
       : ACP.t(strings, "disableSafeModeLabel", "Disable Safe Mode");
-    var quarantineButtonLabel = state.quarantine && state.quarantine.loading
-      ? ACP.t(strings, "quarantineLoadingLabel", "Loading quarantine")
-      : ACP.t(strings, "quarantineManagerOpenLabel", "Show quarantine");
-    var appdataSourcesButtonLabel = ACP.t(strings, "appdataSourcesOpenLabel", "Appdata sources");
-    var zfsPathMappingsButtonLabel = ACP.t(strings, "zfsPathMappingsOpenLabel", "ZFS mappings");
-    var auditButtonLabel = ACP.t(strings, "auditHistoryOpenLabel", "Show history");
-    var toolsButtonLabel = ACP.t(strings, "toolsOpenLabel", "Tools");
+    var quarantineRoot = String(settings.quarantineRoot || "");
     var html = [
-      '<div class="acp-mode-strip-grid">',
       '<article class="acp-mode-card ' + (isDeleteMode ? "is-delete-mode" : "is-safe-mode") + '">',
       '<div class="acp-mode-icon" aria-hidden="true">' + (isDeleteMode ? "!" : "✓") + "</div>",
       '<div class="acp-mode-card-copy">',
-      '<div class="acp-mode-card-title"><span>' + ACP.escapeHtml(leftTitle) + '</span><strong>' + ACP.escapeHtml(safeModeLabel) + "</strong></div>",
+      '<div class="acp-mode-card-title"><span>' + ACP.escapeHtml(ACP.t(strings, "safeModeCardTitle", "Safe Mode")) + '</span><strong>' + ACP.escapeHtml(safeModeLabel) + "</strong></div>",
       '<div class="acp-mode-card-message">' + ACP.escapeHtml(leftMessage) + "</div>",
+      '<button type="button" class="acp-mode-link" data-action="toggle-safe-mode">' + ACP.escapeHtml(safeModeActionLabel) + "</button>",
       "</div>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-safe-mode">' + ACP.escapeHtml(safeModeActionLabel) + "</button>",
-      "</article>",
-      '<article class="acp-mode-card is-manager-card">',
-      '<div class="acp-mode-card-actions">',
-      '<button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources">' + ACP.escapeHtml(appdataSourcesButtonLabel) + "</button>",
-      showZfsPathMappingsButton
-        ? ('<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings">' + ACP.escapeHtml(zfsPathMappingsButtonLabel) + "</button>")
-        : "",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine">' + ACP.escapeHtml(quarantineButtonLabel) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history">' + ACP.escapeHtml(auditButtonLabel) + "</button>",
-      '<button type="button" class="acp-button acp-button-secondary" data-action="open-tools">' + ACP.escapeHtml(toolsButtonLabel) + "</button>",
-      "</div>",
-      "</article>",
-      "</div>"
+      "</article>"
     ];
 
     els.$modeStrip.html(html.join(""));
+
+    if (els.$safeBanner && els.$safeBanner.length) {
+      els.$safeBanner.html(
+        '<div class="acp-safe-banner-copy">' +
+          '<span class="acp-safe-banner-icon" aria-hidden="true">i</span>' +
+          '<div><strong>' + ACP.escapeHtml(leftTitle) + '</strong><span>' + ACP.escapeHtml(leftMessage) + '</span></div>' +
+        '</div>' +
+        '<div class="acp-safe-banner-location">' +
+          '<span>' + ACP.escapeHtml(ACP.t(strings, "quarantineLocationLabel", "Quarantine location:")) + '</span>' +
+          '<code>' + ACP.escapeHtml(quarantineRoot || ACP.t(strings, "quarantineLocationUnset", "Default quarantine root")) + '</code>' +
+          '<button type="button" class="acp-button acp-button-secondary" data-action="toggle-safe-mode">' + ACP.escapeHtml(safeModeActionLabel) + '</button>' +
+        '</div>'
+      );
+    }
   };
 
   ACP.buildQuarantineManagerModalHtml = function(context) {

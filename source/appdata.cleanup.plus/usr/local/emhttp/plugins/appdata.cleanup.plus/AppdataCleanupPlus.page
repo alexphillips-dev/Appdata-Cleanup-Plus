@@ -626,6 +626,15 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
           <option value="name"><?php echo _("Name"); ?></option>
         </select>
       </label>
+
+      <label class="acp-field acp-compact-field acp-source-field">
+        <span class="acp-field-label"><?php echo _("Source"); ?></span>
+        <select id="acp-source-filter" class="acp-select">
+          <option value="all"><?php echo _("All Sources"); ?></option>
+        </select>
+      </label>
+
+      <button type="button" class="acp-button acp-button-secondary acp-more-filters" disabled><?php echo _("More Filters"); ?></button>
     </div>
     <div class="acp-toolbar-footer">
       <label class="acp-toggle">
@@ -633,6 +642,21 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
         <span><?php echo _("Show ignored items"); ?></span>
       </label>
       <section class="acp-results-meta" id="acp-results-meta" aria-live="polite"></section>
+    </div>
+  </section>
+
+  <section class="acp-safe-banner" id="acp-safe-banner" aria-live="polite"></section>
+
+  <section class="acp-action-toolbar" id="acp-action-toolbar">
+    <div class="acp-action-toolbar-copy">
+      <strong><?php echo _("Action bar"); ?></strong>
+      <span><?php echo _("No items selected"); ?></span>
+    </div>
+    <div class="acp-action-toolbar-actions">
+      <button type="button" class="acp-button acp-button-primary" data-action="open-appdata-sources"><?php echo _("Appdata Sources"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine"><?php echo _("Show Quarantine"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history"><?php echo _("History"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary" data-action="open-tools"><?php echo _("Tools"); ?></button>
     </div>
   </section>
 

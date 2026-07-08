@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.07.02">
-<!ENTITY md5 "56c99571afa404eb62af7a50b6e7dc39">
+<!ENTITY version "2026.07.07.03">
+<!ENTITY md5 "afddf5de67edba9d9cc3ad85c2d32971">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.07.03
+- UI: Move Safe Mode into the sixth top summary card and split Appdata sources, quarantine, history, and tools into a separate action bar
+- UI: Add the Source and More Filters controls, blue Safe Mode banner, grouped table headers, and compact table-style result rows to match the dashboard mockup more closely
+- UX: Remove the default review-confirmation notice from the main dashboard so review state is shown only in the summary card and Needs Review group
+
 ###2026.07.07.02
 - UI: Redesign the dashboard around a larger plugin header, visual summary cards, compact filters, grouped result panels, and a sticky batch-action bar
 - UX: Remove the redundant review-warning and visible-count panels, moving counts into summary cards, section badges, and the filter footer
