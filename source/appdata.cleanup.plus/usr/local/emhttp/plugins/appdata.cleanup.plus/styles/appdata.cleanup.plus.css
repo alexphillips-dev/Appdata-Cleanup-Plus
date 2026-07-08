@@ -1371,6 +1371,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   max-width: 620px !important;
 }
 
+.sweet-alert.acp-delete-results-modal {
+  max-width: 720px !important;
+}
+
 .sweet-alert.acp-delete-modal h2 {
   color: var(--acp-heading);
   font-size: 18px;
@@ -1803,6 +1807,59 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .acp-delete-result-list .acp-modal-result-message {
   margin-top: 0;
+}
+
+.acp-delete-results-simple .acp-delete-simple-intro {
+  align-items: start;
+  grid-template-columns: 38px minmax(0, 1fr);
+}
+
+.acp-delete-results-simple .acp-delete-simple-pills {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  padding-top: 2px;
+}
+
+.acp-delete-results-simple .acp-modal-stat {
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1;
+  min-height: 20px;
+  padding: 4px 8px;
+}
+
+.acp-delete-results-simple .acp-delete-simple-list {
+  max-height: min(42vh, 360px);
+}
+
+.acp-delete-results-simple .acp-delete-simple-list-item {
+  gap: 8px;
+  padding: 10px;
+}
+
+.acp-delete-results-simple .acp-delete-result-head {
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.acp-delete-results-simple .acp-delete-result-head .acp-modal-stat {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+}
+
+.acp-delete-results-simple .acp-delete-result-head .acp-modal-path {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.acp-delete-results-simple .acp-modal-result-message {
+  background: transparent;
+  border: 0;
+  color: var(--acp-muted-strong);
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 0;
 }
 
 .sweet-alert.acp-zfs-path-mappings-modal .acp-modal-host {

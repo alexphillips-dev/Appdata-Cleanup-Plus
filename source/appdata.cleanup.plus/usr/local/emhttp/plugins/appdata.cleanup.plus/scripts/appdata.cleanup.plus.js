@@ -4983,7 +4983,7 @@
     var leadMessage = context.preview
       ? ACP.t(strings, "operationPreviewLead", "Review what would happen before running the action.")
       : (warningCount > 0
-        ? ACP.t(strings, "operationResultsWarningLead", "The action finished, but some rows were skipped, blocked, missing, or failed. Review the list before leaving this screen.")
+        ? ACP.t(strings, "operationResultsWarningLead", "Some folders could not be cleaned. Review the items below and fix anything that is still in use.")
         : ACP.t(strings, "operationResultsSuccessLead", "The action completed successfully. Review the final status for each row below."));
     var icon = context.preview ? "P" : (warningCount > 0 ? "!" : "✓");
     var title = context.preview
@@ -4999,26 +4999,39 @@
       "</div>"
     ];
 
-    if (context.preview) {
-      stats.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(ACP.t(strings, "previewReadyLabel", "Ready")) + ": " + ACP.escapeHtml(String(summary.ready || 0)) + "</span>");
-    } else if (context.baseOperation === "delete") {
-      stats.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(ACP.t(strings, "resultDeletedLabel", "Deleted")) + ": " + ACP.escapeHtml(String(summary.deleted || 0)) + "</span>");
-    } else {
-      stats.push('<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "resultQuarantinedLabel", "Quarantined")) + ": " + ACP.escapeHtml(String(summary.quarantined || 0)) + "</span>");
+    function pushStat(count, label, tone, allowZero) {
+      var numericCount = Number(count || 0);
+
+      if (numericCount <= 0 && !allowZero) {
+        return;
+      }
+
+      stats.push('<span class="acp-modal-stat ' + ACP.escapeHtml(tone || "") + '">' + ACP.escapeHtml(label) + ": " + ACP.escapeHtml(String(numericCount)) + "</span>");
     }
 
-    if (!context.preview) {
+    if (context.preview) {
+      pushStat(summary.ready, ACP.t(strings, "previewReadyLabel", "Ready"), "is-selected", warningCount <= 0);
+    } else if (context.baseOperation === "delete") {
+      pushStat(summary.deleted, ACP.t(strings, "resultDeletedLabel", "Deleted"), "is-selected", warningCount <= 0);
+    } else {
+      pushStat(summary.quarantined, ACP.t(strings, "resultQuarantinedLabel", "Quarantined"), "is-safe", warningCount <= 0);
+    }
+
+    if (!context.preview && successfulCount > 0) {
       stats.push('<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "operationResultsCompletedLabel", "Completed")) + ": " + ACP.escapeHtml(String(successfulCount)) + "</span>");
     }
-    stats.push('<span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "resultSkippedLabel", "Skipped")) + ": " + ACP.escapeHtml(String(summary.skipped || 0)) + "</span>");
-    stats.push('<span class="acp-modal-stat is-review">' + ACP.escapeHtml(ACP.t(strings, "resultBlockedLabel", "Blocked")) + ": " + ACP.escapeHtml(String(summary.blocked || 0)) + "</span>");
-    stats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(ACP.t(strings, "resultMissingLabel", "Missing")) + ": " + ACP.escapeHtml(String(summary.missing || 0)) + "</span>");
-    stats.push('<span class="acp-modal-stat">' + ACP.escapeHtml(ACP.t(strings, "resultErrorLabel", "Error")) + ": " + ACP.escapeHtml(String(summary.errors || 0)) + "</span>");
+    pushStat(summary.skipped, ACP.t(strings, "resultSkippedLabel", "Skipped"), "is-review");
+    pushStat(summary.blocked, ACP.t(strings, "resultBlockedLabel", "Blocked"), "is-blocked");
+    pushStat(summary.missing, ACP.t(strings, "resultMissingLabel", "Missing"), "is-review");
+    pushStat(summary.errors, ACP.t(strings, "resultErrorLabel", "Error"), "is-blocked");
+    if (!stats.length) {
+      pushStat(0, ACP.t(strings, "operationResultsCompletedLabel", "Completed"), "is-safe", true);
+    }
 
     html.push('<div class="acp-delete-simple-pills">' + stats.join("") + "</div>");
     html.push("</div>");
     html.push('<section class="acp-delete-simple-card">');
-    html.push('<div class="acp-delete-simple-card-title">' + ACP.escapeHtml(context.listTitle) + "</div>");
+    html.push('<div class="acp-delete-simple-card-title">' + ACP.escapeHtml(warningCount > 0 ? ACP.t(strings, "operationResultNeedsAttentionTitle", "Needs attention") : context.listTitle) + "</div>");
     html.push('<ul class="acp-delete-simple-list acp-delete-result-list">');
 
     $.each(results || [], function(_, result) {
@@ -5309,7 +5322,9 @@
       title: modalTitle,
       text: "",
       type: modalType,
-      html: true
+      html: true,
+      showCancelButton: false,
+      confirmButtonText: ACP.t(strings, "okLabel", "OK")
     });
     ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal", buildOperationResultsHtml(summary, results, context));
     renderAll();
@@ -5368,7 +5383,9 @@
               title: ACP.t(strings, "dryRunResultTitleWarning", "Dry run finished with warnings"),
               text: "",
               type: "warning",
-              html: true
+              html: true,
+              showCancelButton: false,
+              confirmButtonText: ACP.t(strings, "okLabel", "OK")
             });
             ACP.applyDeleteModalClass(
               "acp-delete-modal acp-delete-results-modal",
