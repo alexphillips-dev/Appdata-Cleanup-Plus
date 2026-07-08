@@ -579,7 +579,7 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
       <span><?php echo _("No items selected"); ?></span>
     </div>
     <div class="acp-action-toolbar-actions">
-      <button type="button" class="acp-button acp-button-primary" data-action="open-appdata-sources"><?php echo _("Appdata Sources"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary" data-action="open-appdata-sources"><?php echo _("Appdata Sources"); ?></button>
       <button type="button" class="acp-button acp-button-secondary" data-action="toggle-quarantine"><?php echo _("Show Quarantine"); ?></button>
       <button type="button" class="acp-button acp-button-secondary" data-action="open-audit-history"><?php echo _("History"); ?></button>
       <button type="button" class="acp-button acp-button-secondary" data-action="open-tools"><?php echo _("Tools"); ?></button>

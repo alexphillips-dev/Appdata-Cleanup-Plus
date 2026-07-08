@@ -30,10 +30,10 @@
   --acp-button-text: #f4f6f8;
   --acp-button-hover-bg: rgba(241, 90, 36, 0.12);
   --acp-button-hover-border: rgba(241, 90, 36, 0.58);
-  --acp-button-hover-text: #ffd2bf;
+  --acp-button-hover-text: var(--acp-button-text);
   --acp-button-primary-bg: rgba(241, 90, 36, 0.16);
   --acp-button-primary-border: rgba(241, 90, 36, 0.72);
-  --acp-button-primary-text: #ffd2bf;
+  --acp-button-primary-text: var(--acp-button-text);
   --acp-filter-bg: rgba(255, 255, 255, 0.03);
   --acp-filter-border: rgba(255, 255, 255, 0.08);
   --acp-filter-text: #b9c1cc;
@@ -86,10 +86,10 @@ body[data-acp-host-theme="grey"] #acp-app,
   --acp-locked-text: #ffd2bf;
   --acp-button-hover-bg: rgba(255, 154, 74, 0.12);
   --acp-button-hover-border: rgba(255, 154, 74, 0.52);
-  --acp-button-hover-text: #ffe3cf;
+  --acp-button-hover-text: var(--acp-button-text);
   --acp-button-primary-bg: rgba(255, 154, 74, 0.18);
   --acp-button-primary-border: rgba(255, 154, 74, 0.62);
-  --acp-button-primary-text: #ffe3cf;
+  --acp-button-primary-text: var(--acp-button-text);
   --acp-filter-hover-bg: rgba(255, 154, 74, 0.08);
   --acp-filter-hover-border: rgba(255, 154, 74, 0.3);
   --acp-filter-hover-text: #ffe3cf;
@@ -123,10 +123,10 @@ body[data-acp-host-theme="azure"] #acp-app,
   --acp-input-focus: rgba(0, 120, 212, 0.5);
   --acp-button-hover-bg: rgba(0, 120, 212, 0.12);
   --acp-button-hover-border: rgba(0, 120, 212, 0.58);
-  --acp-button-hover-text: #d7ecff;
+  --acp-button-hover-text: var(--acp-button-text);
   --acp-button-primary-bg: rgba(0, 120, 212, 0.18);
   --acp-button-primary-border: rgba(0, 120, 212, 0.62);
-  --acp-button-primary-text: #d7ecff;
+  --acp-button-primary-text: var(--acp-button-text);
   --acp-filter-hover-bg: rgba(0, 120, 212, 0.08);
   --acp-filter-hover-border: rgba(0, 120, 212, 0.32);
   --acp-filter-hover-text: #d7ecff;
@@ -186,10 +186,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   --acp-button-text: #18212d;
   --acp-button-hover-bg: rgba(226, 91, 35, 0.08);
   --acp-button-hover-border: rgba(226, 91, 35, 0.38);
-  --acp-button-hover-text: #8b3512;
+  --acp-button-hover-text: var(--acp-button-text);
   --acp-button-primary-bg: rgba(226, 91, 35, 0.12);
   --acp-button-primary-border: rgba(226, 91, 35, 0.44);
-  --acp-button-primary-text: #8b3512;
+  --acp-button-primary-text: var(--acp-button-text);
   --acp-filter-bg: rgba(255, 255, 255, 0.9);
   --acp-filter-border: rgba(15, 23, 42, 0.1);
   --acp-filter-text: #556274;
@@ -2887,9 +2887,9 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-button-primary {
-  background: var(--acp-accent);
-  border-color: rgba(251, 146, 60, 0.72);
-  color: #fff7ed;
+  background: var(--acp-button-primary-bg);
+  border-color: var(--acp-button-primary-border);
+  color: var(--acp-button-primary-text);
 }
 
 #acp-app .acp-bottom-bar {
