@@ -3779,7 +3779,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 #acp-app .acp-mode-card-title {
   align-items: center;
   display: block;
-  padding-right: 48px;
+  padding-right: 0;
 }
 
 #acp-app .acp-mode-card-title span {
@@ -3802,6 +3802,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 #acp-app .acp-mode-card.is-safe-mode .acp-mode-card-copy {
   align-self: start;
+  box-sizing: border-box;
+  padding-right: 66px;
 }
 
 #acp-app .acp-summary-label {
