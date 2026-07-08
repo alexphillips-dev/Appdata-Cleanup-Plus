@@ -3733,8 +3733,12 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-mode-card.is-safe-mode {
-  align-items: center;
-  padding-top: 0;
+  align-content: start;
+  align-items: start;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  padding: 16px 18px;
 }
 
 #acp-app .acp-mode-card.is-safe-mode .acp-mode-icon {
@@ -3743,7 +3747,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   border-radius: 0;
   color: inherit;
   height: 34px;
-  margin-top: 2px;
+  margin-top: 0;
   position: relative;
   width: 34px;
   flex: 0 0 34px;
@@ -3803,7 +3807,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 #acp-app .acp-mode-card.is-safe-mode .acp-mode-card-copy {
   align-self: start;
   box-sizing: border-box;
-  padding-right: 66px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 58px;
 }
 
 #acp-app .acp-summary-label {
@@ -3842,7 +3849,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 #acp-app .acp-mode-link {
   line-height: 1.2;
-  margin-top: 8px;
+  margin-top: 9px;
 }
 
 #acp-app .acp-mode-link {
