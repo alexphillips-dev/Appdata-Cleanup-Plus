@@ -211,7 +211,6 @@
     });
     bindEvents();
     renderSummaryCards();
-    renderResultsMeta();
     renderPanels();
     renderLoadingState();
     updateActionBar();
@@ -235,7 +234,6 @@
     els.$selectAll = $("#acp-select-all");
     els.$dryRun = $("#acp-dry-run");
     els.$primaryAction = $("#acp-primary-action");
-    els.$resultsMeta = $("#acp-results-meta");
     els.$modeStrip = $("#acp-mode-strip");
     els.$resultsContext = $("#acp-results-context-row");
     els.$notices = $("#acp-notices");
@@ -251,7 +249,6 @@
     els.$sort.on("change", function() {
       state.sortMode = els.$sort.val();
       renderResults();
-      renderResultsMeta();
     });
 
     els.$rescan.on("click", function() {
@@ -990,7 +987,6 @@
       renderSummaryCards();
       renderPanels();
       renderNotices([]);
-      renderResultsMeta();
       renderStateMessage(
         pluginBusy ? ACP.t(strings, "backendBusyTitle", "Backend busy") : ACP.t(strings, "scanFailedTitle", "Scan failed"),
         pluginBusy ? getPluginBusyMessage(xhr) : ACP.extractErrorMessage(xhr, ACP.t(strings, "scanFailedMessage", "The orphaned appdata scan could not be completed right now.")),
@@ -2627,7 +2623,6 @@
     renderPanels();
     renderNotices(buildLocalNotices());
     renderResults();
-    renderResultsMeta();
     syncBulkSelectionPresetControls();
     updateActionBar();
   }
@@ -2666,7 +2661,6 @@
     var cards = [
       { label: ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, subtitle: ACP.t(strings, "cardTotalSubtitle", "Total orphaned"), tone: "is-detected", icon: "⌕" },
       { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, subtitle: ACP.t(strings, "cardDeletableSubtitle", "Safe to clean"), tone: "is-safe", icon: "✓" },
-      { label: ACP.t(strings, "cardBlocked", "Blocked"), value: state.summary.blocked || 0, subtitle: ACP.t(strings, "cardBlockedSubtitle", "Locked or in use"), tone: "is-blocked", icon: "!" },
       { label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount, subtitle: ACP.t(strings, "cardSelectedSubtitle", "Marked this scan"), tone: "is-selected", icon: "□" }
     ];
     var html = [];
@@ -2710,7 +2704,6 @@
   function renderLoadingState() {
     renderPanels();
     renderNotices([]);
-    renderResultsMeta("");
     renderStateMessage(
       ACP.t(strings, "loadingTitle", "Scanning appdata sources and saved Docker templates"),
       ACP.t(strings, "loadingMessage", "Reviewing orphaned appdata folders and active container mappings."),
@@ -4241,20 +4234,6 @@
     });
 
     els.$results.html(html.join(""));
-  }
-
-  function renderResultsMeta() {
-    var visibleRows = getVisibleRows();
-    var parts = [
-      visibleRows.length + " " + ACP.t(strings, "visibleSummary", "visible"),
-      Number(state.summary.total || 0) + " " + ACP.t(strings, "detectedSummary", "detected")
-    ];
-
-    if (Number(state.summary.ignored || 0) > 0) {
-      parts.push(Number(state.summary.ignored || 0) + " " + ACP.t(strings, "ignoredHiddenSummary", "ignored hidden"));
-    }
-
-    els.$resultsMeta.text(parts.join(" | "));
   }
 
   function renderStateMessage(title, message, action, actionLabel, isLoading) {

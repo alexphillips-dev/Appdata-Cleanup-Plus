@@ -571,9 +571,6 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
         </select>
       </label>
     </div>
-    <div class="acp-toolbar-footer">
-      <section class="acp-results-meta" id="acp-results-meta" aria-live="polite"></section>
-    </div>
   </section>
 
   <section class="acp-action-toolbar" id="acp-action-toolbar">
