@@ -3279,11 +3279,12 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   --acp-muted: #aeb9c7;
   --acp-muted-strong: #c4ccd6;
   --acp-bottom-bg: #171d24;
+  align-content: start;
   background: var(--acp-page);
   border: 1px solid var(--acp-border-faint);
   border-radius: 8px;
   gap: 10px;
-  min-height: calc(100vh - 48px);
+  min-height: 0;
   padding: 18px 20px 100px;
 }
 
@@ -4010,7 +4011,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-results-section-loading {
-  min-height: 280px;
+  min-height: 160px;
 }
 
 #acp-app .acp-row-loading {
