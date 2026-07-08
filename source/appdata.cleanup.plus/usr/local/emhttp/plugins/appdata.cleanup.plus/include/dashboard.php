@@ -835,6 +835,20 @@ function buildAuditHistoryRows($limit=0) {
   return buildAuditHistoryRowsFromEntries(getAppdataCleanupPlusAuditHistory($limit));
 }
 
+function appdataCleanupPlusAuditResultPath($result) {
+  if ( ! is_array($result) ) {
+    return "";
+  }
+
+  foreach ( array("displayPath", "sourcePath", "path", "destination") as $key ) {
+    if ( isset($result[$key]) && trim((string)$result[$key]) !== "" ) {
+      return (string)$result[$key];
+    }
+  }
+
+  return "";
+}
+
 function buildAuditHistoryRowsFromEntries($history) {
   $rows = array();
 
@@ -842,6 +856,27 @@ function buildAuditHistoryRowsFromEntries($history) {
     $timestamp = isset($entry["timestamp"]) ? strtotime((string)$entry["timestamp"]) : 0;
     $summary = normalizeAuditSummary(isset($entry["summary"]) ? $entry["summary"] : array());
     $results = isset($entry["results"]) && is_array($entry["results"]) ? $entry["results"] : array();
+    $completedCount = $summary["quarantined"] + $summary["deleted"] + $summary["restored"] + $summary["purged"];
+    $warningCount = $summary["skipped"] + $summary["conflicts"] + $summary["missing"] + $summary["blocked"];
+    $errorCount = $summary["errors"];
+    $pathsPreview = array();
+
+    foreach ( $results as $result ) {
+      $path = appdataCleanupPlusAuditResultPath($result);
+      if ( $path === "" ) {
+        continue;
+      }
+
+      $pathsPreview[] = array(
+        "path" => $path,
+        "status" => isset($result["status"]) ? (string)$result["status"] : ""
+      );
+
+      if ( count($pathsPreview) >= 3 ) {
+        break;
+      }
+    }
+
     $rows[] = array(
       "id" => isset($entry["timestamp"]) ? sha1((string)$entry["timestamp"] . "|" . $index) : sha1((string)$index),
       "operation" => isset($entry["operation"]) ? (string)$entry["operation"] : "cleanup",
@@ -851,6 +886,12 @@ function buildAuditHistoryRowsFromEntries($history) {
       "relativeLabel" => $timestamp ? formatRelativeAgeLabel($timestamp) : "",
       "requestedCount" => isset($entry["requestedCount"]) ? (int)$entry["requestedCount"] : count($results),
       "summary" => $summary,
+      "completedCount" => $completedCount,
+      "warningCount" => $warningCount,
+      "errorCount" => $errorCount,
+      "primaryStatus" => $errorCount > 0 ? "error" : ($warningCount > 0 ? "warning" : ($completedCount > 0 ? "completed" : "neutral")),
+      "pathsPreview" => $pathsPreview,
+      "pathCount" => count($results),
       "message" => buildLatestAuditMessage($entry),
       "results" => array_values($results)
     );

@@ -865,6 +865,42 @@ function handleGetAuditHistory() {
   ));
 }
 
+function handleFixtureManagerAction() {
+  $managerAction = strtolower(trim(getPostedString("managerAction")));
+  if ( $managerAction === "" ) {
+    $managerAction = "status";
+  }
+
+  switch ( $managerAction ) {
+    case "create":
+      $result = appdataCleanupPlusCreateTestFixtures();
+      break;
+
+    case "remove":
+      $result = appdataCleanupPlusRemoveTestFixtures();
+      break;
+
+    case "status":
+      $result = array(
+        "ok" => true,
+        "message" => "Test fixture status loaded.",
+        "status" => appdataCleanupPlusGetTestFixtureStatus()
+      );
+      break;
+
+    default:
+      jsonResponse(array(
+        "ok" => false,
+        "message" => "Unsupported test fixture action."
+      ), 400);
+      return;
+  }
+
+  jsonResponse(array_merge(array(
+    "ok" => ! empty($result["ok"])
+  ), $result), ! empty($result["ok"]) ? 200 : 500);
+}
+
 function handleGetQuarantineSummary() {
   jsonResponse(array(
     "ok" => true,

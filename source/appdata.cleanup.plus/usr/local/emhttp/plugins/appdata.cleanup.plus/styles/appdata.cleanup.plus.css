@@ -2321,8 +2321,19 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   margin-left: 0;
 }
 
+/* Compact modal list patterns: audit history, tools, and support utilities. */
 .acp-simple-history-list {
   gap: 4px;
+}
+
+.acp-audit-toolbar {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.acp-audit-search {
+  width: 100%;
 }
 
 .acp-simple-history-list .acp-simple-list-item {
@@ -2388,6 +2399,80 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   border-radius: 6px;
   gap: 4px;
   padding: 5px 7px;
+}
+
+.acp-audit-path-preview {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.acp-audit-path-preview-row {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.acp-fixture-card .acp-simple-modal-card-body {
+  display: grid;
+  gap: 10px;
+}
+
+.acp-fixture-status {
+  display: grid;
+  gap: 8px;
+}
+
+.acp-fixture-root {
+  display: grid;
+  gap: 4px;
+}
+
+.acp-fixture-root > span,
+.acp-modal-label {
+  color: var(--acp-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.acp-fixture-list {
+  border: 1px solid var(--acp-border-faint);
+  border-radius: 8px;
+  display: grid;
+  overflow: hidden;
+}
+
+.acp-fixture-row {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 8px 10px;
+}
+
+.acp-fixture-row + .acp-fixture-row {
+  border-top: 1px solid var(--acp-border-faint);
+}
+
+.acp-fixture-row strong,
+.acp-fixture-row span {
+  display: block;
+}
+
+.acp-fixture-row strong {
+  color: var(--acp-heading);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.acp-fixture-row span {
+  color: var(--acp-muted);
+  font-size: 11px;
+  line-height: 1.25;
 }
 
 .acp-simple-modal-sources .acp-appdata-browser-shell,
@@ -2735,6 +2820,14 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   font-size: 12px;
   line-height: 1.45;
   min-height: 18px;
+}
+
+.acp-modal-feedback.is-success {
+  color: var(--acp-green);
+}
+
+.acp-modal-feedback.is-error {
+  color: var(--acp-red);
 }
 
 .acp-quarantine-selected-summary {
@@ -3354,7 +3447,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   }
 }
 
-/* Final dashboard redesign overrides. Keep this block last so legacy theme rules cannot win. */
+/* Theme token bridge. Keep this block last so legacy Unraid theme rules cannot win. */
 #acp-app.acp-shell {
   --acp-page: #0d1116;
   --acp-panel: #14191f;

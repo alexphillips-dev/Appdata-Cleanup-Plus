@@ -15,7 +15,14 @@
     auditHistoryLoaded: false,
     auditHistoryHasMore: false,
     auditHistoryRequestToken: "",
+    auditQuery: "",
     auditOpen: false,
+    fixtureTools: {
+      loading: false,
+      ok: null,
+      message: "",
+      status: null
+    },
     deferredDataRequestToken: "",
     scanWarningMessage: "",
     scanMetrics: {},
@@ -605,6 +612,48 @@
       }
     });
 
+    $(document).on("click.acpTools", ".sweet-alert [data-action='create-test-fixtures']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.fixtureTools.loading) {
+        runFixtureManagerAction("create");
+      }
+    });
+
+    $(document).on("click.acpTools", ".sweet-alert [data-action='remove-test-fixtures']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.fixtureTools.loading) {
+        runFixtureManagerAction("remove");
+      }
+    });
+
+    $(document).on("click.acpTools", ".sweet-alert [data-action='refresh-test-fixtures']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!state.busy && !state.fixtureTools.loading) {
+        runFixtureManagerAction("status");
+      }
+    });
+
+    $(document).on("input.acpAudit", ".sweet-alert .acp-audit-search", function() {
+      state.auditQuery = String($(this).val() || "");
+      if (state.auditOpen) {
+        renderAuditHistoryModal();
+        $(".sweet-alert .acp-audit-search").focus();
+      }
+    });
+
+    $(document).on("click.acpAudit", ".sweet-alert [data-action='copy-audit-summary']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      copyAuditSummary();
+    });
+
     $(document).on("keydown.acpSources", ".sweet-alert .acp-appdata-browser-entry[data-action]", function(event) {
       var key = String(event.key || "");
 
@@ -913,6 +962,8 @@
     state.auditHistoryLoaded = false;
     state.auditHistoryHasMore = false;
     state.auditHistoryRequestToken = "";
+    state.auditQuery = "";
+    state.fixtureTools = { loading: false, ok: null, message: "", status: null };
     state.deferredDataRequestToken = "";
     state.scanWarningMessage = "";
     state.settings = ACP.defaultSafetySettings();
@@ -1340,6 +1391,9 @@
     ensureToolsModal();
     renderPanels();
     renderToolsModal();
+    if (!state.fixtureTools.status && !state.fixtureTools.loading) {
+      runFixtureManagerAction("status");
+    }
   }
 
   function buildHelpModalHtml() {
@@ -3318,6 +3372,98 @@
           "error"
         );
       });
+    });
+  }
+
+  function updateFixtureToolsFromResponse(response, fallbackMessage, ok) {
+    state.fixtureTools = $.extend({}, state.fixtureTools || {}, {
+      loading: false,
+      ok: typeof ok === "boolean" ? ok : !!(response && response.ok),
+      message: String((response && response.message) || fallbackMessage || ""),
+      status: response && response.status ? response.status : ((state.fixtureTools || {}).status || null)
+    });
+  }
+
+  function runFixtureManagerAction(managerAction) {
+    state.fixtureTools = $.extend({}, state.fixtureTools || {}, {
+      loading: true,
+      message: ACP.t(strings, "toolsFixtureWorkingMessage", "Working on test fixtures.")
+    });
+    renderToolsModal();
+
+    apiPostForUserAction({
+      action: "fixtureManagerAction",
+      managerAction: managerAction
+    }).done(function(response) {
+      updateFixtureToolsFromResponse(response, ACP.t(strings, "toolsFixtureDoneMessage", "Test fixture action completed."), true);
+      renderToolsModal();
+
+      if (managerAction === "create" || managerAction === "remove") {
+        loadScan();
+      }
+    }).fail(function(xhr) {
+      updateFixtureToolsFromResponse(null, ACP.extractErrorMessage(xhr, ACP.t(strings, "toolsFixtureFailedMessage", "The test fixture action could not be completed right now.")), false);
+      renderToolsModal();
+    });
+  }
+
+  function getFilteredAuditHistoryForCopy() {
+    if (typeof ACP.filterAuditHistoryEntries === "function") {
+      return ACP.filterAuditHistoryEntries(state.auditHistory || [], state.auditQuery || "");
+    }
+
+    return $.isArray(state.auditHistory) ? state.auditHistory : [];
+  }
+
+  function buildAuditSummaryText() {
+    var entries = getFilteredAuditHistoryForCopy();
+    var lines = [
+      "Appdata Cleanup Plus audit history",
+      "Entries: " + String(entries.length),
+      state.auditQuery ? ("Filter: " + String(state.auditQuery)) : ""
+    ];
+
+    $.each(entries, function(_, entry) {
+      var summary = entry.summary || {};
+      var counts = [];
+
+      $.each(summary, function(status, count) {
+        if (Number(count || 0) > 0) {
+          counts.push(status + "=" + String(count));
+        }
+      });
+
+      lines.push("");
+      lines.push((entry.operationLabel || "Action") + " - " + (entry.timestampLabel || entry.timestamp || "unknown time"));
+      if (entry.message) {
+        lines.push(entry.message);
+      }
+      if (counts.length) {
+        lines.push("Summary: " + counts.join(", "));
+      }
+
+      $.each($.isArray(entry.pathsPreview) ? entry.pathsPreview : [], function(_, preview) {
+        lines.push("- " + String(preview.status || "result") + ": " + String(preview.path || ""));
+      });
+    });
+
+    return $.grep(lines, function(line) {
+      return line !== "";
+    }).join("\n");
+  }
+
+  function copyAuditSummary() {
+    copyTextToClipboard(buildAuditSummaryText()).done(function() {
+      state.auditQuery = state.auditQuery || "";
+      if (state.auditOpen) {
+        renderAuditHistoryModal();
+      }
+    }).fail(function() {
+      swal(
+        ACP.t(strings, "auditHistoryCopyFailedTitle", "Audit summary failed"),
+        ACP.t(strings, "auditHistoryCopyFailedMessage", "The audit summary could not be copied right now."),
+        "error"
+      );
     });
   }
 

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.51">
-<!ENTITY md5 "737e2369641e79b77527eaa29b3eacd2">
+<!ENTITY version "2026.07.08.53">
+<!ENTITY md5 "19eb9c1ac86e849b0730d078ccc31fb7">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.53
+- Added a built-in Test Fixtures tool for creating and removing safe acp-test-* appdata folders from the Tools modal.
+- Improved Audit History with search, compact path previews, richer result counts, and copyable summaries.
+- Reorganized modal CSS sections for the tools, audit history, and theme-token overrides without changing the dashboard theme model.
+- Added smoke coverage for fixture creation, status reporting, and removal.
+
 ###2026.07.08.51
 - Critical fix: Preserve the configured quarantine root whenever Safe Mode, appdata sources, ZFS mappings, or quarantine purge settings are saved so existing quarantine behavior is not silently reset.
 - Cleanup UX: Keep the simplified dashboard workflow with Ready, Blocked, Selected, and Safe Mode summary cards, including the restored Blocked card with a red lock icon.

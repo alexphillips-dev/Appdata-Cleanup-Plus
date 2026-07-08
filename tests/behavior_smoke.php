@@ -41,6 +41,7 @@ if ( function_exists("session_status") && session_status() === PHP_SESSION_ACTIV
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/helpers.php");
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/dashboard.php");
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/quarantine.php");
+require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/fixtures.php");
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/pathUtils.php");
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/api.php");
 
@@ -771,6 +772,14 @@ behaviorSmokeAssertSame(1, count($appdataSourceInfo["detected"]), "Source info s
 behaviorSmokeAssertSame(2, count($appdataSourceInfo["effective"]), "Source info should include the default root plus distinct manual appdata roots.");
 behaviorSmokeAssertSame(1, count($appdataSourceInfo["zfsPathMappings"]), "Source info should expose configured ZFS path mappings.");
 behaviorSmokeAssertSame(0, count($appdataSourceInfo["zfsPathMappingSuggestions"]), "Configured ZFS mappings should suppress identical root suggestions.");
+$fixtureCreateResult = appdataCleanupPlusCreateTestFixtures(getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame(true, ! empty($fixtureCreateResult["ok"]), "Test fixture helper should create namespaced appdata fixtures.");
+behaviorSmokeAssertTrue(is_file(appdataCleanupPlusFixtureTemplatePath()), "Test fixture helper should create its saved-template fixture.");
+$fixtureStatus = appdataCleanupPlusGetTestFixtureStatus(getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame(3, (int)$fixtureStatus["createdCount"], "Test fixture status should report created fixtures.");
+$fixtureRemoveResult = appdataCleanupPlusRemoveTestFixtures(getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame(true, ! empty($fixtureRemoveResult["ok"]), "Test fixture helper should remove namespaced appdata fixtures.");
+behaviorSmokeAssertSame(false, is_file(appdataCleanupPlusFixtureTemplatePath()), "Test fixture helper should remove its saved-template fixture.");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/templated-orphan.xml", "templated-orphan", $templatedOrphanPath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/sonarr-zfs.xml", "Sonarr", $zfsCaseSensitivePath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/nested-app.xml", "nested-app", $nestedTemplatePath, "/config");

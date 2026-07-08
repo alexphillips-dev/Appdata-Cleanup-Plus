@@ -6,6 +6,7 @@ require_once(__DIR__ . "/helpers.php");
 require_once(__DIR__ . "/pathUtils.php");
 require_once(__DIR__ . "/dashboard.php");
 require_once(__DIR__ . "/quarantine.php");
+require_once(__DIR__ . "/fixtures.php");
 require_once(__DIR__ . "/http.php");
 require_once(__DIR__ . "/api.php");
 
@@ -20,6 +21,7 @@ $csrfToken = getRequestedCsrfToken();
 $actionLocks = array(
   "getOrphanAppdata" => "scan-operation",
   "executeCandidateAction" => "cleanup-operation",
+  "fixtureManagerAction" => "cleanup-operation",
   "updateQuarantinePurgeSchedule" => "cleanup-operation",
   "quarantineManagerAction" => "cleanup-operation"
 );
@@ -52,6 +54,8 @@ function appdataCleanupPlusGenericFailureMessage($action) {
       return "Audit history could not be loaded right now.";
     case "getDiagnosticsBundle":
       return "Diagnostics could not be generated right now.";
+    case "fixtureManagerAction":
+      return "The test fixture action could not be completed right now.";
     default:
       return "The Appdata Cleanup Plus request could not be completed right now.";
   }
@@ -134,6 +138,10 @@ try {
 
     case "executeCandidateAction":
       handleExecuteCandidateAction();
+      break;
+
+    case "fixtureManagerAction":
+      handleFixtureManagerAction();
       break;
 
     case "getOperationProgress":
