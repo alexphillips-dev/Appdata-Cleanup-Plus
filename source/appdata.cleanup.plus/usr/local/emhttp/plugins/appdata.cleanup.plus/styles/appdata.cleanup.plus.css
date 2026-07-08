@@ -1993,6 +1993,75 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   margin-left: 0;
 }
 
+.acp-simple-history-list {
+  gap: 4px;
+}
+
+.acp-simple-history-list .acp-simple-list-item {
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.acp-simple-history-list .acp-simple-list-item + .acp-simple-list-item {
+  margin-top: 4px;
+}
+
+.acp-simple-history-list .acp-simple-list-main {
+  align-items: start;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.acp-simple-history-list .acp-simple-list-title {
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+.acp-simple-history-list .acp-simple-list-subtitle,
+.acp-simple-history-list .acp-simple-list-message {
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.acp-simple-history-list .acp-simple-list-message {
+  margin-top: 3px;
+}
+
+.acp-simple-history-list .acp-modal-stats {
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.acp-simple-history-list .acp-modal-stat {
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1;
+  padding: 4px 7px;
+}
+
+.acp-simple-history-list .acp-simple-badge-row {
+  gap: 4px;
+}
+
+.acp-simple-history-list .acp-simple-list-details {
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+.acp-simple-history-list .acp-simple-list-details summary {
+  font-size: 11px;
+}
+
+.acp-simple-history-list .acp-audit-results {
+  gap: 4px;
+}
+
+.acp-simple-history-list .acp-audit-result {
+  border-radius: 6px;
+  gap: 4px;
+  padding: 5px 7px;
+}
+
 .acp-simple-modal-sources .acp-appdata-browser-shell,
 .acp-simple-modal-sources .acp-appdata-source-manual-list,
 .acp-simple-modal-sources .acp-appdata-source-list {
