@@ -643,6 +643,18 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   width: 14px;
 }
 
+.acp-primary-delete-icon {
+  display: none;
+}
+
+.acp-button-danger .acp-primary-quarantine-icon {
+  display: none;
+}
+
+.acp-button-danger .acp-primary-delete-icon {
+  display: inline-flex;
+}
+
 .acp-toolbar-actions .acp-button {
   min-height: 34px;
 }

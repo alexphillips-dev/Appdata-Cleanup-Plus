@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.44">
-<!ENTITY md5 "0f33b9b7c5fabba185f7c18e0b601e15">
+<!ENTITY version "2026.07.08.45">
+<!ENTITY md5 "1cd4a122a9e7f8ade84d05341c32cf44">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.45
+- UI: Add inline SVG icons to the bottom action bar buttons, including mode-aware quarantine and delete icons for the primary action.
+
 ###2026.07.08.44
 - UI: Add a shield icon to the Show Quarantine action button for consistency with the other action buttons.
 

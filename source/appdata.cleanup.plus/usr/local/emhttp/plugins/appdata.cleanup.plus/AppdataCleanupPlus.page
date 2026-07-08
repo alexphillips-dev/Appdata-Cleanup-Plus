@@ -641,10 +641,47 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
       <span id="acp-selection-detail"><?php echo _("Select ready rows to clean them. Protected paths stay blocked."); ?></span>
     </div>
     <div class="acp-bottom-actions">
-      <button type="button" class="acp-button acp-button-secondary" id="acp-select-all" disabled><?php echo _("Select ready"); ?></button>
-      <button type="button" class="acp-button acp-button-secondary" id="acp-clear-selection" disabled><?php echo _("Clear selection"); ?></button>
-      <button type="button" class="acp-button acp-button-secondary acp-button-warning" id="acp-dry-run" disabled><?php echo _("Dry run"); ?></button>
-      <button type="button" class="acp-button acp-button-secondary" id="acp-primary-action" disabled><?php echo _("Quarantine selected"); ?></button>
+      <button type="button" class="acp-button acp-button-secondary acp-button-with-icon" id="acp-select-all" disabled>
+        <span class="acp-button-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="m8.25 12 2.45 2.45 5.05-5.3"></path>
+          </svg>
+        </span>
+        <span class="acp-button-label"><?php echo _("Select ready"); ?></span>
+      </button>
+      <button type="button" class="acp-button acp-button-secondary acp-button-with-icon" id="acp-clear-selection" disabled>
+        <span class="acp-button-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="m9 9 6 6"></path>
+            <path d="m15 9-6 6"></path>
+          </svg>
+        </span>
+        <span class="acp-button-label"><?php echo _("Clear selection"); ?></span>
+      </button>
+      <button type="button" class="acp-button acp-button-secondary acp-button-warning acp-button-with-icon" id="acp-dry-run" disabled>
+        <span class="acp-button-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M8 5.5v13l10-6.5Z"></path>
+          </svg>
+        </span>
+        <span class="acp-button-label"><?php echo _("Dry run"); ?></span>
+      </button>
+      <button type="button" class="acp-button acp-button-secondary acp-button-with-icon" id="acp-primary-action" disabled>
+        <span class="acp-button-icon acp-primary-action-icon acp-primary-quarantine-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M12 3.5 19 6.25v5.25c0 4.4-2.75 7.5-7 9-4.25-1.5-7-4.6-7-9V6.25Z"></path>
+          </svg>
+        </span>
+        <span class="acp-button-icon acp-primary-action-icon acp-primary-delete-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <rect x="6.5" y="10.5" width="11" height="8" rx="1.75"></rect>
+            <path d="M8.5 10.5V8.25a3.5 3.5 0 0 1 7 0v2.25"></path>
+          </svg>
+        </span>
+        <span class="acp-button-label"><?php echo _("Quarantine selected"); ?></span>
+      </button>
     </div>
   </section>
 </div>
