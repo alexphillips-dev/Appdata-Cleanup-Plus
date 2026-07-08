@@ -2596,8 +2596,9 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   display: grid;
   gap: 14px;
   grid-template-columns: 58px minmax(0, 1fr);
-  min-height: 116px;
-  padding: 18px 20px;
+  height: 118px;
+  min-height: 118px;
+  padding: 0 20px;
 }
 
 #acp-app .acp-summary-card::before {
@@ -2663,8 +2664,9 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   display: grid;
   gap: 12px;
   grid-template-columns: 38px minmax(0, 1fr);
-  min-height: 116px;
-  padding: 18px;
+  height: 118px;
+  min-height: 118px;
+  padding: 0 18px;
 }
 
 #acp-app .acp-mode-card > .acp-button {
@@ -2904,12 +2906,40 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-mode-card-title {
-  align-items: start;
+  align-items: center;
 }
 
 #acp-app .acp-mode-card-title span {
   font-size: 16px;
   line-height: 1.1;
+}
+
+#acp-app .acp-summary-copy,
+#acp-app .acp-mode-card-copy {
+  align-self: center;
+  justify-self: stretch;
+}
+
+#acp-app .acp-summary-label {
+  line-height: 1.1;
+}
+
+#acp-app .acp-summary-value {
+  line-height: 1;
+}
+
+#acp-app .acp-summary-subtitle,
+#acp-app .acp-mode-card-message {
+  line-height: 1.25;
+}
+
+#acp-app .acp-mode-card-title strong {
+  flex: 0 0 auto;
+}
+
+#acp-app .acp-mode-link {
+  line-height: 1.2;
+  margin-top: 8px;
 }
 
 #acp-app .acp-mode-link {
