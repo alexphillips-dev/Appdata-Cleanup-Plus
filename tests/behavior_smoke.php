@@ -759,6 +759,12 @@ behaviorSmokeAssertTrue(count(array_filter($suggestedSourceInfo["zfsPathMappingS
     $mapping["shareRoot"] === $appdataShareRoot &&
     $mapping["datasetRoot"] === $zfsDatasetRoot;
 })) === 1, "Source info should suggest likely ZFS mappings inferred from detected dataset mountpoints.");
+$autoZfsStorage = appdataCleanupPlusResolveStorageForPath($templatedOrphanPath, array(
+  "manualAppdataSources" => array(),
+  "zfsPathMappings" => array()
+));
+behaviorSmokeAssertSame("zfs", $autoZfsStorage["kind"], "ZFS dataset rows should resolve through Unraid user-share aliases without a saved ZFS path mapping.");
+behaviorSmokeAssertSame("docker_vm_nvme/" . $appdataShareName . "/templated-orphan", $autoZfsStorage["datasetName"], "Automatic ZFS resolution should preserve the matched physical dataset name.");
 $appdataSourceInfo = buildAppdataCleanupPlusSourceInfo(getAppdataCleanupPlusSafetySettings());
 behaviorSmokeAssertSame(1, count($appdataSourceInfo["detected"]), "Source info should expose the detected Docker appdata root.");
 behaviorSmokeAssertSame(2, count($appdataSourceInfo["effective"]), "Source info should include the default root plus distinct manual appdata roots.");

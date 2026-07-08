@@ -457,6 +457,34 @@ function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
     return $cache[$cacheKey];
   }
 
+  if ( function_exists("appdataCleanupPlusPathsEquivalent") ) {
+    foreach ( $datasetMap["mountMap"] as $mountpoint => $datasetName ) {
+      $normalizedMountpoint = appdataCleanupPlusCanonicalizeZfsPath($mountpoint);
+
+      foreach ( $variants as $variant ) {
+        if ( ! appdataCleanupPlusPathsEquivalent($variant, $normalizedMountpoint) ) {
+          continue;
+        }
+
+        $cache[$cacheKey] = array(
+          "kind" => "zfs",
+          "label" => "ZFS dataset",
+          "detail" => (string)$datasetName,
+          "datasetName" => (string)$datasetName,
+          "datasetMountpoint" => $normalizedMountpoint,
+          "mappingMatched" => $mappingMatched,
+          "matchedMapping" => $matchedMapping,
+          "matchedMappings" => $matchedMappings,
+          "resolutionKind" => "exact_dataset",
+          "resolutionDetail" => appdataCleanupPlusBuildZfsResolutionDetail("exact_dataset", $matchedMapping, $variants),
+          "resolutionVariants" => array_values(array_unique(array_merge($variants, array($normalizedMountpoint)))),
+          "lockReason" => ""
+        );
+        return $cache[$cacheKey];
+      }
+    }
+  }
+
   return $cache[$cacheKey];
 }
 
