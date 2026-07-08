@@ -2593,11 +2593,14 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   align-items: center;
   background: linear-gradient(145deg, rgba(27, 34, 43, 0.98), rgba(17, 23, 30, 0.98));
   border-radius: 8px;
-  display: grid;
+  display: flex;
   gap: 14px;
-  grid-template-columns: 58px minmax(0, 1fr);
+  grid-template-columns: none;
+  grid-template-rows: none;
   height: 118px;
+  justify-content: flex-start;
   min-height: 118px;
+  overflow: hidden;
   padding: 0 20px;
 }
 
@@ -2616,6 +2619,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   height: 58px;
   justify-content: center;
   width: 58px;
+  flex: 0 0 58px;
 }
 
 #acp-app .acp-summary-card.is-safe .acp-summary-icon {
@@ -2661,11 +2665,14 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   background: linear-gradient(145deg, rgba(27, 34, 43, 0.98), rgba(17, 23, 30, 0.98));
   border: 1px solid var(--acp-border);
   border-radius: 8px;
-  display: grid;
+  display: flex;
   gap: 12px;
-  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-columns: none;
+  grid-template-rows: none;
   height: 118px;
+  justify-content: flex-start;
   min-height: 118px;
+  overflow: hidden;
   padding: 0 18px;
 }
 
@@ -2685,6 +2692,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   height: 38px;
   justify-content: center;
   width: 38px;
+  flex: 0 0 38px;
 }
 
 #acp-app .acp-mode-card.is-delete-mode .acp-mode-icon {
@@ -2967,8 +2975,11 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 #acp-app .acp-summary-copy,
 #acp-app .acp-mode-card-copy {
+  align-content: center;
   align-self: center;
+  display: grid;
   justify-self: stretch;
+  min-width: 0;
 }
 
 #acp-app .acp-summary-label {
