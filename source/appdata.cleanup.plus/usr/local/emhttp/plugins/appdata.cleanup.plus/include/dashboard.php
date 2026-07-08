@@ -179,6 +179,271 @@ function getDockerContainersSafe() {
   }
 }
 
+function appdataCleanupPlusDockerEngineReachable() {
+  if ( ! is_dir(appdataCleanupPlusDockerRuntimePath()) || ! ensureAppdataCleanupPlusDockerClientLoaded() ) {
+    return false;
+  }
+
+  try {
+    $response = appdataCleanupPlusRunQuietly(function() {
+      $DockerClient = new DockerClient();
+
+      if ( method_exists($DockerClient, "getDockerJSON") ) {
+        return $DockerClient->getDockerJSON("/version");
+      }
+
+      if ( method_exists($DockerClient, "getDockerInfo") ) {
+        return $DockerClient->getDockerInfo();
+      }
+
+      return array("legacyDockerClient" => true);
+    }, "Docker engine health query");
+
+    return is_array($response) || is_object($response);
+  } catch ( Throwable $throwable ) {
+    error_log("Appdata Cleanup Plus Docker engine health query failed: " . $throwable->getMessage());
+    return false;
+  }
+}
+
+function appdataCleanupPlusComposeProjectsDir() {
+  $override = trim((string)getenv("APPDATA_CLEANUP_PLUS_COMPOSE_PROJECTS_DIR"));
+  return $override !== "" ? $override : "/boot/config/plugins/compose.manager/projects";
+}
+
+function appdataCleanupPlusParseEnvFileIntoMap($path, &$env) {
+  if ( ! is_file($path) || ! is_readable($path) ) {
+    return true;
+  }
+
+  $lines = @file($path, FILE_IGNORE_NEW_LINES);
+  if ( ! is_array($lines) ) {
+    return false;
+  }
+
+  foreach ( $lines as $line ) {
+    $line = trim((string)$line);
+    if ( $line === "" || strpos($line, "#") === 0 ) {
+      continue;
+    }
+
+    $equals = strpos($line, "=");
+    if ( $equals === false ) {
+      continue;
+    }
+
+    $key = trim(substr($line, 0, $equals));
+    $value = trim(substr($line, $equals + 1));
+
+    if ( strlen($value) >= 2 && ($value[0] === '"' || $value[0] === "'") && substr($value, -1) === $value[0] ) {
+      $value = substr($value, 1, -1);
+    }
+
+    if ( $key !== "" && ! isset($env[$key]) ) {
+      $env[$key] = $value;
+    }
+  }
+
+  return true;
+}
+
+function appdataCleanupPlusExpandComposeEnv($text, $env) {
+  for ( $pass = 0; $pass < 2; $pass++ ) {
+    $text = preg_replace_callback('/\$\{([A-Za-z_][A-Za-z0-9_]*)(?::?-([^}]*))?\}|\$([A-Za-z_][A-Za-z0-9_]*)/', function($matches) use ($env) {
+      $name = isset($matches[1]) && $matches[1] !== "" ? $matches[1] : (isset($matches[3]) ? $matches[3] : "");
+
+      if ( $name !== "" && isset($env[$name]) && $env[$name] !== "" ) {
+        return $env[$name];
+      }
+
+      if ( isset($matches[2]) && $matches[2] !== "" ) {
+        return $matches[2];
+      }
+
+      return $matches[0];
+    }, $text);
+  }
+
+  return $text;
+}
+
+function appdataCleanupPlusComposeFileListForProject($projectDir) {
+  $baseDir = $projectDir;
+
+  if ( is_file($projectDir . "/indirect") ) {
+    $indirect = trim((string)@file_get_contents($projectDir . "/indirect"));
+    if ( $indirect !== "" ) {
+      $baseDir = rtrim($indirect, "/");
+    }
+  }
+
+  return array(
+    "baseDir" => $baseDir,
+    "files" => array_values(array_unique(array(
+      $baseDir . "/compose.yaml",
+      $baseDir . "/compose.yml",
+      $baseDir . "/docker-compose.yaml",
+      $baseDir . "/docker-compose.yml",
+      $baseDir . "/compose.override.yaml",
+      $baseDir . "/compose.override.yml",
+      $baseDir . "/docker-compose.override.yaml",
+      $baseDir . "/docker-compose.override.yml",
+      $projectDir . "/compose.override.yaml",
+      $projectDir . "/compose.override.yml",
+      $projectDir . "/docker-compose.override.yaml",
+      $projectDir . "/docker-compose.override.yml"
+    )))
+  );
+}
+
+function appdataCleanupPlusBuildComposeRootPattern($sourceRoots) {
+  $escapedRoots = array();
+
+  foreach ( $sourceRoots as $sourceRoot ) {
+    foreach ( appdataCleanupPlusPathComparisonVariants($sourceRoot) as $variant ) {
+      $variant = rtrim(appdataCleanupPlusCanonicalizePath($variant), "/");
+      if ( $variant !== "" ) {
+        $escapedRoots[$variant] = preg_quote($variant, "#");
+      }
+    }
+  }
+
+  if ( empty($escapedRoots) ) {
+    return "";
+  }
+
+  return "#(" . implode("|", array_values($escapedRoots)) . ")/([^\\s:'\"\\\\]+)#";
+}
+
+function appdataCleanupPlusComposeReferencedPaths($settings=null, &$meta=null) {
+  $protected = array();
+  $projectsDir = appdataCleanupPlusComposeProjectsDir();
+  $sourceRoots = getAppdataCleanupPlusConfiguredSourceRoots($settings);
+  $pattern = appdataCleanupPlusBuildComposeRootPattern($sourceRoots);
+  $projectCount = 0;
+  $fileCount = 0;
+  $uncertain = false;
+
+  $meta = array(
+    "projectsDir" => $projectsDir,
+    "projectCount" => 0,
+    "fileCount" => 0,
+    "protectedCount" => 0,
+    "uncertain" => false
+  );
+
+  if ( ! is_dir($projectsDir) || $pattern === "" ) {
+    return array();
+  }
+
+  foreach ( (array)glob($projectsDir . "/*", GLOB_ONLYDIR) as $projectDir ) {
+    $projectCount++;
+    $fileInfo = appdataCleanupPlusComposeFileListForProject($projectDir);
+    $baseDir = isset($fileInfo["baseDir"]) ? (string)$fileInfo["baseDir"] : $projectDir;
+    $env = array();
+
+    if ( ! appdataCleanupPlusParseEnvFileIntoMap($baseDir . "/.env", $env) ) {
+      $uncertain = true;
+    }
+
+    if ( ! appdataCleanupPlusParseEnvFileIntoMap($projectDir . "/.env", $env) ) {
+      $uncertain = true;
+    }
+
+    foreach ( isset($fileInfo["files"]) ? (array)$fileInfo["files"] : array() as $composeFile ) {
+      if ( ! is_file($composeFile) ) {
+        continue;
+      }
+
+      $contents = @file_get_contents($composeFile);
+      if ( ! is_string($contents) ) {
+        $uncertain = true;
+        continue;
+      }
+
+      $fileCount++;
+      $contents = appdataCleanupPlusExpandComposeEnv($contents, $env);
+
+      if (
+        preg_match('#^[ \t]*-[ \t]*["\']?[^\n:=]*\$\{?[A-Za-z_][^\n:]*:/#m', $contents) ||
+        preg_match('#^[ \t]*source[ \t]*:[ \t]*["\']?[^\n]*\$[A-Za-z_{]#m', $contents)
+      ) {
+        $uncertain = true;
+      }
+
+      if ( preg_match_all($pattern, $contents, $matches, PREG_SET_ORDER) ) {
+        foreach ( $matches as $match ) {
+          $firstSegment = strtok($match[2], "/");
+          $fullPath = "";
+
+          if ( $firstSegment === false || $firstSegment === "" ) {
+            continue;
+          }
+
+          $fullPath = appdataCleanupPlusCanonicalizePath($match[1] . "/" . $firstSegment);
+          foreach ( appdataCleanupPlusPathComparisonVariants($fullPath) as $variant ) {
+            $variant = appdataCleanupPlusCanonicalizePath($variant);
+            if ( $variant !== "" ) {
+              $protected[$variant] = true;
+              $protected[appdataCleanupPlusPathComparisonKey($variant)] = true;
+            }
+          }
+        }
+      }
+
+      if ( preg_match_all('#\$(?:\{[A-Za-z_][A-Za-z0-9_]*(?::?-[^}]*)?\}|[A-Za-z_][A-Za-z0-9_]*)/([A-Za-z0-9][A-Za-z0-9._-]*)#', $contents, $unresolvedMatches, PREG_SET_ORDER) ) {
+        foreach ( $unresolvedMatches as $unresolvedMatch ) {
+          $segment = $unresolvedMatch[1];
+          foreach ( $sourceRoots as $sourceRoot ) {
+            $candidate = appdataCleanupPlusCanonicalizePath(rtrim($sourceRoot, "/") . "/" . $segment);
+            if ( is_dir($candidate) ) {
+              $protected[$candidate] = true;
+              $protected[appdataCleanupPlusPathComparisonKey($candidate)] = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  $paths = array_values(array_filter(array_keys($protected), "strlen"));
+  $meta["projectCount"] = $projectCount;
+  $meta["fileCount"] = $fileCount;
+  $meta["protectedCount"] = count($paths);
+  $meta["uncertain"] = $uncertain;
+
+  return $paths;
+}
+
+function removeComposeReferencedCandidates($availableVolumes, $composeProtectedPaths) {
+  $filtered = $availableVolumes;
+  $protectedKeys = array();
+
+  foreach ( $composeProtectedPaths as $protectedPath ) {
+    $key = appdataCleanupPlusPathComparisonKey($protectedPath);
+    if ( $key !== "" ) {
+      $protectedKeys[$key] = true;
+    }
+  }
+
+  if ( empty($protectedKeys) ) {
+    return $filtered;
+  }
+
+  foreach ( $availableVolumes as $candidateKey => $candidate ) {
+    $hostDir = isset($candidate["HostDir"]) ? (string)$candidate["HostDir"] : "";
+    if ( $hostDir === "" ) {
+      continue;
+    }
+
+    if ( isset($protectedKeys[appdataCleanupPlusPathComparisonKey($hostDir)]) ) {
+      unset($filtered[$candidateKey]);
+    }
+  }
+
+  return $filtered;
+}
+
 function summarizeCandidateValues($values, $limit=2) {
   $values = array_values(array_filter($values, "strlen"));
 
@@ -432,6 +697,10 @@ function appdataCleanupPlusDockerInventoryUnverified($dockerRunning, $containers
 
 function appdataCleanupPlusDockerInventoryUnverifiedMessage() {
   return "Docker appears to be running, but Appdata Cleanup Plus could not verify any installed containers while saved Docker templates are present. Cleanup actions are disabled for this scan; refresh Docker state and rescan before quarantining or deleting folders.";
+}
+
+function appdataCleanupPlusComposeInventoryUncertainMessage() {
+  return "Docker Compose Manager projects include unreadable files or unresolved bind-mount variables. Cleanup actions are disabled for this scan because compose-owned appdata could not be verified safely.";
 }
 
 function appdataCleanupPlusApplyDockerInventorySafetyToRows($rows, $message="") {
@@ -803,13 +1072,14 @@ function appdataCleanupPlusBuildSourceRootReferenceIndex($sourceRoot, $reference
   return $index;
 }
 
-function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning, &$discoveryMeta=null) {
+function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning, &$discoveryMeta=null, $composeProtectedPaths=array()) {
   $availableVolumes = array();
   $templatePaths = array();
   $installedHostPaths = appdataCleanupPlusExtractDockerVolumeHostPaths($containers);
   $nestedReferencePaths = array();
   $referenceIndexBySourceRoot = array();
   $excludedRoots = array();
+  $composeProtectedKeys = array();
   $configuredSourceRoots = getAppdataCleanupPlusConfiguredSourceRoots($settings);
   $candidateLimit = appdataCleanupPlusFilesystemDiscoveryCandidateLimit();
   $directChildDirectoryCount = 0;
@@ -820,7 +1090,9 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
     "candidateCount" => 0,
     "directChildDirectoryCount" => 0,
     "truncated" => false,
-    "truncatedAtSourceRoot" => ""
+    "truncatedAtSourceRoot" => "",
+    "rootMounted" => false,
+    "rootMountedPath" => ""
   );
 
   if ( ! $dockerRunning ) {
@@ -845,7 +1117,14 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
     $templatePaths[] = (string)$volume["HostDir"];
   }
 
-  $nestedReferencePaths = array_values(array_unique(array_merge($templatePaths, $installedHostPaths)));
+  foreach ( $composeProtectedPaths as $composeProtectedPath ) {
+    $composeKey = appdataCleanupPlusPathComparisonKey($composeProtectedPath);
+    if ( $composeKey !== "" ) {
+      $composeProtectedKeys[$composeKey] = true;
+    }
+  }
+
+  $nestedReferencePaths = array_values(array_unique(array_merge($templatePaths, $installedHostPaths, $composeProtectedPaths)));
 
   foreach ( $configuredSourceRoots as $sourceRoot ) {
     $entries = array();
@@ -858,6 +1137,14 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
 
     if ( ! $sourceRoot || ! is_dir($sourceRoot) ) {
       continue;
+    }
+
+    foreach ( $installedHostPaths as $installedHostPath ) {
+      if ( appdataCleanupPlusPathsEquivalent($sourceRoot, $installedHostPath) ) {
+        $discoveryMeta["rootMounted"] = true;
+        $discoveryMeta["rootMountedPath"] = $sourceRoot;
+        return $availableVolumes;
+      }
     }
 
     $entries = @scandir($sourceRoot);
@@ -893,6 +1180,10 @@ function buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $
       $candidateKey = appdataCleanupPlusPathComparisonKey($candidatePath);
 
       if ( $candidateKey === "" || isset($excludedRoots[$candidateKey]) ) {
+        continue;
+      }
+
+      if ( isset($composeProtectedKeys[$candidateKey]) ) {
         continue;
       }
 

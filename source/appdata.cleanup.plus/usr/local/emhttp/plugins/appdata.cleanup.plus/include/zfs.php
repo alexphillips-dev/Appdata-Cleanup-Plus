@@ -465,6 +465,7 @@ function appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName) {
   $basePreview = array();
   $recursivePreview = array();
   $impact = array();
+  $basePreviewOutput = "";
 
   if ( $normalizedDatasetName === "" ) {
     return array(
@@ -485,6 +486,22 @@ function appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName) {
       "snapshots" => isset($impact["snapshots"]) ? $impact["snapshots"] : array(),
       "childDatasetCount" => isset($impact["childDatasetCount"]) ? (int)$impact["childDatasetCount"] : 0,
       "snapshotCount" => isset($impact["snapshotCount"]) ? (int)$impact["snapshotCount"] : 0
+    );
+  }
+
+  $basePreviewOutput = strtolower((string)$basePreview["outputText"]);
+  if (
+    strpos($basePreviewOutput, "child") === false &&
+    strpos($basePreviewOutput, "snapshot") === false &&
+    strpos($basePreviewOutput, "dependent") === false &&
+    strpos($basePreviewOutput, "clone") === false
+  ) {
+    return array(
+      "ok" => false,
+      "recursive" => false,
+      "message" => $basePreview["outputText"] !== ""
+        ? $basePreview["outputText"]
+        : "The ZFS dataset could not be destroyed safely."
     );
   }
 

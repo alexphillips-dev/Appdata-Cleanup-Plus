@@ -10,6 +10,7 @@ $dockerConfigFixture = $stateRoot . "/boot/config/docker.cfg";
 $vmConfigFixture = $stateRoot . "/boot/config/domain.cfg";
 $shareConfigFixtureDir = $stateRoot . "/boot/config/shares";
 $templateFixtureDir = $stateRoot . "/boot/config/plugins/dockerMan/templates-user";
+$composeProjectsFixtureDir = $stateRoot . "/boot/config/plugins/compose.manager/projects";
 $syslogFixture = $stateRoot . "/var/log/syslog";
 $zfsClientFixture = $repoRoot . "/tests/fixtures/zfs_client_fixture.php";
 $appdataShareName = "acp-smoke-share-" . getmypid();
@@ -27,6 +28,7 @@ putenv("APPDATA_CLEANUP_PLUS_DOCKER_CONFIG_PATH=" . $dockerConfigFixture);
 putenv("APPDATA_CLEANUP_PLUS_VM_CONFIG_PATH=" . $vmConfigFixture);
 putenv("APPDATA_CLEANUP_PLUS_SHARE_CONFIG_DIR=" . $shareConfigFixtureDir);
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_TEMPLATE_DIR=" . $templateFixtureDir);
+putenv("APPDATA_CLEANUP_PLUS_COMPOSE_PROJECTS_DIR=" . $composeProjectsFixtureDir);
 putenv("APPDATA_CLEANUP_PLUS_SYSLOG_PATH=" . $syslogFixture);
 putenv("APPDATA_CLEANUP_PLUS_ZFS_CLIENT_COMMAND=php \"" . str_replace("\\", "/", $zfsClientFixture) . "\"");
 putenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_SHARE_ROOT=" . $appdataShareRoot);
@@ -633,7 +635,10 @@ $dockerRuntimeFixture = $stateRoot . "/docker-runtime";
 $dockerClientFixture = $stateRoot . "/DockerClient.php";
 $templatedOrphanPath = $appdataShareRoot . "/templated-orphan";
 $zfsCaseSensitivePath = $appdataShareRoot . "/Sonarr";
+$zfsBusyPath = $appdataShareRoot . "/Busy";
 $filesystemOrphanPath = $appdataShareRoot . "/fs-orphan";
+$composeProtectedPath = $appdataShareRoot . "/compose-owned";
+$composeUncertainPath = $appdataShareRoot . "/compose-uncertain";
 $liveAppPath = $appdataShareRoot . "/live-app";
 $nestedAppRoot = $appdataShareRoot . "/nested-app";
 $nestedTemplatePath = $nestedAppRoot . "/config";
@@ -680,7 +685,10 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsDatasetRoot), "ZFS
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($outsideShareReviewPath), "Outside-share review fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templatedOrphanPath), "Templated orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsCaseSensitivePath), "Case-sensitive ZFS fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsBusyPath), "Busy ZFS fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($filesystemOrphanPath), "Filesystem orphan fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($composeProtectedPath), "Compose-owned fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($composeUncertainPath), "Compose uncertainty fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($liveAppPath), "Live app fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($nestedTemplatePath), "Nested template fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($slashLivePath), "Trailing-slash live path fixture should be created.");
@@ -691,6 +699,7 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualAliasLivePath),
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualCustomOrphanPath), "Manual source filesystem orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsDatasetRoot . "/templated-orphan"), "ZFS dataset templated orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsDatasetRoot . "/Sonarr"), "ZFS dataset case-sensitive fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsDatasetRoot . "/Busy"), "Busy ZFS dataset fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmDomainTemplatePath), "VM domains fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmIsosPath), "VM ISO fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($dockerManagedTemplatePath), "Docker managed path fixture should be created.");
@@ -768,6 +777,10 @@ behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/vm-template-managed.xm
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/docker-template-managed.xml", "docker-template-managed", $dockerManagedTemplatePath, "/config");
 file_put_contents($libvirtImagePath, "libvirt-image");
 file_put_contents($dockerManagedImagePath, "docker-image");
+$composeProtectedProjectDir = $composeProjectsFixtureDir . "/compose-protected";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($composeProtectedProjectDir), "Compose protected project fixture should be created.");
+file_put_contents($composeProtectedProjectDir . "/.env", "APPDATA_ROOT=" . $appdataShareRoot . "\n");
+file_put_contents($composeProtectedProjectDir . "/compose.yaml", "services:\n  protected:\n    volumes:\n      - \${APPDATA_ROOT}/compose-owned:/config\n");
 file_put_contents($dockerClientFixture, "<?php\ntrigger_error('docker client fixture include warning', E_USER_WARNING);\nclass DockerClient {\n  public function getDockerContainers() {\n    trigger_error('docker client fixture query warning', E_USER_WARNING);\n    echo \"docker-fixture-noise\";\n    return array((object)array(\n      'Volumes' => array(\n        (object)array('Source' => '" . addslashes($liveAppPath) . "', 'Destination' => '/config'),\n        (object)array('Source' => '" . addslashes($slashLivePath) . "', 'Destination' => '/opt/adguardhome/work'),\n        (object)array('Source' => '" . addslashes($manualAliasLivePath) . "', 'Destination' => '/opt/alias')\n      )\n    ));\n  }\n}\n");
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_RUNTIME_PATH=" . str_replace("\\", "/", $dockerRuntimeFixture));
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_CLIENT_PATH=" . str_replace("\\", "/", $dockerClientFixture));
@@ -826,6 +839,7 @@ $libvirtParentRow = behaviorSmokeFindRowByPath($dashboardRows, $libvirtParentPat
 $recycleBinRow = behaviorSmokeFindRowByPath($dashboardRows, $recycleBinPath);
 $lostFoundRow = behaviorSmokeFindRowByPath($dashboardRows, $lostFoundPath);
 $quarantineRow = behaviorSmokeFindRowByPath($dashboardRows, $quarantinePath);
+$composeProtectedRow = behaviorSmokeFindRowByPath($dashboardRows, $composeProtectedPath);
 behaviorSmokeAssertTrue(is_array($templatedRow), "Template-backed orphan should be detected.");
 behaviorSmokeAssertTrue(is_array($zfsCaseRow), "Case-sensitive ZFS-backed template orphan should be detected.");
 behaviorSmokeAssertTrue(is_array($filesystemRow), "Filesystem-only orphan should be detected.");
@@ -849,6 +863,10 @@ behaviorSmokeAssertSame(null, $libvirtParentRow, "Parents containing the configu
 behaviorSmokeAssertSame(null, $recycleBinRow, ".Recycle.Bin should be excluded from filesystem orphan discovery.");
 behaviorSmokeAssertSame(null, $lostFoundRow, "lost+found should be excluded from filesystem orphan discovery.");
 behaviorSmokeAssertSame(null, $quarantineRow, "The plugin quarantine root should not be surfaced as a filesystem orphan.");
+behaviorSmokeAssertSame(null, $composeProtectedRow, "Docker Compose Manager referenced appdata should not be surfaced as orphaned.");
+behaviorSmokeAssertTrue(count(array_filter($dashboard["payload"]["scanMetrics"]["phases"], function($phase) {
+  return isset($phase["name"]) && $phase["name"] === "compose_scan" && isset($phase["protectedPathCount"]) && (int)$phase["protectedPathCount"] > 0;
+})) === 1, "Dashboard scan metrics should report Compose-protected appdata paths.");
 behaviorSmokeAssertSame("template", $templatedRow["sourceKind"], "Template-backed rows should preserve their source kind.");
 behaviorSmokeAssertSame("zfs", $templatedRow["storageKind"], "Mapped template-backed rows should resolve to ZFS dataset storage.");
 behaviorSmokeAssertSame("docker_vm_nvme/" . $appdataShareName . "/templated-orphan", $templatedRow["datasetName"], "Mapped template-backed rows should expose the resolved ZFS dataset name.");
@@ -874,6 +892,16 @@ behaviorSmokeAssertContains("empty parent folder", $staleNestedEmptyParentRow["r
 behaviorSmokeAssertContains($manualCustomSourceRoot, $manualCustomFilesystemRow["reason"], "Manual-source discovery rows should describe the source root that surfaced them.");
 behaviorSmokeAssertSame($slashLivePath, normalizeUserPath($slashTemplatePath), "Path normalization should collapse trailing slashes on saved template paths.");
 behaviorSmokeAssertTrue(! empty($templatedRow["statsPending"]), "Initial dashboard rows should mark heavy stats as pending for progressive hydration.");
+$composeUncertainProjectDir = $composeProjectsFixtureDir . "/compose-uncertain";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($composeUncertainProjectDir), "Compose uncertain project fixture should be created.");
+file_put_contents($composeUncertainProjectDir . "/compose.yaml", "services:\n  uncertain:\n    volumes:\n      - \${MISSING_APPDATA_ROOT}/compose-uncertain:/config\n");
+$composeUncertainDashboard = buildDashboardPayload();
+$composeUncertainRows = isset($composeUncertainDashboard["payload"]["rows"]) && is_array($composeUncertainDashboard["payload"]["rows"]) ? $composeUncertainDashboard["payload"]["rows"] : array();
+$composeUncertainTemplatedRow = behaviorSmokeFindRowByPath($composeUncertainRows, $templatedOrphanPath);
+behaviorSmokeAssertTrue(is_array($composeUncertainTemplatedRow), "Compose uncertainty scan should still return rows for review.");
+behaviorSmokeAssertSame(true, ! empty($composeUncertainTemplatedRow["scanVerificationLocked"]), "Unresolved Compose bind mounts should lock cleanup actions for the scan.");
+behaviorSmokeAssertContains("Docker Compose Manager", isset($composeUncertainDashboard["payload"]["scanWarningMessage"]) ? $composeUncertainDashboard["payload"]["scanWarningMessage"] : "", "Unresolved Compose bind mounts should explain the scan action lock.");
+behaviorSmokeRemoveTree($composeUncertainProjectDir);
 $templateActionResolution = resolveCandidateForAction(array(
   "path" => $manualAliasTemplatePath,
   "displayPath" => $manualAliasTemplatePath,
@@ -1030,6 +1058,18 @@ behaviorSmokeAssertSame("mapped_no_exact_mountpoint", (string)$zfsMappedNonExact
 behaviorSmokeAssertSame($appdataShareRoot, (string)$zfsMappedNonExactDetailPayload["zfsMatchedShareRoot"], "Mapped non-ZFS row details should expose the matched share root.");
 behaviorSmokeAssertSame($zfsDatasetRoot, (string)$zfsMappedNonExactDetailPayload["zfsMatchedDatasetRoot"], "Mapped non-ZFS row details should expose the matched dataset root.");
 behaviorSmokeAssertContains($zfsDatasetRoot, implode(",", $zfsMappedNonExactDetailPayload["zfsResolutionVariants"]), "Mapped non-ZFS row details should expose the checked dataset-side paths.");
+$zfsBusyPreviewExecution = executeCandidateOperation(array(array(
+  "id" => "busy-zfs",
+  "name" => "Busy",
+  "path" => $zfsBusyPath,
+  "displayPath" => $zfsBusyPath,
+  "realPath" => (string)@realpath($zfsBusyPath),
+  "storageKind" => "zfs",
+  "datasetName" => "docker_vm_nvme/" . $appdataShareName . "/Busy"
+)), getAppdataCleanupPlusSafetySettings(), "preview_delete");
+behaviorSmokeAssertSame("error", $zfsBusyPreviewExecution["results"][0]["status"], "Busy ZFS dataset previews should fail instead of escalating to recursive destroy.");
+behaviorSmokeAssertSame(false, ! empty($zfsBusyPreviewExecution["results"][0]["recursive"]), "Busy ZFS dataset previews should not mark recursive destroy as available.");
+behaviorSmokeAssertContains("dataset is busy", $zfsBusyPreviewExecution["results"][0]["message"], "Busy ZFS dataset previews should preserve the original dry-run failure.");
 $zfsDeleteExecution = executeCandidateOperation(array(array(
   "id" => "templated-zfs",
   "name" => "templated-orphan",

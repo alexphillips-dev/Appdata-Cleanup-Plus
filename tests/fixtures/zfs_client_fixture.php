@@ -5,7 +5,8 @@ $shareRoot = rtrim(str_replace("\\", "/", (string)getenv("APPDATA_CLEANUP_PLUS_T
 $datasetRoot = rtrim(str_replace("\\", "/", (string)getenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_DATASET_ROOT")), "/");
 $datasets = array(
   "templated-orphan" => "standard",
-  "Sonarr" => "recursive"
+  "Sonarr" => "recursive",
+  "Busy" => "busy"
 );
 
 function zfsFixtureDatasetName($datasetRoot, $childName) {
@@ -95,6 +96,11 @@ if ( $mode === "" ) {
 }
 
 if ( $preview ) {
+  if ( $mode === "busy" ) {
+    fwrite(STDERR, "cannot destroy '" . $datasetName . "': dataset is busy\n");
+    exit(1);
+  }
+
   if ( $mode === "recursive" && ! $recursive ) {
     fwrite(STDERR, "cannot destroy '" . $datasetName . "': filesystem has children or snapshots\n");
     exit(1);
@@ -105,6 +111,11 @@ if ( $preview ) {
 
 if ( $mode === "recursive" && ! $recursive ) {
   fwrite(STDERR, "cannot destroy '" . $datasetName . "': filesystem has children or snapshots\n");
+  exit(1);
+}
+
+if ( $mode === "busy" ) {
+  fwrite(STDERR, "cannot destroy '" . $datasetName . "': dataset is busy\n");
   exit(1);
 }
 

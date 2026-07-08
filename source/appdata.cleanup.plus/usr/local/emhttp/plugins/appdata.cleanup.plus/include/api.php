@@ -713,6 +713,7 @@ function resolveSnapshotCandidates($token, $candidateIds) {
 function buildDashboardPayload() {
   $scanMetrics = appdataCleanupPlusCreateScanMetrics();
   $filesystemDiscoveryMeta = array();
+  $composeMeta = array();
   $settings = getAppdataCleanupPlusSafetySettings();
   appdataCleanupPlusMarkScanPhase($scanMetrics, "settings");
 
@@ -727,8 +728,10 @@ function buildDashboardPayload() {
   ));
 
   $containers = getDockerContainersSafe();
+  $dockerEngineReachable = $dockerRunning ? appdataCleanupPlusDockerEngineReachable() : false;
   appdataCleanupPlusMarkScanPhase($scanMetrics, "docker_query", array(
-    "containerCount" => is_array($containers) ? count($containers) : 0
+    "containerCount" => is_array($containers) ? count($containers) : 0,
+    "engineReachable" => $dockerEngineReachable
   ));
 
   if ( ! is_array($allFiles) ) {
@@ -739,19 +742,29 @@ function buildDashboardPayload() {
   appdataCleanupPlusMarkScanPhase($scanMetrics, "template_scan", array(
     "templateVolumeCount" => count($templateVolumes)
   ));
-  $dockerInventoryUnverified = appdataCleanupPlusDockerInventoryUnverified($dockerRunning, $containers, $templateVolumes);
+  $dockerInventoryUnverified = $dockerRunning && ! $dockerEngineReachable && count($templateVolumes) > 0;
 
-  $filesystemVolumes = buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning, $filesystemDiscoveryMeta);
+  $composeProtectedPaths = appdataCleanupPlusComposeReferencedPaths($settings, $composeMeta);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "compose_scan", array(
+    "projectCount" => isset($composeMeta["projectCount"]) ? (int)$composeMeta["projectCount"] : 0,
+    "fileCount" => isset($composeMeta["fileCount"]) ? (int)$composeMeta["fileCount"] : 0,
+    "protectedPathCount" => count($composeProtectedPaths),
+    "uncertain" => ! empty($composeMeta["uncertain"])
+  ));
+
+  $filesystemVolumes = buildFilesystemCandidateMap($templateVolumes, $containers, $settings, $dockerRunning, $filesystemDiscoveryMeta, $composeProtectedPaths);
   appdataCleanupPlusMarkScanPhase($scanMetrics, "filesystem_discovery", array(
     "filesystemVolumeCount" => count($filesystemVolumes),
     "directChildDirectoryCount" => isset($filesystemDiscoveryMeta["directChildDirectoryCount"]) ? (int)$filesystemDiscoveryMeta["directChildDirectoryCount"] : 0,
-    "truncated" => ! empty($filesystemDiscoveryMeta["truncated"])
+    "truncated" => ! empty($filesystemDiscoveryMeta["truncated"]),
+    "rootMounted" => ! empty($filesystemDiscoveryMeta["rootMounted"])
   ));
 
   $availableVolumes = $templateVolumes + $filesystemVolumes;
   $preFilterCount = count($availableVolumes);
 
   $availableVolumes = removeInstalledVolumeMatches($availableVolumes, $containers);
+  $availableVolumes = removeComposeReferencedCandidates($availableVolumes, $composeProtectedPaths);
   $availableVolumes = filterToExistingCandidates($availableVolumes);
   $availableVolumes = removeParentCandidates($availableVolumes);
   $availableVolumes = removeParentsUsedByInstalledContainers($availableVolumes, $containers);
@@ -765,10 +778,14 @@ function buildDashboardPayload() {
   if ( $dockerInventoryUnverified ) {
     $rows = appdataCleanupPlusApplyDockerInventorySafetyToRows($rows);
   }
+  if ( ! empty($composeMeta["uncertain"]) ) {
+    $rows = appdataCleanupPlusApplyDockerInventorySafetyToRows($rows, appdataCleanupPlusComposeInventoryUncertainMessage());
+  }
   $summary = buildSummary($rows);
   appdataCleanupPlusMarkScanPhase($scanMetrics, "row_build", array(
     "rowCount" => count($rows),
-    "dockerInventoryUnverified" => $dockerInventoryUnverified
+    "dockerInventoryUnverified" => $dockerInventoryUnverified,
+    "composeInventoryUncertain" => ! empty($composeMeta["uncertain"])
   ));
 
   $snapshot = writeAppdataCleanupPlusSnapshot(buildSnapshotCandidateMap($rows));
@@ -782,6 +799,14 @@ function buildDashboardPayload() {
     $scanWarningMessage = "Filesystem discovery reached the safety limit of " . (int)$filesystemDiscoveryMeta["candidateLimit"] . " direct appdata candidates. Partial results are shown; narrow Appdata sources and rescan if expected folders are missing.";
   }
 
+  if ( ! empty($filesystemDiscoveryMeta["rootMounted"]) ) {
+    $scanWarningMessage = trim("Filesystem discovery was skipped because a live container mounts the configured appdata root. Template-based rows are still shown when safe. " . $scanWarningMessage);
+  }
+
+  if ( ! empty($composeMeta["uncertain"]) ) {
+    $scanWarningMessage = trim(appdataCleanupPlusComposeInventoryUncertainMessage() . " " . $scanWarningMessage);
+  }
+
   if ( $dockerInventoryUnverified ) {
     $scanWarningMessage = trim(appdataCleanupPlusDockerInventoryUnverifiedMessage() . " " . $scanWarningMessage);
   }
@@ -791,6 +816,9 @@ function buildDashboardPayload() {
     $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings, true);
     if ( $dockerInventoryUnverified ) {
       $rows = appdataCleanupPlusApplyDockerInventorySafetyToRows($rows);
+    }
+    if ( ! empty($composeMeta["uncertain"]) ) {
+      $rows = appdataCleanupPlusApplyDockerInventorySafetyToRows($rows, appdataCleanupPlusComposeInventoryUncertainMessage());
     }
     $summary = buildSummary($rows);
     $scanWarningMessage = trim($scanWarningMessage . " Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.");

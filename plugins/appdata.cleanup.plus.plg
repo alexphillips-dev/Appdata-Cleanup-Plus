@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.31">
-<!ENTITY md5 "6ee53d0cd9c96f3867ff2f4a1a556294">
+<!ENTITY version "2026.07.08.32">
+<!ENTITY md5 "00a4164e256c33c271cc0b4e5055db1f">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.32
+- Safety: Protect appdata folders referenced by Docker Compose Manager projects so stopped/down compose stacks are not mistaken for orphaned cleanup candidates.
+- Safety: Add an explicit Docker engine health check so scans fail closed when Docker appears running but container inventory cannot be verified.
+- Safety: Skip filesystem discovery when a live container mounts an entire configured appdata root, avoiding broad false positives from root-level bind mounts.
+- ZFS: Tighten recursive destroy previews so recursive deletion is only offered for child dataset, snapshot, dependent, or clone cases, not unrelated dry-run failures like busy datasets.
+- Test: Extend behavior smoke coverage for Compose Manager protection, unresolved compose bind locks, Docker inventory verification, and non-escalating ZFS dry-run failures.
+
 ###2026.07.08.31
 - UI: Remove the Plugin Settings button and modal completely; Safe Mode is controlled only from the top-right Safe Mode card.
 - ZFS: Keep exact ZFS dataset cleanup enabled by default and force older saved settings to enabled so dataset rows can appear in Ready to Clean with a ZFS dataset source badge.
