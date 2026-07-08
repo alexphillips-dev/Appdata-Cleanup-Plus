@@ -3473,6 +3473,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   border-left: 3px solid #22c55e;
 }
 
+#acp-app .acp-results-section-zfs {
+  border-left: 3px solid #26d3c2;
+}
+
 #acp-app .acp-results-section-review,
 #acp-app .acp-results-section-template {
   border-left: 3px solid #eab308;

@@ -3679,6 +3679,11 @@
         message: ACP.t(strings, "readySectionMessage", "These look like orphaned appdata folders inside configured appdata roots. Quarantine is the recommended action.")
       },
       {
+        key: "zfs",
+        title: ACP.t(strings, "zfsSectionTitle", "ZFS datasets"),
+        message: ACP.t(strings, "zfsSectionMessage", "These are exact ZFS dataset-backed appdata rows. They use dataset destroy instead of folder quarantine.")
+      },
+      {
         key: "locked",
         title: ACP.t(strings, "protectedSectionTitle", "Blocked"),
         message: ACP.t(strings, "protectedSectionMessage", "Safety-blocked rows cannot be unlocked here.")
@@ -3694,6 +3699,10 @@
   function getResultsSectionKey(row) {
     if (row.ignored) {
       return "ignored";
+    }
+
+    if (row.storageKind === "zfs") {
+      return "zfs";
     }
 
     return getRowActionabilityDescriptor(row).value;

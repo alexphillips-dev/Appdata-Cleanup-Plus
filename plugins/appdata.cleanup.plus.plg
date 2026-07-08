@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.34">
-<!ENTITY md5 "22726a7d494406af49ded555963d1d47">
+<!ENTITY version "2026.07.08.35">
+<!ENTITY md5 "88b1153e0fe036884c996dc4f5c4dc33">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.07.08.35
+- UI: Move exact ZFS dataset-backed rows into their own ZFS datasets results section instead of mixing them into Ready to Clean.
+- UI: Give the ZFS datasets section a teal left accent that matches the ZFS dataset row icon color.
+- UX: Keep ZFS rows grouped separately while preserving their Discovery or Template source badge plus ZFS dataset badge.
+
 ###2026.07.08.34
 - ZFS: Automatically resolve exact dataset rows through Unraid user-share aliases, so datasets mounted on a physical pool path still show as ZFS when the table path is /mnt/user/appdata.
 - UI: Ensure the dedicated ZFS dataset icon and ZFS dataset badge appear for auto-detected dataset-backed rows without requiring manual ZFS path mappings.
