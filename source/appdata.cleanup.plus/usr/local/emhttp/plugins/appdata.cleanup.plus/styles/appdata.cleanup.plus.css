@@ -2529,7 +2529,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   border-radius: 8px;
   gap: 10px;
   min-height: calc(100vh - 48px);
-  padding: 18px 20px 72px;
+  padding: 18px 20px 100px;
 }
 
 #acp-app .acp-hero {
@@ -2938,12 +2938,13 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   background: var(--acp-bottom-bg);
   border-color: var(--acp-border-strong);
   border-radius: 8px 8px 0 0;
-  bottom: 0;
+  bottom: 28px;
+  box-sizing: border-box;
   box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.28);
-  left: 8px;
-  min-height: 56px;
-  right: 8px;
-  padding: 10px 16px;
+  left: 28px;
+  min-height: 50px;
+  right: 28px;
+  padding: 8px 14px;
 }
 
 #acp-app .acp-bottom-copy {
@@ -2954,16 +2955,16 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-bottom-actions {
-  gap: 12px;
+  gap: 10px;
   justify-content: flex-end;
   margin-left: auto;
 }
 
 #acp-app .acp-bottom-actions .acp-button {
-  font-size: 13px;
-  min-height: 44px;
-  min-width: 150px;
-  padding: 0 22px;
+  font-size: 12px;
+  min-height: 34px;
+  min-width: 116px;
+  padding: 0 14px;
   text-transform: none;
 }
 
@@ -3172,7 +3173,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-bottom-bar {
-  min-height: 56px;
+  min-height: 50px;
 }
 
 @media (max-width: 1320px) {
@@ -3195,8 +3196,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   #acp-app .acp-bottom-bar {
     align-items: stretch;
     flex-direction: column;
-    left: 6px;
-    right: 6px;
+    left: 16px;
+    right: 16px;
   }
 
   #acp-app .acp-bottom-selection-icon {
@@ -3216,6 +3217,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   }
 
   #acp-app .acp-bottom-actions .acp-button {
+    min-width: 0;
     width: 100%;
   }
 }
