@@ -86,12 +86,17 @@
         }
       } catch (_error) {}
 
-      plainText = String(xhr.responseText || "")
-        .replace(/<style[\s\S]*?<\/style>/gi, " ")
-        .replace(/<script[\s\S]*?<\/script>/gi, " ")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+      plainText = String(xhr.responseText || "");
+
+      // Do not try to make arbitrary HTML safe with regular expressions. If
+      // an upstream server returned markup, use the generic error below. This
+      // keeps malformed tags out of SweetAlert while preserving useful plain
+      // text responses.
+      if (plainText.indexOf("<") !== -1 || plainText.indexOf(">") !== -1) {
+        plainText = "";
+      } else {
+        plainText = plainText.replace(/\s+/g, " ").trim();
+      }
 
       if (plainText) {
         return plainText.slice(0, 240);

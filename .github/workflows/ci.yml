@@ -30,6 +30,13 @@ jobs:
           node --check source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.shared.js
           node --check source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.panels.js
           node --check source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.js
+          node --check tests/diagnostics_privacy_client.js
+          node --check tests/shared_client_security.js
+
+      - name: Run client security tests
+        run: |
+          node tests/diagnostics_privacy_client.js
+          node tests/shared_client_security.js
 
       - name: Check PHP syntax
         run: |
