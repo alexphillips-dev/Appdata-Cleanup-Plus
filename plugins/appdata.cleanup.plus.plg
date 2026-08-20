@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.07.08.56">
-<!ENTITY md5 "ba8b01012b5814f07ee8e20cdd19a8ca">
+<!ENTITY version "2026.08.20.01">
+<!ENTITY md5 "50345dede2b0ef07851e2d6cb23cdee5">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.08.20.01
+- Quarantine purge: Replace the obsolete typed DELETE gate with the shared confirmation checkbox.
+- Diagnostics privacy: Use schema allowlists for sensitive state, alias row and record IDs per export, remove raw search terms, and recursively redact paths, hosts, network addresses, credentials, tokens, and identifiers.
+- Diagnostics validation: Add server behavior coverage and CI guards that prevent sensitive export fields from returning.
+
 ###2026.07.08.56
 - Ignored items: Add a Show ignored / Hide ignored action directly to the Ignore list active notice, and display hidden paths in a separate gray-accent Ignored section with Details and Restore actions.
 - Test fixtures: Add a built-in Tools modal fixture helper that creates and removes safe acp-test-* appdata test rows for validating scan, dry run, quarantine, delete, and restore workflows.

@@ -2725,14 +2725,16 @@
         template: {},
         mount: {},
         share: {},
-        segment: {}
+        segment: {},
+        row: {}
       },
       counters: {
         name: 0,
         template: 0,
         mount: 0,
         share: 0,
-        segment: 0
+        segment: 0,
+        row: 0
       },
       replacements: []
     };
@@ -2806,7 +2808,84 @@
       text = text.split(raw).join(sanitized);
     });
 
+    text = text.replace(/\/(?:mnt|boot|var|tmp|etc|usr)(?:\/[^\s'"<>\[\](),;]+)+/g, function(path) {
+      return sanitizeDiagnosticsPath(path, redactor);
+    });
+    text = text.replace(/(\b(?:authorization|proxy-authorization)\s*[:=]\s*)(?:bearer\s+)?[^\s,;]+/gi, "$1<redacted>");
+    text = text.replace(/(\b(?:cookie|set-cookie)\s*:\s*)[^\r\n]+/gi, "$1<redacted>");
+    text = text.replace(/([?&](?:csrf|token|key|password|passwd|pass|secret|session|auth|api[_-]?key|access[_-]?token|refresh[_-]?token)[^=\s]*=)[^\s&]+/gi, "$1<redacted>");
+    text = text.replace(/(\b(?:csrf|token|api[_-]?key|access[_-]?token|refresh[_-]?token|password|passwd|secret|session|auth|credential|client[_-]?secret)\b\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;&]+)/gi, "$1<redacted>");
+    text = text.replace(/(\b(?:https?|wss?):\/\/)(?:[^/@\s]+@)?[^/\s:]+(?::\d+)?/gi, "$1<host>");
+    text = text.replace(/\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\b/g, "<jwt>");
+    text = text.replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "<email>");
+    text = text.replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, "<ipv4>");
+    text = text.replace(/\b(?:[A-F0-9]{2}:){5}[A-F0-9]{2}\b/gi, "<mac>");
+    text = text.replace(/(?:[A-F0-9]{0,4}:){2,7}[A-F0-9]{0,4}/gi, function(candidate) {
+      var colonCount = (candidate.match(/:/g) || []).length;
+      return candidate.indexOf("::") !== -1 || colonCount >= 7 ? "<ipv6>" : candidate;
+    });
+    text = text.replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, "<uuid>");
+    text = text.replace(/\b[0-9a-f]{32,}\b/gi, "<hex>");
+    text = text.replace(/\b[A-Za-z0-9_-]{40,}\b/g, "<token>");
+    text = text.replace(/(\b(?:host|hostname|server[_-]?name|tower[_-]?name)\b\s*[:=]\s*)[^\s,;]+/gi, "$1<host>");
+    text = text.replace(/\b[A-Z0-9][A-Z0-9.-]*\.(?:local|lan|home|internal)\b/gi, "<host>");
+
     return text;
+  }
+
+  function sanitizeDiagnosticsRowId(value, redactor) {
+    return getDiagnosticsAlias(redactor, "row", value, "row");
+  }
+
+  function diagnosticsKeyIsSensitive(key) {
+    var normalized = String(key || "").replace(/([a-z0-9])([A-Z])/g, "$1_$2");
+    return /(?:^|[_-])(?:authorization|cookie|csrf|token|api[_-]?key|access[_-]?token|refresh[_-]?token|password|passwd|secret|session|auth|credential|client[_-]?secret)(?:$|[_-])/i.test(normalized);
+  }
+
+  function diagnosticsKeyLooksLikePath(key) {
+    return /(?:path|root|directory|dir|mountpoint|destination|source)$/i.test(String(key || ""));
+  }
+
+  function diagnosticsKeyLooksLikeIdentifier(key) {
+    return /(?:^|[_-])ids?$/i.test(String(key || "").replace(/([a-z0-9])([A-Z])/g, "$1_$2"));
+  }
+
+  function sanitizeDiagnosticsValue(value, redactor, keyName) {
+    var sanitized = {};
+
+    if (diagnosticsKeyIsSensitive(keyName)) {
+      if (/(?:present|count|enabled|exists)$/i.test(String(keyName || "")) && (typeof value === "boolean" || typeof value === "number")) {
+        return value;
+      }
+
+      return "<redacted>";
+    }
+
+    if ($.isArray(value)) {
+      return $.map(value, function(item) {
+        return sanitizeDiagnosticsValue(item, redactor, keyName);
+      });
+    }
+
+    if ($.isPlainObject(value)) {
+      $.each(value, function(key, item) {
+        var sanitizedKey = sanitizeDiagnosticsFreeText(key, redactor);
+        sanitized[sanitizedKey] = sanitizeDiagnosticsValue(item, redactor, key);
+      });
+      return sanitized;
+    }
+
+    if (typeof value === "string") {
+      if (diagnosticsKeyLooksLikeIdentifier(keyName) && !/^<[^>]+>$/.test(value)) {
+        return sanitizeDiagnosticsRowId(value, redactor);
+      }
+
+      return diagnosticsKeyLooksLikePath(keyName)
+        ? sanitizeDiagnosticsPath(value, redactor)
+        : sanitizeDiagnosticsFreeText(value, redactor);
+    }
+
+    return value;
   }
 
   function sanitizeDiagnosticsName(value, redactor, tokenLabel) {
@@ -2859,17 +2938,20 @@
     sanitizedSegments = segments.slice(0);
 
     if (raw.indexOf("/mnt/") === 0) {
-      if (segments[2] && !/^(user|user0|cache|disk\d+)$/i.test(segments[2])) {
+      if (segments[2] && !/^<[^>]+>$/.test(segments[2]) && !/^(user|user0|cache|disk\d+)$/i.test(segments[2])) {
         sanitizedSegments[2] = getDiagnosticsAlias(redactor, "mount", segments[2], "mount");
+        registerDiagnosticsReplacement(redactor, segments[2], sanitizedSegments[2]);
       }
 
-      if (segments[3] && !/^(appdata|system|domains|isos)$/i.test(segments[3])) {
+      if (segments[3] && !/^<[^>]+>$/.test(segments[3]) && !/^(appdata|system|domains|isos)$/i.test(segments[3])) {
         sanitizedSegments[3] = getDiagnosticsAlias(redactor, "share", segments[3], "share");
+        registerDiagnosticsReplacement(redactor, segments[3], sanitizedSegments[3]);
       }
 
       $.each(sanitizedSegments, function(index, segment) {
-        if (index >= 4 && segment) {
+        if (index >= 4 && segment && !/^<[^>]+>$/.test(segment)) {
           sanitizedSegments[index] = getDiagnosticsAlias(redactor, "segment", segment, "path");
+          registerDiagnosticsReplacement(redactor, segment, sanitizedSegments[index]);
         }
       });
 
@@ -2880,8 +2962,9 @@
 
     if (raw.indexOf("/boot/") === 0) {
       $.each(sanitizedSegments, function(index, segment) {
-        if (index >= 4 && segment) {
+        if (index >= 4 && segment && !/^<[^>]+>$/.test(segment)) {
           sanitizedSegments[index] = getDiagnosticsAlias(redactor, "segment", segment, "path");
+          registerDiagnosticsReplacement(redactor, segment, sanitizedSegments[index]);
         }
       });
 
@@ -2909,6 +2992,7 @@
   function sanitizeDiagnosticsRow(row, redactor) {
     var nextRow = $.extend(true, {}, row || {});
 
+    nextRow.id = sanitizeDiagnosticsRowId(nextRow.id || "", redactor);
     nextRow.name = sanitizeDiagnosticsName(nextRow.name || "", redactor, "app");
     nextRow.sourceRoot = sanitizeDiagnosticsPath(nextRow.sourceRoot || "", redactor);
     nextRow.path = sanitizeDiagnosticsPath(nextRow.path || "", redactor);
@@ -2969,9 +3053,11 @@
         nextResult.displayPath = sanitizeDiagnosticsPath(nextResult.displayPath || nextResult.path || "", redactor);
         nextResult.path = sanitizeDiagnosticsPath(nextResult.path || "", redactor);
         nextResult.message = sanitizeDiagnosticsFreeText(nextResult.message || "", redactor);
+        delete nextResult.id;
         delete nextResult.row;
         return nextResult;
       });
+      delete nextEntry.requestedIds;
       nextEntry.message = sanitizeDiagnosticsFreeText(nextEntry.message || "", redactor);
 
       return nextEntry;
@@ -3042,19 +3128,22 @@
       return sanitizeDiagnosticsPath(path, redactor);
     });
 
-    return {
+    var payload = {
+      schemaVersion: 2,
       generatedAt: generatedAt.toISOString(),
       pluginVersion: String(config.pluginVersion || ""),
       redaction: {
         sanitized: true,
-        strategy: "Paths keep structural roots while app-specific segments, names, and template filenames are aliased."
+        version: 2,
+        strategy: "Sensitive values are scrubbed recursively; paths, names, template filenames, and row identifiers use export-scoped aliases."
       },
       hostTheme: {
         name: ACP.resolveHostThemeName ? ACP.resolveHostThemeName() : "",
         themeClass: ACP.inferThemeClass ? ACP.inferThemeClass(ACP.resolveHostThemeName ? ACP.resolveHostThemeName() : "") : ""
       },
       uiState: {
-        searchTerm: $.trim(String(els.$search.val() || "")),
+        searchActive: !!$.trim(String(els.$search.val() || "")),
+        searchLength: $.trim(String(els.$search.val() || "")).length,
         sortMode: String(state.sortMode || "name"),
         busy: !!state.busy
       },
@@ -3078,16 +3167,24 @@
         loading: !!(state.quarantine && state.quarantine.loading),
         summary: $.extend({}, (state.quarantine && state.quarantine.summary) || {})
       },
-      notices: notices,
+      notices: $.map(notices, function(notice) {
+        return {
+          type: String((notice && notice.type) || ""),
+          title: sanitizeDiagnosticsFreeText((notice && notice.title) || "", redactor),
+          message: sanitizeDiagnosticsFreeText((notice && notice.message) || "", redactor)
+        };
+      }),
       auditHistory: sanitizedAuditHistory,
       rows: sanitizedRows,
       visibleRowIds: $.map(visibleRows, function(row) {
-        return row && row.id ? String(row.id) : null;
+        return row && row.id ? sanitizeDiagnosticsRowId(row.id, redactor) : null;
       }),
       selectedRowIds: $.map(selectedRows, function(row) {
-        return row && row.id ? String(row.id) : null;
+        return row && row.id ? sanitizeDiagnosticsRowId(row.id, redactor) : null;
       })
     };
+
+    return sanitizeDiagnosticsValue(payload, redactor, "");
   }
 
   function buildDiagnosticsFilename() {
@@ -3111,9 +3208,8 @@
     var summary = state.summary || {};
     var selectedRows = getSelectedRows();
     var scanRoots = $.isArray(insights.scanRoots) ? insights.scanRoots : [];
-    var notices = $.map(buildLocalNotices(), function(notice) {
-      return $.trim(String((notice && notice.title) || ""));
-    });
+    var redactor = buildDiagnosticsRedactor();
+    var notices;
     var lines = [
       "Appdata Cleanup Plus support summary",
       "Version: " + String(config.pluginVersion || "unknown"),
@@ -3133,6 +3229,16 @@
         " size=" + String((((state.quarantine || {}).summary || {}).sizeLabel || "0 B"))
     ];
 
+    $.each(state.rows || [], function(_, row) {
+      sanitizeDiagnosticsRow(row, redactor);
+    });
+    scanRoots = $.map(scanRoots, function(path) {
+      return sanitizeDiagnosticsPath(path, redactor);
+    });
+    notices = $.map(buildLocalNotices(), function(notice) {
+      return sanitizeDiagnosticsFreeText($.trim(String((notice && notice.title) || "")), redactor);
+    });
+
     if (scanRoots.length) {
       lines.push("Scan roots:");
       $.each(scanRoots, function(_, rootPath) {
@@ -3147,7 +3253,7 @@
       });
     }
 
-    return lines.join("\n");
+    return sanitizeDiagnosticsFreeText(lines.join("\n"), redactor);
   }
 
   function summarizeScanMetrics(metrics) {
@@ -3203,7 +3309,7 @@
     diagnostics.push("");
     diagnostics.push("Diagnostics text");
     diagnostics.push("Generated: " + String(payload.generatedAt || ""));
-    diagnostics.push("Diagnostics export: " + (exportErrorMessage ? "failed - " + String(exportErrorMessage || "") : "server bundle included"));
+    diagnostics.push("Diagnostics export: " + (exportErrorMessage ? "failed - " + sanitizeDiagnosticsFreeText(String(exportErrorMessage || ""), buildDiagnosticsRedactor()) : "server bundle included"));
 
     if (runtime.pluginVersion || runtime.phpVersion || runtime.unraidVersion) {
       diagnostics.push("Server: plugin=" + String(runtime.pluginVersion || "unknown") +
@@ -3246,7 +3352,7 @@
       " visible=" + String((payload.visibleRowIds || []).length) +
       " selected=" + String((payload.selectedRowIds || []).length));
 
-    return diagnostics.join("\n");
+    return sanitizeDiagnosticsFreeText(diagnostics.join("\n"), buildDiagnosticsRedactor());
   }
 
   function copyTextToClipboard(text) {
@@ -3321,7 +3427,7 @@
       var payload = buildDiagnosticsPayload();
       var serverMetrics;
 
-      payload.serverDiagnostics = response && response.bundle ? response.bundle : {};
+      payload.serverDiagnostics = sanitizeDiagnosticsValue(response && response.bundle ? response.bundle : {}, buildDiagnosticsRedactor(), "");
       serverMetrics = extractServerLatestScanMetrics(payload.serverDiagnostics);
       if ((!payload.scan.metrics || !$.isArray(payload.scan.metrics.phases) || !payload.scan.metrics.phases.length) && !$.isEmptyObject(serverMetrics)) {
         payload.scan.metrics = serverMetrics;

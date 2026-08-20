@@ -303,7 +303,15 @@ function appdataCleanupPlusDiagnosticsRedactPath($path) {
   $raw = trim(str_replace("\\", "/", (string)$path));
   $segments = array();
 
-  if ( $raw === "" || $raw[0] !== "/" ) {
+  if ( $raw === "" ) {
+    return $raw;
+  }
+
+  if ( preg_match('/^[A-Z]:\//i', $raw) ) {
+    return "<path>";
+  }
+
+  if ( $raw[0] !== "/" ) {
     return $raw;
   }
 
@@ -350,33 +358,169 @@ function appdataCleanupPlusDiagnosticsRedactText($value) {
   $text = preg_replace_callback('#/(?:mnt|boot|var|tmp|etc|usr)(?:/[^\\s\'"<>\\[\\](),;]+)+#', function($matches) {
     return appdataCleanupPlusDiagnosticsRedactPath($matches[0]);
   }, $text);
-  $text = preg_replace('/([?&](?:csrf|token|key|password|passwd|pass|secret|session|auth)[^=\\s]*=)[^\\s&]+/i', '$1<redacted>', $text);
+  $text = preg_replace('/(\\b(?:authorization|proxy-authorization)\\s*[:=]\\s*)(?:bearer\\s+)?[^\\s,;]+/i', '$1<redacted>', $text);
+  $text = preg_replace('/(\\b(?:cookie|set-cookie)\\s*:\\s*)[^\\r\\n]+/i', '$1<redacted>', $text);
+  $text = preg_replace('/([?&](?:csrf|token|key|password|passwd|pass|secret|session|auth|api[_-]?key|access[_-]?token|refresh[_-]?token)[^=\\s]*=)[^\\s&]+/i', '$1<redacted>', $text);
+  $text = preg_replace('/(\\b(?:csrf|token|api[_-]?key|access[_-]?token|refresh[_-]?token|password|passwd|secret|session|auth|credential|client[_-]?secret)\\b\\s*[:=]\\s*)(?:"[^"]*"|\'[^\']*\'|[^\\s,;&]+)/i', '$1<redacted>', $text);
+  $text = preg_replace('#(\\b(?:https?|wss?)://)(?:[^/@\\s]+@)?[^/\\s:]+(?::\\d+)?#i', '$1<host>', $text);
+  $text = preg_replace('/\\beyJ[A-Za-z0-9_-]{5,}\\.[A-Za-z0-9_-]{5,}\\.[A-Za-z0-9_-]{5,}\\b/', '<jwt>', $text);
   $text = preg_replace('/\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b/i', '<email>', $text);
   $text = preg_replace('/\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b/', '<ipv4>', $text);
+  $text = preg_replace_callback('/(?<![A-Za-z0-9])(?:[A-F0-9]{0,4}:){2,7}[A-F0-9]{0,4}(?![A-Za-z0-9])/i', function($matches) {
+    return filter_var($matches[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? '<ipv6>' : $matches[0];
+  }, $text);
   $text = preg_replace('/\\b(?:[A-F0-9]{2}:){5}[A-F0-9]{2}\\b/i', '<mac>', $text);
   $text = preg_replace('/\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b/i', '<uuid>', $text);
   $text = preg_replace('/\\b[0-9a-f]{32,}\\b/i', '<hex>', $text);
+  $text = preg_replace('/\\b[A-Za-z0-9_-]{40,}\\b/', '<token>', $text);
+  $text = preg_replace('/(\\b(?:host|hostname|server[_-]?name|tower[_-]?name|name)\\b\\s*[:=]\\s*)[^\\s,;]+/i', '$1<host>', $text);
+  $text = preg_replace('/\\b[A-Z0-9][A-Z0-9.-]*\\.(?:local|lan|home|internal)\\b/i', '<host>', $text);
   $text = preg_replace('/^([A-Z][a-z]{2}\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2}\\s+)\\S+/', '$1<host>', $text);
 
   return $text;
 }
 
-function appdataCleanupPlusDiagnosticsRedactValue($value) {
+function appdataCleanupPlusDiagnosticsKeyIsSensitive($key) {
+  $normalized = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', (string)$key);
+  return preg_match('/(?:^|[_-])(?:authorization|cookie|csrf|token|api[_-]?key|access[_-]?token|refresh[_-]?token|password|passwd|secret|session|auth|credential|client[_-]?secret)(?:$|[_-])/i', $normalized) === 1;
+}
+
+function appdataCleanupPlusDiagnosticsKeyLooksLikePath($key) {
+  return preg_match('/(?:path|root|directory|dir|mountpoint|destination|source)$/i', (string)$key) === 1;
+}
+
+function appdataCleanupPlusDiagnosticsRedactValue($value, $keyName="") {
+  if ( appdataCleanupPlusDiagnosticsKeyIsSensitive($keyName) ) {
+    if ( preg_match('/(?:present|count|enabled|exists)$/i', (string)$keyName) && (is_bool($value) || is_int($value) || is_float($value)) ) {
+      return $value;
+    }
+
+    return "<redacted>";
+  }
+
   if ( is_array($value) ) {
     $redacted = array();
 
     foreach ( $value as $key => $item ) {
-      $redacted[$key] = appdataCleanupPlusDiagnosticsRedactValue($item);
+      $redactedKey = is_string($key) ? appdataCleanupPlusDiagnosticsRedactText($key) : $key;
+      $redacted[$redactedKey] = appdataCleanupPlusDiagnosticsRedactValue($item, is_string($key) ? $key : "");
     }
 
     return $redacted;
   }
 
   if ( is_string($value) ) {
+    if ( appdataCleanupPlusDiagnosticsKeyLooksLikePath($keyName) ) {
+      return appdataCleanupPlusDiagnosticsRedactPath($value);
+    }
+
     return appdataCleanupPlusDiagnosticsRedactText($value);
   }
 
   return $value;
+}
+
+function appdataCleanupPlusDiagnosticsStateFileEnvelope($path, $data, $count, $limit=0) {
+  return array(
+    "path" => appdataCleanupPlusDiagnosticsRedactPath($path),
+    "exists" => is_file($path),
+    "readable" => is_file($path) ? is_readable($path) : null,
+    "count" => (int)$count,
+    "truncated" => $limit > 0 && $count > $limit,
+    "data" => $data
+  );
+}
+
+function appdataCleanupPlusDiagnosticsSafetySettingsSummary() {
+  $path = appdataCleanupPlusSafetySettingsFile();
+  $settings = getAppdataCleanupPlusSafetySettings();
+  $manualSources = array();
+  $zfsMappings = array();
+
+  foreach ( isset($settings["manualAppdataSources"]) && is_array($settings["manualAppdataSources"]) ? $settings["manualAppdataSources"] : array() as $source ) {
+    $manualSources[] = appdataCleanupPlusDiagnosticsRedactPath($source);
+  }
+
+  foreach ( isset($settings["zfsPathMappings"]) && is_array($settings["zfsPathMappings"]) ? $settings["zfsPathMappings"] : array() as $mapping ) {
+    if ( ! is_array($mapping) ) {
+      continue;
+    }
+
+    $zfsMappings[] = array(
+      "shareRoot" => appdataCleanupPlusDiagnosticsRedactPath(isset($mapping["shareRoot"]) ? $mapping["shareRoot"] : ""),
+      "datasetRoot" => appdataCleanupPlusDiagnosticsRedactPath(isset($mapping["datasetRoot"]) ? $mapping["datasetRoot"] : "")
+    );
+  }
+
+  $summary = array(
+    "enablePermanentDelete" => ! empty($settings["enablePermanentDelete"]),
+    "enableZfsDatasetDelete" => ! empty($settings["enableZfsDatasetDelete"]),
+    "quarantineRoot" => appdataCleanupPlusDiagnosticsRedactPath(isset($settings["quarantineRoot"]) ? $settings["quarantineRoot"] : ""),
+    "defaultQuarantinePurgeDays" => isset($settings["defaultQuarantinePurgeDays"]) ? (int)$settings["defaultQuarantinePurgeDays"] : 0,
+    "manualAppdataSources" => $manualSources,
+    "zfsPathMappings" => $zfsMappings
+  );
+
+  return appdataCleanupPlusDiagnosticsStateFileEnvelope($path, $summary, count($summary), 0);
+}
+
+function appdataCleanupPlusDiagnosticsQuarantineRegistrySummary($limit=50) {
+  $path = appdataCleanupPlusQuarantineRegistryFile();
+  $registry = getAppdataCleanupPlusQuarantineRegistry();
+  $records = array();
+  $count = count($registry);
+  $index = 0;
+
+  foreach ( $registry as $record ) {
+    if ( $limit > 0 && count($records) >= $limit ) {
+      break;
+    }
+
+    if ( ! is_array($record) ) {
+      continue;
+    }
+
+    $index++;
+    $records[] = array(
+      "id" => "<quarantine-" . $index . ">",
+      "sourcePath" => appdataCleanupPlusDiagnosticsRedactPath(isset($record["sourcePath"]) ? $record["sourcePath"] : ""),
+      "destination" => appdataCleanupPlusDiagnosticsRedactPath(isset($record["destination"]) ? $record["destination"] : ""),
+      "quarantineRoot" => appdataCleanupPlusDiagnosticsRedactPath(isset($record["quarantineRoot"]) ? $record["quarantineRoot"] : ""),
+      "quarantinedAt" => isset($record["quarantinedAt"]) ? (string)$record["quarantinedAt"] : "",
+      "purgeAt" => isset($record["purgeAt"]) ? (string)$record["purgeAt"] : "",
+      "purgeScheduleSource" => isset($record["purgeScheduleSource"]) ? (string)$record["purgeScheduleSource"] : "",
+      "purgeErrorAt" => isset($record["purgeErrorAt"]) ? (string)$record["purgeErrorAt"] : "",
+      "purgeErrorPresent" => ! empty($record["purgeErrorMessage"]),
+      "sourceKind" => isset($record["sourceKind"]) ? appdataCleanupPlusDiagnosticsRedactText($record["sourceKind"]) : "",
+      "sizeBytes" => isset($record["sizeBytes"]) && $record["sizeBytes"] !== "" ? (int)$record["sizeBytes"] : null
+    );
+  }
+
+  return appdataCleanupPlusDiagnosticsStateFileEnvelope($path, $records, $count, $limit);
+}
+
+function appdataCleanupPlusDiagnosticsIgnoredCandidatesSummary($limit=50) {
+  $path = appdataCleanupPlusIgnoreListFile();
+  $ignoredCandidates = getIgnoredAppdataCleanupPlusCandidates();
+  $records = array();
+  $count = count($ignoredCandidates);
+  $index = 0;
+
+  foreach ( $ignoredCandidates as $key => $record ) {
+    if ( $limit > 0 && count($records) >= $limit ) {
+      break;
+    }
+
+    $record = is_array($record) ? $record : array();
+    $index++;
+    $records[] = array(
+      "id" => "<ignored-" . $index . ">",
+      "path" => appdataCleanupPlusDiagnosticsRedactPath(isset($record["path"]) ? $record["path"] : $key),
+      "ignoredAt" => isset($record["ignoredAt"]) ? (string)$record["ignoredAt"] : ""
+    );
+  }
+
+  return appdataCleanupPlusDiagnosticsStateFileEnvelope($path, $records, $count, $limit);
 }
 
 function appdataCleanupPlusDiagnosticsLogPaths() {
@@ -459,11 +603,12 @@ function appdataCleanupPlusDiagnosticsRedactAuditHistory($history) {
         $nextResult["message"] = $message;
       }
 
-      unset($nextResult["row"]);
+      unset($nextResult["id"], $nextResult["row"]);
       $nextResults[] = appdataCleanupPlusDiagnosticsRedactValue($nextResult);
     }
 
     $nextEntry["results"] = $nextResults;
+    unset($nextEntry["requestedIds"]);
     if ( isset($nextEntry["message"]) ) {
       $nextEntry["message"] = appdataCleanupPlusDiagnosticsRedactText($nextEntry["message"]);
     }
@@ -622,9 +767,22 @@ function appdataCleanupPlusDiagnosticsUnraidVersion() {
       continue;
     }
 
-    $contents = @file_get_contents($path, false, null, 0, 2048);
-    if ( is_string($contents) && trim($contents) !== "" ) {
-      return appdataCleanupPlusDiagnosticsRedactText(trim($contents));
+    $contents = @file_get_contents($path, false, null, 0, 4096);
+    if ( ! is_string($contents) || trim($contents) === "" ) {
+      continue;
+    }
+
+    $parsed = @parse_ini_string($contents);
+    if ( is_array($parsed) ) {
+      foreach ( array("version", "VERSION", "UnraidVersion") as $versionKey ) {
+        if ( isset($parsed[$versionKey]) && trim((string)$parsed[$versionKey]) !== "" ) {
+          return appdataCleanupPlusDiagnosticsRedactText(trim((string)$parsed[$versionKey]));
+        }
+      }
+    }
+
+    if ( preg_match('/(?:^|\n)\s*(?:version|UnraidVersion)\s*=\s*["\']?([^"\'\r\n]+)["\']?/i', $contents, $matches) ) {
+      return appdataCleanupPlusDiagnosticsRedactText(trim((string)$matches[1]));
     }
   }
 
@@ -633,17 +791,20 @@ function appdataCleanupPlusDiagnosticsUnraidVersion() {
 
 function buildAppdataCleanupPlusDiagnosticsBundle() {
   $logs = array();
+  $bundle = array();
 
   foreach ( appdataCleanupPlusDiagnosticsLogPaths() as $path ) {
     $logs[] = appdataCleanupPlusDiagnosticsReadMatchingLogTail($path);
   }
 
-  return array(
+  $bundle = array(
     "ok" => true,
+    "schemaVersion" => 2,
     "generatedAt" => date("c"),
     "redaction" => array(
       "enabled" => true,
-      "strategy" => "Server diagnostics redact paths, IP addresses, emails, MAC addresses, tokens, UUIDs, long hex values, and syslog hostnames. Review before sharing."
+      "version" => 2,
+      "strategy" => "Server diagnostics use schema allowlists for sensitive state, alias record IDs, and redact paths, hosts, network addresses, emails, credentials, tokens, UUIDs, and opaque identifiers. Review before sharing."
     ),
     "runtime" => array(
       "pluginVersion" => appdataCleanupPlusDiagnosticsPluginVersion(),
@@ -655,9 +816,9 @@ function buildAppdataCleanupPlusDiagnosticsBundle() {
       "dockerRuntimeExists" => is_dir(appdataCleanupPlusDockerRuntimePath())
     ),
     "state" => array(
-      "safetySettings" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusSafetySettingsFile(), 0),
-      "quarantineRegistry" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusQuarantineRegistryFile(), 50),
-      "ignoredCandidates" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusIgnoreListFile(), 50),
+      "safetySettings" => appdataCleanupPlusDiagnosticsSafetySettingsSummary(),
+      "quarantineRegistry" => appdataCleanupPlusDiagnosticsQuarantineRegistrySummary(50),
+      "ignoredCandidates" => appdataCleanupPlusDiagnosticsIgnoredCandidatesSummary(50),
       "auditHistory" => appdataCleanupPlusDiagnosticsRedactAuditHistory(getAppdataCleanupPlusAuditHistory(50)),
       "runtimeLocks" => appdataCleanupPlusDiagnosticsRuntimeLockSummary(),
       "statsCache" => array(
@@ -670,6 +831,8 @@ function buildAppdataCleanupPlusDiagnosticsBundle() {
     ),
     "logs" => $logs
   );
+
+  return appdataCleanupPlusDiagnosticsRedactValue($bundle);
 }
 
 function resolveSnapshotCandidates($token, $candidateIds) {

@@ -545,8 +545,36 @@ appendAppdataCleanupPlusAuditEntry(array(
     )
   )
 ));
+$diagnosticsRegistryBefore = getAppdataCleanupPlusQuarantineRegistry();
+$diagnosticsIgnoredBefore = getIgnoredAppdataCleanupPlusCandidates();
+$diagnosticsRegistryFixture = $diagnosticsRegistryBefore;
+$diagnosticsRegistryFixture[] = array(
+  "id" => "diagnostics-private-quarantine-id",
+  "name" => "DiagnosticsPrivateQuarantineApp",
+  "sourcePath" => "/mnt/user/DiagnosticsPrivateShare/DiagnosticsPrivateQuarantineApp",
+  "destination" => "/mnt/user/DiagnosticsPrivateQuarantine/DiagnosticsPrivateQuarantineApp",
+  "quarantineRoot" => "/mnt/user/DiagnosticsPrivateQuarantine",
+  "quarantinedAt" => "2026-08-20T12:00:00+00:00",
+  "purgeAt" => "2026-08-27T12:00:00+00:00",
+  "purgeScheduleSource" => "manual",
+  "sourceKind" => "template",
+  "sourceSummary" => "DiagnosticsPrivateTemplate",
+  "targetSummary" => "/private-target"
+);
+setAppdataCleanupPlusQuarantineRegistry($diagnosticsRegistryFixture);
+setIgnoredAppdataCleanupPlusCandidates(array(
+  "/mnt/user/DiagnosticsIgnoredShare/DiagnosticsIgnoredApp" => array(
+    "path" => "/mnt/user/DiagnosticsIgnoredShare/DiagnosticsIgnoredApp",
+    "ignoredAt" => "2026-08-20T12:30:00+00:00",
+    "name" => "DiagnosticsIgnoredApp",
+    "sourceSummary" => "DiagnosticsIgnoredTemplate",
+    "targetSummary" => "/private-target"
+  )
+));
 $diagnosticsBundle = buildAppdataCleanupPlusDiagnosticsBundle();
 $diagnosticsJson = appdataCleanupPlusJsonEncode($diagnosticsBundle);
+setAppdataCleanupPlusQuarantineRegistry($diagnosticsRegistryBefore);
+setIgnoredAppdataCleanupPlusCandidates($diagnosticsIgnoredBefore);
 behaviorSmokeAssertContains("max children", $diagnosticsJson, "Diagnostics bundle should include matching php-fpm log context.");
 behaviorSmokeAssertContains("gateway timeout", $diagnosticsJson, "Diagnostics bundle should include matching nginx timeout context.");
 behaviorSmokeAssertContains("update_version", $diagnosticsJson, "Diagnostics bundle should include relevant emhttpd plugin context.");
@@ -560,6 +588,32 @@ behaviorSmokeAssertNotContains("flash_backup", $diagnosticsJson, "Diagnostics bu
 behaviorSmokeAssertNotContains("zpool import", $diagnosticsJson, "Diagnostics bundle should not include unrelated emhttpd startup noise.");
 behaviorSmokeAssertNotContains("SensitiveAppName", $diagnosticsJson, "Diagnostics bundle should redact nested audit app names.");
 behaviorSmokeAssertNotContains("\"row\"", $diagnosticsJson, "Diagnostics bundle should omit nested audit row payloads.");
+behaviorSmokeAssertSame(2, isset($diagnosticsBundle["schemaVersion"]) ? (int)$diagnosticsBundle["schemaVersion"] : 0, "Diagnostics bundle should declare the sanitized schema version.");
+behaviorSmokeAssertSame(2, isset($diagnosticsBundle["redaction"]["version"]) ? (int)$diagnosticsBundle["redaction"]["version"] : 0, "Diagnostics bundle should declare the redaction version.");
+behaviorSmokeAssertNotContains("diagnostics-private-quarantine-id", $diagnosticsJson, "Diagnostics bundle should alias quarantine record identifiers.");
+behaviorSmokeAssertNotContains("DiagnosticsPrivateQuarantineApp", $diagnosticsJson, "Diagnostics bundle should omit quarantine app names.");
+behaviorSmokeAssertNotContains("DiagnosticsPrivateTemplate", $diagnosticsJson, "Diagnostics bundle should omit quarantine template summaries.");
+behaviorSmokeAssertNotContains("DiagnosticsIgnoredShare", $diagnosticsJson, "Diagnostics bundle should sanitize ignored-path object keys and values.");
+behaviorSmokeAssertNotContains("DiagnosticsIgnoredApp", $diagnosticsJson, "Diagnostics bundle should omit ignored app names.");
+behaviorSmokeAssertNotContains("DiagnosticsIgnoredTemplate", $diagnosticsJson, "Diagnostics bundle should omit ignored template summaries.");
+behaviorSmokeAssertContains("<quarantine-", $diagnosticsJson, "Diagnostics bundle should preserve quarantine troubleshooting records with export aliases.");
+behaviorSmokeAssertContains("<ignored-1>", $diagnosticsJson, "Diagnostics bundle should preserve ignored-record troubleshooting data with export aliases.");
+
+$diagnosticsPrivacyProbe = appdataCleanupPlusJsonEncode(appdataCleanupPlusDiagnosticsRedactValue(array(
+  "/mnt/user/DiagnosticsProbeShare/DiagnosticsProbeApp" => array(
+    "authorization" => "Bearer eyJhbGciOiJIUzI1NiJ9.abcde12345.signature12345",
+    "password" => "diagnostics-plain-password",
+    "ipv6" => "2001:db8::1234",
+    "hostname" => "diagnostics-private-nas.local",
+    "path" => "/mnt/user/DiagnosticsProbeShare/DiagnosticsProbeApp"
+  )
+)));
+behaviorSmokeAssertNotContains("DiagnosticsProbeShare", $diagnosticsPrivacyProbe, "Diagnostics redaction should sanitize associative path keys.");
+behaviorSmokeAssertNotContains("DiagnosticsProbeApp", $diagnosticsPrivacyProbe, "Diagnostics redaction should sanitize path values.");
+behaviorSmokeAssertNotContains("eyJhbGciOiJIUzI1NiJ9", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove bearer and JWT values.");
+behaviorSmokeAssertNotContains("diagnostics-plain-password", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove credential fields.");
+behaviorSmokeAssertNotContains("2001:db8::1234", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove IPv6 addresses.");
+behaviorSmokeAssertNotContains("diagnostics-private-nas.local", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove hostnames.");
 
 $scheduledPurgeQuarantineRoot = $stateRoot . "/scheduled-purge-quarantine";
 $scheduledPurgeDestination = $scheduledPurgeQuarantineRoot . "/20260330-121000/mnt/user/appdata/scheduled-purge";

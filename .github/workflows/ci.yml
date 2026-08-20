@@ -34,6 +34,9 @@ jobs:
       - name: Check destructive confirmation flows
         run: bash scripts/test_ui_confirmation.sh
 
+      - name: Check diagnostics privacy guards
+        run: bash scripts/test_diagnostics_privacy.sh
+
       - name: Check shell syntax
         run: bash -n scripts/*.sh pkg_build.sh
 
