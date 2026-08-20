@@ -2,17 +2,20 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.08.20.12">
+<!ENTITY version "2026.08.20.13">
 <!ENTITY md5 "e7e0e45d70a89938fb9550a9225a53c7">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/refs/heads/dev/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.08.20.13
+Repair dev manifest XML parsing and enforce cache-safe update URLs.
+
 ###2026.08.20.12
 Harden client error handling and complete CI security coverage.
 
@@ -1151,7 +1154,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/refs/heads/dev/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
@@ -1160,8 +1163,8 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 rm -rf /usr/local/emhttp/plugins/ca.cleanup.appdata/CA.page
 rm -rf /usr/local/emhttp/plugins/ca.cleanup.appdata/caHelp.page
 rm -rf /usr/local/emhttp/plugins/ca.cleanup.appdata
-cat > /etc/cron.d/appdata.cleanup.plus <<'EOF'
-17 * * * * root /usr/bin/php /usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/scheduled-purge.php 2>&1 >/dev/null | /usr/bin/logger -t appdata.cleanup.plus-scheduled-purge
+cat &gt; /etc/cron.d/appdata.cleanup.plus &lt;&lt;'EOF'
+17 * * * * root /usr/bin/php /usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/scheduled-purge.php 2&gt;&amp;1 &gt;/dev/null &#124; /usr/bin/logger -t appdata.cleanup.plus-scheduled-purge
 EOF
 chmod 0644 /etc/cron.d/appdata.cleanup.plus
 echo ""

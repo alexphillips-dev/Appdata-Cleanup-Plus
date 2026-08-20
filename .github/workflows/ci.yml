@@ -58,6 +58,7 @@ jobs:
 
       - name: Run release guards
         run: |
+          bash scripts/test_manifest_xml_guard.sh
           bash scripts/release_guard.sh
           bash scripts/ca_readiness_guard.sh
           bash scripts/test_release_source_ref.sh
