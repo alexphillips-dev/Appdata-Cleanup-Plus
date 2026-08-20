@@ -4464,7 +4464,7 @@
     if (!state.scanToken && Number(state.summary.total || 0) > 0) {
       detailText = ACP.t(strings, "selectionHintReadOnly", "Scan results are read-only right now because the secure action snapshot could not be created.");
     } else if (selectedActionRows.length && state.settings.enablePermanentDelete) {
-      detailText = ACP.t(strings, "selectionHintDeleteMode", "Permanent delete requires typed confirmation.");
+      detailText = ACP.t(strings, "selectionHintDeleteMode", "Permanent delete requires confirmation with a checkbox.");
     } else if (selectedActionRows.length) {
       detailText = ACP.t(strings, "selectionHintQuarantineMode", "Selected folders will be moved into quarantine instead of being permanently deleted.");
     }
@@ -4899,7 +4899,7 @@
     return previewValues.join(", ") + suffix;
   }
 
-  function getDeleteTypedTitle(context) {
+  function getDeleteConfirmationTitle(context) {
     if (context.confirmButtonLabel === ACP.t(strings, "deleteDatasetActionLabel", "Destroy")) {
       return ACP.t(strings, "destroyCheckboxTitle", "Confirm dataset destroy");
     }
@@ -4932,6 +4932,16 @@
     }
 
     return true;
+  }
+
+  function buildDeleteConfirmationHtml(label) {
+    return (
+      '<label class="acp-delete-confirm-box">' +
+        '<input type="checkbox" class="acp-delete-confirm-checkbox">' +
+        '<span>' + ACP.escapeHtml(label) + "</span>" +
+      "</label>" +
+      '<div class="acp-delete-confirm-error" style="display:none;">' + ACP.escapeHtml(ACP.t(strings, "deleteCheckboxError", "Confirm the permanent delete before continuing.")) + "</div>"
+    );
   }
 
   function buildOperationPreviewHtml(rows, context, options) {
@@ -4992,22 +5002,16 @@
 
     html.push("</ul></section>");
 
-    if (settings.showTypeHint) {
-      var typeHint = ACP.t(strings, "deleteCheckboxConfirmLabel", "I confirm I want to permanently delete the selected folders. This action cannot be undone by this plugin.");
+    if (settings.showConfirmationCheckbox) {
+      var confirmationLabel = ACP.t(strings, "deleteCheckboxConfirmLabel", "I confirm I want to permanently delete the selected folders. This action cannot be undone by this plugin.");
 
       if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteDatasetPlural", "datasets")) {
-        typeHint = ACP.t(strings, "destroyCheckboxConfirmLabel", "I confirm I want to permanently destroy the selected datasets. This action cannot be undone by this plugin.");
+        confirmationLabel = ACP.t(strings, "destroyCheckboxConfirmLabel", "I confirm I want to permanently destroy the selected datasets. This action cannot be undone by this plugin.");
       } else if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
-        typeHint = ACP.t(strings, "deleteMixedCheckboxConfirmLabel", "I confirm I want to permanently remove the selected items. This action cannot be undone by this plugin.");
+        confirmationLabel = ACP.t(strings, "deleteMixedCheckboxConfirmLabel", "I confirm I want to permanently remove the selected items. This action cannot be undone by this plugin.");
       }
 
-      html.push(
-        '<label class="acp-delete-confirm-box">' +
-          '<input type="checkbox" class="acp-delete-confirm-checkbox">' +
-          '<span>' + ACP.escapeHtml(typeHint) + "</span>" +
-        "</label>" +
-        '<div class="acp-delete-confirm-error" style="display:none;">' + ACP.escapeHtml(ACP.t(strings, "deleteCheckboxError", "Confirm the permanent delete before continuing.")) + "</div>"
-      );
+      html.push(buildDeleteConfirmationHtml(confirmationLabel));
     }
 
     html.push("</div>");
@@ -5455,7 +5459,7 @@
           }
 
           swal({
-            title: getDeleteTypedTitle(context),
+            title: getDeleteConfirmationTitle(context),
             text: "",
             type: "warning",
             html: true,
@@ -5471,7 +5475,7 @@
             return true;
           });
           ACP.applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildOperationPreviewHtml(previewResults, context, {
-            showTypeHint: true
+            showConfirmationCheckbox: true
           }));
           syncDeleteConfirmationState();
         }).fail(function(xhr) {
@@ -5482,7 +5486,7 @@
       }
 
       swal({
-        title: getDeleteTypedTitle(context),
+        title: getDeleteConfirmationTitle(context),
         text: "",
         type: "warning",
         html: true,
@@ -5498,7 +5502,7 @@
         return true;
       });
       ACP.applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildOperationPreviewHtml(selectedRows, context, {
-        showTypeHint: true
+        showConfirmationCheckbox: true
       }));
       syncDeleteConfirmationState();
       return;
@@ -5516,7 +5520,7 @@
       runCandidateOperation(selectedRows, context.operation);
     });
     ACP.applyDeleteModalClass("acp-delete-modal", buildOperationPreviewHtml(selectedRows, context, {
-      showTypeHint: false
+      showConfirmationCheckbox: false
     }));
   }
 
@@ -5634,6 +5638,15 @@
 
     html.push("</ul>");
     html.push("</div>");
+
+    if (!isRestore) {
+      html.push(buildDeleteConfirmationHtml(ACP.t(
+        strings,
+        "quarantinePurgeCheckboxConfirmLabel",
+        "I confirm I want to permanently delete the selected quarantined folders. This action cannot be undone by this plugin."
+      )));
+    }
+
     html.push("</div>");
 
     return html.join("");
@@ -5898,21 +5911,15 @@
 
     if (!isRestore) {
       swal({
-        title: ACP.t(strings, "quarantinePurgeTypedTitle", "Type DELETE to purge"),
+        title: confirmTitle,
         text: "",
-        type: "input",
+        type: "warning",
         html: true,
         showCancelButton: true,
         closeOnConfirm: false,
-        inputPlaceholder: ACP.t(strings, "deleteTypedPlaceholder", "DELETE"),
         confirmButtonText: confirmButton
-      }, function(inputValue) {
-        if (inputValue === false) {
-          return false;
-        }
-
-        if ($.trim(String(inputValue || "")).toUpperCase() !== "DELETE") {
-          swal.showInputError(ACP.t(strings, "deleteTypedError", "Type DELETE to continue."));
+      }, function() {
+        if (!requireDeleteConfirmationChecked()) {
           return false;
         }
 
@@ -5920,6 +5927,7 @@
         return true;
       });
       ACP.applyDeleteModalClass("acp-delete-modal acp-delete-modal-review", buildQuarantineActionConfirmHtml(entries, action));
+      syncDeleteConfirmationState();
       return;
     }
 

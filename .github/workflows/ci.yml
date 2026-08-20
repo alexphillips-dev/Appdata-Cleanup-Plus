@@ -31,6 +31,9 @@ jobs:
           node --check source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.panels.js
           node --check source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.js
 
+      - name: Check destructive confirmation flows
+        run: bash scripts/test_ui_confirmation.sh
+
       - name: Check shell syntax
         run: bash -n scripts/*.sh pkg_build.sh
 
