@@ -1593,34 +1593,108 @@ function appdataCleanupPlusDefaultAuditHistoryLimit() {
   return 200;
 }
 
+function appdataCleanupPlusReadBoundedFileTail($path, $lineLimit, $byteLimit=2097152) {
+  $maxLines = max(1, (int)$lineLimit);
+  $maxBytes = max(4096, (int)$byteLimit);
+  $chunkSize = 32768;
+  $handle = null;
+  $fileSize = 0;
+  $position = 0;
+  $bytesRead = 0;
+  $newlineCount = 0;
+  $buffer = "";
+  $lines = array();
+  $truncated = false;
+
+  if ( ! is_file($path) || ! is_readable($path) ) {
+    return array(
+      "ok" => false,
+      "lines" => array(),
+      "scannedByteCount" => 0,
+      "scannedByteLimit" => $maxBytes,
+      "truncated" => false
+    );
+  }
+
+  $handle = @fopen($path, "rb");
+  if ( ! is_resource($handle) || @fseek($handle, 0, SEEK_END) !== 0 ) {
+    if ( is_resource($handle) ) {
+      @fclose($handle);
+    }
+    return array(
+      "ok" => false,
+      "lines" => array(),
+      "scannedByteCount" => 0,
+      "scannedByteLimit" => $maxBytes,
+      "truncated" => false
+    );
+  }
+
+  $fileSize = (int)@ftell($handle);
+  $position = $fileSize;
+
+  while ( $position > 0 && $bytesRead < $maxBytes && $newlineCount <= $maxLines ) {
+    $readSize = min($chunkSize, $position, $maxBytes - $bytesRead);
+    $position -= $readSize;
+    if ( @fseek($handle, $position, SEEK_SET) !== 0 ) {
+      break;
+    }
+
+    $chunk = (string)@fread($handle, $readSize);
+    if ( $chunk === "" ) {
+      break;
+    }
+
+    $buffer = $chunk . $buffer;
+    $bytesRead += strlen($chunk);
+    $newlineCount += substr_count($chunk, "\n");
+  }
+
+  @fclose($handle);
+  $truncated = $position > 0;
+
+  if ( $truncated ) {
+    $firstNewline = strpos($buffer, "\n");
+    $buffer = $firstNewline === false ? "" : substr($buffer, $firstNewline + 1);
+  }
+
+  $buffer = rtrim($buffer, "\r\n");
+  if ( $buffer !== "" ) {
+    $lines = preg_split('/\r\n|\r|\n/', $buffer);
+  }
+
+  if ( count($lines) > $maxLines ) {
+    $lines = array_slice($lines, -$maxLines);
+    $truncated = true;
+  }
+
+  return array(
+    "ok" => true,
+    "lines" => array_values($lines),
+    "scannedByteCount" => $bytesRead,
+    "scannedByteLimit" => $maxBytes,
+    "fileSize" => $fileSize,
+    "truncated" => $truncated
+  );
+}
+
 function readAppdataCleanupPlusAuditLogTailLines($path, $limit) {
   $maxLines = max(1, (int)$limit);
   $lines = array();
-  $file = null;
-  $lineNumber = 0;
+  $tail = appdataCleanupPlusReadBoundedFileTail($path, $maxLines, 2097152);
 
-  if ( ! is_file($path) ) {
+  if ( empty($tail["ok"]) ) {
     return $lines;
   }
 
-  try {
-    $file = new SplFileObject($path, "r");
-    $file->seek(PHP_INT_MAX);
-    $lineNumber = (int)$file->key();
-
-    for ( ; $lineNumber >= 0 && count($lines) < $maxLines; $lineNumber-- ) {
-      $file->seek($lineNumber);
-      $line = trim((string)$file->current());
-
-      if ( $line !== "" ) {
-        $lines[] = $line;
-      }
+  foreach ( array_reverse($tail["lines"]) as $line ) {
+    $line = trim((string)$line);
+    if ( $line !== "" ) {
+      $lines[] = $line;
     }
-  } catch ( Exception $exception ) {
-    return array();
   }
 
-  return $lines;
+  return array_slice($lines, 0, $maxLines);
 }
 
 function getLatestAppdataCleanupPlusAuditEntry() {

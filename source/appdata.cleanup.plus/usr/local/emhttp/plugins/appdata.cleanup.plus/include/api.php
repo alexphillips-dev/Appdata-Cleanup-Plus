@@ -620,11 +620,10 @@ function appdataCleanupPlusDiagnosticsRedactAuditHistory($history) {
   return $entries;
 }
 
-function appdataCleanupPlusDiagnosticsReadMatchingLogTail($path, $matchLimit=500, $scanLimit=5000) {
+function appdataCleanupPlusDiagnosticsReadMatchingLogTail($path, $matchLimit=500, $scanLimit=5000, $byteLimit=2097152) {
   $matches = array();
-  $file = null;
-  $lineNumber = 0;
   $scanned = 0;
+  $tail = array();
 
   if ( ! is_file($path) || ! is_readable($path) ) {
     return array(
@@ -634,36 +633,40 @@ function appdataCleanupPlusDiagnosticsReadMatchingLogTail($path, $matchLimit=500
       "matchedLineCount" => 0,
       "scannedLineCount" => 0,
       "truncated" => false,
-      "scannedLineLimit" => (int)$scanLimit
+      "scannedLineLimit" => (int)$scanLimit,
+      "scannedByteCount" => 0,
+      "scannedByteLimit" => (int)$byteLimit
     );
   }
 
-  try {
-    $file = new SplFileObject($path, "r");
-    $file->seek(PHP_INT_MAX);
-    $lineNumber = (int)$file->key();
-
-    for ( ; $lineNumber >= 0 && count($matches) < $matchLimit && $scanned < $scanLimit; $lineNumber--, $scanned++ ) {
-      $file->seek($lineNumber);
-      $line = trim((string)$file->current());
-
-      if ( $line === "" || ! appdataCleanupPlusDiagnosticsLineMatches($line) ) {
-        continue;
-      }
-
-      $matches[] = appdataCleanupPlusDiagnosticsRedactText($line);
-    }
-  } catch ( Exception $exception ) {
+  $tail = appdataCleanupPlusReadBoundedFileTail($path, $scanLimit, $byteLimit);
+  if ( empty($tail["ok"]) ) {
     return array(
       "path" => appdataCleanupPlusDiagnosticsRedactPath($path),
       "available" => false,
-      "error" => appdataCleanupPlusDiagnosticsRedactText($exception->getMessage()),
+      "error" => "Log tail could not be read.",
       "lines" => array(),
       "matchedLineCount" => 0,
-      "scannedLineCount" => (int)$scanned,
+      "scannedLineCount" => 0,
       "truncated" => false,
-      "scannedLineLimit" => (int)$scanLimit
+      "scannedLineLimit" => (int)$scanLimit,
+      "scannedByteCount" => isset($tail["scannedByteCount"]) ? (int)$tail["scannedByteCount"] : 0,
+      "scannedByteLimit" => (int)$byteLimit
     );
+  }
+
+  foreach ( array_reverse($tail["lines"]) as $line ) {
+    if ( count($matches) >= $matchLimit ) {
+      break;
+    }
+
+    $scanned++;
+    $line = trim((string)$line);
+    if ( $line === "" || ! appdataCleanupPlusDiagnosticsLineMatches($line) ) {
+      continue;
+    }
+
+    $matches[] = appdataCleanupPlusDiagnosticsRedactText($line);
   }
 
   $matches = array_reverse($matches);
@@ -674,8 +677,10 @@ function appdataCleanupPlusDiagnosticsReadMatchingLogTail($path, $matchLimit=500
     "lines" => $matches,
     "matchedLineCount" => count($matches),
     "scannedLineCount" => (int)$scanned,
-    "truncated" => count($matches) >= $matchLimit,
+    "truncated" => ! empty($tail["truncated"]) || count($matches) >= $matchLimit,
     "scannedLineLimit" => (int)$scanLimit,
+    "scannedByteCount" => isset($tail["scannedByteCount"]) ? (int)$tail["scannedByteCount"] : 0,
+    "scannedByteLimit" => (int)$byteLimit,
     "matchLimit" => (int)$matchLimit
   );
 }
@@ -1134,6 +1139,7 @@ function buildAppdataCleanupPlusDiagnosticsBundle() {
       "logSourceLimit" => count($logs),
       "logMatchLimitPerSource" => 100,
       "logScanLimitPerSource" => 5000,
+      "logScanByteLimitPerSource" => 2097152,
       "auditEntryLimit" => 50,
       "stateRecordLimit" => 50
     )

@@ -612,6 +612,7 @@ behaviorSmokeAssertSame("valid", isset($diagnosticsBundle["troubleshooting"]["st
 behaviorSmokeAssertTrue(isset($diagnosticsBundle["troubleshooting"]["php"]["memoryLimit"]), "Diagnostics bundle should include PHP runtime limits.");
 behaviorSmokeAssertSame(100, isset($diagnosticsBundle["collector"]["logMatchLimitPerSource"]) ? (int)$diagnosticsBundle["collector"]["logMatchLimitPerSource"] : 0, "Diagnostics bundle should publish bounded log collection limits.");
 behaviorSmokeAssertTrue(isset($diagnosticsBundle["collector"]["includedLogLineCount"]), "Diagnostics bundle should publish the number of included support-log lines.");
+behaviorSmokeAssertSame(2097152, isset($diagnosticsBundle["collector"]["logScanByteLimitPerSource"]) ? (int)$diagnosticsBundle["collector"]["logScanByteLimitPerSource"] : 0, "Diagnostics bundle should publish its per-source byte limit.");
 behaviorSmokeAssertSame(0, count(array_filter($diagnosticsBundle["logs"], function($log) {
   return isset($log["matchedLineCount"]) && (int)$log["matchedLineCount"] > 100;
 })), "Diagnostics bundle should keep every log excerpt within the per-source cap.");
@@ -644,6 +645,23 @@ behaviorSmokeAssertNotContains("diagnostics-plain-password", $diagnosticsPrivacy
 behaviorSmokeAssertNotContains("2001:db8::1234", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove IPv6 addresses.");
 behaviorSmokeAssertNotContains("diagnostics-private-nas.local", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove hostnames.");
 behaviorSmokeAssertNotContains("DiagnosticsPrivateTarget", $diagnosticsPrivacyProbe, "Diagnostics redaction should sanitize target paths.");
+
+$largeDiagnosticsLog = $stateRoot . "/large-diagnostics.log";
+$largeDiagnosticsHandle = fopen($largeDiagnosticsLog, "wb");
+behaviorSmokeAssertTrue(is_resource($largeDiagnosticsHandle), "Large diagnostics log fixture should open for writing.");
+for ( $largeLogIndex = 0; $largeLogIndex < 100000; $largeLogIndex++ ) {
+  fwrite($largeDiagnosticsHandle, "noise-line-" . $largeLogIndex . " " . str_repeat("x", 48) . "\n");
+}
+fwrite($largeDiagnosticsHandle, "nginx gateway timeout diagnostics-tail-match\n");
+fclose($largeDiagnosticsHandle);
+$largeDiagnosticsStartedAt = microtime(true);
+$largeDiagnosticsTail = appdataCleanupPlusDiagnosticsReadMatchingLogTail($largeDiagnosticsLog, 100, 5000, 131072);
+$largeDiagnosticsElapsed = microtime(true) - $largeDiagnosticsStartedAt;
+behaviorSmokeAssertTrue($largeDiagnosticsElapsed < 2.0, "Bounded diagnostics log scanning should complete quickly for large logs.");
+behaviorSmokeAssertTrue(isset($largeDiagnosticsTail["scannedByteCount"]) && (int)$largeDiagnosticsTail["scannedByteCount"] <= 131072, "Diagnostics log scanning should honor its byte bound.");
+behaviorSmokeAssertSame(true, ! empty($largeDiagnosticsTail["truncated"]), "Diagnostics log scanning should report byte-bounded truncation.");
+behaviorSmokeAssertContains("gateway timeout", appdataCleanupPlusJsonEncode($largeDiagnosticsTail["lines"]), "Bounded diagnostics scanning should retain relevant tail matches.");
+@unlink($largeDiagnosticsLog);
 
 $diagnosticsInvalidJsonFixture = $stateRoot . "/diagnostics-invalid.json";
 file_put_contents($diagnosticsInvalidJsonFixture, "{invalid-json");

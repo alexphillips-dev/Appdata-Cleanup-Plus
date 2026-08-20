@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.08.20.06">
-<!ENTITY md5 "898d0fc79da56400a999db498b754cb2">
+<!ENTITY version "2026.08.20.07">
+<!ENTITY md5 "17087f0ed8ee92ba643600a0eae9a2aa">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.08.20.07
+- Diagnostics performance: Read log tails in bounded chunks from EOF instead of repeatedly seeking by line number.
+- Troubleshooting metadata: Report per-source byte limits and truncation while keeping relevant recent matches.
+
 ###2026.08.20.06
 - Diagnostics privacy: Sanitize template target paths and private segments beneath common container roots.
 - Network redaction: Remove bracketed IPv6 URL authorities as a unit and add executable client/server privacy coverage.
