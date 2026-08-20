@@ -342,7 +342,7 @@ function getAppdataShareCachePath() {
 function appdataCleanupPlusCanonicalizePath($path) {
   $normalized = trim(str_replace("\\", "/", (string)$path));
 
-  if ( $normalized === "" ) {
+  if ( $normalized === "" || appdataCleanupPlusPathContainsUnsafeSegments($normalized) ) {
     return "";
   }
 
@@ -515,6 +515,10 @@ function appdataCleanupPlusNormalizeManualAppdataSources($sources) {
 }
 
 function appdataCleanupPlusValidateManualAppdataSource($path) {
+  if ( appdataCleanupPlusPathContainsUnsafeSegments($path) ) {
+    return "Appdata source paths cannot contain '.' or '..' path segments.";
+  }
+
   $normalizedPath = appdataCleanupPlusCanonicalizePath($path);
   $segments = array();
 
@@ -834,6 +838,10 @@ function appdataCleanupPlusManualSourceBrowseRoot() {
 }
 
 function appdataCleanupPlusPathIsWithinRoot($rootPath, $path) {
+  if ( appdataCleanupPlusPathContainsUnsafeSegments($rootPath) || appdataCleanupPlusPathContainsUnsafeSegments($path) ) {
+    return false;
+  }
+
   $normalizedRoot = appdataCleanupPlusCanonicalizePath($rootPath);
   $normalizedPath = appdataCleanupPlusCanonicalizePath($path);
 
@@ -893,6 +901,14 @@ function appdataCleanupPlusBuildManualSourceBrowsePayload($path="") {
   $validationMessage = "";
   $entries = array();
   $parentPath = "";
+
+  if ( $requestedPath !== "" && appdataCleanupPlusPathContainsUnsafeSegments($requestedPath) ) {
+    return array(
+      "ok" => false,
+      "message" => "Path traversal is not allowed.",
+      "statusCode" => 400
+    );
+  }
 
   if ( ! appdataCleanupPlusPathIsWithinRoot($browseRoot, $normalizedPath) ) {
     return array(

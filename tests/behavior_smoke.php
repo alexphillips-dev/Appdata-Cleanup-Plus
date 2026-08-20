@@ -172,6 +172,22 @@ behaviorSmokeAssertSame(array(
     "datasetRoot" => "/mnt/docker_vm_nvme/test-appdata"
   )
 ), $persistedSafetySettings["zfsPathMappings"], "Safety settings should normalize and persist ZFS path mappings.");
+behaviorSmokeAssertContains("cannot contain", appdataCleanupPlusValidateManualAppdataSource("/mnt/user/appdata/../domains"), "Manual appdata sources should reject parent traversal segments.");
+behaviorSmokeAssertContains("cannot contain", appdataCleanupPlusValidateManualAppdataSource("/mnt/user/./appdata"), "Manual appdata sources should reject current-directory traversal segments.");
+behaviorSmokeAssertSame("", appdataCleanupPlusCanonicalizePath("/mnt/user/appdata/../domains"), "Canonical path handling should fail closed for traversal segments.");
+behaviorSmokeAssertSame(array(), appdataCleanupPlusNormalizeManualAppdataSources(array("/mnt/user/appdata/../domains")), "Persisted manual sources containing traversal should be discarded.");
+behaviorSmokeAssertContains("cannot contain", appdataCleanupPlusValidateZfsPathMapping(array(
+  "shareRoot" => "/mnt/user/appdata/../domains",
+  "datasetRoot" => "/mnt/pool/appdata"
+)), "ZFS share roots should reject traversal segments.");
+behaviorSmokeAssertSame(array(), appdataCleanupPlusNormalizeZfsPathMappings(array(array(
+  "shareRoot" => "/mnt/user/appdata",
+  "datasetRoot" => "/mnt/pool/appdata/../domains"
+))), "Persisted ZFS mappings containing traversal should be discarded.");
+$traversalClassification = classifyAppdataCandidate("/mnt/user/appdata/../domains", array(
+  "manualAppdataSources" => array("/mnt/user/appdata")
+));
+behaviorSmokeAssertSame(false, ! empty($traversalClassification["canDelete"]), "Traversal candidates should fail closed before action resolution.");
 behaviorSmokeAssertSame(getDefaultAppdataCleanupPlusQuarantineRoot(), $persistedSafetySettings["quarantineRoot"], "Safety settings should keep a quarantine root when one was not explicitly posted.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "enablePermanentDelete" => false,
@@ -818,6 +834,9 @@ behaviorSmokeAssertSame("", $browseManualRootPayload["browser"]["validationMessa
 $browseInvalidPayload = appdataCleanupPlusBuildManualSourceBrowsePayload("/boot/config");
 behaviorSmokeAssertSame(false, ! empty($browseInvalidPayload["ok"]), "Manual source browser should reject paths outside /mnt.");
 behaviorSmokeAssertSame(400, (int)$browseInvalidPayload["statusCode"], "Manual source browser should reject outside-root paths with a bad request status.");
+$browseTraversalPayload = appdataCleanupPlusBuildManualSourceBrowsePayload("/mnt/user/../etc");
+behaviorSmokeAssertSame(false, ! empty($browseTraversalPayload["ok"]), "Manual source browser should reject traversal paths.");
+behaviorSmokeAssertSame(400, (int)$browseTraversalPayload["statusCode"], "Manual source browser should report traversal as a bad request.");
 $suggestedSourceInfo = buildAppdataCleanupPlusSourceInfo(array(
   "enablePermanentDelete" => false,
   "enableZfsDatasetDelete" => false,

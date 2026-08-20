@@ -1,9 +1,25 @@
 <?php
 
+function appdataCleanupPlusPathContainsUnsafeSegments($path) {
+  $rawPath = str_replace("\\", "/", (string)$path);
+
+  if ( strpos($rawPath, "\0") !== false ) {
+    return true;
+  }
+
+  foreach ( explode("/", $rawPath) as $segment ) {
+    if ( $segment === "." || $segment === ".." ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function appdataCleanupPlusCanonicalizeZfsPath($path) {
   $normalized = trim(str_replace("\\", "/", (string)$path));
 
-  if ( $normalized === "" ) {
+  if ( $normalized === "" || appdataCleanupPlusPathContainsUnsafeSegments($normalized) ) {
     return "";
   }
 
@@ -145,6 +161,19 @@ function appdataCleanupPlusGetConfiguredZfsPathMappings($settings=null) {
 }
 
 function appdataCleanupPlusValidateZfsPathMapping($mapping) {
+  $rawShareRoot = is_array($mapping) && isset($mapping["shareRoot"]) ? (string)$mapping["shareRoot"] : "";
+  $rawDatasetRoot = is_array($mapping) && isset($mapping["datasetRoot"]) ? (string)$mapping["datasetRoot"] : "";
+
+  if ( is_string($mapping) ) {
+    $rawParts = preg_split('/\s*=>\s*|\s*=\s*/', trim($mapping), 2);
+    $rawShareRoot = isset($rawParts[0]) ? (string)$rawParts[0] : "";
+    $rawDatasetRoot = isset($rawParts[1]) ? (string)$rawParts[1] : "";
+  }
+
+  if ( appdataCleanupPlusPathContainsUnsafeSegments($rawShareRoot) || appdataCleanupPlusPathContainsUnsafeSegments($rawDatasetRoot) ) {
+    return "ZFS path mappings cannot contain '.' or '..' path segments.";
+  }
+
   $normalizedMapping = appdataCleanupPlusNormalizeSingleZfsPathMapping($mapping);
 
   if ( empty($normalizedMapping) ) {

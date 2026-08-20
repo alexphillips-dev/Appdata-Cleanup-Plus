@@ -1583,7 +1583,7 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
-  $classification = classifyAppdataCandidate($candidatePath);
+  $classification = classifyAppdataCandidate($candidatePath, $settings);
   $displayPath = resolveExistingPath($classification);
   $currentRealPath = @realpath($displayPath);
   $storageMeta = appdataCleanupPlusResolveStorageForPath($displayPath, $settings);
@@ -1627,6 +1627,19 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
       "displayPath" => $displayPath,
       "status" => "blocked",
       "message" => "Path changed since the last scan. Rescan before continuing."
+    );
+  }
+
+  if (
+    ! empty($classification["matchedSourceRoot"]) &&
+    ! appdataCleanupPlusPathMatchesOrIsDescendantByVariants($classification["matchedSourceRoot"], $displayPath, false)
+  ) {
+    return array(
+      "ok" => false,
+      "path" => $candidatePath,
+      "displayPath" => $displayPath,
+      "status" => "blocked",
+      "message" => "The resolved path is outside its configured appdata source. Rescan before continuing."
     );
   }
 
