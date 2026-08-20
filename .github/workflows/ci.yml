@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -31,6 +31,12 @@ jobs:
           node --check source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.panels.js
           node --check source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.js
 
+      - name: Check PHP syntax
+        run: |
+          while IFS= read -r file; do
+            php -l "$file"
+          done < <(git ls-files '*.php' '*.page')
+
       - name: Check destructive confirmation flows
         run: bash scripts/test_ui_confirmation.sh
 
@@ -40,10 +46,15 @@ jobs:
       - name: Check shell syntax
         run: bash -n scripts/*.sh pkg_build.sh
 
+      - name: Run ShellCheck
+        run: shellcheck --severity=warning scripts/*.sh pkg_build.sh source/appdata.cleanup.plus/pkg_build.sh
+
       - name: Run release guards
         run: |
           bash scripts/release_guard.sh
           bash scripts/ca_readiness_guard.sh
+          bash scripts/test_release_source_ref.sh
+          bash scripts/test_package_source_parity.sh
 
       - name: Prepare Unraid path fixtures
         run: |
