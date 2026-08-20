@@ -1240,10 +1240,10 @@ function restoreTrackedQuarantineEntry($entry, $options=array()) {
   );
 }
 
-function appdataCleanupPlusFilesystemDeletePath($path) {
+function appdataCleanupPlusFilesystemDeletePath($path, $useExactPath=false) {
   $normalizedPath = rtrim(str_replace("\\", "/", trim((string)$path)), "/");
 
-  if ( startsWith($normalizedPath, "/mnt/cache/") ) {
+  if ( ! $useExactPath && startsWith($normalizedPath, "/mnt/cache/") ) {
     return "/mnt/user/" . substr($normalizedPath, strlen("/mnt/cache/"));
   }
 
@@ -1317,9 +1317,10 @@ function appdataCleanupPlusPhpDeleteDirectoryFallback($path, $allowSymlinkEntrie
 
 function nativeDeleteDirectory($path, $options=array()) {
   $allowSymlinkEntries = ! empty($options["allowSymlinkEntries"]);
+  $useExactPath = ! empty($options["useExactPath"]);
   $progressId = isset($options["operationProgressId"]) ? (string)$options["operationProgressId"] : "";
   $originalPath = rtrim(str_replace("\\", "/", trim((string)$path)), "/");
-  $deletePath = appdataCleanupPlusFilesystemDeletePath($path);
+  $deletePath = appdataCleanupPlusFilesystemDeletePath($path, $useExactPath);
   $deleteOutput = array();
   $exitCode = 0;
 
@@ -1427,7 +1428,8 @@ function purgeTrackedQuarantineEntry($entry, $options=array()) {
   }
 
   $deleteResult = nativeDeleteDirectory($destination, array(
-    "allowSymlinkEntries" => true
+    "allowSymlinkEntries" => true,
+    "useExactPath" => true
   ));
 
   if ( ! $deleteResult["ok"] ) {

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.08.20.13">
-<!ENTITY md5 "e7e0e45d70a89938fb9550a9225a53c7">
+<!ENTITY version "2026.08.20.14">
+<!ENTITY md5 "2b2cb070313d5ef5be267c155e80a959">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.08.20.14
+Delete exact quarantine destinations for manual and scheduled purges without restoring source paths.
+
 ###2026.08.20.13
 Repair dev manifest XML parsing and enforce cache-safe update URLs.
 

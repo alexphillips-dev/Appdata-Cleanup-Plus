@@ -706,21 +706,31 @@ behaviorSmokeAssertSame("invalid", $diagnosticsInvalidJsonHealth["validation"], 
 behaviorSmokeAssertSame(false, $diagnosticsInvalidJsonHealth["valid"], "Diagnostics state-file health should mark malformed JSON invalid.");
 @unlink($diagnosticsInvalidJsonFixture);
 
+$scheduledPurgeSource = $stateRoot . "/scheduled-purge-source";
 $scheduledPurgeQuarantineRoot = $stateRoot . "/scheduled-purge-quarantine";
-$scheduledPurgeDestination = $scheduledPurgeQuarantineRoot . "/20260330-121000/mnt/user/appdata/scheduled-purge";
-behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($scheduledPurgeDestination), "Scheduled purge quarantine fixture should be created.");
-file_put_contents($scheduledPurgeDestination . "/config.json", "{}");
-registerAppdataCleanupPlusQuarantineRecord(array(
-  "id" => "scheduled-purge-entry",
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($scheduledPurgeSource), "Scheduled purge source fixture should be created.");
+file_put_contents($scheduledPurgeSource . "/config.json", "{}");
+$scheduledPurgeSettings = getAppdataCleanupPlusSafetySettings();
+$scheduledPurgeSettings["quarantineRoot"] = $scheduledPurgeQuarantineRoot;
+$scheduledPurgeMove = quarantineCandidatePath(array(
   "name" => "scheduled-purge",
-  "sourcePath" => "/mnt/user/appdata/scheduled-purge",
-  "destination" => $scheduledPurgeDestination,
-  "quarantineRoot" => $scheduledPurgeQuarantineRoot,
-  "quarantinedAt" => "2026-03-30T12:10:00+00:00",
-  "purgeAt" => "2000-01-01T00:00:00+00:00",
-  "sourceSummary" => "scheduled-purge",
-  "targetSummary" => "/config"
-));
+  "sourceKind" => "filesystem",
+  "sourceLabel" => "Discovery",
+  "sourceDisplay" => "Scheduled purge lifecycle test",
+  "reason" => "Scheduled purge lifecycle fixture."
+), $scheduledPurgeSource, $scheduledPurgeSettings);
+behaviorSmokeAssertSame(true, ! empty($scheduledPurgeMove["ok"]), "Scheduled purge lifecycle fixture should move into quarantine.");
+behaviorSmokeAssertSame(false, is_dir($scheduledPurgeSource), "Quarantining a scheduled purge fixture should remove its original source path.");
+$scheduledPurgeDestination = isset($scheduledPurgeMove["destination"]) ? (string)$scheduledPurgeMove["destination"] : "";
+$scheduledPurgeEntry = null;
+foreach ( getAppdataCleanupPlusQuarantineRegistry() as $record ) {
+  if ( isset($record["sourcePath"]) && $record["sourcePath"] === $scheduledPurgeSource ) {
+    $scheduledPurgeEntry = normalizeAppdataCleanupPlusQuarantineRecord($record);
+    break;
+  }
+}
+behaviorSmokeAssertTrue(is_array($scheduledPurgeEntry), "Scheduled purge lifecycle fixture should be tracked in the registry.");
+updateTrackedQuarantinePurgeSchedule(array($scheduledPurgeEntry), "set", 0, "2000-01-01T00:00:00+00:00");
 $scheduledPurgeReadOnlyPayload = buildQuarantineManagerPayload(false);
 behaviorSmokeAssertSame(1, (int)$scheduledPurgeReadOnlyPayload["summary"]["count"], "Read-only quarantine summaries should count expired scheduled purge entries without purging them.");
 behaviorSmokeAssertTrue(is_dir($scheduledPurgeDestination), "Read-only quarantine summaries should not run scheduled purge side effects.");
@@ -730,9 +740,14 @@ behaviorSmokeAssertTrue(is_dir($scheduledPurgeDestination), "Quarantine manager 
 $scheduledPurgeExecution = sweepExpiredAppdataCleanupPlusQuarantineEntries();
 behaviorSmokeAssertSame("scheduled-purge", $scheduledPurgeExecution["action"], "Scheduled purge sweeps should report their action label.");
 behaviorSmokeAssertTrue(! is_dir($scheduledPurgeDestination), "Explicit expired scheduled purge sweeps should purge due entries.");
+behaviorSmokeAssertSame(false, is_dir($scheduledPurgeSource), "Scheduled purge must not restore or recreate the original source folder.");
+$scheduledPurgeRegistryAfter = recoverMissingAppdataCleanupPlusQuarantineRecords();
+behaviorSmokeAssertSame(false, isset($scheduledPurgeRegistryAfter[$scheduledPurgeEntry["id"]]), "Scheduled purge must remove the registry record without recovering it.");
 $latestAuditEntry = getLatestAppdataCleanupPlusAuditEntry();
 behaviorSmokeAssertSame("scheduled-purge", isset($latestAuditEntry["operation"]) ? $latestAuditEntry["operation"] : "", "Scheduled purge sweeps should append an audit entry.");
 behaviorSmokeAssertSame(1, isset($latestAuditEntry["summary"]["purged"]) ? (int)$latestAuditEntry["summary"]["purged"] : 0, "Scheduled purge sweeps should report purged entries in the audit summary.");
+behaviorSmokeAssertSame("/mnt/cache/appdata/.appdata-cleanup-plus-quarantine/entry", appdataCleanupPlusFilesystemDeletePath("/mnt/cache/appdata/.appdata-cleanup-plus-quarantine/entry", true), "Quarantine purges should preserve the exact recorded cache path.");
+behaviorSmokeAssertSame("/mnt/user/appdata/example", appdataCleanupPlusFilesystemDeletePath("/mnt/cache/appdata/example"), "Normal permanent delete path compatibility should remain unchanged.");
 
 $scheduledPurgeSymlinkRoot = $stateRoot . "/scheduled-purge-symlink-quarantine";
 $scheduledPurgeSymlinkDestination = $scheduledPurgeSymlinkRoot . "/20260330-121500/mnt/user/appdata/scheduled-purge-symlink";
@@ -788,12 +803,13 @@ behaviorSmokeAssertSame(true, is_dir($stateRoot . "/mountinfo-parent/bind-child"
 unset($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNTINFO"]);
 
 $workerPurgeRoot = $stateRoot . "/worker-purge-quarantine";
+$workerPurgeSource = $stateRoot . "/worker-purge-source";
 $workerPurgeDestination = $workerPurgeRoot . "/20260330-123000/mnt/user/appdata/worker-purge";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($workerPurgeDestination), "Scheduled purge worker fixture should be created.");
 behaviorSmokeAssertTrue(registerAppdataCleanupPlusQuarantineRecord(array(
   "id" => "worker-purge-entry",
   "name" => "worker-purge",
-  "sourcePath" => "/mnt/user/appdata/worker-purge",
+  "sourcePath" => $workerPurgeSource,
   "destination" => $workerPurgeDestination,
   "quarantineRoot" => $workerPurgeRoot,
   "quarantinedAt" => "2026-03-30T12:30:00+00:00",
@@ -819,6 +835,7 @@ behaviorSmokeAssertSame(0, $workerExitCode, "Scheduled purge worker should compl
 behaviorSmokeAssertSame("complete", isset($workerPayload["status"]) ? $workerPayload["status"] : "", "Scheduled purge worker should report completion.");
 behaviorSmokeAssertSame(1, isset($workerPayload["summary"]["purged"]) ? (int)$workerPayload["summary"]["purged"] : 0, "Scheduled purge worker should purge due records through the production entrypoint.");
 behaviorSmokeAssertSame(false, is_dir($workerPurgeDestination), "Scheduled purge worker should remove the due quarantine folder.");
+behaviorSmokeAssertSame(false, is_dir($workerPurgeSource), "Scheduled purge worker must not restore or recreate the original source folder.");
 
 $fatalFailurePayload = appdataCleanupPlusBuildFatalFailurePayload(array(
   "type" => E_ERROR,
@@ -1319,6 +1336,7 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templatedOrphanPath),
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsCaseSensitivePath), "Case-sensitive ZFS fixture should be recreated after ZFS delete testing.");
 $defaultPurgeCandidatePath = $appdataShareRoot . "/default-purge-candidate";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($defaultPurgeCandidatePath), "Default purge candidate fixture should be created.");
+file_put_contents($defaultPurgeCandidatePath . "/destructive-purge.txt", "delete me");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "enablePermanentDelete" => false,
   "defaultQuarantinePurgeDays" => 30
@@ -1342,7 +1360,15 @@ foreach ( $defaultPurgeRegistry as $record ) {
 behaviorSmokeAssertTrue(is_array($defaultPurgeRecord), "Newly quarantined entries should be written to the quarantine registry.");
 behaviorSmokeAssertTrue($defaultPurgeRecord["purgeAt"] !== "", "Newly quarantined entries should inherit the configured default purge timer.");
 behaviorSmokeAssertTrue(strtotime($defaultPurgeRecord["purgeAt"]) > time(), "Default quarantine purge timers should be scheduled in the future.");
-behaviorSmokeAssertSame("purged", purgeTrackedQuarantineEntry($defaultPurgeRecord)["status"], "Default purge fixture should be cleaned up after quarantine testing.");
+behaviorSmokeAssertSame(false, is_dir($defaultPurgeCandidatePath), "Quarantining the manual purge fixture should remove its original source path.");
+behaviorSmokeAssertTrue(is_file($defaultPurgeRecord["destination"] . "/destructive-purge.txt"), "The manual purge fixture should retain its contents while quarantined.");
+$manualPurgeExecution = executeQuarantineManagerAction(array($defaultPurgeRecord), "purge");
+behaviorSmokeAssertSame("purge", $manualPurgeExecution["action"], "Manual manager purge should preserve the purge action through dispatch.");
+behaviorSmokeAssertSame(1, (int)$manualPurgeExecution["summary"]["purged"], "Manual manager purge should report one destructively purged folder.");
+behaviorSmokeAssertSame(false, is_dir($defaultPurgeRecord["destination"]), "Manual manager purge should delete the exact quarantined folder.");
+behaviorSmokeAssertSame(false, is_dir($defaultPurgeCandidatePath), "Manual manager purge must not restore or recreate the original appdata folder.");
+$manualPurgeRegistryAfter = recoverMissingAppdataCleanupPlusQuarantineRecords();
+behaviorSmokeAssertSame(false, isset($manualPurgeRegistryAfter[$defaultPurgeRecord["id"]]), "Manual manager purge must remove the registry record without recovering it.");
 behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
   "enablePermanentDelete" => false,
   "defaultQuarantinePurgeDays" => 0
