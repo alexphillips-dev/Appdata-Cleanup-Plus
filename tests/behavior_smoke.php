@@ -588,8 +588,19 @@ behaviorSmokeAssertNotContains("flash_backup", $diagnosticsJson, "Diagnostics bu
 behaviorSmokeAssertNotContains("zpool import", $diagnosticsJson, "Diagnostics bundle should not include unrelated emhttpd startup noise.");
 behaviorSmokeAssertNotContains("SensitiveAppName", $diagnosticsJson, "Diagnostics bundle should redact nested audit app names.");
 behaviorSmokeAssertNotContains("\"row\"", $diagnosticsJson, "Diagnostics bundle should omit nested audit row payloads.");
-behaviorSmokeAssertSame(2, isset($diagnosticsBundle["schemaVersion"]) ? (int)$diagnosticsBundle["schemaVersion"] : 0, "Diagnostics bundle should declare the sanitized schema version.");
+behaviorSmokeAssertSame(3, isset($diagnosticsBundle["schemaVersion"]) ? (int)$diagnosticsBundle["schemaVersion"] : 0, "Diagnostics bundle should declare the structured troubleshooting schema version.");
 behaviorSmokeAssertSame(2, isset($diagnosticsBundle["redaction"]["version"]) ? (int)$diagnosticsBundle["redaction"]["version"] : 0, "Diagnostics bundle should declare the redaction version.");
+behaviorSmokeAssertTrue(isset($diagnosticsBundle["troubleshooting"]["overview"]["status"]), "Diagnostics bundle should include an overall troubleshooting status.");
+behaviorSmokeAssertTrue(count(isset($diagnosticsBundle["troubleshooting"]["checks"]) ? $diagnosticsBundle["troubleshooting"]["checks"] : array()) >= 6, "Diagnostics bundle should include actionable health checks.");
+behaviorSmokeAssertSame("valid", isset($diagnosticsBundle["troubleshooting"]["stateFiles"][0]["validation"]) ? $diagnosticsBundle["troubleshooting"]["stateFiles"][0]["validation"] : "", "Diagnostics bundle should validate readable JSON state files.");
+behaviorSmokeAssertTrue(isset($diagnosticsBundle["troubleshooting"]["php"]["memoryLimit"]), "Diagnostics bundle should include PHP runtime limits.");
+behaviorSmokeAssertSame(100, isset($diagnosticsBundle["collector"]["logMatchLimitPerSource"]) ? (int)$diagnosticsBundle["collector"]["logMatchLimitPerSource"] : 0, "Diagnostics bundle should publish bounded log collection limits.");
+behaviorSmokeAssertTrue(isset($diagnosticsBundle["collector"]["includedLogLineCount"]), "Diagnostics bundle should publish the number of included support-log lines.");
+behaviorSmokeAssertSame(0, count(array_filter($diagnosticsBundle["logs"], function($log) {
+  return isset($log["matchedLineCount"]) && (int)$log["matchedLineCount"] > 100;
+})), "Diagnostics bundle should keep every log excerpt within the per-source cap.");
+behaviorSmokeAssertTrue(isset($diagnosticsBundle["logs"][0]["scannedLineCount"]), "Diagnostics log metadata should report the number of scanned lines.");
+behaviorSmokeAssertTrue(isset($diagnosticsBundle["troubleshooting"]["latestScan"]["available"]), "Diagnostics bundle should summarize persisted scan timing availability.");
 behaviorSmokeAssertNotContains("diagnostics-private-quarantine-id", $diagnosticsJson, "Diagnostics bundle should alias quarantine record identifiers.");
 behaviorSmokeAssertNotContains("DiagnosticsPrivateQuarantineApp", $diagnosticsJson, "Diagnostics bundle should omit quarantine app names.");
 behaviorSmokeAssertNotContains("DiagnosticsPrivateTemplate", $diagnosticsJson, "Diagnostics bundle should omit quarantine template summaries.");
@@ -614,6 +625,13 @@ behaviorSmokeAssertNotContains("eyJhbGciOiJIUzI1NiJ9", $diagnosticsPrivacyProbe,
 behaviorSmokeAssertNotContains("diagnostics-plain-password", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove credential fields.");
 behaviorSmokeAssertNotContains("2001:db8::1234", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove IPv6 addresses.");
 behaviorSmokeAssertNotContains("diagnostics-private-nas.local", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove hostnames.");
+
+$diagnosticsInvalidJsonFixture = $stateRoot . "/diagnostics-invalid.json";
+file_put_contents($diagnosticsInvalidJsonFixture, "{invalid-json");
+$diagnosticsInvalidJsonHealth = appdataCleanupPlusDiagnosticsJsonFileHealth("invalid-fixture", $diagnosticsInvalidJsonFixture, false);
+behaviorSmokeAssertSame("invalid", $diagnosticsInvalidJsonHealth["validation"], "Diagnostics state-file health should detect malformed JSON.");
+behaviorSmokeAssertSame(false, $diagnosticsInvalidJsonHealth["valid"], "Diagnostics state-file health should mark malformed JSON invalid.");
+@unlink($diagnosticsInvalidJsonFixture);
 
 $scheduledPurgeQuarantineRoot = $stateRoot . "/scheduled-purge-quarantine";
 $scheduledPurgeDestination = $scheduledPurgeQuarantineRoot . "/20260330-121000/mnt/user/appdata/scheduled-purge";

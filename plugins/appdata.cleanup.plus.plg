@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.08.20.01">
-<!ENTITY md5 "50345dede2b0ef07851e2d6cb23cdee5">
+<!ENTITY version "2026.08.20.02">
+<!ENTITY md5 "ea75f8db51e0d63976c4ee384e526109">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.08.20.02
+- Diagnostics overhaul: Add structured health checks for state files, directories, runtime locks, quarantine consistency, Docker availability, PHP limits, and latest scan status.
+- Troubleshooting reports: Include collector limits, scan timing, actionable findings, and up to 15 sanitized relevant log lines in copied text.
+- Diagnostics UI: Clarify what is collected, when to run a fresh scan, and which sensitive fields are removed before sharing.
+
 ###2026.08.20.01
 - Quarantine purge: Replace the obsolete typed DELETE gate with the shared confirmation checkbox.
 - Diagnostics privacy: Use schema allowlists for sensitive state, alias row and record IDs per export, remove raw search terms, and recursively redact paths, hosts, network addresses, credentials, tokens, and identifiers.

@@ -2846,10 +2846,6 @@
     return /(?:path|root|directory|dir|mountpoint|destination|source)$/i.test(String(key || ""));
   }
 
-  function diagnosticsKeyLooksLikeIdentifier(key) {
-    return /(?:^|[_-])ids?$/i.test(String(key || "").replace(/([a-z0-9])([A-Z])/g, "$1_$2"));
-  }
-
   function sanitizeDiagnosticsValue(value, redactor, keyName) {
     var sanitized = {};
 
@@ -2876,10 +2872,6 @@
     }
 
     if (typeof value === "string") {
-      if (diagnosticsKeyLooksLikeIdentifier(keyName) && !/^<[^>]+>$/.test(value)) {
-        return sanitizeDiagnosticsRowId(value, redactor);
-      }
-
       return diagnosticsKeyLooksLikePath(keyName)
         ? sanitizeDiagnosticsPath(value, redactor)
         : sanitizeDiagnosticsFreeText(value, redactor);
@@ -3129,7 +3121,7 @@
     });
 
     var payload = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       generatedAt: generatedAt.toISOString(),
       pluginVersion: String(config.pluginVersion || ""),
       redaction: {
@@ -3201,6 +3193,38 @@
     }
 
     return {};
+  }
+
+  function buildDiagnosticsTroubleshootingOverview(payload, serverBundle) {
+    var troubleshooting = (serverBundle && serverBundle.troubleshooting) || {};
+    var overview = troubleshooting.overview || {};
+    var checks = $.isArray(troubleshooting.checks) ? troubleshooting.checks : [];
+
+    return {
+      status: String(overview.status || "unknown"),
+      headline: sanitizeDiagnosticsFreeText(String(overview.headline || ""), buildDiagnosticsRedactor()),
+      statusCounts: $.extend({ ok: 0, info: 0, warning: 0, error: 0 }, overview.statusCounts || {}),
+      findings: $.map(checks, function(check) {
+        if (!check || (check.status !== "warning" && check.status !== "error")) {
+          return null;
+        }
+
+        return {
+          id: String(check.id || "check"),
+          status: String(check.status || "info"),
+          summary: sanitizeDiagnosticsFreeText(String(check.summary || ""), buildDiagnosticsRedactor()),
+          details: sanitizeDiagnosticsValue(check.details || {}, buildDiagnosticsRedactor(), "")
+        };
+      }).slice(0, 20),
+      clientState: {
+        dockerRunning: !!(payload && payload.scan && payload.scan.dockerRunning),
+        scanWarningPresent: !!(payload && payload.scan && payload.scan.scanWarningMessage),
+        rowCount: payload && $.isArray(payload.rows) ? payload.rows.length : 0,
+        visibleRowCount: Number((payload && payload.scan && payload.scan.visibleRowCount) || 0),
+        selectedRowCount: Number((payload && payload.scan && payload.scan.selectedRowCount) || 0),
+        pendingStatCount: Number((payload && payload.scan && payload.scan.pendingStatCount) || 0)
+      }
+    };
   }
 
   function buildSupportSummaryText() {
@@ -3300,6 +3324,11 @@
     var runtime = (serverBundle && serverBundle.runtime) || {};
     var locks = serverBundle && serverBundle.state && serverBundle.state.runtimeLocks;
     var logs = $.isArray(serverBundle && serverBundle.logs) ? serverBundle.logs : [];
+    var troubleshooting = (serverBundle && serverBundle.troubleshooting) || {};
+    var healthOverview = troubleshooting.overview || {};
+    var healthChecks = $.isArray(troubleshooting.checks) ? troubleshooting.checks : [];
+    var collector = (serverBundle && serverBundle.collector) || {};
+    var includedLogLineCount = 0;
 
     if ((!payload.scan.metrics || !$.isArray(payload.scan.metrics.phases) || !payload.scan.metrics.phases.length) && !$.isEmptyObject(serverMetrics)) {
       payload.scan.metrics = serverMetrics;
@@ -3317,6 +3346,20 @@
         " sapi=" + String(runtime.phpSapi || "unknown") +
         " unraid=" + String(runtime.unraidVersion || "unknown") +
         " dockerRuntime=" + (runtime.dockerRuntimeExists === false ? "missing" : "present"));
+    }
+
+    if (healthOverview.status) {
+      diagnostics.push("Health: status=" + String(healthOverview.status || "unknown") +
+        " checks=" + String(Number(healthOverview.checkCount || 0)) +
+        " errors=" + String(Number(((healthOverview.statusCounts || {}).error) || 0)) +
+        " warnings=" + String(Number(((healthOverview.statusCounts || {}).warning) || 0)) +
+        " info=" + String(Number(((healthOverview.statusCounts || {}).info) || 0)));
+      diagnostics.push("Health summary: " + String(healthOverview.headline || ""));
+      $.each(healthChecks, function(_, check) {
+        if (check && check.status !== "ok") {
+          diagnostics.push("- [" + String(check.status || "info") + "] " + String(check.id || "check") + ": " + String(check.summary || ""));
+        }
+      });
     }
 
     if (locks && $.isArray(locks.locks)) {
@@ -3345,8 +3388,21 @@
           " available=" + String(!!(log && log.available)) +
           " matched=" + String(Number((log && log.matchedLineCount) || 0)) +
           " scannedLimit=" + String(Number((log && log.scannedLineLimit) || 0)));
+        $.each(($.isArray(log && log.lines) ? log.lines.slice(-5) : []), function(__, line) {
+          if (includedLogLineCount >= 15) {
+            return false;
+          }
+
+          diagnostics.push("  " + String(line || ""));
+          includedLogLineCount += 1;
+          return undefined;
+        });
       });
     }
+
+    diagnostics.push("Collector: durationMs=" + String(Number(collector.durationMs || 0)) +
+      " logMatchLimit=" + String(Number(collector.logMatchLimitPerSource || 0)) +
+      " logScanLimit=" + String(Number(collector.logScanLimitPerSource || 0)));
 
     diagnostics.push("Rows exported: total=" + String((payload.rows || []).length) +
       " visible=" + String((payload.visibleRowIds || []).length) +
@@ -3428,6 +3484,7 @@
       var serverMetrics;
 
       payload.serverDiagnostics = sanitizeDiagnosticsValue(response && response.bundle ? response.bundle : {}, buildDiagnosticsRedactor(), "");
+      payload.troubleshooting = buildDiagnosticsTroubleshootingOverview(payload, payload.serverDiagnostics);
       serverMetrics = extractServerLatestScanMetrics(payload.serverDiagnostics);
       if ((!payload.scan.metrics || !$.isArray(payload.scan.metrics.phases) || !payload.scan.metrics.phases.length) && !$.isEmptyObject(serverMetrics)) {
         payload.scan.metrics = serverMetrics;
