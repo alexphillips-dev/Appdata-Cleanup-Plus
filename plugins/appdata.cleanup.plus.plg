@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.08.20.14">
-<!ENTITY md5 "2b2cb070313d5ef5be267c155e80a959">
+<!ENTITY version "2026.08.20.16">
+<!ENTITY md5 "16b74b34b4d844d4bc9232ae9a77e19d">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,19 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.08.20.16
+- Quarantine safety: Replace typed DELETE confirmation with a checkbox, run manual and scheduled purge against the exact recorded quarantine destination, and keep the original appdata path absent after destructive purge.
+- Diagnostics: Add structured health checks, bounded relevant log tails, collector limits, scan timing, and actionable troubleshooting findings.
+- Privacy: Sanitize exported paths, identifiers, template targets, hosts, URLs, IPv6 addresses, credentials, tokens, and fatal error responses while retaining correlation IDs in server logs.
+- Filesystem safety: Reject traversal paths, enforce configured source containment, refuse nested and bind mounts, and keep recursive deletion on one filesystem.
+- Reliability: Add the hourly scheduled-purge worker, shared cleanup locking, atomic state writes, transactional updates, and concurrent initialization coverage.
+- Safe defaults: Start fresh installs in quarantine-first Safe Mode while preserving existing saved permanent-delete settings and checkbox-confirmed deletion.
+- Release quality: Build from the fetched remote source ref, use cache-safe refs/heads feeds, validate manifest XML and package/source parity, and expand CI, ShellCheck, CodeQL, Dependabot, and client security coverage.
+- Compatibility: Preserve normal permanent-delete behavior, ZFS dataset safeguards, restore conflict handling, and existing user settings while strengthening cleanup protections.
+
+###2026.08.20.15
+- Superseded by 2026.08.20.16 before the public release because the generated changelog text was malformed.
+
 ###2026.08.20.14
 Delete exact quarantine destinations for manual and scheduled purges without restoring source paths.
 

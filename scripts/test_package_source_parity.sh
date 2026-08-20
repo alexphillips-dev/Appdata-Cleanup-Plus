@@ -43,6 +43,13 @@ diff -ru \
 
 PACKAGED_README="${EXTRACTED_DIR}/usr/local/emhttp/plugins/appdata.cleanup.plus/README.md"
 [[ -f "${PACKAGED_README}" ]] || fail "Packaged README is missing."
-grep -Fq 'Appdata Cleanup Plus (Dev)' "${PACKAGED_README}" || fail "Packaged README does not identify the dev channel."
+
+EXPECTED_README_TITLE='**Appdata Cleanup Plus**'
+if grep -Fq 'refs/heads/dev/' "${MANIFEST}"; then
+    EXPECTED_README_TITLE='**Appdata Cleanup Plus (Dev)**'
+fi
+
+grep -Fxq "${EXPECTED_README_TITLE}" "${PACKAGED_README}" ||
+    fail "Packaged README does not identify the manifest release channel."
 
 echo "test_package_source_parity: current archive matches shipped source files."
