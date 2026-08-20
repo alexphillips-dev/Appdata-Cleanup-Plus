@@ -46,7 +46,7 @@
 
   ACP.defaultSafetySettings = function() {
     return {
-      enablePermanentDelete: true,
+      enablePermanentDelete: false,
       enableZfsDatasetDelete: true,
       quarantineRoot: "",
       defaultQuarantinePurgeDays: 0,

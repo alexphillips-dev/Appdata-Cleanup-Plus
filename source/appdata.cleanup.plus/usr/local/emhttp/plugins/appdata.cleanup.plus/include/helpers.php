@@ -1533,7 +1533,7 @@ function getDefaultAppdataCleanupPlusQuarantineRoot() {
 
 function getDefaultAppdataCleanupPlusSafetySettings() {
   return array(
-    "enablePermanentDelete" => true,
+    "enablePermanentDelete" => false,
     "enableZfsDatasetDelete" => true,
     "quarantineRoot" => getDefaultAppdataCleanupPlusQuarantineRoot(),
     "defaultQuarantinePurgeDays" => 0,

@@ -139,6 +139,7 @@ session_id("acp-behavior-primary");
 session_start();
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusConfigDir(), "State root should be created.");
 $defaultSafetySettings = getAppdataCleanupPlusSafetySettings();
+behaviorSmokeAssertSame(false, ! empty($defaultSafetySettings["enablePermanentDelete"]), "Fresh safety settings should start in quarantine-first Safe Mode.");
 behaviorSmokeAssertSame(0, (int)$defaultSafetySettings["defaultQuarantinePurgeDays"], "Default safety settings should start with no quarantine purge timer.");
 behaviorSmokeAssertSame(true, ! empty($defaultSafetySettings["enableZfsDatasetDelete"]), "Default safety settings should start with ZFS dataset delete enabled.");
 behaviorSmokeAssertSame(array(), $defaultSafetySettings["zfsPathMappings"], "Default safety settings should start without ZFS path mappings.");
@@ -162,6 +163,8 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
 $persistedSafetySettings = getAppdataCleanupPlusSafetySettings();
 behaviorSmokeAssertSame(21, (int)$persistedSafetySettings["defaultQuarantinePurgeDays"], "Safety settings should persist the default quarantine purge days value.");
 behaviorSmokeAssertSame(true, ! empty($persistedSafetySettings["enableZfsDatasetDelete"]), "Safety settings should keep ZFS dataset delete enabled.");
+behaviorSmokeAssertSame(false, ! empty($persistedSafetySettings["enablePermanentDelete"]), "An explicitly saved Safe Mode setting should remain authoritative.");
+behaviorSmokeAssertSame(true, ! empty(normalizeAppdataCleanupPlusSafetySettings(array("enablePermanentDelete" => true))["enablePermanentDelete"]), "Existing explicitly saved permanent-delete settings should be preserved.");
 behaviorSmokeAssertSame(array(
   "/mnt/fcache/test-appdata",
   "/mnt/fcache/second-appdata"
