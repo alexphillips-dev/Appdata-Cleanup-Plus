@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.08.20.03">
-<!ENTITY md5 "46f2cb19f0141f0d5dfc01af15468e85">
+<!ENTITY version "2026.08.20.04">
+<!ENTITY md5 "39a3e46ace10e560ace613191a7f353f">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.08.20.04
+- Filesystem safety: Detect nested and bind mount points before native deletion and keep mounted contents untouched.
+- Permanent delete: Preserve the existing action while adding a one-filesystem defense to recursive removal.
+
 ###2026.08.20.03
 - Filesystem safety: Reject dot-segment traversal paths in appdata sources, browsing, cleanup resolution, and ZFS mappings.
 - Regression coverage: Preserve normal quarantine and permanent-delete behavior while failing closed on crafted paths.

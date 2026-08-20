@@ -20,8 +20,41 @@ function resolveExistingPath($classification) {
   return $classification["path"];
 }
 
+function appdataCleanupPlusDecodeMountInfoPath($path) {
+  return str_replace(
+    array("\\040", "\\011", "\\012", "\\134"),
+    array(" ", "\t", "\n", "\\"),
+    (string)$path
+  );
+}
+
+function appdataCleanupPlusReadMountInfoPaths() {
+  $contents = "";
+  $mountPaths = array();
+
+  if ( isset($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNTINFO"]) ) {
+    $contents = (string)$GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNTINFO"];
+  } elseif ( is_readable("/proc/self/mountinfo") ) {
+    $contents = (string)@file_get_contents("/proc/self/mountinfo");
+  }
+
+  foreach ( preg_split('/\r\n|\r|\n/', $contents) as $line ) {
+    $fields = preg_split('/\s+/', trim((string)$line));
+    if ( ! is_array($fields) || count($fields) < 6 ) {
+      continue;
+    }
+
+    $mountPath = appdataCleanupPlusCanonicalizePath(appdataCleanupPlusDecodeMountInfoPath($fields[4]));
+    if ( $mountPath !== "" ) {
+      $mountPaths[$mountPath] = true;
+    }
+  }
+
+  return $mountPaths;
+}
+
 function pathIsMountPoint($path) {
-  $path = rtrim((string)$path, "/");
+  $path = appdataCleanupPlusCanonicalizePath($path);
 
   if ( ! $path || ! is_dir($path) ) {
     return false;
@@ -29,6 +62,11 @@ function pathIsMountPoint($path) {
 
   if ( isset($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"]) && is_array($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"]) ) {
     return ! empty($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"][$path]);
+  }
+
+  $mountInfoPaths = appdataCleanupPlusReadMountInfoPaths();
+  if ( isset($mountInfoPaths[$path]) ) {
+    return true;
   }
 
   $parentPath = dirname($path);

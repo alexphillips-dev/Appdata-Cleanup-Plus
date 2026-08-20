@@ -720,6 +720,15 @@ behaviorSmokeAssertSame(1, isset($scheduledPurgeFailureExecution["summary"]["err
 $scheduledPurgeFailureRegistry = getAppdataCleanupPlusQuarantineRegistry();
 behaviorSmokeAssertSame("", isset($scheduledPurgeFailureRegistry["scheduled-purge-failed-entry"]["purgeAt"]) ? (string)$scheduledPurgeFailureRegistry["scheduled-purge-failed-entry"]["purgeAt"] : "missing", "Failed scheduled purge entries should have their due timer paused.");
 behaviorSmokeAssertContains("locked for safety", isset($scheduledPurgeFailureRegistry["scheduled-purge-failed-entry"]["purgeErrorMessage"]) ? (string)$scheduledPurgeFailureRegistry["scheduled-purge-failed-entry"]["purgeErrorMessage"] : "", "Failed scheduled purge entries should preserve the purge error message.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($stateRoot . "/mountinfo-parent/bind-child"), "Synthetic bind-mount fixture should be created.");
+$mountInfoFixturePath = str_replace(" ", "\\040", $stateRoot . "/mountinfo-parent/bind-child");
+$GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNTINFO"] = "36 25 0:32 / " . $mountInfoFixturePath . " rw,relatime - ext4 /dev/root rw\n";
+behaviorSmokeAssertSame(true, pathIsMountPoint($stateRoot . "/mountinfo-parent/bind-child"), "Mountinfo parsing should detect same-device bind mount paths.");
+$nestedMountDeleteResult = nativeDeleteDirectory($stateRoot . "/mountinfo-parent");
+behaviorSmokeAssertSame(false, ! empty($nestedMountDeleteResult["ok"]), "Native deletion should reject folders containing nested mount points.");
+behaviorSmokeAssertContains("nested mount", isset($nestedMountDeleteResult["message"]) ? $nestedMountDeleteResult["message"] : "", "Nested mount rejection should explain the safety lock.");
+behaviorSmokeAssertSame(true, is_dir($stateRoot . "/mountinfo-parent/bind-child"), "Nested mount rejection should leave the folder tree intact.");
+unset($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNTINFO"]);
 
 $dockerRuntimeFixture = $stateRoot . "/docker-runtime";
 $dockerClientFixture = $stateRoot . "/DockerClient.php";

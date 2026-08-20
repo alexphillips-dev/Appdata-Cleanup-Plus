@@ -1362,6 +1362,16 @@ function nativeDeleteDirectory($path, $options=array()) {
     );
   }
 
+  $unsafeReason = inspectDirectoryTreeForUnsafeEntries($deletePath, array(
+    "allowSymlinkEntries" => $allowSymlinkEntries
+  ));
+  if ( $unsafeReason ) {
+    return array(
+      "ok" => false,
+      "message" => $unsafeReason
+    );
+  }
+
   if ( $progressId !== "" && function_exists("appdataCleanupPlusUpdateOperationProgress") ) {
     appdataCleanupPlusUpdateOperationProgress($progressId, array(
       "currentPath" => $deletePath,
@@ -1380,7 +1390,7 @@ function nativeDeleteDirectory($path, $options=array()) {
       "message" => "The PHP exec function is not available for folder deletion."
     );
   } else {
-    exec("/bin/rm -rf " . escapeshellarg($deletePath) . " 2>&1", $deleteOutput, $exitCode);
+    exec("/bin/rm -rf --one-file-system -- " . escapeshellarg($deletePath) . " 2>&1", $deleteOutput, $exitCode);
     clearstatcache(true, $deletePath);
 
     if ( $exitCode !== 0 || file_exists($deletePath) ) {
