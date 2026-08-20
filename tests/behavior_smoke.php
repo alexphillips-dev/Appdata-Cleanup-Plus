@@ -198,6 +198,38 @@ behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array(
 )), "Safety settings reset should succeed.");
 behaviorSmokeAssertSame(true, ! empty(getAppdataCleanupPlusSafetySettings()["enableZfsDatasetDelete"]), "ZFS dataset delete should stay enabled even if old settings post it as disabled.");
 
+$concurrencyStateRoot = $stateRoot . "/concurrency-state";
+$concurrencyWorker = $repoRoot . "/tests/state_concurrency_worker.php";
+$concurrencyProcesses = array();
+behaviorSmokeAssertTrue(function_exists("proc_open"), "Concurrent state regression coverage requires proc_open.");
+for ( $workerIndex = 0; $workerIndex < 4; $workerIndex++ ) {
+  $pipes = array();
+  $process = proc_open(array(
+    PHP_BINARY,
+    $concurrencyWorker,
+    $concurrencyStateRoot,
+    "worker-" . $workerIndex,
+    "25"
+  ), array(
+    1 => array("pipe", "w"),
+    2 => array("pipe", "w")
+  ), $pipes, null, null, array("bypass_shell" => true));
+  behaviorSmokeAssertTrue(is_resource($process), "Concurrent state worker should start.");
+  $concurrencyProcesses[] = array("process" => $process, "pipes" => $pipes);
+}
+foreach ( $concurrencyProcesses as $concurrencyProcess ) {
+  $workerStdout = stream_get_contents($concurrencyProcess["pipes"][1]);
+  $workerStderr = stream_get_contents($concurrencyProcess["pipes"][2]);
+  fclose($concurrencyProcess["pipes"][1]);
+  fclose($concurrencyProcess["pipes"][2]);
+  $workerExitCode = proc_close($concurrencyProcess["process"]);
+  behaviorSmokeAssertSame(0, $workerExitCode, "Concurrent state worker should finish successfully: " . trim($workerStdout . " " . $workerStderr));
+}
+$concurrencyIgnored = readAppdataCleanupPlusJsonFile($concurrencyStateRoot . "/ignored-paths.json", array());
+behaviorSmokeAssertSame(100, count($concurrencyIgnored), "Transactional ignore updates should preserve every concurrent write.");
+$concurrencyTempFiles = glob($concurrencyStateRoot . "/ignored-paths.json.tmp.*");
+behaviorSmokeAssertSame(0, is_array($concurrencyTempFiles) ? count($concurrencyTempFiles) : 0, "Atomic state writes should not leave temporary files behind.");
+
 $snapshot = writeAppdataCleanupPlusSnapshot(array(
   "alpha" => array(
     "id" => "alpha",
@@ -238,7 +270,7 @@ file_put_contents($staleLockFile, appdataCleanupPlusJsonEncode(array(
   "metadata" => array("action" => "stale")
 )) . "\n");
 behaviorSmokeAssertTrue(recoverAppdataCleanupPlusStaleRuntimeLockFile($staleLockFile), "Unheld stale runtime lock metadata should be recoverable.");
-behaviorSmokeAssertSame(false, is_file($staleLockFile), "Recovered stale runtime lock metadata should be removed.");
+behaviorSmokeAssertSame(0, is_file($staleLockFile) ? (int)filesize($staleLockFile) : -1, "Recovered stale runtime lock metadata should be cleared without unlinking a newly acquired lock inode.");
 
 $statsPath = "/mnt/user/appdata/cache-target";
 clearCachedAppdataCleanupPlusPathStats($statsPath);

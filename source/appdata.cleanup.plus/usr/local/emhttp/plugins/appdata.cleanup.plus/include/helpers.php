@@ -1220,7 +1220,19 @@ function recoverAppdataCleanupPlusStaleRuntimeLockFile($path) {
     return false;
   }
 
-  return @unlink($path);
+  $handle = @fopen($path, "c+");
+  if ( ! is_resource($handle) || ! @flock($handle, LOCK_EX | LOCK_NB) ) {
+    if ( is_resource($handle) ) {
+      @fclose($handle);
+    }
+    return false;
+  }
+
+  $recovered = @ftruncate($handle, 0);
+  @fflush($handle);
+  @flock($handle, LOCK_UN);
+  @fclose($handle);
+  return $recovered;
 }
 
 function appdataCleanupPlusListRuntimeLocks() {
@@ -1334,6 +1346,75 @@ function appdataCleanupPlusJsonEncode($payload, $flags=0) {
   return json_encode(appdataCleanupPlusNormalizeUtf8Value($payload), appdataCleanupPlusJsonFlags($flags));
 }
 
+function appdataCleanupPlusJsonFileLockPath($path) {
+  return (string)$path . ".lock";
+}
+
+function appdataCleanupPlusWriteJsonFileUnlocked($path, $payload) {
+  $tmpFile = "";
+  $handle = null;
+  $encoded = appdataCleanupPlusJsonEncode($payload, JSON_PRETTY_PRINT);
+
+  if ( $encoded === false ) {
+    return false;
+  }
+
+  $tmpFile = @tempnam(dirname($path), basename($path) . ".tmp.");
+  if ( ! is_string($tmpFile) || $tmpFile === "" ) {
+    return false;
+  }
+
+  $handle = @fopen($tmpFile, "wb");
+  if ( ! is_resource($handle) ) {
+    @unlink($tmpFile);
+    return false;
+  }
+
+  $contents = $encoded . "\n";
+  $written = @fwrite($handle, $contents);
+  if ( $written !== strlen($contents) || ! @fflush($handle) ) {
+    @fclose($handle);
+    @unlink($tmpFile);
+    return false;
+  }
+
+  if ( function_exists("fsync") ) {
+    @fsync($handle);
+  }
+  @fclose($handle);
+  @chmod($tmpFile, 0644);
+
+  if ( ! @rename($tmpFile, $path) ) {
+    @unlink($tmpFile);
+    return false;
+  }
+
+  return true;
+}
+
+function appdataCleanupPlusOpenJsonFileLock($path) {
+  $lockPath = appdataCleanupPlusJsonFileLockPath($path);
+  $handle = @fopen($lockPath, "c+");
+
+  if ( ! is_resource($handle) || ! @flock($handle, LOCK_EX) ) {
+    if ( is_resource($handle) ) {
+      @fclose($handle);
+    }
+    return false;
+  }
+
+  return $handle;
+}
+
+function appdataCleanupPlusCloseJsonFileLock($handle) {
+  if ( ! is_resource($handle) ) {
+    return;
+  }
+
+  @flock($handle, LOCK_UN);
+  @fclose($handle);
+}
+
 function writeAppdataCleanupPlusJsonFile($path, $payload) {
   if ( ! ensureAppdataCleanupPlusConfigDir() ) {
     return false;
@@ -1343,18 +1424,35 @@ function writeAppdataCleanupPlusJsonFile($path, $payload) {
     return false;
   }
 
-  $tmpFile = $path . ".tmp";
-  $encoded = appdataCleanupPlusJsonEncode($payload, JSON_PRETTY_PRINT);
-
-  if ( $encoded === false ) {
+  $lock = appdataCleanupPlusOpenJsonFileLock($path);
+  if ( ! is_resource($lock) ) {
     return false;
   }
 
-  if ( @file_put_contents($tmpFile, $encoded . "\n", LOCK_EX) === false ) {
+  try {
+    return appdataCleanupPlusWriteJsonFileUnlocked($path, $payload);
+  } finally {
+    appdataCleanupPlusCloseJsonFileLock($lock);
+  }
+}
+
+function mutateAppdataCleanupPlusJsonFile($path, $default, $mutator) {
+  if ( ! is_callable($mutator) || ! ensureAppdataCleanupPlusConfigDir() || ! ensureAppdataCleanupPlusDirectory(dirname($path)) ) {
     return false;
   }
 
-  return @rename($tmpFile, $path);
+  $lock = appdataCleanupPlusOpenJsonFileLock($path);
+  if ( ! is_resource($lock) ) {
+    return false;
+  }
+
+  try {
+    $current = readAppdataCleanupPlusJsonFile($path, $default);
+    $next = call_user_func($mutator, $current);
+    return appdataCleanupPlusWriteJsonFileUnlocked($path, $next);
+  } finally {
+    appdataCleanupPlusCloseJsonFileLock($lock);
+  }
 }
 
 function appdataCleanupPlusIgnoreListFile() {
@@ -1552,28 +1650,26 @@ function setIgnoredAppdataCleanupPlusCandidates($ignoredCandidates) {
 
 function ignoreAppdataCleanupPlusCandidate($path, $metadata=array()) {
   $candidateKey = appdataCleanupPlusCandidateKey($path);
-  $ignoredCandidates = getIgnoredAppdataCleanupPlusCandidates();
-  $ignoredCandidates[$candidateKey] = array(
-    "path" => $candidateKey,
-    "ignoredAt" => date("c"),
-    "name" => isset($metadata["name"]) ? (string)$metadata["name"] : basename($candidateKey),
-    "sourceSummary" => isset($metadata["sourceSummary"]) ? (string)$metadata["sourceSummary"] : "",
-    "targetSummary" => isset($metadata["targetSummary"]) ? (string)$metadata["targetSummary"] : ""
-  );
-
-  return setIgnoredAppdataCleanupPlusCandidates($ignoredCandidates);
+  return mutateAppdataCleanupPlusJsonFile(appdataCleanupPlusIgnoreListFile(), array(), function($ignoredCandidates) use ($candidateKey, $metadata) {
+    $ignoredCandidates = is_array($ignoredCandidates) ? $ignoredCandidates : array();
+    $ignoredCandidates[$candidateKey] = array(
+      "path" => $candidateKey,
+      "ignoredAt" => date("c"),
+      "name" => isset($metadata["name"]) ? (string)$metadata["name"] : basename($candidateKey),
+      "sourceSummary" => isset($metadata["sourceSummary"]) ? (string)$metadata["sourceSummary"] : "",
+      "targetSummary" => isset($metadata["targetSummary"]) ? (string)$metadata["targetSummary"] : ""
+    );
+    return $ignoredCandidates;
+  });
 }
 
 function unignoreAppdataCleanupPlusCandidate($path) {
   $candidateKey = appdataCleanupPlusCandidateKey($path);
-  $ignoredCandidates = getIgnoredAppdataCleanupPlusCandidates();
-
-  if ( ! isset($ignoredCandidates[$candidateKey]) ) {
-    return true;
-  }
-
-  unset($ignoredCandidates[$candidateKey]);
-  return setIgnoredAppdataCleanupPlusCandidates($ignoredCandidates);
+  return mutateAppdataCleanupPlusJsonFile(appdataCleanupPlusIgnoreListFile(), array(), function($ignoredCandidates) use ($candidateKey) {
+    $ignoredCandidates = is_array($ignoredCandidates) ? $ignoredCandidates : array();
+    unset($ignoredCandidates[$candidateKey]);
+    return $ignoredCandidates;
+  });
 }
 
 function appendAppdataCleanupPlusAuditEntry($entry) {
@@ -1732,6 +1828,14 @@ function getAppdataCleanupPlusQuarantineRegistry() {
 
 function setAppdataCleanupPlusQuarantineRegistry($registry) {
   return writeAppdataCleanupPlusJsonFile(appdataCleanupPlusQuarantineRegistryFile(), is_array($registry) ? $registry : array());
+}
+
+function mutateAppdataCleanupPlusQuarantineRegistry($mutator) {
+  return mutateAppdataCleanupPlusJsonFile(appdataCleanupPlusQuarantineRegistryFile(), array(), function($registry) use ($mutator) {
+    $registry = is_array($registry) ? $registry : array();
+    $next = call_user_func($mutator, $registry);
+    return is_array($next) ? $next : $registry;
+  });
 }
 
 function appdataCleanupPlusStatsCacheState($nextState=null, $replace=false) {

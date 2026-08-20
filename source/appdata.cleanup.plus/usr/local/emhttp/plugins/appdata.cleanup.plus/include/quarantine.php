@@ -542,20 +542,17 @@ function recoverMissingAppdataCleanupPlusQuarantineRecords() {
 
 function registerAppdataCleanupPlusQuarantineRecord($record) {
   $normalized = normalizeAppdataCleanupPlusQuarantineRecord($record);
-  $registry = getAppdataCleanupPlusQuarantineRegistry();
-  $registry[$normalized["id"]] = $normalized;
-  return setAppdataCleanupPlusQuarantineRegistry($registry);
+  return mutateAppdataCleanupPlusQuarantineRegistry(function($registry) use ($normalized) {
+    $registry[$normalized["id"]] = $normalized;
+    return $registry;
+  });
 }
 
 function removeAppdataCleanupPlusQuarantineRecord($recordId) {
-  $registry = getAppdataCleanupPlusQuarantineRegistry();
-
-  if ( ! isset($registry[$recordId]) ) {
-    return true;
-  }
-
-  unset($registry[$recordId]);
-  return setAppdataCleanupPlusQuarantineRegistry($registry);
+  return mutateAppdataCleanupPlusQuarantineRegistry(function($registry) use ($recordId) {
+    unset($registry[$recordId]);
+    return $registry;
+  });
 }
 
 function pruneMissingAppdataCleanupPlusQuarantineRecords($registry) {
