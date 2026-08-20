@@ -355,13 +355,14 @@ function appdataCleanupPlusDiagnosticsRedactText($value) {
     return "";
   }
 
-  $text = preg_replace_callback('#/(?:mnt|boot|var|tmp|etc|usr)(?:/[^\\s\'"<>\\[\\](),;]+)+#', function($matches) {
+  $text = preg_replace_callback('#/(?:mnt|boot|var|tmp|etc|usr|config|data|downloads|media|cache|temp|transcode|movies|tv|music|backup|backups)(?:/[^\\s\'"<>\\[\\](),;]+)+#', function($matches) {
     return appdataCleanupPlusDiagnosticsRedactPath($matches[0]);
   }, $text);
   $text = preg_replace('/(\\b(?:authorization|proxy-authorization)\\s*[:=]\\s*)(?:bearer\\s+)?[^\\s,;]+/i', '$1<redacted>', $text);
   $text = preg_replace('/(\\b(?:cookie|set-cookie)\\s*:\\s*)[^\\r\\n]+/i', '$1<redacted>', $text);
   $text = preg_replace('/([?&](?:csrf|token|key|password|passwd|pass|secret|session|auth|api[_-]?key|access[_-]?token|refresh[_-]?token)[^=\\s]*=)[^\\s&]+/i', '$1<redacted>', $text);
   $text = preg_replace('/(\\b(?:csrf|token|api[_-]?key|access[_-]?token|refresh[_-]?token|password|passwd|secret|session|auth|credential|client[_-]?secret)\\b\\s*[:=]\\s*)(?:"[^"]*"|\'[^\']*\'|[^\\s,;&]+)/i', '$1<redacted>', $text);
+  $text = preg_replace('#(\\b(?:https?|wss?)://)(?:[^/@\\s]+@)?\\[[^\\]\\s]+\\](?::\\d+)?#i', '$1<host>', $text);
   $text = preg_replace('#(\\b(?:https?|wss?)://)(?:[^/@\\s]+@)?[^/\\s:]+(?::\\d+)?#i', '$1<host>', $text);
   $text = preg_replace('/\\beyJ[A-Za-z0-9_-]{5,}\\.[A-Za-z0-9_-]{5,}\\.[A-Za-z0-9_-]{5,}\\b/', '<jwt>', $text);
   $text = preg_replace('/\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b/i', '<email>', $text);
@@ -386,7 +387,7 @@ function appdataCleanupPlusDiagnosticsKeyIsSensitive($key) {
 }
 
 function appdataCleanupPlusDiagnosticsKeyLooksLikePath($key) {
-  return preg_match('/(?:path|root|directory|dir|mountpoint|destination|source)$/i', (string)$key) === 1;
+  return preg_match('/(?:path|root|directory|dir|mountpoint|destination|source|target)$/i', (string)$key) === 1;
 }
 
 function appdataCleanupPlusDiagnosticsRedactValue($value, $keyName="") {

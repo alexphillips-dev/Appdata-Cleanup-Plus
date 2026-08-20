@@ -2808,13 +2808,14 @@
       text = text.split(raw).join(sanitized);
     });
 
-    text = text.replace(/\/(?:mnt|boot|var|tmp|etc|usr)(?:\/[^\s'"<>\[\](),;]+)+/g, function(path) {
+    text = text.replace(/\/(?:mnt|boot|var|tmp|etc|usr|config|data|downloads|media|cache|temp|transcode|movies|tv|music|backup|backups)(?:\/[^\s'"<>\[\](),;]+)+/g, function(path) {
       return sanitizeDiagnosticsPath(path, redactor);
     });
     text = text.replace(/(\b(?:authorization|proxy-authorization)\s*[:=]\s*)(?:bearer\s+)?[^\s,;]+/gi, "$1<redacted>");
     text = text.replace(/(\b(?:cookie|set-cookie)\s*:\s*)[^\r\n]+/gi, "$1<redacted>");
     text = text.replace(/([?&](?:csrf|token|key|password|passwd|pass|secret|session|auth|api[_-]?key|access[_-]?token|refresh[_-]?token)[^=\s]*=)[^\s&]+/gi, "$1<redacted>");
     text = text.replace(/(\b(?:csrf|token|api[_-]?key|access[_-]?token|refresh[_-]?token|password|passwd|secret|session|auth|credential|client[_-]?secret)\b\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;&]+)/gi, "$1<redacted>");
+    text = text.replace(/(\b(?:https?|wss?):\/\/)(?:[^/@\s]+@)?\[[^\]\s]+\](?::\d+)?/gi, "$1<host>");
     text = text.replace(/(\b(?:https?|wss?):\/\/)(?:[^/@\s]+@)?[^/\s:]+(?::\d+)?/gi, "$1<host>");
     text = text.replace(/\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\b/g, "<jwt>");
     text = text.replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "<email>");
@@ -2843,7 +2844,7 @@
   }
 
   function diagnosticsKeyLooksLikePath(key) {
-    return /(?:path|root|directory|dir|mountpoint|destination|source)$/i.test(String(key || ""));
+    return /(?:path|root|directory|dir|mountpoint|destination|source|target)$/i.test(String(key || ""));
   }
 
   function sanitizeDiagnosticsValue(value, redactor, keyName) {
@@ -2923,7 +2924,17 @@
     }
 
     if (/^\/(config|data|downloads|media|cache|tmp|temp|transcode|movies|tv|music|backup|backups)(\/|$)/i.test(raw)) {
-      return raw;
+      segments = raw.split("/");
+      sanitizedSegments = segments.slice(0);
+      $.each(sanitizedSegments, function(index, segment) {
+        if (index >= 2 && segment && !/^<[^>]+>$/.test(segment)) {
+          sanitizedSegments[index] = getDiagnosticsAlias(redactor, "segment", segment, "path");
+          registerDiagnosticsReplacement(redactor, segment, sanitizedSegments[index]);
+        }
+      });
+      sanitized = sanitizedSegments.join("/");
+      registerDiagnosticsReplacement(redactor, raw, sanitized);
+      return sanitized;
     }
 
     segments = raw.split("/");
@@ -2976,7 +2987,7 @@
 
       record.name = sanitizeDiagnosticsName(record.name || "", redactor, "app");
       record.file = sanitizeDiagnosticsTemplateFile(record.file || "", redactor);
-      record.target = String(record.target || "");
+      record.target = sanitizeDiagnosticsPath(record.target || "", redactor);
       return record;
     });
   }

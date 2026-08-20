@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.08.20.05">
-<!ENTITY md5 "cfa4eb0ec12caeba21f245ce981d04d5">
+<!ENTITY version "2026.08.20.06">
+<!ENTITY md5 "898d0fc79da56400a999db498b754cb2">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.08.20.06
+- Diagnostics privacy: Sanitize template target paths and private segments beneath common container roots.
+- Network redaction: Remove bracketed IPv6 URL authorities as a unit and add executable client/server privacy coverage.
+
 ###2026.08.20.05
 - Scheduled purge: Install an hourly background worker so due quarantine entries are actually purged without opening the dashboard.
 - Safety: Reuse the cleanup-operation lock and audit path, skipping safely while another cleanup is active.

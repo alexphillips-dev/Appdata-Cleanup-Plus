@@ -29,4 +29,6 @@ grep -Fq 'appdataCleanupPlusDiagnosticsQuarantineRegistrySummary(50)' <<<"${serv
 grep -Fq 'appdataCleanupPlusDiagnosticsIgnoredCandidatesSummary(50)' <<<"${server_bundle}" || fail "Server diagnostics ignored state must use an allowlisted summary."
 grep -Fq 'appdataCleanupPlusDiagnosticsRedactValue($bundle)' <<<"${server_bundle}" || fail "Server diagnostics bundle needs a final recursive privacy scrub."
 
+node "${ROOT_DIR}/tests/diagnostics_privacy_client.js"
+
 echo "test_diagnostics_privacy: diagnostics exports use schema allowlists, aliases, and final recursive scrubs."

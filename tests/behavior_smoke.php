@@ -631,8 +631,10 @@ $diagnosticsPrivacyProbe = appdataCleanupPlusJsonEncode(appdataCleanupPlusDiagno
     "authorization" => "Bearer eyJhbGciOiJIUzI1NiJ9.abcde12345.signature12345",
     "password" => "diagnostics-plain-password",
     "ipv6" => "2001:db8::1234",
+    "url" => "https://[2001:db8::1234]:8443/private?q=1",
     "hostname" => "diagnostics-private-nas.local",
-    "path" => "/mnt/user/DiagnosticsProbeShare/DiagnosticsProbeApp"
+    "path" => "/mnt/user/DiagnosticsProbeShare/DiagnosticsProbeApp",
+    "target" => "/data/DiagnosticsPrivateTarget/customer-a"
   )
 )));
 behaviorSmokeAssertNotContains("DiagnosticsProbeShare", $diagnosticsPrivacyProbe, "Diagnostics redaction should sanitize associative path keys.");
@@ -641,6 +643,7 @@ behaviorSmokeAssertNotContains("eyJhbGciOiJIUzI1NiJ9", $diagnosticsPrivacyProbe,
 behaviorSmokeAssertNotContains("diagnostics-plain-password", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove credential fields.");
 behaviorSmokeAssertNotContains("2001:db8::1234", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove IPv6 addresses.");
 behaviorSmokeAssertNotContains("diagnostics-private-nas.local", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove hostnames.");
+behaviorSmokeAssertNotContains("DiagnosticsPrivateTarget", $diagnosticsPrivacyProbe, "Diagnostics redaction should sanitize target paths.");
 
 $diagnosticsInvalidJsonFixture = $stateRoot . "/diagnostics-invalid.json";
 file_put_contents($diagnosticsInvalidJsonFixture, "{invalid-json");
