@@ -9,6 +9,8 @@ SOURCE_BRANCH="dev"
 MAIN_BRANCH="main"
 SYNC_DEV=true
 DRY_RUN=false
+GH_USES_WINDOWS_PATHS=false
+GH_EXECUTABLE=""
 
 print_usage() {
     cat <<'EOF'
@@ -31,10 +33,15 @@ bootstrap_gh_command() {
     local candidate=""
 
     if command -v gh >/dev/null 2>&1; then
+        candidate="$(command -v gh)"
+        case "${candidate}" in
+            *.exe) GH_USES_WINDOWS_PATHS=true ;;
+        esac
         return 0
     fi
 
     if command -v gh.exe >/dev/null 2>&1; then
+        GH_USES_WINDOWS_PATHS=true
         gh() {
             gh.exe "$@"
         }
@@ -46,8 +53,10 @@ bootstrap_gh_command() {
         "/c/Program Files/GitHub CLI/gh.exe"
     do
         if [ -x "${candidate}" ]; then
+            GH_USES_WINDOWS_PATHS=true
+            GH_EXECUTABLE="${candidate}"
             gh() {
-                "${candidate}" "$@"
+                "${GH_EXECUTABLE}" "$@"
             }
             return 0
         fi
@@ -380,14 +389,18 @@ fi
 NOTES_FILE="$(mktemp)"
 trap 'rm -f "${NOTES_FILE}"' EXIT
 printf '%s\n' "${NOTES}" > "${NOTES_FILE}"
+GH_NOTES_FILE="${NOTES_FILE}"
+if [ "${GH_USES_WINDOWS_PATHS}" = true ] && command -v wslpath >/dev/null 2>&1; then
+    GH_NOTES_FILE="$(wslpath -w "${NOTES_FILE}")"
+fi
 
 git push origin "${MAIN_BRANCH}"
 git push origin "${RELEASE_TAG}"
 
 if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
-    gh release edit "${RELEASE_TAG}" --title "${VERSION}" --notes-file "${NOTES_FILE}"
+    gh release edit "${RELEASE_TAG}" --title "${VERSION}" --notes-file "${GH_NOTES_FILE}"
 else
-    gh release create "${RELEASE_TAG}" --verify-tag --title "${VERSION}" --notes-file "${NOTES_FILE}"
+    gh release create "${RELEASE_TAG}" --verify-tag --title "${VERSION}" --notes-file "${GH_NOTES_FILE}"
 fi
 
 verify_remote_release_metadata "${REMOTE_SLUG}" "${MAIN_BRANCH}" "${VERSION}" "${HEAD_COMMIT}"

@@ -12,17 +12,12 @@ PLG_FILE="${ROOT_DIR}/plugins/appdata.cleanup.plus.plg"
 
 git fetch origin main dev --tags
 
-release_only_path() {
-    local path="${1:-}"
-    case "${path}" in
-        plugins/appdata.cleanup.plus.plg|appdata.cleanup.plus.xml|archive/appdata.cleanup.plus-*.txz)
-            return 0
-            ;;
-        *)
-            return 1
-            ;;
-    esac
-}
+if ! git diff --quiet --ignore-cr-at-eol --ignore-space-at-eol ||
+    ! git diff --cached --quiet --ignore-cr-at-eol --ignore-space-at-eol ||
+    [ -n "$(git ls-files --others --exclude-standard)" ]; then
+    echo "ERROR: Working tree must be clean before syncing main into dev." >&2
+    exit 1
+fi
 
 if git show-ref --verify --quiet "refs/heads/${DEV_BRANCH}"; then
     git checkout "${DEV_BRANCH}"
@@ -30,31 +25,20 @@ else
     git checkout -b "${DEV_BRANCH}" "${DEV_REF}"
 fi
 
+if ! git merge --ff-only "${DEV_REF}"; then
+    echo "ERROR: Local dev has diverged from origin/dev; refusing to rewrite branch history." >&2
+    exit 1
+fi
+
 if git merge-base --is-ancestor "${MAIN_REF}" "${DEV_BRANCH}"; then
     echo "Dev already includes main. Nothing to sync."
     exit 0
 fi
 
-MERGED_CLEANLY=1
-if ! git merge --no-ff --no-commit "${MAIN_REF}"; then
-    MERGED_CLEANLY=0
-fi
-
-if [ "${MERGED_CLEANLY}" -eq 0 ]; then
-    mapfile -t CONFLICTS < <(git diff --name-only --diff-filter=U)
-    if [ "${#CONFLICTS[@]}" -eq 0 ]; then
-        echo "Merge reported conflicts but none were detected." >&2
-        exit 1
-    fi
-    for FILE in "${CONFLICTS[@]}"; do
-        if ! release_only_path "${FILE}"; then
-            echo "Unexpected merge conflict in ${FILE}; aborting auto back-merge." >&2
-            git merge --abort
-            exit 1
-        fi
-    done
-    git checkout HEAD -- archive plugins/appdata.cleanup.plus.plg appdata.cleanup.plus.xml
-    git add archive plugins/appdata.cleanup.plus.plg appdata.cleanup.plus.xml
+if ! git merge --ff-only "${MAIN_REF}"; then
+    echo "ERROR: Dev cannot be fast-forwarded to main; refusing to create a merge commit." >&2
+    echo "Reconcile the branch histories explicitly, then rerun this script." >&2
+    exit 1
 fi
 
 sed -E -i 's|^<!ENTITY pluginURL ".*">|<!ENTITY pluginURL "https://raw.githubusercontent.com/\&github;/dev/plugins/\&name;.plg">|' plugins/appdata.cleanup.plus.plg
@@ -73,13 +57,9 @@ APPDATA_CLEANUP_PLUS_VERSION_OVERRIDE="${VERSION}" \
 
 git add archive plugins/appdata.cleanup.plus.plg appdata.cleanup.plus.xml
 
-if git rev-parse -q --verify MERGE_HEAD >/dev/null; then
-    if git diff --cached --quiet; then
-        git commit --allow-empty -m "Sync main into dev (auto back-merge)"
-    else
-        git commit -m "Sync main into dev (auto back-merge)"
-    fi
-    echo "Back-merge commit created."
+if git diff --cached --quiet; then
+    echo "Dev already contains the main release metadata. Nothing to commit."
 else
-    echo "No merge head present; nothing to commit."
+    git commit -m "Sync main into dev (linear back-sync)"
+    echo "Linear back-sync commit created."
 fi
