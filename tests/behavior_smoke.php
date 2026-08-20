@@ -730,6 +730,39 @@ behaviorSmokeAssertContains("nested mount", isset($nestedMountDeleteResult["mess
 behaviorSmokeAssertSame(true, is_dir($stateRoot . "/mountinfo-parent/bind-child"), "Nested mount rejection should leave the folder tree intact.");
 unset($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNTINFO"]);
 
+$workerPurgeRoot = $stateRoot . "/worker-purge-quarantine";
+$workerPurgeDestination = $workerPurgeRoot . "/20260330-123000/mnt/user/appdata/worker-purge";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($workerPurgeDestination), "Scheduled purge worker fixture should be created.");
+behaviorSmokeAssertTrue(registerAppdataCleanupPlusQuarantineRecord(array(
+  "id" => "worker-purge-entry",
+  "name" => "worker-purge",
+  "sourcePath" => "/mnt/user/appdata/worker-purge",
+  "destination" => $workerPurgeDestination,
+  "quarantineRoot" => $workerPurgeRoot,
+  "quarantinedAt" => "2026-03-30T12:30:00+00:00",
+  "purgeAt" => "2000-01-01T00:00:00+00:00",
+  "sourceSummary" => "worker-purge",
+  "targetSummary" => "/config"
+)), "Scheduled purge worker record should be registered.");
+$scheduledPurgeWorker = $repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/scheduled-purge.php";
+behaviorSmokeAssertTrue(acquireAppdataCleanupPlusRuntimeLock("cleanup-operation", array("action" => "worker-lock-test")), "Cleanup lock should be held for the worker contention test.");
+$workerLockedOutput = array();
+$workerLockedExitCode = 0;
+exec(escapeshellarg(PHP_BINARY) . " " . escapeshellarg($scheduledPurgeWorker) . " --json 2>&1", $workerLockedOutput, $workerLockedExitCode);
+releaseAppdataCleanupPlusRuntimeLock("cleanup-operation");
+$workerLockedPayload = json_decode(implode("\n", $workerLockedOutput), true);
+behaviorSmokeAssertSame(0, $workerLockedExitCode, "Scheduled purge worker should skip lock contention without failing cron.");
+behaviorSmokeAssertSame("skipped", isset($workerLockedPayload["status"]) ? $workerLockedPayload["status"] : "", "Scheduled purge worker should report lock contention as skipped.");
+behaviorSmokeAssertSame(true, is_dir($workerPurgeDestination), "A skipped scheduled purge should leave the due entry untouched.");
+$workerOutput = array();
+$workerExitCode = 0;
+exec(escapeshellarg(PHP_BINARY) . " " . escapeshellarg($scheduledPurgeWorker) . " --json 2>&1", $workerOutput, $workerExitCode);
+$workerPayload = json_decode(implode("\n", $workerOutput), true);
+behaviorSmokeAssertSame(0, $workerExitCode, "Scheduled purge worker should complete successfully.");
+behaviorSmokeAssertSame("complete", isset($workerPayload["status"]) ? $workerPayload["status"] : "", "Scheduled purge worker should report completion.");
+behaviorSmokeAssertSame(1, isset($workerPayload["summary"]["purged"]) ? (int)$workerPayload["summary"]["purged"] : 0, "Scheduled purge worker should purge due records through the production entrypoint.");
+behaviorSmokeAssertSame(false, is_dir($workerPurgeDestination), "Scheduled purge worker should remove the due quarantine folder.");
+
 $dockerRuntimeFixture = $stateRoot . "/docker-runtime";
 $dockerClientFixture = $stateRoot . "/DockerClient.php";
 $templatedOrphanPath = $appdataShareRoot . "/templated-orphan";
