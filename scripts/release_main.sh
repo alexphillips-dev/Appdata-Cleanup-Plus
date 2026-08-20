@@ -297,19 +297,23 @@ cd "${ROOT_DIR}"
 
 REMOTE_SLUG="$(extract_remote_slug)"
 git fetch origin "${MAIN_BRANCH}" "${SOURCE_BRANCH}" --tags
+REMOTE_SOURCE_REF="origin/${SOURCE_BRANCH}"
+REMOTE_MAIN_REF="origin/${MAIN_BRANCH}"
 
 if [ "${DRY_RUN}" = true ]; then
     CURRENT_VERSION="$(extract_manifest_version || true)"
     NEXT_VERSION="$(bash "${ROOT_DIR}/pkg_build.sh" --branch "${MAIN_BRANCH}" --dry-run | sed -n 's/^Version: //p' | head -n1 || true)"
     echo "Dry run: no files will be written."
     echo "Source branch: ${SOURCE_BRANCH}"
+    echo "Fetched source ref: ${REMOTE_SOURCE_REF} ($(git rev-parse "${REMOTE_SOURCE_REF}"))"
+    echo "Local source ref: ${SOURCE_BRANCH} ($(git rev-parse "${SOURCE_BRANCH}" 2>/dev/null || echo missing))"
     echo "Main branch: ${MAIN_BRANCH}"
     echo "Remote slug: ${REMOTE_SLUG}"
     echo "Current manifest version: ${CURRENT_VERSION}"
     echo "Next main build version: ${NEXT_VERSION}"
     echo "Planned actions:"
     echo "  1. Fast-forward ${MAIN_BRANCH} to origin/${MAIN_BRANCH}"
-    echo "  2. Fast-forward merge ${SOURCE_BRANCH} into ${MAIN_BRANCH}"
+    echo "  2. Fast-forward merge ${REMOTE_SOURCE_REF} into ${MAIN_BRANCH}"
     echo "  3. Build main-channel package metadata via pkg_build.sh"
     echo "  4. Create or verify tag v<version> at the release commit"
     echo "  5. Create or update the matching GitHub release from the top ###<version> manifest notes"
@@ -329,13 +333,13 @@ ensure_local_branch "${SOURCE_BRANCH}"
 ensure_local_branch "${MAIN_BRANCH}"
 
 git checkout "${MAIN_BRANCH}"
-git merge --ff-only "origin/${MAIN_BRANCH}"
-if git merge-base --is-ancestor "${SOURCE_BRANCH}" "${MAIN_BRANCH}"; then
-    echo "ERROR: ${SOURCE_BRANCH} does not contain new commits beyond ${MAIN_BRANCH}." >&2
+git merge --ff-only "${REMOTE_MAIN_REF}"
+if git merge-base --is-ancestor "${REMOTE_SOURCE_REF}" "${MAIN_BRANCH}"; then
+    echo "ERROR: ${REMOTE_SOURCE_REF} does not contain new commits beyond ${MAIN_BRANCH}." >&2
     echo "Push the new source changes first, then rerun the release script." >&2
     exit 1
 fi
-git merge --ff-only "${SOURCE_BRANCH}"
+git merge --ff-only "${REMOTE_SOURCE_REF}"
 
 bash "${ROOT_DIR}/pkg_build.sh" --branch "${MAIN_BRANCH}"
 
