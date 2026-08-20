@@ -7,6 +7,8 @@ cd "${ROOT_DIR}"
 DEV_BRANCH="dev"
 MAIN_REF="origin/main"
 DEV_REF="origin/dev"
+PKG_BUILD_SCRIPT="${ROOT_DIR}/pkg_build.sh"
+PLG_FILE="${ROOT_DIR}/plugins/appdata.cleanup.plus.plg"
 
 git fetch origin main dev --tags
 
@@ -59,7 +61,17 @@ sed -E -i 's|^<!ENTITY pluginURL ".*">|<!ENTITY pluginURL "https://raw.githubuse
 sed -E -i 's|<URL>https://raw.githubusercontent.com/.*?/archive/.*</URL>|<URL>https://raw.githubusercontent.com/\&github;/refs/heads/dev/archive/\&name;-\&version;-x86_64-1.txz</URL>|' plugins/appdata.cleanup.plus.plg
 sed -i 's|<PluginURL>.*</PluginURL>|<PluginURL>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/dev/plugins/appdata.cleanup.plus.plg</PluginURL>|' appdata.cleanup.plus.xml
 sed -i 's|<Icon>.*</Icon>|<Icon>https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/dev/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/images/appdata.cleanup.plus.png</Icon>|' appdata.cleanup.plus.xml
-git add plugins/appdata.cleanup.plus.plg appdata.cleanup.plus.xml
+
+VERSION="$(sed -n 's/^<!ENTITY version "\([^"]*\)".*/\1/p' "${PLG_FILE}" | head -n1)"
+if ! [[ "${VERSION}" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]{2}$ ]]; then
+    echo "ERROR: Could not parse a safe release version from ${PLG_FILE}." >&2
+    exit 1
+fi
+
+APPDATA_CLEANUP_PLUS_VERSION_OVERRIDE="${VERSION}" \
+    bash "${PKG_BUILD_SCRIPT}" --branch "${DEV_BRANCH}" --replace-current
+
+git add archive plugins/appdata.cleanup.plus.plg appdata.cleanup.plus.xml
 
 if git rev-parse -q --verify MERGE_HEAD >/dev/null; then
     if git diff --cached --quiet; then

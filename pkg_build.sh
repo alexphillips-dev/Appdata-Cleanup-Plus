@@ -15,6 +15,7 @@ today_version="$(date +"%Y.%m.%d")"
 version="${today_version}.01"
 dry_run=false
 validate_after_build=true
+replace_current=false
 tmpdir=""
 
 cleanup_tmpdir() {
@@ -40,6 +41,9 @@ print_usage() {
 Usage: pkg_build.sh [options]
   --branch NAME   Force manifest/XML URLs to branch NAME
   --dry-run       Show the computed version and output paths without writing files
+  --replace-current
+                  Replace the archive for the manifest's exact current version;
+                  requires APPDATA_CLEANUP_PLUS_VERSION_OVERRIDE to match it
   --validate      Run scripts/release_guard.sh after build (default)
   --no-validate   Skip post-build validation
   -h, --help      Show this help
@@ -254,6 +258,9 @@ while [[ $# -gt 0 ]]; do
         --dry-run)
             dry_run=true
             ;;
+        --replace-current)
+            replace_current=true
+            ;;
         --branch)
             if [ -z "${2:-}" ]; then
                 echo "ERROR: --branch requires a branch name." >&2
@@ -303,19 +310,30 @@ fi
 
 if [ -n "$version_override" ]; then
     version="$(normalize_stable_version_for_unraid "$version_override")"
-    if [ "$(stable_date_part "$version")" != "$today_version" ]; then
+    if [ "$replace_current" = true ]; then
+        current_manifest_version="$(sed -n 's/^<!ENTITY version "\([^"]*\)".*/\1/p' "$plgfile" | head -n1)"
+        if [ -z "$current_manifest_version" ] || [ "$version" != "$current_manifest_version" ]; then
+            echo "ERROR: --replace-current requires the version override to match the current manifest version." >&2
+            exit 1
+        fi
+    elif [ "$(stable_date_part "$version")" != "$today_version" ]; then
         echo "ERROR: APPDATA_CLEANUP_PLUS_VERSION_OVERRIDE must use today's date (${today_version})." >&2
         exit 1
     fi
+elif [ "$replace_current" = true ]; then
+    echo "ERROR: --replace-current requires APPDATA_CLEANUP_PLUS_VERSION_OVERRIDE." >&2
+    exit 1
 else
     version="$(next_stable_version_for_date "$today_version")"
 fi
 
 filename="$archive_dir/$archive_prefix-$version-x86_64-1.txz"
-while [ -f "$filename" ]; do
-    version="$(next_patch_version "$version")"
-    filename="$archive_dir/$archive_prefix-$version-x86_64-1.txz"
-done
+if [ "$replace_current" != true ]; then
+    while [ -f "$filename" ]; do
+        version="$(next_patch_version "$version")"
+        filename="$archive_dir/$archive_prefix-$version-x86_64-1.txz"
+    done
+fi
 
 xml_date="${version:0:4}-${version:5:2}-${version:8:2}"
 
