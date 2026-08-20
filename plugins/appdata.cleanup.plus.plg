@@ -2,17 +2,20 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.08.20.14">
-<!ENTITY md5 "2b2cb070313d5ef5be267c155e80a959">
+<!ENTITY version "2026.08.20.15">
+<!ENTITY md5 "16b74b34b4d844d4bc9232ae9a77e19d">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/refs/heads/dev/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/refs/heads/main/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.08.20.15
+-nQuarantinensafety:nReplacentypednDELETEnconfirmationnwithnancheckbox,nrunnmanualnandnschedulednpurgenagainstnthenexactnrecordednquarantinendestination,nandnkeepnthenoriginalnappdatanpathnabsentnafterndestructivenpurge.n-nDiagnostics:nAddnstructurednhealthnchecks,nboundednrelevantnlogntails,ncollectornlimits,nscanntiming,nandnactionablentroubleshootingnfindings.n-nPrivacy:nSanitizenexportednpaths,nidentifiers,ntemplatentargets,nhosts,nURLs,nIPv6naddresses,ncredentials,ntokens,nandnfatalnerrornresponsesnwhilenretainingncorrelationnIDsninnservernlogs.n-nFilesystemnsafety:nRejectntraversalnpaths,nenforcenconfigurednsourcencontainment,nrefusennestednandnbindnmounts,nandnkeepnrecursivendeletionnonnonenfilesystem.n-nReliability:nAddnthenhourlynscheduled-purgenworker,nsharedncleanupnlocking,natomicnstatenwrites,ntransactionalnupdates,nandnconcurrentninitializationncoverage.n-nSafendefaults:nStartnfreshninstallsninnquarantine-firstnSafenModenwhilenpreservingnexistingnsavednpermanent-deletensettingsnandncheckbox-confirmedndeletion.n-nReleasenquality:nBuildnfromnthenfetchednremotensourcenref,nusencache-safenrefs/headsnfeeds,nvalidatenmanifestnXMLnandnpackage/sourcenparity,nandnexpandnCI,nShellCheck,nCodeQL,nDependabot,nandnclientnsecurityncoverage.n-nCompatibility:nPreservennormalnpermanent-deletenbehavior,nZFSndatasetnsafeguards,nrestorenconflictnhandling,nandnexistingnusernsettingsnwhilenstrengtheningncleanupnprotections.n
+
 ###2026.08.20.14
 Delete exact quarantine destinations for manual and scheduled purges without restoring source paths.
 
@@ -1157,7 +1160,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/refs/heads/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/refs/heads/main/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
