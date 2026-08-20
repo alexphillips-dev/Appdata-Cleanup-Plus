@@ -27,10 +27,31 @@ function jsonResponse($payload, $statusCode=200) {
   exit;
 }
 
+function appdataCleanupPlusBuildFatalFailurePayload($lastError) {
+  $error = is_array($lastError) ? $lastError : array();
+  $errorId = function_exists("appdataCleanupPlusRandomToken")
+    ? substr(appdataCleanupPlusRandomToken(), 0, 12)
+    : substr(hash("sha256", uniqid("acp-fatal-", true)), 0, 12);
+  $message = trim((string)($error["message"] ?? "Unknown fatal backend error."));
+  $file = trim((string)($error["file"] ?? ""));
+  $line = isset($error["line"]) ? (int)$error["line"] : 0;
+  $logMessage = "Appdata Cleanup Plus fatal error [" . $errorId . "]: " . $message;
+
+  if ( $file !== "" ) {
+    $logMessage .= " in " . $file . ($line > 0 ? ":" . $line : "");
+  }
+  error_log($logMessage);
+
+  return array(
+    "ok" => false,
+    "message" => "A fatal backend error interrupted the request. Reference: " . $errorId,
+    "errorId" => $errorId
+  );
+}
+
 function appdataCleanupPlusRespondToFatalShutdown() {
   $lastError = error_get_last();
   $fatalTypes = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR);
-  $message = "";
 
   if ( empty($lastError) || ! is_array($lastError) ) {
     return;
@@ -44,11 +65,6 @@ function appdataCleanupPlusRespondToFatalShutdown() {
     return;
   }
 
-  $message = trim((string)($lastError["message"] ?? ""));
-  if ( $message === "" ) {
-    $message = "A fatal backend error interrupted the request.";
-  }
-
   $GLOBALS["appdataCleanupPlusJsonResponded"] = true;
   appdataCleanupPlusDrainOutputBuffers();
 
@@ -60,10 +76,7 @@ function appdataCleanupPlusRespondToFatalShutdown() {
     header("X-Content-Type-Options: nosniff");
   }
 
-  echo appdataCleanupPlusJsonEncode(array(
-    "ok" => false,
-    "message" => $message
-  ));
+  echo appdataCleanupPlusJsonEncode(appdataCleanupPlusBuildFatalFailurePayload($lastError));
 }
 
 function parseCandidateIds($rawIds) {

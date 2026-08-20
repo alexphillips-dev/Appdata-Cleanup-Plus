@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.08.20.10">
-<!ENTITY md5 "ef7b0fa93ea6ed3699cbda6a3e52f298">
+<!ENTITY version "2026.08.20.11">
+<!ENTITY md5 "ce140695ee68edb75d599e711dc522a4">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.08.20.11
+- Error privacy: Keep fatal PHP details in server logs instead of returning internal messages and paths to the browser.
+- Supportability: Return a short correlation ID that can be matched to the detailed server log entry.
+
 ###2026.08.20.10
 - Safer fresh installs: Start new configurations in quarantine-first Safe Mode, matching the documented safety model.
 - Backward compatibility: Preserve every existing saved delete-mode choice and keep checkbox-confirmed permanent deletion available.

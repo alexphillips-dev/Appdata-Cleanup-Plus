@@ -44,6 +44,7 @@ require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/fixtures.php");
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/pathUtils.php");
 require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/api.php");
+require_once($repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/http.php");
 
 function behaviorSmokeFail($message) {
   fwrite(STDERR, "behavior_smoke: FAIL: " . $message . PHP_EOL);
@@ -818,6 +819,19 @@ behaviorSmokeAssertSame(0, $workerExitCode, "Scheduled purge worker should compl
 behaviorSmokeAssertSame("complete", isset($workerPayload["status"]) ? $workerPayload["status"] : "", "Scheduled purge worker should report completion.");
 behaviorSmokeAssertSame(1, isset($workerPayload["summary"]["purged"]) ? (int)$workerPayload["summary"]["purged"] : 0, "Scheduled purge worker should purge due records through the production entrypoint.");
 behaviorSmokeAssertSame(false, is_dir($workerPurgeDestination), "Scheduled purge worker should remove the due quarantine folder.");
+
+$fatalFailurePayload = appdataCleanupPlusBuildFatalFailurePayload(array(
+  "type" => E_ERROR,
+  "message" => "Private fatal detail referencing /boot/config/plugins/private-secret.cfg",
+  "file" => "/usr/local/emhttp/plugins/private/internal.php",
+  "line" => 42
+));
+$fatalFailureJson = appdataCleanupPlusJsonEncode($fatalFailurePayload);
+behaviorSmokeAssertSame(false, ! empty($fatalFailurePayload["ok"]), "Fatal failure payload should report failure.");
+behaviorSmokeAssertTrue(! empty($fatalFailurePayload["errorId"]), "Fatal failure payload should include a support correlation ID.");
+behaviorSmokeAssertContains("Reference:", isset($fatalFailurePayload["message"]) ? $fatalFailurePayload["message"] : "", "Fatal failure payload should direct support to the correlation ID.");
+behaviorSmokeAssertNotContains("Private fatal detail", $fatalFailureJson, "Fatal failure payload should not expose the PHP error message.");
+behaviorSmokeAssertNotContains("private-secret.cfg", $fatalFailureJson, "Fatal failure payload should not expose internal paths.");
 
 $dockerRuntimeFixture = $stateRoot . "/docker-runtime";
 $dockerClientFixture = $stateRoot . "/DockerClient.php";
