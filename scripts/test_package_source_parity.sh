@@ -45,7 +45,7 @@ PACKAGED_README="${EXTRACTED_DIR}/usr/local/emhttp/plugins/appdata.cleanup.plus/
 [[ -f "${PACKAGED_README}" ]] || fail "Packaged README is missing."
 
 EXPECTED_README_TITLE='**Appdata Cleanup Plus**'
-if grep -Fq 'refs/heads/dev/' "${MANIFEST}"; then
+if grep -Fq '&github;/dev/plugins/' "${MANIFEST}"; then
     EXPECTED_README_TITLE='**Appdata Cleanup Plus (Dev)**'
 fi
 

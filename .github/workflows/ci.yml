@@ -61,6 +61,7 @@ jobs:
           bash scripts/test_manifest_xml_guard.sh
           bash scripts/release_guard.sh
           bash scripts/ca_readiness_guard.sh
+          bash scripts/test_ca_canonical_urls.sh
           bash scripts/test_release_source_ref.sh
           bash scripts/test_package_source_parity.sh
 

@@ -217,8 +217,8 @@ verify_remote_release_metadata() {
     local branch_name="${2:-}"
     local version="${3:-}"
     local commit_hash="${4:-}"
-    local manifest_url="https://raw.githubusercontent.com/${remote_slug}/refs/heads/${branch_name}/plugins/appdata.cleanup.plus.plg"
-    local xml_url="https://raw.githubusercontent.com/${remote_slug}/refs/heads/${branch_name}/appdata.cleanup.plus.xml"
+    local manifest_url="https://raw.githubusercontent.com/${remote_slug}/${branch_name}/plugins/appdata.cleanup.plus.plg"
+    local xml_url="https://raw.githubusercontent.com/${remote_slug}/${branch_name}/appdata.cleanup.plus.xml"
     local commit_manifest_url="https://raw.githubusercontent.com/${remote_slug}/${commit_hash}/plugins/appdata.cleanup.plus.plg"
     local manifest_content=""
     local xml_content=""
@@ -248,7 +248,7 @@ verify_remote_release_metadata() {
         exit 1
     fi
 
-    if [[ "${xml_content}" != *"<PluginURL>https://raw.githubusercontent.com/${remote_slug}/refs/heads/${branch_name}/plugins/appdata.cleanup.plus.plg</PluginURL>"* ]]; then
+    if [[ "${xml_content}" != *"<PluginURL>https://raw.githubusercontent.com/${remote_slug}/${branch_name}/plugins/appdata.cleanup.plus.plg</PluginURL>"* ]]; then
         echo "ERROR: Live CA XML PluginURL is not pointing at ${branch_name}." >&2
         exit 1
     fi

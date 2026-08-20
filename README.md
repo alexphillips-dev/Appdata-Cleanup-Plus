@@ -56,13 +56,13 @@ Install from Unraid:
 3. Paste the stable plugin URL:
 
 ```bash
-plugin install https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/main/plugins/appdata.cleanup.plus.plg
+plugin install https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/main/plugins/appdata.cleanup.plus.plg
 ```
 
 Dev testing branch:
 
 ```bash
-plugin install https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/refs/heads/dev/plugins/appdata.cleanup.plus.plg
+plugin install https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/dev/plugins/appdata.cleanup.plus.plg
 ```
 
 Requirements:
