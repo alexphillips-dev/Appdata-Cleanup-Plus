@@ -1054,7 +1054,7 @@ function ensureAppdataCleanupPlusDirectory($path) {
     return true;
   }
 
-  if ( ! @mkdir($path, appdataCleanupPlusDirectoryMode(), true) ) {
+  if ( ! @mkdir($path, appdataCleanupPlusDirectoryMode(), true) && ! is_dir($path) ) {
     return false;
   }
 

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.08.20.08">
-<!ENTITY md5 "1dd27537593141531195981aca11550f">
+<!ENTITY version "2026.08.20.09">
+<!ENTITY md5 "7802705096bf1521e54431c63704e233">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.08.20.09
+- Concurrent startup: Make state-directory creation idempotent when simultaneous requests initialize it.
+- Validation: Keep the multi-process state update regression active across Linux and Windows.
+
 ###2026.08.20.08
 - State reliability: Serialize settings, ignore, scan, cleanup, and quarantine mutations to prevent overlapping requests from losing updates.
 - Atomic writes: Use unique same-directory temporary files with flush, rename, and per-state locks; add concurrent-process regression coverage.
