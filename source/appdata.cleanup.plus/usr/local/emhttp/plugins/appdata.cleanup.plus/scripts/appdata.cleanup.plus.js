@@ -2363,9 +2363,6 @@
   function buildLocalNotices() {
     var notices = [];
     var summary = state.summary || { total: 0, review: 0, blocked: 0, ignored: 0 };
-    var hasZfsRows = $.grep(state.rows || [], function(row) {
-      return row && row.storageKind === "zfs";
-    }).length > 0;
 
     if (!state.dockerRunning) {
       notices.push({
@@ -2395,26 +2392,11 @@
       });
     }
 
-    if (Number(summary.blocked || 0) > 0) {
+    if (state.settings.enablePermanentDelete && Number(summary.blocked || 0) > 0) {
       notices.push({
         type: "warning",
         title: ACP.t(strings, "noticeLockedPathsTitle", "Protected paths stay blocked"),
         message: ACP.t(strings, "noticeLockedPathsMessage", "Any path that resolves to a share root, mount point, symlinked location, managed Docker/VM path, or other unsafe target cannot be unlocked here.")
-      });
-    }
-
-    if (hasZfsRows) {
-      var zfsDeleteModePrefix = ACP.t(strings, "noticeZfsDatasetDeleteModePrefix", "ZFS-backed appdata rows use dataset destroy instead of folder delete.");
-      var zfsDeleteModeAction = ACP.t(strings, "noticeZfsDatasetDeleteModeAction", "Disable Safe Mode before acting on exact dataset rows.");
-      notices.push({
-        type: "info",
-        title: ACP.t(strings, "noticeZfsDatasetTitle", "ZFS dataset candidates found"),
-        message: state.settings.enablePermanentDelete
-          ? ACP.t(strings, "noticeZfsDatasetMessage", "ZFS-backed appdata rows use dataset destroy instead of folder delete. Quarantine is not available for those rows.")
-          : zfsDeleteModePrefix + " " + zfsDeleteModeAction,
-        messageHtml: state.settings.enablePermanentDelete
-          ? ""
-          : ACP.escapeHtml(zfsDeleteModePrefix) + ' <strong class="acp-notice-emphasis is-delete-mode">' + ACP.escapeHtml(zfsDeleteModeAction) + "</strong>"
       });
     }
 
