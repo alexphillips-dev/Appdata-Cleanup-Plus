@@ -11,6 +11,7 @@ function appdataCleanupPlusBuildDashboardPayload($dockerRunning, $settings, $row
       "scanToken" => $scanToken,
       "scanWarningMessage" => $scanWarningMessage,
       "scanMetrics" => is_array($scanMetrics) ? $scanMetrics : array(),
+      "scanVerification" => appdataCleanupPlusScanVerification($scanMetrics),
       "settings" => $settings,
       "appdataSourceInfo" => buildAppdataCleanupPlusSourceInfo($settings)
     )
@@ -56,8 +57,38 @@ function appdataCleanupPlusFinalizeScanMetrics($metrics) {
   return array(
     "startedAt" => isset($metrics["startedAt"]) ? (string)$metrics["startedAt"] : "",
     "totalMs" => (int)round(($now - $started) * 1000),
-    "phases" => $phases
+    "phases" => $phases,
+    "dockerInventory" => appdataCleanupPlusSanitizeDockerDiagnostics($metrics["dockerInventory"] ?? array())
   );
+}
+
+function appdataCleanupPlusScanVerification($metrics) {
+  if (empty($metrics["phases"])) return "not_checked";
+  if (($metrics["dockerInventory"]["reasonCode"] ?? "not_checked") !== "not_checked" && empty($metrics["dockerInventory"]["verified"])) return "incomplete";
+  foreach ($metrics["phases"] ?? array() as $phase) {
+    if (!empty($phase["dockerInventoryUnverified"]) || !empty($phase["composeInventoryUncertain"])) return "incomplete";
+  }
+  return "verified";
+}
+
+// Persisted telemetry is not trusted. Export only the known timing/counter
+// schema so future fields and user-controlled keys cannot leak into a bundle.
+function appdataCleanupPlusSanitizeScanMetrics($metrics) {
+  $metrics = is_array($metrics) ? $metrics : array();
+  $out = array("startedAt" => "", "totalMs" => is_numeric($metrics["totalMs"] ?? null) ? max(0, min(100000000, (int)$metrics["totalMs"])) : 0, "phases" => array());
+  if (is_string($metrics["startedAt"] ?? null) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/D', $metrics["startedAt"])) $out["startedAt"] = $metrics["startedAt"];
+  $names = array("settings", "template_glob", "docker_state", "docker_query", "template_scan", "compose_scan", "filesystem_discovery", "candidate_filtering", "row_build", "snapshot_write", "fallback_heavy_row_build", "filter_installed", "filter_compose", "filter_existing", "filter_parent", "filter_parent_mounts", "filter_vm");
+  $counts = array("durationMs", "elapsedMs", "templateFileCount", "containerCount", "templateVolumeCount", "projectCount", "fileCount", "protectedPathCount", "filesystemVolumeCount", "directChildDirectoryCount", "beforeCount", "afterCount", "rowCount");
+  $flags = array("dockerRunning", "engineReachable", "truncated", "rootMounted", "uncertain", "dockerInventoryUnverified", "composeInventoryUncertain", "snapshotWritten");
+  foreach (array_slice(is_array($metrics["phases"] ?? null) ? $metrics["phases"] : array(), 0, 32) as $phase) {
+    if (!is_array($phase) || !in_array($phase["name"] ?? "", $names, true)) continue;
+    $next = array("name" => $phase["name"]);
+    foreach ($counts as $key) if (isset($phase[$key]) && is_numeric($phase[$key])) $next[$key] = max(0, min(100000000, (int)$phase[$key]));
+    foreach ($flags as $key) if (isset($phase[$key]) && is_bool($phase[$key])) $next[$key] = $phase[$key];
+    $out["phases"][] = $next;
+  }
+  $out["dockerInventory"] = appdataCleanupPlusSanitizeDockerDiagnostics($metrics["dockerInventory"] ?? array());
+  return $out;
 }
 
 function appdataCleanupPlusPersistLatestScanMetrics($metrics) {
@@ -907,7 +938,7 @@ function appdataCleanupPlusDiagnosticsQuarantineHealth() {
 }
 
 function appdataCleanupPlusDiagnosticsLatestScanSummary() {
-  $metrics = readAppdataCleanupPlusJsonFile(appdataCleanupPlusLatestScanMetricsFile(), array());
+  $metrics = appdataCleanupPlusSanitizeScanMetrics(readAppdataCleanupPlusJsonFile(appdataCleanupPlusLatestScanMetricsFile(), array()));
   $phases = isset($metrics["phases"]) && is_array($metrics["phases"]) ? $metrics["phases"] : array();
   $slowestPhase = array("name" => "", "durationMs" => 0);
   $warningFlags = array();
@@ -944,6 +975,8 @@ function appdataCleanupPlusDiagnosticsLatestScanSummary() {
     "ageSeconds" => isset($metrics["startedAt"]) && strtotime((string)$metrics["startedAt"]) !== false ? max(0, time() - strtotime((string)$metrics["startedAt"])) : null,
     "totalMs" => isset($metrics["totalMs"]) ? (int)$metrics["totalMs"] : 0,
     "phaseCount" => count($phases),
+    "dockerInventory" => $metrics["dockerInventory"],
+    "verification" => appdataCleanupPlusScanVerification($metrics),
     "slowestPhase" => $slowestPhase,
     "warningFlags" => array_values(array_unique($warningFlags))
   );
@@ -1060,6 +1093,13 @@ function appdataCleanupPlusDiagnosticsTroubleshootingSummary($logs) {
     ! empty($latestScan["warningFlags"]) ? "The latest scan recorded one or more incomplete or uncertain phases." : (! empty($latestScan["available"]) ? "The latest scan completed without recorded warning flags." : "No persisted scan timing is available yet."),
     $latestScan
   );
+  $ownership = $latestScan["dockerInventory"];
+  $checks[] = appdataCleanupPlusDiagnosticsCheck(
+    "docker-ownership",
+    $ownership["reasonCode"] === "not_checked" ? "info" : ($ownership["verified"] ? "ok" : "warning"),
+    $ownership["reasonCode"] === "not_checked" ? "Rescan to collect Docker ownership diagnostics." : ($ownership["verified"] ? "Docker ownership was verified during the latest scan." : "Docker ownership verification failed. Cleanup remains blocked even when permanent deletion is enabled. Rescan and review the inventory reason code."),
+    $ownership
+  );
 
   $statusCounts = array("ok" => 0, "info" => 0, "warning" => 0, "error" => 0);
   foreach ( $checks as $check ) {
@@ -1102,7 +1142,7 @@ function buildAppdataCleanupPlusDiagnosticsBundle() {
 
   $bundle = array(
     "ok" => true,
-    "schemaVersion" => 3,
+    "schemaVersion" => 4,
     "generatedAt" => date("c"),
     "redaction" => array(
       "enabled" => true,
@@ -1130,7 +1170,7 @@ function buildAppdataCleanupPlusDiagnosticsBundle() {
         "exists" => is_file(appdataCleanupPlusStatsCacheFile()),
         "entryCount" => count(readAppdataCleanupPlusJsonFile(appdataCleanupPlusStatsCacheFile(), array()))
       ),
-      "latestScanMetrics" => appdataCleanupPlusDiagnosticsReadOptionalJsonFile(appdataCleanupPlusLatestScanMetricsFile(), 0),
+      "latestScanMetrics" => appdataCleanupPlusDiagnosticsStateFileEnvelope(appdataCleanupPlusLatestScanMetricsFile(), appdataCleanupPlusSanitizeScanMetrics(readAppdataCleanupPlusJsonFile(appdataCleanupPlusLatestScanMetricsFile(), array())), 1),
       "snapshots" => appdataCleanupPlusDiagnosticsSnapshotSummary()
     ),
     "logs" => $logs,
@@ -1215,8 +1255,9 @@ function buildDashboardPayload() {
   ));
 
   $dockerInventory = appdataCleanupPlusDockerInventory();
+  $scanMetrics["dockerInventory"] = $dockerInventory["diagnostics"];
   $containers = $dockerInventory["containers"];
-  $dockerEngineReachable = $dockerInventory["ok"];
+  $dockerEngineReachable = $dockerInventory["diagnostics"]["querySucceeded"];
   appdataCleanupPlusMarkScanPhase($scanMetrics, "docker_query", array(
     "containerCount" => is_array($containers) ? count($containers) : 0,
     "engineReachable" => $dockerEngineReachable
@@ -1252,11 +1293,17 @@ function buildDashboardPayload() {
   $preFilterCount = count($availableVolumes);
 
   $availableVolumes = removeInstalledVolumeMatches($availableVolumes, $containers);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "filter_installed", array("afterCount" => count($availableVolumes)));
   $availableVolumes = removeComposeReferencedCandidates($availableVolumes, $composeProtectedPaths);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "filter_compose", array("afterCount" => count($availableVolumes)));
   $availableVolumes = filterToExistingCandidates($availableVolumes);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "filter_existing", array("afterCount" => count($availableVolumes)));
   $availableVolumes = removeParentCandidates($availableVolumes);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "filter_parent", array("afterCount" => count($availableVolumes)));
   $availableVolumes = removeParentsUsedByInstalledContainers($availableVolumes, $containers);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "filter_parent_mounts", array("afterCount" => count($availableVolumes)));
   $availableVolumes = removeVmManagerManagedCandidates($availableVolumes);
+  appdataCleanupPlusMarkScanPhase($scanMetrics, "filter_vm", array("afterCount" => count($availableVolumes)));
   appdataCleanupPlusMarkScanPhase($scanMetrics, "candidate_filtering", array(
     "beforeCount" => $preFilterCount,
     "afterCount" => count($availableVolumes)

@@ -1592,9 +1592,10 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
-  $ownershipReason = appdataCleanupPlusCurrentOwnershipLockReason($candidatePath, $settings);
+  $ownershipDiagnostics = null;
+  $ownershipReason = appdataCleanupPlusCurrentOwnershipLockReason($candidatePath, $settings, $ownershipDiagnostics);
   if ( $ownershipReason !== "" ) {
-    return array("ok" => false, "path" => $candidatePath, "displayPath" => $candidateDisplayPath, "status" => "blocked", "message" => $ownershipReason);
+    return array("ok" => false, "path" => $candidatePath, "displayPath" => $candidateDisplayPath, "status" => "blocked", "message" => $ownershipReason, "ownershipDiagnostics" => $ownershipDiagnostics);
   }
 
   $classification = classifyAppdataCandidate($candidatePath, $settings);
@@ -1867,6 +1868,7 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
         "status" => $resolved["status"],
         "message" => $resolved["message"]
       );
+      if (isset($resolved["ownershipDiagnostics"])) $results[count($results) - 1]["ownershipDiagnostics"] = appdataCleanupPlusSanitizeDockerDiagnostics($resolved["ownershipDiagnostics"]);
       if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressCompleteRoot") && ! $preview && $baseOperation === "delete" ) {
         appdataCleanupPlusOperationProgressCompleteRoot($progressId, $resolved["displayPath"], "error");
       }

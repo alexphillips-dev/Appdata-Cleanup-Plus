@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.18.03">
-<!ENTITY md5 "c32f3dbad1e5cf46d999ed51e64759f7">
+<!ENTITY version "2026.09.18.04">
+<!ENTITY md5 "4d14fec4ef714fd446d86bdd9f8bce1e">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.18.04
+- Fix inflated detections and blocked cleanup caused by valid nameless or dead Docker entries; retain known container mappings and recover incomplete records when possible.
+- Label incomplete scans as Unverified, preserve the blocking reason with Safe Mode disabled, and avoid reporting an incomplete empty scan as clean.
+- Improve diagnostics with specific ownership failure codes, inventory and recovery counts, per-filter scan counts, and blocked-action evidence without exporting raw Docker data.
+- Keep diagnostic field names and redaction aliases readable when private folder names overlap ordinary words, and translate the updated messages in every supported language.
+
 ###2026.09.18.03
 - Recheck current Docker and Compose ownership before cleanup, including stopped containers and overlapping parent or child mounts. Unverified ownership blocks cleanup.
 - Protect more Compose layouts, including exported environment variables, normalized paths, indirect projects, and overrides; use exact /config target matching.

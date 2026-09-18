@@ -166,40 +166,138 @@ function getDockerContainersSafe() {
   return $inventory["containers"];
 }
 
-// Query the list itself, including stopped containers. DockerClient's UI cache
-// can silently omit containers after a failed inspect; it is not a safety inventory.
-function appdataCleanupPlusDockerInventory() {
-  $failed = array("ok" => false, "containers" => array(), "message" => "Docker container ownership could not be verified. Start Docker and rescan before continuing.");
-  if ( ! is_dir(appdataCleanupPlusDockerRuntimePath()) || ! ensureAppdataCleanupPlusDockerClientLoaded() ) {
-    return $failed;
-  }
+// Diagnostics contain only fixed codes, flags and aggregate counts. Never add
+// names, IDs, paths, exception text or raw Docker responses to this schema.
+function appdataCleanupPlusDockerDiagnosticDefaults() {
+  return array("verified" => false, "querySucceeded" => false, "reasonCode" => "not_checked",
+    "receivedCount" => 0, "acceptedCount" => 0, "rejectedCount" => 0,
+    "deadCount" => 0, "unnamedDeadCount" => 0, "nullMountCount" => 0,
+    "inspectCount" => 0, "recoveredCount" => 0, "inspectLimit" => 32,
+    "responseByteLimit" => 16777216, "durationMs" => 0, "issues" => array());
+}
 
-  try {
-    return appdataCleanupPlusRunQuietly(function() use ($failed) {
-      $client = new DockerClient();
-      if ( ! method_exists($client, "getDockerJSON") ) return $failed;
-      $success = null;
-      $records = $client->getDockerJSON("/containers/json?all=1", "GET", $success);
-      if ( $success !== true || ! is_array($records) || ! array_is_list($records) ) return $failed;
-      $containers = array();
-      foreach ( $records as $record ) {
-        if ( ! is_array($record) || empty($record["Id"]) || ! isset($record["Names"], $record["Mounts"]) || ! is_array($record["Names"]) || ! is_array($record["Mounts"]) ) return $failed;
-        if ( ! array_is_list($record["Names"]) || ! array_is_list($record["Mounts"]) || empty($record["Names"]) ) return $failed;
-        foreach ( $record["Names"] as $name ) {
-          if ( ! is_string($name) || ltrim($name, "/") === "" || preg_match('/[\x00-\x1f\x7f]/', $name) ) return $failed;
-        }
-        foreach ( $record["Mounts"] as $mount ) {
-          if ( ! is_array($mount) || ! in_array($mount["Type"] ?? "", array("bind", "volume", "tmpfs"), true) ) return $failed;
-          if ( in_array($mount["Type"], array("bind", "volume"), true) && (empty($mount["Source"]) || ! is_string($mount["Source"]) || $mount["Source"][0] !== "/" || preg_match('/[\x00-\x1f\x7f]/', $mount["Source"])) ) return $failed;
-        }
-        $containers[] = array("Name" => ltrim((string)($record["Names"][0] ?? $record["Id"]), "/"), "Mounts" => $record["Mounts"]);
-      }
-      return array("ok" => true, "containers" => $containers, "message" => "");
-    }, "Docker inventory query");
-  } catch ( Throwable $throwable ) {
-    error_log("Appdata Cleanup Plus Docker inventory query failed.");
-    return $failed;
+function appdataCleanupPlusDockerDiagnosticCodes() {
+  return array("not_checked", "verified", "runtime_missing", "client_unavailable", "method_unavailable",
+    "request_failed", "response_too_large", "invalid_json", "invalid_list", "invalid_record",
+    "invalid_names", "invalid_mounts", "unsupported_mount", "invalid_mount_source",
+    "inspect_failed", "inspect_limit", "exception", "incomplete_inventory");
+}
+
+function appdataCleanupPlusSanitizeDockerDiagnostics($value) {
+  $out = appdataCleanupPlusDockerDiagnosticDefaults();
+  $value = is_array($value) ? $value : array();
+  foreach ($out as $key => $default) {
+    if (is_bool($default)) $out[$key] = ($value[$key] ?? false) === true;
+    elseif (is_int($default)) $out[$key] = isset($value[$key]) && is_numeric($value[$key]) ? max(0, min(100000000, (int)$value[$key])) : $default;
   }
+  $codes = appdataCleanupPlusDockerDiagnosticCodes();
+  $out["reasonCode"] = in_array($value["reasonCode"] ?? "", $codes, true) ? $value["reasonCode"] : "not_checked";
+  foreach ($codes as $code) {
+    $count = $value["issues"][$code] ?? 0;
+    if (is_numeric($count) && $count > 0) $out["issues"][$code] = min(100000000, (int)$count);
+  }
+  return $out;
+}
+
+function appdataCleanupPlusDockerReadJson($client, $url, &$reason, $expectList=false) {
+  $body = "";
+  $tooLarge = false;
+  $success = null;
+  // HTTP/1.0 avoids chunk framing. Validate the complete body ourselves: the
+  // Unraid helper otherwise returns [] for both malformed JSON and an empty list.
+  $client->getDockerJSON($url, "GET", $success, function($line) use (&$body, &$tooLarge) {
+    if (strlen($body) + strlen($line) > 16777216) $tooLarge = true;
+    if (!$tooLarge) $body .= $line;
+  }, true);
+  if ($success !== true) { $reason = "request_failed"; return null; }
+  if ($tooLarge) { $reason = "response_too_large"; return null; }
+  $decoded = json_decode($body, true);
+  if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) { $reason = "invalid_json"; return null; }
+  if ($expectList && substr(ltrim($body), 0, 1) !== "[") { $reason = "invalid_list"; return null; }
+  $reason = "";
+  return $decoded;
+}
+
+function appdataCleanupPlusDockerRecordProblem($record, $dead) {
+  if (!is_array($record) || !is_string($record["Id"] ?? null) || $record["Id"] === "") return "invalid_record";
+  if (!isset($record["Names"]) || !is_array($record["Names"]) || !array_is_list($record["Names"]) || (!$dead && !$record["Names"])) return "invalid_names";
+  foreach ($record["Names"] as $name) {
+    if (!is_string($name) || ltrim($name, "/") === "" || preg_match('/[\x00-\x1f\x7f]/', $name)) return "invalid_names";
+  }
+  // An explicit null collection is an empty Go slice; an absent field is not.
+  if (!array_key_exists("Mounts", $record) || ($record["Mounts"] !== null && (!is_array($record["Mounts"]) || !array_is_list($record["Mounts"])))) return "invalid_mounts";
+  foreach ($record["Mounts"] ?? array() as $mount) {
+    if (!is_array($mount)) return "invalid_mounts";
+    if (!in_array($mount["Type"] ?? "", array("bind", "volume", "tmpfs", "image", "cluster"), true)) return "unsupported_mount";
+    if (in_array($mount["Type"], array("bind", "volume", "cluster"), true) && (!is_string($mount["Source"] ?? null) || substr($mount["Source"], 0, 1) !== "/" || preg_match('/[\x00-\x1f\x7f]/', $mount["Source"]))) return "invalid_mount_source";
+  }
+  return "";
+}
+
+// Include stopped and dead entries, retaining their mounts. A nameless dead
+// entry is valid Docker output, not evidence that every other record is invalid.
+function appdataCleanupPlusDockerInventory() {
+  $started = microtime(true);
+  $diagnostics = appdataCleanupPlusDockerDiagnosticDefaults();
+  $containers = array();
+  $issue = function($code) use (&$diagnostics) { $diagnostics["issues"][$code] = ($diagnostics["issues"][$code] ?? 0) + 1; };
+  $reason = "";
+  try {
+    if (!is_dir(appdataCleanupPlusDockerRuntimePath())) $reason = "runtime_missing";
+    elseif (!ensureAppdataCleanupPlusDockerClientLoaded()) $reason = "client_unavailable";
+    else appdataCleanupPlusRunQuietly(function() use (&$diagnostics, &$containers, &$reason, $issue) {
+      $client = new DockerClient();
+      if (!method_exists($client, "getDockerJSON")) { $reason = "method_unavailable"; return; }
+      $records = appdataCleanupPlusDockerReadJson($client, "/containers/json?all=1", $reason, true);
+      $diagnostics["querySucceeded"] = !in_array($reason, array("request_failed", "exception"), true);
+      if ($reason !== "") return;
+      if (!array_is_list($records)) { $reason = "invalid_list"; return; }
+      $diagnostics["receivedCount"] = count($records);
+      foreach ($records as $record) {
+        $dead = is_array($record) && ($record["State"] ?? "") === "dead";
+        if ($dead) $diagnostics["deadCount"]++;
+        if ($dead && array_key_exists("Names", $record) && $record["Names"] === null) $record["Names"] = array();
+        $problem = appdataCleanupPlusDockerRecordProblem($record, $dead);
+        if ($problem !== "") {
+          $issue($problem);
+          // Only server-issued, syntactically safe IDs can reach an inspect URL.
+          if (is_array($record) && is_string($record["Id"] ?? null) && preg_match('/^[a-f0-9]{12,64}$/D', $record["Id"])) {
+            if ($diagnostics["inspectCount"] >= $diagnostics["inspectLimit"]) $issue("inspect_limit");
+            else {
+              $diagnostics["inspectCount"]++;
+              $inspectReason = "";
+              $details = appdataCleanupPlusDockerReadJson($client, "/containers/" . $record["Id"] . "/json", $inspectReason);
+              if ($inspectReason === "" && ($details["Id"] ?? "") === $record["Id"]) {
+                $recovered = array("Id" => $details["Id"], "Names" => empty($details["Name"]) ? array() : array($details["Name"]));
+                if (array_key_exists("Mounts", $details)) $recovered["Mounts"] = $details["Mounts"];
+                if (appdataCleanupPlusDockerRecordProblem($recovered, $dead) === "") {
+                  $record = $recovered;
+                  $problem = "";
+                  $diagnostics["recoveredCount"]++;
+                }
+              }
+              if ($problem !== "") $issue("inspect_failed");
+            }
+          }
+        }
+        if ($problem !== "") { $diagnostics["rejectedCount"]++; continue; }
+        if ($record["Mounts"] === null) $diagnostics["nullMountCount"]++;
+        if ($dead && !$record["Names"]) $diagnostics["unnamedDeadCount"]++;
+        $containers[] = array("Name" => ltrim($record["Names"][0] ?? "", "/"), "Mounts" => $record["Mounts"] ?? array());
+      }
+      $reason = $diagnostics["rejectedCount"] ? "incomplete_inventory" : "verified";
+    }, "Docker inventory query");
+  } catch (Throwable $throwable) {
+    $reason = "exception";
+  }
+  $diagnostics["acceptedCount"] = count($containers);
+  $diagnostics["verified"] = $reason === "verified";
+  $diagnostics["reasonCode"] = $reason;
+  $diagnostics["durationMs"] = (int)round((microtime(true) - $started) * 1000);
+  if ($reason !== "verified") $issue($reason);
+  return array("ok" => $diagnostics["verified"], "containers" => $containers,
+    "message" => $diagnostics["verified"] ? "" : appdataCleanupPlusDockerInventoryUnverifiedMessage(),
+    "diagnostics" => appdataCleanupPlusSanitizeDockerDiagnostics($diagnostics));
 }
 
 function appdataCleanupPlusDockerEngineReachable() {
@@ -236,8 +334,9 @@ function appdataCleanupPlusApplyMountEvidence($rows, $containers, $settings) {
   return $rows;
 }
 
-function appdataCleanupPlusCurrentOwnershipLockReason($path, $settings) {
+function appdataCleanupPlusCurrentOwnershipLockReason($path, $settings, &$diagnostics=null) {
   $inventory = appdataCleanupPlusDockerInventory();
+  $diagnostics = $inventory["diagnostics"];
   if ( ! $inventory["ok"] ) return $inventory["message"];
   if ( appdataCleanupPlusMountEvidence($path, $inventory["containers"]) ) return "An installed container now mounts this folder, a parent folder, or a child folder. Rescan before continuing.";
   $meta = array();
@@ -772,7 +871,7 @@ function appdataCleanupPlusDockerInventoryUnverified($dockerRunning, $containers
 }
 
 function appdataCleanupPlusDockerInventoryUnverifiedMessage() {
-  return "Docker container ownership could not be verified. Start Docker and rescan before continuing.";
+  return "Docker ownership verification is incomplete. Results are unverified and cleanup is blocked, even with Safe Mode disabled. Rescan; if the problem persists, export diagnostics from Tools.";
 }
 
 function appdataCleanupPlusComposeInventoryUncertainMessage() {
@@ -784,15 +883,18 @@ function appdataCleanupPlusApplyDockerInventorySafetyToRows($rows, $message="") 
   $lockMessage = $message !== "" ? $message : appdataCleanupPlusDockerInventoryUnverifiedMessage();
 
   foreach ( is_array($rows) ? $rows : array() as $row ) {
+    $row["scanVerificationLocked"] = true;
+    $row["policyLocked"] = true;
+    $row["policyReason"] = $lockMessage;
+    $row["canDelete"] = false;
     if ( ! empty($row["ignored"]) ) {
       $lockedRows[] = $row;
       continue;
     }
 
-    $row["scanVerificationLocked"] = true;
-    $row["policyLocked"] = true;
-    $row["policyReason"] = $lockMessage;
-    $row["canDelete"] = false;
+    $row["status"] = "unverified";
+    $row["statusLabel"] = "Unverified";
+    $row["reason"] = "Ownership verification is incomplete. This folder has not been confirmed as orphaned.";
 
     if ( ! isset($row["risk"]) || $row["risk"] !== "blocked" ) {
       $row["risk"] = "blocked";
@@ -1746,6 +1848,9 @@ function appdataCleanupPlusBuildCandidateDetailPayload($candidate, $settings=nul
   );
   $inventory = appdataCleanupPlusDockerInventory();
   $payload["mountEvidence"] = $inventory["ok"] ? appdataCleanupPlusMountEvidence($resolvedPath, $inventory["containers"]) : (array)($candidate["mountEvidence"] ?? array());
+  if (!$inventory["ok"] || !empty($candidate["scanVerificationLocked"])) {
+    $payload = appdataCleanupPlusApplyDockerInventorySafetyToRows(array($payload))[0];
+  }
   if ( $payload["mountEvidence"] ) {
     $payload["canDelete"] = false;
     $payload["policyLocked"] = true;

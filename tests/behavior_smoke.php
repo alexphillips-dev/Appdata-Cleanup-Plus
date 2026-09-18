@@ -640,7 +640,7 @@ behaviorSmokeAssertNotContains("flash_backup", $diagnosticsJson, "Diagnostics bu
 behaviorSmokeAssertNotContains("zpool import", $diagnosticsJson, "Diagnostics bundle should not include unrelated emhttpd startup noise.");
 behaviorSmokeAssertNotContains("SensitiveAppName", $diagnosticsJson, "Diagnostics bundle should redact nested audit app names.");
 behaviorSmokeAssertNotContains("\"row\"", $diagnosticsJson, "Diagnostics bundle should omit nested audit row payloads.");
-behaviorSmokeAssertSame(3, isset($diagnosticsBundle["schemaVersion"]) ? (int)$diagnosticsBundle["schemaVersion"] : 0, "Diagnostics bundle should declare the structured troubleshooting schema version.");
+behaviorSmokeAssertSame(4, isset($diagnosticsBundle["schemaVersion"]) ? (int)$diagnosticsBundle["schemaVersion"] : 0, "Diagnostics bundle should declare the structured troubleshooting schema version.");
 behaviorSmokeAssertSame(2, isset($diagnosticsBundle["redaction"]["version"]) ? (int)$diagnosticsBundle["redaction"]["version"] : 0, "Diagnostics bundle should declare the redaction version.");
 behaviorSmokeAssertTrue(isset($diagnosticsBundle["troubleshooting"]["overview"]["status"]), "Diagnostics bundle should include an overall troubleshooting status.");
 behaviorSmokeAssertTrue(count(isset($diagnosticsBundle["troubleshooting"]["checks"]) ? $diagnosticsBundle["troubleshooting"]["checks"] : array()) >= 6, "Diagnostics bundle should include actionable health checks.");
@@ -1026,11 +1026,12 @@ file_put_contents($dockerClientFixture, <<<'PHP'
 <?php
 trigger_error('docker client fixture include warning', E_USER_WARNING);
 class DockerClient {
-  public function getDockerJSON($path, $method='GET', &$success=null) {
+  public function getDockerJSON($path, $method='GET', &$success=null, $callback=null, $unchunk=false) {
     trigger_error('docker client fixture query warning', E_USER_WARNING);
     echo "docker-fixture-noise";
     $success = $GLOBALS['acpTestDockerSuccess'] ?? true;
     if ($path !== '/containers/json?all=1') throw new Exception('Unexpected inventory endpoint');
+    if ($callback) $callback(json_encode($GLOBALS['acpTestDockerRecords']));
     return $GLOBALS['acpTestDockerRecords'];
   }
 }
@@ -1058,6 +1059,22 @@ behaviorSmokeAssertTrue(! empty($dashboard["payload"]["scanMetrics"]["phases"]),
 behaviorSmokeAssertTrue(isset($dashboard["payload"]["scanMetrics"]["totalMs"]), "Dashboard scan payloads should include total scan time.");
 $persistedScanMetrics = readAppdataCleanupPlusJsonFile(appdataCleanupPlusLatestScanMetricsFile(), array());
 behaviorSmokeAssertTrue(! empty($persistedScanMetrics["phases"]), "Dashboard scan should persist latest scan metrics for diagnostics export fallback.");
+$beforeDeadRows = array_column($dashboard["payload"]["rows"], "id");
+$GLOBALS["acpTestDockerRecords"][] = array("Id" => "dead-fixture", "Names" => array(), "State" => "dead", "Mounts" => null);
+$withDead = buildDashboardPayload()["payload"];
+behaviorSmokeAssertSame($beforeDeadRows, array_column($withDead["rows"], "id"), "A nameless dead entry must not inflate the actual dashboard candidate list.");
+behaviorSmokeAssertSame("verified", $withDead["scanVerification"], "Valid dead entries must not disable cleanup globally.");
+behaviorSmokeAssertSame(1, $withDead["scanMetrics"]["dockerInventory"]["unnamedDeadCount"], "Scan diagnostics should explain accepted dead entries without their IDs.");
+$GLOBALS["acpTestDockerSuccess"] = false;
+$failedInventory = buildDashboardPayload()["payload"];
+behaviorSmokeAssertSame("incomplete", $failedInventory["scanVerification"], "Failed inventory must be visibly unverified.");
+foreach ($failedInventory["rows"] as $unverifiedRow) {
+  if (!empty($unverifiedRow["ignored"])) continue;
+  behaviorSmokeAssertSame("unverified", $unverifiedRow["status"], "Unverified candidates must not claim to be orphaned.");
+  behaviorSmokeAssertSame(false, $unverifiedRow["canDelete"], "Unverified scan must never enable cleanup.");
+}
+$GLOBALS["acpTestDockerSuccess"] = true;
+array_pop($GLOBALS["acpTestDockerRecords"]);
 $guardSourceRoot = $stateRoot . "/filesystem-guard-source";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($guardSourceRoot . "/first"), "Filesystem guard fixture should create the first candidate.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($guardSourceRoot . "/second"), "Filesystem guard fixture should create the second candidate.");
@@ -1169,7 +1186,7 @@ $unverifiedRows = appdataCleanupPlusApplyDockerInventorySafetyToRows(array($file
 behaviorSmokeAssertSame(true, appdataCleanupPlusDockerInventoryUnverified(true, array(), array("template" => array("HostDir" => $templatedOrphanPath))), "Docker inventory should be treated as unverified when Docker is running, no containers are returned, and templates exist.");
 behaviorSmokeAssertSame(false, ! empty($unverifiedRows[0]["canDelete"]), "Unverified Docker inventory scans should disable filesystem cleanup actions.");
 behaviorSmokeAssertSame(true, ! empty($unverifiedRows[0]["scanVerificationLocked"]), "Unverified Docker inventory scans should mark rows with a scan verification lock.");
-behaviorSmokeAssertContains("ownership could not be verified", $unverifiedRows[0]["policyReason"], "Unverified Docker inventory locks should explain the inventory problem.");
+behaviorSmokeAssertContains("ownership verification is incomplete", $unverifiedRows[0]["policyReason"], "Unverified Docker inventory locks should explain the inventory problem.");
 $indexedStaleParentPath = $manualCustomSourceRoot . "/indexed-stale-parent";
 $indexedLiveParentPath = $manualCustomSourceRoot . "/indexed-live-parent";
 $indexedExactParentPath = $manualCustomSourceRoot . "/indexed-exact-parent";

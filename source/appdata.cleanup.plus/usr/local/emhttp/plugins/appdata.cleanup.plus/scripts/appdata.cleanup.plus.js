@@ -27,6 +27,7 @@
     templateManager: { loading: false, status: null, message: "" },
     deferredDataRequestToken: "",
     scanWarningMessage: "",
+    scanVerification: "not_checked",
     scanMetrics: {},
     settings: ACP.defaultSafetySettings(),
     appdataSources: {
@@ -1050,6 +1051,7 @@
       state.auditHistoryHasMore = false;
       state.auditHistoryRequestToken = "";
       state.scanWarningMessage = String(response.scanWarningMessage || "");
+      state.scanVerification = response.scanVerification === "incomplete" ? "incomplete" : "verified";
       state.scanMetrics = $.extend(true, {}, response.scanMetrics || {});
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || {});
       setAppdataSourceInfo(response.appdataSourceInfo || {});
@@ -2237,6 +2239,19 @@
   function applyLocalSafetyStateToRow(row) {
     var nextRow = $.extend({}, row);
 
+    if (nextRow.scanVerificationLocked) {
+      nextRow.canDelete = false;
+      nextRow.policyLocked = true;
+      nextRow.policyReason = row.policyReason || row.riskReason || ACP.tr("Ownership verification is incomplete. This folder has not been confirmed as orphaned.");
+      nextRow.policyReasonCode = "ownership_unverified";
+      if (!nextRow.ignored) {
+        nextRow.risk = "blocked";
+        nextRow.riskLabel = ACP.tr("Locked");
+        nextRow.riskReason = nextRow.policyReason;
+      }
+      return nextRow;
+    }
+
     nextRow.policyLocked = false;
     nextRow.policyReason = "";
     nextRow.policyReasonCode = "";
@@ -2614,7 +2629,7 @@
     var blockedIcon = '<svg viewBox="0 0 24 24" focusable="false"><rect x="6.5" y="10.25" width="11" height="8.25" rx="1.75"></rect><path d="M8.75 10.25V8.2a3.25 3.25 0 0 1 6.5 0v2.05"></path><path d="M12 13.4v2"></path></svg>';
     var selectedIcon = '<svg viewBox="0 0 24 24" focusable="false"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>';
     var cards = [
-      { label: ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, subtitle: ACP.t(strings, "cardTotalSubtitle", "Total orphaned"), tone: "is-detected", iconHtml: detectedIcon },
+      { label: state.scanVerification === "incomplete" ? ACP.tr("Unverified") : ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, subtitle: state.scanVerification === "incomplete" ? ACP.tr("Ownership check incomplete") : ACP.t(strings, "cardTotalSubtitle", "Total orphaned"), tone: "is-detected", iconHtml: detectedIcon },
       { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, subtitle: ACP.t(strings, "cardDeletableSubtitle", "Safe to clean"), tone: "is-safe", iconHtml: readyIcon },
       { label: ACP.t(strings, "cardBlocked", "Blocked"), value: state.summary.blocked || 0, subtitle: ACP.t(strings, "cardBlockedSubtitle", "Locked or in use"), tone: "is-blocked", iconHtml: blockedIcon },
       { label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount, subtitle: ACP.t(strings, "cardSelectedSubtitle", "Marked this scan"), tone: "is-selected", iconHtml: selectedIcon }
@@ -2830,7 +2845,13 @@
         return;
       }
 
-      text = text.split(raw).join(sanitized);
+      // Match complete identifier words, and never re-redact an alias emitted
+      // earlier in this export. Names such as "data" must not corrupt prose.
+      var pattern = /^[A-Za-z0-9_]+$/.test(raw) ? new RegExp("\\b" + raw + "\\b", "g") : null;
+      text = text.split(/(<[a-z]+(?:-\d+)?>)/g).map(function(part, index) {
+        if (index % 2) return part;
+        return pattern ? part.replace(pattern, function() { return sanitized; }) : part.split(raw).join(sanitized);
+      }).join("");
     });
 
     text = text.replace(/\/(?:mnt|boot|var|tmp|etc|usr|config|data|downloads|media|cache|temp|transcode|movies|tv|music|backup|backups)(?:\/[^\s'"<>\[\](),;]+)+/g, function(path) {
@@ -2875,6 +2896,8 @@
   function sanitizeDiagnosticsValue(value, redactor, keyName) {
     var sanitized = {};
 
+    if (keyName === "dockerInventory" || keyName === "ownershipDiagnostics") return sanitizeDiagnosticsDockerInventory(value);
+
     if (diagnosticsKeyIsSensitive(keyName)) {
       if (/(?:present|count|enabled|exists)$/i.test(String(keyName || "")) && (typeof value === "boolean" || typeof value === "number")) {
         return value;
@@ -2891,7 +2914,7 @@
 
     if ($.isPlainObject(value)) {
       $.each(value, function(key, item) {
-        var sanitizedKey = sanitizeDiagnosticsFreeText(key, redactor);
+        var sanitizedKey = diagnosticsSchemaKey(key) ? key : sanitizeDiagnosticsFreeText(key, redactor);
         sanitized[sanitizedKey] = sanitizeDiagnosticsValue(item, redactor, key);
       });
       return sanitized;
@@ -2904,6 +2927,45 @@
     }
 
     return value;
+  }
+
+  function diagnosticsSchemaKey(key) {
+    // Fixed schema keys are metadata, not user values. Unknown/path-based keys
+    // still go through the full scrub. A folder named "data" must not rename
+    // datasetName or appdataSources and make support exports unreadable.
+    return ("schemaVersion generatedAt pluginVersion redaction sanitized enabled version strategy hostTheme name themeClass uiState searchActive searchLength sortMode busy scan dockerRunning scanTokenPresent scanWarningMessage scanVerification summary metrics insights visibleRowCount selectedRowCount pendingStatCount settings appdataSources quarantine notices auditHistory rows visibleRowIds selectedRowIds serverDiagnostics troubleshooting ok runtime state logs collector data path exists readable count limit total safe review blocked deletable ignored id sourceKind sourceLabel sourceDisplay sourceRoot sourceNames sourceSummary sourceCount targetPaths targetSummary targetCount templateRefs storageKind storageLabel storageDetail datasetName datasetMountpoint zfsMappingMatched zfsResolutionKind zfsResolutionMessage zfsResolutionDetail zfsMatchedShareRoot zfsMatchedDatasetRoot zfsResolutionVariants displayPath realPath risk riskLabel riskReason reason status statusLabel canDelete insideDefaultShare insideConfiguredSource shareName depth sizeBytes sizeLabel lastModified lastModifiedIso lastModifiedLabel lastModifiedExact statsPending securityLockReason policyLocked policyReason ignoredAt ignoredAtLabel ignoredReason scanVerificationLocked securityReasonCode policyReasonCode zfsImpactSummary zfsChildDatasets zfsSnapshots zfsPreviewError enablePermanentDelete enableZfsDatasetDelete quarantineRoot defaultQuarantinePurgeDays manualAppdataSources zfsPathMappings startedAt totalMs phases durationMs elapsedMs templateFileCount containerCount engineReachable templateVolumeCount projectCount fileCount protectedPathCount uncertain filesystemVolumeCount directChildDirectoryCount truncated rootMounted beforeCount afterCount rowCount dockerInventoryUnverified composeInventoryUncertain snapshotWritten dockerInventory verified querySucceeded reasonCode receivedCount acceptedCount rejectedCount deadCount unnamedDeadCount nullMountCount inspectCount recoveredCount inspectLimit responseByteLimit issues verification ageSeconds phaseCount slowestPhase warningFlags snapshot verificationLocks protectionLocks").split(" ").indexOf(String(key)) !== -1;
+  }
+
+  function sanitizeDiagnosticsDockerInventory(value) {
+    value = value || {};
+    var codes = "not_checked verified runtime_missing client_unavailable method_unavailable request_failed response_too_large invalid_json invalid_list invalid_record invalid_names invalid_mounts unsupported_mount invalid_mount_source inspect_failed inspect_limit exception incomplete_inventory".split(" ");
+    var result = {verified:value.verified === true,querySucceeded:value.querySucceeded === true,reasonCode:codes.indexOf(value.reasonCode) === -1 ? "not_checked" : value.reasonCode,issues:{}};
+    "receivedCount acceptedCount rejectedCount deadCount unnamedDeadCount nullMountCount inspectCount recoveredCount inspectLimit responseByteLimit durationMs".split(" ").forEach(function(key) {
+      result[key] = Math.max(0, Math.min(100000000, Math.floor(Number(value[key]) || 0)));
+    });
+    codes.forEach(function(code) {
+      var count = Math.max(0, Math.min(100000000, Math.floor(Number((value.issues || {})[code]) || 0)));
+      if (count) result.issues[code] = count;
+    });
+    return result;
+  }
+
+  function sanitizeDiagnosticsScanMetrics(value) {
+    value = value || {};
+    var names = "settings template_glob docker_state docker_query template_scan compose_scan filesystem_discovery candidate_filtering row_build snapshot_write fallback_heavy_row_build filter_installed filter_compose filter_existing filter_parent filter_parent_mounts filter_vm".split(" ");
+    var result = {startedAt:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/.test(value.startedAt || "") ? value.startedAt : "",totalMs:Math.max(0, Math.min(100000000, Number(value.totalMs) || 0)),phases:[],dockerInventory:sanitizeDiagnosticsDockerInventory(value.dockerInventory)};
+    (Array.isArray(value.phases) ? value.phases : []).slice(0,32).forEach(function(phase) {
+      if (!phase || names.indexOf(phase.name) === -1) return;
+      var next = {name:phase.name};
+      "durationMs elapsedMs templateFileCount containerCount templateVolumeCount projectCount fileCount protectedPathCount filesystemVolumeCount directChildDirectoryCount beforeCount afterCount rowCount".split(" ").forEach(function(key) {
+        if (typeof phase[key] === "number" && isFinite(phase[key])) next[key] = Math.max(0, Math.min(100000000, Math.floor(phase[key])));
+      });
+      "dockerRunning engineReachable truncated rootMounted uncertain dockerInventoryUnverified composeInventoryUncertain snapshotWritten".split(" ").forEach(function(key) {
+        if (typeof phase[key] === "boolean") next[key] = phase[key];
+      });
+      result.phases.push(next);
+    });
+    return result;
   }
 
   function sanitizeDiagnosticsName(value, redactor, tokenLabel) {
@@ -3158,7 +3220,7 @@
     });
 
     var payload = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       generatedAt: generatedAt.toISOString(),
       pluginVersion: String(config.pluginVersion || ""),
       redaction: {
@@ -3180,8 +3242,11 @@
         dockerRunning: !!state.dockerRunning,
         scanTokenPresent: !!state.scanToken,
         scanWarningMessage: sanitizeDiagnosticsFreeText(String(state.scanWarningMessage || ""), redactor),
+        scanVerification: state.scanVerification,
+        verificationLocks: (state.rows || []).filter(function(row) { return !!row.scanVerificationLocked; }).length,
+        protectionLocks: (state.rows || []).filter(function(row) { return !!row.securityLockReason; }).length,
         summary: $.extend({}, state.summary || {}),
-        metrics: $.extend(true, {}, state.scanMetrics || {}),
+        metrics: sanitizeDiagnosticsScanMetrics(state.scanMetrics),
         insights: sanitizedInsights,
         visibleRowCount: visibleRows.length,
         selectedRowCount: selectedRows.length,
@@ -3226,7 +3291,7 @@
     var metrics = metricsFile && metricsFile.data;
 
     if (metrics && $.isArray(metrics.phases) && metrics.phases.length) {
-      return $.extend(true, {}, metrics);
+      return sanitizeDiagnosticsScanMetrics(metrics);
     }
 
     return {};
@@ -3275,6 +3340,9 @@
       "Appdata Cleanup Plus support summary",
       "Version: " + String(config.pluginVersion || "unknown"),
       "Docker: " + (state.dockerRunning ? "running" : "offline"),
+      "Ownership: " + sanitizeDiagnosticsDockerInventory(state.scanMetrics.dockerInventory).reasonCode +
+        " accepted=" + sanitizeDiagnosticsDockerInventory(state.scanMetrics.dockerInventory).acceptedCount +
+        " rejected=" + sanitizeDiagnosticsDockerInventory(state.scanMetrics.dockerInventory).rejectedCount,
       "Rows: detected=" + String(Number(summary.total || 0)) +
         " ready=" + String(Number(summary.deletable || 0)) +
         " locked=" + String(Number(summary.blocked || 0)) +
@@ -4497,8 +4565,8 @@
 
     if (!state.rows.length) {
       renderStateMessage(
-        ACP.t(strings, "emptyTitle", "No orphaned appdata found"),
-        buildEmptyStateMessage() || ACP.t(strings, "emptyMessage", "Nothing currently looks safe to clean up from the configured appdata sources or saved Docker templates."),
+        state.scanVerification === "incomplete" ? ACP.tr("Ownership check incomplete") : ACP.t(strings, "emptyTitle", "No orphaned appdata found"),
+        state.scanVerification === "incomplete" ? state.scanWarningMessage : (buildEmptyStateMessage() || ACP.t(strings, "emptyMessage", "Nothing currently looks safe to clean up from the configured appdata sources or saved Docker templates.")),
         "rescan",
         ACP.t(strings, "rescanLabel", "Rescan")
       );
@@ -4946,8 +5014,8 @@
         nextRow.ignoredAt = "";
         nextRow.ignoredAtLabel = "";
         nextRow.ignoredReason = "";
-        nextRow.status = state.dockerRunning ? "orphaned" : "docker_offline";
-        nextRow.statusLabel = state.dockerRunning ? ACP.tr("Orphaned") : ACP.tr("Docker offline");
+        nextRow.status = nextRow.scanVerificationLocked ? "unverified" : (state.dockerRunning ? "orphaned" : "docker_offline");
+        nextRow.statusLabel = nextRow.scanVerificationLocked ? ACP.tr("Unverified") : (state.dockerRunning ? ACP.tr("Orphaned") : ACP.tr("Docker offline"));
       }
 
       return applyLocalSafetyStateToRow(nextRow);

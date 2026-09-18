@@ -33,7 +33,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     });
     for (const file of ['appdata.cleanup.plus.shared.js','appdata.cleanup.plus.panels.js']) await page.addScriptTag({path:path.join(plugin,'scripts',file)});
     const main = fs.readFileSync(path.join(plugin,'scripts/appdata.cleanup.plus.js'),'utf8');
-    const hook = 'window.maintenance={state,openToolsModal,renderToolsModal,buildRowHtml}; cacheElements(); bindEvents(); loadScan=function(){window.scanRefreshes=(window.scanRefreshes||0)+1;}; state.fixtureTools.status={};';
+    const hook = 'window.maintenance={state,openToolsModal,renderToolsModal,buildRowHtml,renderSummaryCards,renderResults,applyLocalSafetyStateToRow}; cacheElements(); bindEvents(); loadScan=function(){window.scanRefreshes=(window.scanRefreshes||0)+1;}; state.fixtureTools.status={};';
     await page.addScriptTag({content:main.replace('$(init);',hook)});
     await page.evaluate(()=>maintenance.openToolsModal());
     await page.locator('[data-action="review-templates"]').click();
@@ -67,6 +67,20 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     assert.equal(await page.locator('.acp-row-checkbox').isChecked(),false);
     await page.locator('.acp-mount-evidence summary').press('Escape');
     assert.equal(await page.locator('.acp-mount-evidence').evaluate(el=>el.open),false);
+    await page.evaluate(()=>{
+      maintenance.state.scanVerification='incomplete';
+      maintenance.state.scanWarningMessage='Ownership verification is incomplete.';
+      maintenance.state.settings.enablePermanentDelete=true;
+      maintenance.state.rows=[];
+      maintenance.state.summary={total:0};
+      maintenance.renderSummaryCards();
+      maintenance.renderResults();
+    });
+    assert.match(await page.locator('#acp-app').textContent(),/Ownership check incomplete/);
+    assert.ok(!(await page.locator('#acp-results').textContent()).includes('No orphaned appdata found'),'Incomplete empty results must not look like a successful clean scan');
+    const locked=await page.evaluate(()=>maintenance.applyLocalSafetyStateToRow({id:'unverified',scanVerificationLocked:true,canDelete:true,policyReason:'Ownership verification is incomplete.'}));
+    assert.equal(locked.canDelete,false);
+    assert.equal(locked.policyLocked,true);
     assert.deepEqual(errors,[]);
     console.log('maintenance_ui: OK (confirm/cancel, server IDs, archive refresh, restore collision, mount disclosure keyboard and selection)');
   } finally { await browser.close(); }

@@ -24,6 +24,15 @@ for (const [locale, definition] of Object.entries(locales)) {
   vm.runInContext(source('appdata.cleanup.plus.panels.js'), context);
   vm.runInContext(main.replace('$(init);', hook), context);
   const ACP = window.AppdataCleanupPlus, flow = window.flow;
+  flow.state.settings = {enablePermanentDelete:true,enableZfsDatasetDelete:true};
+  flow.state.dockerRunning = true;
+  flow.state.rows = [{id:'unverified',risk:'deletable',scanVerificationLocked:true,policyReason:'verification failure',status:'unverified',canDelete:false}];
+  flow.applyLocalCandidateState(['unverified'],'ignore');
+  flow.applyLocalCandidateState(['unverified'],'unignore');
+  assert.equal(flow.state.rows[0].canDelete,false,'Safe Mode disabled must not override failed verification');
+  assert.equal(flow.state.rows[0].risk,'blocked','Restoring an ignored row must not count it as ready during an incomplete scan');
+  assert.equal(flow.state.rows[0].policyReason,'verification failure','Local settings must preserve the actionable blocking reason');
+  assert.equal(flow.state.rows[0].statusLabel,ACP.tr('Unverified'),'Repeated ignore/restore must not claim an unverified row is orphaned');
   const selector = new Intl.PluralRules(definition.tag);
   fixture.counts.forEach((n,i)=>{
     assert.equal(fixture.categories[i], selector.select(n), `${locale}: PHP category ${n}`);

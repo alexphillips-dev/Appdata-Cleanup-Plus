@@ -165,6 +165,8 @@ Recommended workflow:
 
 Rows covered by a container mount stay locked. Expand **In use by container mounts** to see the container names and host paths, including stopped containers. The disclosure works with keyboard, mouse, and touch; Escape closes it.
 
+If Docker or Compose ownership cannot be verified, remaining candidates are labeled **Unverified**, and cleanup stays blocked even with Safe Mode disabled. Rescan, then export diagnostics from Tools if the warning remains. The export distinguishes failed requests from rejected inventory records and reports recovery attempts and filter counts without exposing raw container configuration.
+
 | Tool | What it is for |
 |---|---|
 | Appdata Sources | Review detected appdata roots, browse filesystem paths, and add manual sources for non-standard layouts. |

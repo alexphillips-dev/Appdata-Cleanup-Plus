@@ -53,12 +53,16 @@ const locales = JSON.parse(fs.readFileSync(path.join(plugin, 'locales/locales.js
         assert.equal(modal.direction, direction);
         assert.equal(modal.codeDirection, 'ltr');
         assert.ok(modal.text.includes('/mnt/user/appdata/Delete'));
-        for (const flow of ['quarantine', 'conflicts', 'confirmation', 'history', 'templates', 'mounts']) {
+        for (const flow of ['quarantine', 'conflicts', 'confirmation', 'history', 'templates', 'mounts', 'unverified']) {
           await page.evaluate(flow => {
             const ACP = window.AppdataCleanupPlus;
             const context = {strings:window.appdataCleanupPlusConfig.strings,state:{settings:ACP.defaultSafetySettings()}};
             let html, modalClass;
-            if (flow === 'templates') {
+            if (flow === 'unverified') {
+              const row = {name:'Example',path:'/mnt/user/appdata/Example',displayPath:'/mnt/user/appdata/Example',sourceKind:'filesystem',sourceNames:[],targetPaths:[],templateRefs:[],canDelete:false,storageKind:'filesystem',scanVerificationLocked:true,policyLocked:true,policyReason:ACP.tr('Docker ownership verification is incomplete. Results are unverified and cleanup is blocked, even with Safe Mode disabled. Rescan; if the problem persists, export diagnostics from Tools.')};
+              html = ACP.buildRowDetailsModalHtml(context,row);
+              modalClass = 'acp-row-details-modal';
+            } else if (flow === 'templates') {
               context.state.templateManager = {status:{templates:[{id:'example',name:'Example',filename:'my-example.xml'}],backups:[{id:'backup',name:'Saved Example',filename:'my-saved-example.xml',canRestore:false}]}};
               html = ACP.buildToolsModalHtml(context);
               modalClass = 'acp-tools-modal';

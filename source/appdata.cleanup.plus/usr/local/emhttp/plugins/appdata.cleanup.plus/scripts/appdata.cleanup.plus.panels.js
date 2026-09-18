@@ -639,7 +639,7 @@
     if (!$.isArray(evidence) || !evidence.length) return '';
     var html = ['<details class="acp-mount-evidence"><summary>' + ACP.escapeHtml(ACP.tr("In use by container mounts")) + '</summary><p>' + ACP.escapeHtml(ACP.tr("These installed containers can access this folder through their mounts, including when the containers are stopped.")) + '</p>'];
     $.each(evidence, function(_, entry) {
-      html.push('<div><strong>' + ACP.escapeHtml(entry.name || '') + '</strong>');
+      html.push('<div><strong>' + ACP.escapeHtml(entry.name || ACP.tr("Unnamed Docker entry")) + '</strong>');
       $.each(entry.paths || [], function(_, path) { html.push('<code class="acp-modal-path">' + ACP.escapeHtml(path) + '</code>'); });
       html.push('</div>');
     });
@@ -736,6 +736,7 @@
       ? ACP.t(strings, "rowDetailsDiscoverySimple", "This folder was found inside an appdata source, but no installed container or saved Docker template currently points to it.")
       : ACP.t(strings, "rowDetailsTemplateSimple", "A saved Docker template references this folder, but no installed container currently uses it.");
     if ((row.mountEvidence || []).length) sourceExplanation = ACP.tr("An installed container can access this folder through its mounts. Cleanup is locked.");
+    if (row.scanVerificationLocked) sourceExplanation = ACP.tr("Ownership verification is incomplete. This folder has not been confirmed as orphaned.");
     var actionExplanation = "";
     var actionButtons = [];
     var technicalItems = [

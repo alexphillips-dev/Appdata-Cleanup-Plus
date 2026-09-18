@@ -43,7 +43,7 @@ const jquery = {
 
 const context = { $: jquery };
 vm.runInNewContext(
-  source.slice(start, end) + "\nthis.privacy = { buildDiagnosticsRedactor, sanitizeDiagnosticsFreeText, diagnosticsKeyLooksLikePath, sanitizeDiagnosticsValue, sanitizeDiagnosticsPath, sanitizeDiagnosticsTemplateRefs, sanitizeDiagnosticsRow };",
+  source.slice(start, end) + "\nthis.privacy = { buildDiagnosticsRedactor, sanitizeDiagnosticsFreeText, diagnosticsKeyLooksLikePath, sanitizeDiagnosticsValue, sanitizeDiagnosticsPath, sanitizeDiagnosticsTemplateRefs, sanitizeDiagnosticsRow, sanitizeDiagnosticsScanMetrics };",
   context,
   { filename: sourcePath }
 );
@@ -76,4 +76,19 @@ const privateMountExport = privacy.sanitizeDiagnosticsRow(privateMountRow, priva
 assert.ok(!Object.hasOwn(privateMountExport, 'mountEvidence'), 'Mount evidence is UI-only');
 assert.ok(!JSON.stringify(privateMountExport).includes('PrivateContainer'));
 assert.equal(privateMountRow.mountEvidence.length, 1, 'Export must not mutate UI evidence');
+const collisionRedactor = privacy.buildDiagnosticsRedactor();
+collisionRedactor.replacements = [{raw:'data',sanitized:'<app-1>'},{raw:'path',sanitized:'<app-2>'},{raw:'appdata',sanitized:'<app-3>'}];
+const collision = privacy.sanitizeDiagnosticsValue({datasetName:'private data', appdataSources:{count:1}, '/mnt/user/private-data':{name:'data'}}, collisionRedactor, '');
+assert.ok(Object.hasOwn(collision,'datasetName') && Object.hasOwn(collision,'appdataSources'), 'Private words must not corrupt fixed schema field names');
+assert.ok(!JSON.stringify(collision).includes('/mnt/user/private-data'), 'Path-based keys must still be sanitized');
+assert.ok(!collision.datasetName.includes('private data'), 'Schema-key preservation must not preserve private values');
+assert.equal(privacy.sanitizeDiagnosticsFreeText('A dataset contains data. <path-1>',collisionRedactor),'A dataset contains <app-1>. <path-1>','Whole-word redaction must preserve prose and existing aliases');
+const telemetry = privacy.sanitizeDiagnosticsScanMetrics({startedAt:'2026-09-18T12:00:00-04:00',phases:[{name:'docker_query',containerCount:53,raw:'private-canary'},{name:'private-canary',durationMs:5}],dockerInventory:{reasonCode:'incomplete_inventory',acceptedCount:53,issues:{invalid_mounts:1,'private-canary':1},raw:'private-canary'}});
+assert.equal(telemetry.dockerInventory.reasonCode,'incomplete_inventory');
+assert.equal(telemetry.dockerInventory.acceptedCount,53);
+assert.equal(telemetry.dockerInventory.issues.invalid_mounts,1);
+assert.equal(telemetry.phases.length,1);
+assert.ok(!JSON.stringify(telemetry).includes('private-canary'),'Browser telemetry must drop unknown fields, phase names and issue codes');
+collisionRedactor.replacements.push({raw:'incomplete_inventory',sanitized:'<app-4>'});
+assert.equal(privacy.sanitizeDiagnosticsValue({dockerInventory:telemetry.dockerInventory},collisionRedactor,'').dockerInventory.reasonCode,'incomplete_inventory','Allowlisted support codes must remain stable');
 console.log("diagnostics_privacy_client: executable client redaction checks passed.");

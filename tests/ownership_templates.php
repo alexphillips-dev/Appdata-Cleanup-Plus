@@ -12,10 +12,16 @@ foreach (array('helpers.php', 'pathUtils.php', 'dashboard.php', 'quarantine.php'
 class DockerClient {
   public static $success = true;
   public static $records = array();
-  public function getDockerJSON($path, $method='GET', &$success=null) {
-    check($path === '/containers/json?all=1' && $method === 'GET', 'Ownership must query all containers directly.');
+  public static $rawBody = null;
+  public static $details = array();
+  public static $calls = 0;
+  public function getDockerJSON($path, $method='GET', &$success=null, $callback=null, $unchunk=false) {
+    self::$calls++;
+    check($method === 'GET' && $unchunk, 'Ownership must use read-only, unchunked requests.');
     $success = self::$success;
-    return self::$records;
+    $body = $path === '/containers/json?all=1' ? (self::$rawBody ?? json_encode(self::$records)) : json_encode(self::$details);
+    if ($callback) $callback($body);
+    return json_decode($body, true);
   }
 }
 function check($condition, $message) { if (!$condition) throw new RuntimeException($message); }
@@ -43,7 +49,50 @@ try {
   check(!appdataCleanupPlusDockerInventory()['ok'], 'Missing container names must not make installed templates look stale.');
   DockerClient::$records = array(array('Id'=>'incomplete', 'Names'=>array('/owner'), 'Mounts'=>array(array('Type'=>'unknown'))));
   check(!appdataCleanupPlusDockerInventory()['ok'], 'Unknown mount types must not silently bypass ownership.');
+  $healthy = containerRecord('/mnt/user/appdata/demo');
+  $dead = array('Id'=>'dead-fixture', 'Names'=>array(), 'State'=>'dead', 'Mounts'=>array());
+  DockerClient::$records = array($healthy, $dead);
+  $inventory = appdataCleanupPlusDockerInventory();
+  check($inventory['ok'] && count($inventory['containers']) === 2 && $inventory['diagnostics']['unnamedDeadCount'] === 1, 'Nameless dead entries must retain healthy ownership.');
+  $dead['Mounts'] = $healthy['Mounts'];
+  DockerClient::$records = array($dead);
+  check(appdataCleanupPlusMountEvidence('/mnt/user/appdata/demo', appdataCleanupPlusDockerInventory()['containers']) !== array(), 'Dead entries still protect their recorded mounts.');
+  $dead['Mounts'] = null;
+  DockerClient::$records = array($healthy, $dead);
+  check(appdataCleanupPlusDockerInventory()['diagnostics']['nullMountCount'] === 1, 'Explicit null mount collections are normalized.');
+  DockerClient::$records = array(array('Id'=>'modern-mounts', 'Names'=>array('/modern'), 'Mounts'=>array(array('Type'=>'image', 'Source'=>'image-reference'), array('Type'=>'tmpfs'), array('Type'=>'cluster', 'Source'=>'/mnt/user/appdata/cluster'))));
+  check(appdataCleanupPlusDockerInventory()['ok'], 'Known Linux Docker mount types must not be rejected by an obsolete enum.');
+  $bad = array('Id'=>'bad-fixture', 'Names'=>array('/bad'));
+  DockerClient::$records = array($bad, $healthy);
+  $inventory = appdataCleanupPlusDockerInventory();
+  check(!$inventory['ok'] && count($inventory['containers']) === 1 && $inventory['diagnostics']['issues']['invalid_mounts'] === 1, 'Partial failures retain protective records and explain the rejected field.');
+  DockerClient::$records = array(array('Id'=>str_repeat('a',64), 'Names'=>array('/recovered')));
+  DockerClient::$details = array('Id'=>str_repeat('a',64), 'Name'=>'/recovered', 'Mounts'=>$healthy['Mounts']);
+  $inventory = appdataCleanupPlusDockerInventory();
+  check($inventory['ok'] && $inventory['diagnostics']['recoveredCount'] === 1, 'Successful inspect recovers incomplete list records.');
+  DockerClient::$details = array('message'=>'private failure');
+  check(appdataCleanupPlusDockerInventory()['diagnostics']['issues']['inspect_failed'] === 1, 'Failed inspect remains locked with a safe reason code.');
+  foreach (array('{}'=>'invalid_list', '{"message":"private error"}'=>'invalid_list', '[broken'=>'invalid_json', ''=>'invalid_json') as $body=>$expected) {
+    DockerClient::$rawBody = $body;
+    check(appdataCleanupPlusDockerInventory()['diagnostics']['reasonCode'] === $expected, 'An undecodable HTTP success must never become a verified empty list.');
+  }
+  DockerClient::$rawBody = null;
+  DockerClient::$records = array();
+  $candidateMap = array();
+  for ($i=0; $i<58; $i++) {
+    $path = '/mnt/user/appdata/fixture-' . $i;
+    $candidateMap[$path] = array('HostDir'=>$path);
+    if ($i<53) DockerClient::$records[] = containerRecord($path, 'fixture-' . $i);
+  }
+  DockerClient::$records[] = $dead;
+  $inventory = appdataCleanupPlusDockerInventory();
+  check($inventory['ok'] && count(removeInstalledVolumeMatches($candidateMap, $inventory['containers'])) === 5, 'The reported 58 candidates must filter back to five when 53 paths have owners and a dead entry exists.');
+  DockerClient::$records = array_fill(0, 33, array('Id'=>str_repeat('b',64), 'Names'=>array('/incomplete')));
+  $inventory = appdataCleanupPlusDockerInventory();
+  check(!$inventory['ok'] && $inventory['diagnostics']['inspectCount'] === 32 && $inventory['diagnostics']['issues']['inspect_limit'] === 1, 'Inspect recovery must be bounded and fail closed beyond the limit.');
   $settings = getDefaultAppdataCleanupPlusSafetySettings();
+  $ignoredLock = appdataCleanupPlusApplyDockerInventorySafetyToRows(array(array('ignored'=>true,'status'=>'ignored','canDelete'=>false)))[0];
+  check($ignoredLock['scanVerificationLocked'] && $ignoredLock['status'] === 'ignored', 'Ignored rows must retain the verification lock for a later unignore.');
   foreach (array('/mnt/user/appdata/demo', '/mnt/user/appdata', '/mnt/user/appdata/demo/child') as $mount) {
     DockerClient::$records = array(containerRecord($mount));
     check(appdataCleanupPlusCurrentOwnershipLockReason('/mnt/user/appdata/demo', $settings) !== '', 'Exact, parent and child mounts must block actions.');
@@ -117,7 +166,13 @@ try {
   unlink($templateFile);
   check(appdataCleanupPlusTemplateManagerAction('restore', $backupId)['ok'] && file_get_contents($templateFile) === $xml, 'Restore recovers the original bytes.');
   check(appdataCleanupPlusTemplateBackup($backupId) !== null, 'Restore retains the backup.');
+  $telemetry = array('startedAt'=>date('c'), 'phases'=>array(array('name'=>'docker_query', 'containerCount'=>53, 'privateName'=>'DiagnosticsCanary')), 'dockerInventory'=>array('verified'=>false, 'reasonCode'=>'incomplete_inventory', 'acceptedCount'=>53, 'rejectedCount'=>1, 'issues'=>array('invalid_mounts'=>1, 'DiagnosticsCanary'=>1), 'rawResponse'=>'DiagnosticsCanary'));
+  writeAppdataCleanupPlusJsonFile(appdataCleanupPlusLatestScanMetricsFile(), $telemetry);
+  $callsBeforeDiagnostics = DockerClient::$calls;
+  $beforeTelemetry = file_get_contents(appdataCleanupPlusLatestScanMetricsFile());
   $bundle = json_encode(buildAppdataCleanupPlusDiagnosticsBundle());
+  check(DockerClient::$calls === $callsBeforeDiagnostics && file_get_contents(appdataCleanupPlusLatestScanMetricsFile()) === $beforeTelemetry, 'Diagnostics must report the recorded scan without querying Docker or mutating telemetry.');
+  check(strpos($bundle, 'DiagnosticsCanary') === false && strpos($bundle, 'incomplete_inventory') !== false && strpos($bundle, 'invalid_mounts') !== false, 'Telemetry must retain reason codes and exclude unknown keys and raw responses.');
   check(strpos($bundle, 'private-fixture-value') === false && strpos($bundle, 'my-saved-app.xml') === false && strpos($bundle, $backupId) === false, 'Server diagnostics must exclude backup content, filenames and IDs.');
   $backupFile = appdataCleanupPlusTemplateBackupDir() . '/' . $backupId . '.json';
   $backup = json_decode(file_get_contents($backupFile), true);
