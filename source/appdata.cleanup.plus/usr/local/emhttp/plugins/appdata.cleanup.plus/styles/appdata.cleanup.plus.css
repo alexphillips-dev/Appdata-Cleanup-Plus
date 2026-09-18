@@ -54,6 +54,7 @@
   --acp-notice-delete-title: #ff5252;
   color: var(--acp-text);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   padding: 4px 0 72px;
 }
@@ -1455,7 +1456,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   display: grid;
   gap: 10px;
   margin-top: 12px;
-  text-align: left;
+  text-align: start;
 }
 
 .sweet-alert.acp-delete-modal {
@@ -1501,7 +1502,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   max-height: none !important;
   overflow: visible !important;
   padding: 0 !important;
-  text-align: left !important;
+  text-align: start !important;
 }
 
 .sweet-alert.acp-quarantine-manager-modal .sa-icon,
@@ -1756,7 +1757,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .acp-delete-simple-shell {
   display: grid;
   gap: 12px;
-  text-align: left;
+  text-align: start;
 }
 
 .acp-delete-simple-intro {
@@ -2003,7 +2004,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   font-size: 18px !important;
   font-weight: 800 !important;
   line-height: 1.2 !important;
-  text-align: left !important;
+  text-align: start !important;
 }
 
 .sweet-alert.acp-row-details-modal p {
@@ -2013,7 +2014,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .acp-row-details-shell {
   display: grid;
   gap: 12px;
-  text-align: left;
+  text-align: start;
 }
 
 .acp-row-details-hero {
@@ -2132,7 +2133,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .acp-simple-modal-shell {
   display: grid;
   gap: 12px;
-  text-align: left;
+  text-align: start;
 }
 
 .acp-simple-modal-intro {
@@ -2558,7 +2559,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   color: var(--acp-text);
   font-size: 12px;
   line-height: 1.45;
-  text-align: left;
+  text-align: start;
 }
 
 .acp-help-shell {
@@ -2773,7 +2774,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   outline: none !important;
   padding: 4px 10px;
   position: relative;
-  text-align: left;
+  text-align: start;
   transition: background 120ms ease;
   width: 100%;
 }
@@ -2816,7 +2817,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   justify-self: start;
   letter-spacing: 0.08em;
   line-height: 1.2;
-  text-align: left;
+  text-align: start;
 }
 
 .acp-appdata-browser-entry-path {
@@ -2826,7 +2827,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   justify-self: start;
   letter-spacing: 0.05em;
   line-height: 1.2;
-  text-align: left;
+  text-align: start;
   word-break: break-all;
 }
 
@@ -3061,7 +3062,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   max-height: 220px;
   overflow: auto;
   padding: 0;
-  text-align: left;
+  text-align: start;
   list-style: none;
 }
 
@@ -4191,7 +4192,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   font-size: 13px;
   font-weight: 800;
   padding: 4px 0 0;
-  text-align: left;
+  text-align: start;
 }
 
 #acp-app .acp-action-toolbar {
@@ -4539,4 +4540,30 @@ body[data-acp-host-theme="azure"] #acp-app.acp-shell[data-acp-theme-class="light
   --acp-muted-strong: rgba(65, 78, 95, 0.9);
   --acp-bottom-bg: #ffffff;
   --acp-shadow: 0 12px 28px rgba(72, 84, 99, 0.14);
+}
+
+/* Keep filesystem paths, dataset identifiers and editable paths readable in RTL. */
+#acp-app code,
+.sweet-alert[class*="acp-"] code,
+.sweet-alert[class*="acp-"] input[type="text"],
+.sweet-alert[class*="acp-"] input[type="datetime-local"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+#acp-app .acp-button,
+.sweet-alert[class*="acp-"] .acp-button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+#acp-app > *,
+#acp-app .acp-hero-copy {
+  min-width: 0;
+}
+
+#acp-app[dir="rtl"] .acp-row-main,
+.sweet-alert[class*="acp-"][dir="rtl"] .acp-modal-host {
+  text-align: start;
 }

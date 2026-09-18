@@ -15,6 +15,9 @@ register_shutdown_function("releaseAllAppdataCleanupPlusRuntimeLocks");
 
 libxml_use_internal_errors(true);
 
+// Read the same webGUI session language for errors as for successful responses.
+ensureAppdataCleanupPlusSession();
+
 $requestMethod = strtoupper((string)($_SERVER["REQUEST_METHOD"] ?? ""));
 $action = getPostedString("action");
 $csrfToken = getRequestedCsrfToken();

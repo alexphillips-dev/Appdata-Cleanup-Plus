@@ -1,0 +1,6 @@
+[
+  "and", "recently", "No changes recorded", "Path segment", "Folder entry",
+  "Purges in under 1m", "Purges in {count}d", "Purges in {count}h", "Purges in {count}m",
+  "{count} child dataset", "{count} child datasets", "{count} snapshot", "{count} snapshots",
+  "{name}: unsafe fixture path", "{name}: folder could not be created", "{name}: {message}"
+]

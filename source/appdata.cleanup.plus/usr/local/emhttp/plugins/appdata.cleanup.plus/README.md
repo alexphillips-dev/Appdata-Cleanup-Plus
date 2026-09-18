@@ -74,6 +74,10 @@ Requirements:
 
 ## Getting Started
 
+The interface follows the language selected in Unraid's Display Settings. All 42 languages registered by Unraid's native language selector or published as official language packs are bundled, including Simplified and Traditional Chinese, both Portuguese variants, and right-to-left layouts. No translation service is contacted by the installed plugin. After changing the webGUI language, reload the plugin page; Unraid's English switch works too.
+
+Buttons, help, dialogs, scan explanations, safety errors, action results, schedules and history are translated. File paths, container names, dataset names, protocol values and sanitized diagnostic exports retain their original form. See [translation coverage and contribution instructions](docs/localization.md).
+
 1. Open `Settings -> Appdata Cleanup Plus`.
 2. Use `Appdata Sources` to confirm the appdata roots the plugin should scan.
 3. Click `Rescan`.

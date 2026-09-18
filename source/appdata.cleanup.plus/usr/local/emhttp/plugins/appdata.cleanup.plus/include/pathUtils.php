@@ -92,13 +92,10 @@ function buildSymlinkLockReason($path, $prefix="Path") {
   }
 
   $target = @readlink($normalizedPath);
-  $message = $prefix . " '" . $normalizedPath . "' is a symlink";
-
   if ( is_string($target) && $target !== "" ) {
-    $message .= " to '" . $target . "'";
+    return acpMessage("{message} '{path}' is a symlink to '{target}' and is locked for safety.", array("message" => $prefix, "path" => $normalizedPath, "target" => $target));
   }
-
-  return $message . " and is locked for safety.";
+  return acpMessage("{message} '{path}' is a symlink and is locked for safety.", array("message" => $prefix, "path" => $normalizedPath));
 }
 
 function appdataCleanupPlusAllowedSymlinkSegmentRoots() {

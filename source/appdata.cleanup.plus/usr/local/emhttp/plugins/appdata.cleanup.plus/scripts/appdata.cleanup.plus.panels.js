@@ -399,21 +399,21 @@
     var parts = [];
 
     if (sourceNames.length) {
-      parts.push("Saved templates: " + sourceNames.join(", "));
+      parts.push(ACP.tr("Saved templates: {names}", {names: sourceNames.join(", ")}));
     } else if (row.sourceSummary || row.sourceDisplay) {
-      parts.push("Source: " + (row.sourceSummary || row.sourceDisplay));
+      parts.push(ACP.tr("Source: {source}", {source: row.sourceSummary || row.sourceDisplay}));
     }
 
     if (targetPaths.length) {
-      parts.push("Template target paths: " + targetPaths.join(", "));
+      parts.push(ACP.tr("Template target paths: {paths}", {paths: targetPaths.join(", ")}));
     } else if (row.targetSummary) {
-      parts.push("Template target paths: " + row.targetSummary);
+      parts.push(ACP.tr("Template target paths: {paths}", {paths: row.targetSummary}));
     }
 
     if (templateRefs.length) {
-      parts.push("References: " + $.map(templateRefs, function(ref) {
-        return (ref && ref.name ? ref.name : "template") + (ref && ref.target ? " -> " + ref.target : "");
-      }).join(", "));
+      parts.push(ACP.tr("References: {references}", {references: $.map(templateRefs, function(ref) {
+        return (ref && ref.name ? ref.name : ACP.tr("Template")) + (ref && ref.target ? " -> " + ref.target : "");
+      }).join(", ")}));
     }
 
     return parts.join(" ");
@@ -423,19 +423,19 @@
     var parts = [];
 
     if (row.displayPath || row.path) {
-      parts.push("Path: " + (row.displayPath || row.path));
+      parts.push(ACP.tr("Path: {path}", {path: row.displayPath || row.path}));
     }
 
     if (row.realPath && row.realPath !== (row.displayPath || row.path)) {
-      parts.push("Canonical path: " + row.realPath);
+      parts.push(ACP.tr("Canonical path: {path}", {path: row.realPath}));
     }
 
     if (row.sourceRoot) {
-      parts.push("Matched scan root: " + row.sourceRoot);
+      parts.push(ACP.tr("Matched scan root: {path}", {path: row.sourceRoot}));
     }
 
     if (row.shareName) {
-      parts.push("Share: " + row.shareName);
+      parts.push(ACP.tr("Share: {name}", {name: row.shareName}));
     }
 
     return parts.join(" ");
@@ -445,17 +445,17 @@
     var parts = [];
 
     if (row.storageKind === "zfs") {
-      parts.push("ZFS dataset: " + (row.datasetName || row.datasetMountpoint || "detected"));
+      parts.push(ACP.tr("ZFS dataset: {dataset}", {dataset: row.datasetName || row.datasetMountpoint || ACP.tr("Detected")}));
 
       if (row.datasetMountpoint) {
-        parts.push("Mountpoint: " + row.datasetMountpoint);
+        parts.push(ACP.tr("Mountpoint: {path}", {path: row.datasetMountpoint}));
       }
 
       if (row.zfsImpactSummary) {
         parts.push(row.zfsImpactSummary);
       }
     } else if (row.zfsMappingMatched) {
-      parts.push(row.zfsResolutionDetail || row.zfsResolutionMessage || "A ZFS path mapping matched, but the row did not resolve to an exact dataset mountpoint.");
+      parts.push(row.zfsResolutionDetail || row.zfsResolutionMessage || ACP.tr("A ZFS path mapping matched, but the row did not resolve to an exact dataset mountpoint."));
     }
 
     return parts.join(" ");
@@ -508,8 +508,6 @@
   }
 
   ACP.getRowBlockType = function(row) {
-    var policyReason = String((row && row.policyReason) || "");
-
     if (!row) {
       return "";
     }
@@ -521,7 +519,7 @@
     if (
       row.storageKind === "zfs" &&
       row.policyLocked &&
-      /permanent delete/i.test(policyReason)
+      row.policyReasonCode === "permanent_delete"
     ) {
       return "options";
     }
@@ -625,7 +623,7 @@
     $.each($.isArray(fixtureStatus.fixtures) ? fixtureStatus.fixtures : [], function(_, fixture) {
       fixtureRows.push(
         '<div class="acp-fixture-row">' +
-          '<div><strong>' + ACP.escapeHtml(fixture.name || "") + "</strong><span>" + ACP.escapeHtml(fixture.type || "") + "</span></div>" +
+          '<div><strong>' + ACP.escapeHtml(fixture.name || "") + "</strong><span>" + ACP.escapeHtml(ACP.tr(fixture.type || "")) + "</span></div>" +
           '<span class="acp-modal-stat ' + (fixture.exists ? "is-safe" : "is-blocked") + '">' + ACP.escapeHtml(fixture.exists ? ACP.t(strings, "toolsFixtureExistsLabel", "Created") : ACP.t(strings, "toolsFixtureMissingLabel", "Missing")) + "</span>" +
         "</div>"
       );

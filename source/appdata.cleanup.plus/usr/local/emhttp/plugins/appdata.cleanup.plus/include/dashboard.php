@@ -508,26 +508,26 @@ function formatRelativeAgeLabel($timestamp) {
 
   if ( $delta < 3600 ) {
     $minutes = (int) max(1, floor($delta / 60));
-    return $minutes . " minute" . ($minutes === 1 ? "" : "s") . " ago";
+    return $minutes === 1 ? acpMessage("{count} minute ago", array("count" => $minutes)) : acpMessage("{count} minutes ago", array("count" => $minutes));
   }
 
   if ( $delta < 86400 ) {
     $hours = (int) max(1, floor($delta / 3600));
-    return $hours . " hour" . ($hours === 1 ? "" : "s") . " ago";
+    return $hours === 1 ? acpMessage("{count} hour ago", array("count" => $hours)) : acpMessage("{count} hours ago", array("count" => $hours));
   }
 
   if ( $delta < 2592000 ) {
     $days = (int) max(1, floor($delta / 86400));
-    return $days . " day" . ($days === 1 ? "" : "s") . " ago";
+    return $days === 1 ? acpMessage("{count} day ago", array("count" => $days)) : acpMessage("{count} days ago", array("count" => $days));
   }
 
   if ( $delta < 31536000 ) {
     $months = (int) max(1, floor($delta / 2592000));
-    return $months . " month" . ($months === 1 ? "" : "s") . " ago";
+    return $months === 1 ? acpMessage("{count} month ago", array("count" => $months)) : acpMessage("{count} months ago", array("count" => $months));
   }
 
   $years = (int) max(1, floor($delta / 31536000));
-  return $years . " year" . ($years === 1 ? "" : "s") . " ago";
+  return $years === 1 ? acpMessage("{count} year ago", array("count" => $years)) : acpMessage("{count} years ago", array("count" => $years));
 }
 
 function measureDirectoryBytesWithDu($path) {
@@ -651,40 +651,40 @@ function buildCandidatePathStats($resolvedPath, $classification, $securityLockRe
 
 function buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning, $sourceRoot="") {
   if ( $sourceKind === "filesystem" ) {
-    $sourceLead = $sourceRoot ? "Configured appdata source '" . $sourceRoot . "'" : "Configured appdata source scan";
+    $sourceLead = $sourceRoot ? acpMessage("Configured appdata source '{path}'", array("path" => $sourceRoot)) : "Configured appdata source scan";
 
     if ( ! $dockerRunning ) {
-      return $sourceLead . " found this folder, but Docker is offline, so active container mappings could not be verified.";
+      return acpMessage("{message} found this folder, but Docker is offline, so active container mappings could not be verified.", array("message" => $sourceLead));
     }
 
-    return $sourceLead . " found this folder, and no saved Docker template or installed container currently references it.";
+    return acpMessage("{message} found this folder, and no saved Docker template or installed container currently references it.", array("message" => $sourceLead));
   }
 
   $sourceSummary = summarizeCandidateValues($sourceNames);
   $targetSummary = summarizeCandidateValues($targetPaths);
-  $sourceLabel = $sourceSummary ? "Saved templates " . $sourceSummary : "Saved Docker templates";
+  $sourceLabel = $sourceSummary ? acpMessage("Saved templates {names}", array("names" => $sourceSummary)) : "Saved Docker templates";
 
   if ( ! $targetSummary ) {
     $targetSummary = "tracked container paths";
   }
 
   if ( ! $dockerRunning ) {
-    return $sourceLabel . " still reference this folder at " . $targetSummary . ". Docker is offline, so active container mappings could not be verified.";
+    return acpMessage("{message} still reference this folder at {paths}. Docker is offline, so active container mappings could not be verified.", array("message" => $sourceLabel, "paths" => $targetSummary));
   }
 
-  return $sourceLabel . " still reference this folder at " . $targetSummary . ", but no installed container currently maps this host path.";
+  return acpMessage("{message} still reference this folder at {paths}, but no installed container currently maps this host path.", array("message" => $sourceLabel, "paths" => $targetSummary));
 }
 
 function appdataCleanupPlusTemplateActionLockReason($sourceNames=array(), $targetPaths=array()) {
   $sourceSummary = summarizeCandidateValues(is_array($sourceNames) ? $sourceNames : array());
   $targetSummary = summarizeCandidateValues(is_array($targetPaths) ? $targetPaths : array());
-  $sourceLabel = $sourceSummary ? "Saved templates " . $sourceSummary : "Saved Docker templates";
+  $sourceLabel = $sourceSummary ? acpMessage("Saved templates {names}", array("names" => $sourceSummary)) : "Saved Docker templates";
 
   if ( ! $targetSummary ) {
     $targetSummary = "tracked container paths";
   }
 
-  return $sourceLabel . " still point here at " . $targetSummary . ". If you clean this path, reinstalling from that saved template may expect or recreate it.";
+  return acpMessage("{message} still point here at {paths}. If you clean this path, reinstalling from that saved template may expect or recreate it.", array("message" => $sourceLabel, "paths" => $targetSummary));
 }
 
 function appdataCleanupPlusDockerInventoryUnverified($dockerRunning, $containers, $templateVolumes) {
@@ -782,50 +782,50 @@ function buildLatestAuditMessage($entry) {
   $parts = array();
 
   if ( ! empty($summary["quarantined"]) ) {
-    $parts[] = $summary["quarantined"] . " moved to quarantine";
+    $parts[] = acpMessage("{count} moved to quarantine", array("count" => $summary["quarantined"]));
   }
 
   if ( ! empty($summary["deleted"]) ) {
-    $parts[] = $summary["deleted"] . " deleted";
+    $parts[] = acpMessage("{count} deleted", array("count" => $summary["deleted"]));
   }
 
   if ( ! empty($summary["restored"]) ) {
-    $parts[] = $summary["restored"] . " restored";
+    $parts[] = acpMessage("{count} restored", array("count" => $summary["restored"]));
   }
 
   if ( ! empty($summary["purged"]) ) {
-    $parts[] = $summary["purged"] . " purged";
+    $parts[] = acpMessage("{count} purged", array("count" => $summary["purged"]));
   }
 
   if ( ! empty($summary["skipped"]) ) {
-    $parts[] = $summary["skipped"] . " skipped";
+    $parts[] = acpMessage("{count} skipped", array("count" => $summary["skipped"]));
   }
 
   if ( ! empty($summary["conflicts"]) ) {
-    $parts[] = $summary["conflicts"] . " conflict" . ($summary["conflicts"] === 1 ? "" : "s");
+    $parts[] = $summary["conflicts"] === 1 ? acpMessage("{count} conflict", array("count" => 1)) : acpMessage("{count} conflicts", array("count" => $summary["conflicts"]));
   }
 
   if ( ! empty($summary["missing"]) ) {
-    $parts[] = $summary["missing"] . " already missing";
+    $parts[] = acpMessage("{count} already missing", array("count" => $summary["missing"]));
   }
 
   if ( ! empty($summary["blocked"]) ) {
-    $parts[] = $summary["blocked"] . " blocked";
+    $parts[] = acpMessage("{count} blocked", array("count" => $summary["blocked"]));
   }
 
   if ( ! empty($summary["errors"]) ) {
-    $parts[] = $summary["errors"] . " error" . ($summary["errors"] === 1 ? "" : "s");
+    $parts[] = $summary["errors"] === 1 ? acpMessage("{count} error", array("count" => 1)) : acpMessage("{count} errors", array("count" => $summary["errors"]));
   }
 
   if ( empty($parts) ) {
     $parts[] = "no changes recorded";
   }
 
-  $message = "Last " . strtolower(buildAuditOperationLabel($operation)) . " ran " . ($timestamp ? formatDateTimeLabel($timestamp) : "recently") . ". " . ucfirst(implode(", ", $parts)) . ".";
+  $message = acpMessage("Last {operation} ran {date}. {summary}.", array("operation" => strtolower(buildAuditOperationLabel($operation)), "date" => $timestamp ? formatDateTimeLabel($timestamp) : "recently", "summary" => ucfirst(implode(", ", $parts))));
 
   if ( ! empty($entry["requestedCount"]) ) {
     $requestedCount = (int)$entry["requestedCount"];
-    $message .= " " . $requestedCount . " item" . ($requestedCount === 1 ? " was" : "s were") . " submitted.";
+    $message = $requestedCount === 1 ? acpMessage("{message} {count} item was submitted.", array("message" => $message, "count" => $requestedCount)) : acpMessage("{message} {count} items were submitted.", array("message" => $message, "count" => $requestedCount));
   }
 
   return $message;
@@ -1550,7 +1550,7 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
         $row["ignoredAt"] = ! empty($ignoredEntry["ignoredAt"]) ? (string)$ignoredEntry["ignoredAt"] : "";
         $row["ignoredAtLabel"] = $ignoredAt ? formatDateTimeLabel($ignoredAt) : "";
         $row["ignoredReason"] = $row["ignoredAtLabel"]
-          ? "Ignored on " . $row["ignoredAtLabel"] . ". Restore it to include this folder in cleanup scans again."
+          ? acpMessage("Ignored on {date}. Restore it to include this folder in cleanup scans again.", array("date" => $row["ignoredAtLabel"]))
           : "This folder is hidden by your ignore list. Restore it to include this folder in cleanup scans again.";
         $row["status"] = "ignored";
         $row["statusLabel"] = "Ignored";

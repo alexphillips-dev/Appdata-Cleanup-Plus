@@ -746,8 +746,8 @@ function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0
       $results[] = array_merge($result, array(
         "status" => "scheduled",
         "message" => $scheduledPurgeAt !== ""
-          ? "Scheduled to purge on " . formatDateTimeLabel(strtotime($scheduledPurgeAt)) . "."
-          : "Scheduled to purge in " . $effectiveDays . " day" . ($effectiveDays === 1 ? "" : "s") . ".",
+          ? acpMessage("Scheduled to purge on {date}.", array("date" => formatDateTimeLabel(strtotime($scheduledPurgeAt))))
+          : ($effectiveDays === 1 ? acpMessage("Scheduled to purge in {count} day.", array("count" => $effectiveDays)) : acpMessage("Scheduled to purge in {count} days.", array("count" => $effectiveDays))),
         "purgeAt" => $scheduledPurgeAt
       ));
     } else {
@@ -1396,7 +1396,7 @@ function nativeDeleteDirectory($path, $options=array()) {
       return array(
         "ok" => false,
         "message" => $outputText !== ""
-          ? "Delete failed: " . $outputText
+          ? acpMessage("Delete failed: {error}", array("error" => $outputText))
           : "Delete failed. The folder still exists."
       );
     }
@@ -1827,7 +1827,7 @@ function quarantineCandidatePath($candidate, $displayPath, $settings) {
   return array(
     "ok" => false,
     "message" => $renameError !== ""
-      ? "Quarantine move failed: " . $renameError . ". The source folder was left in place."
+      ? acpMessage("Quarantine move failed: {error}. The source folder was left in place.", array("error" => $renameError))
       : "Quarantine move failed. The source folder was left in place.",
     "destination" => $destination
   );

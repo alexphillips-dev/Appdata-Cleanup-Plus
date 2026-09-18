@@ -378,10 +378,10 @@ function appdataCleanupPlusBuildZfsResolutionDetail($kind, $matchedMapping=array
   if ( $normalizedKind === "mapped_no_exact_mountpoint" ) {
     if ( $shareRoot !== "" && $datasetRoot !== "" ) {
       if ( ! empty($variantHints) ) {
-        return "The configured mapping matched (" . $shareRoot . " => " . $datasetRoot . "), but none of the resolved dataset-side paths matched an exact ZFS dataset mountpoint. Exact mountpoint matches are required before dataset delete can be used.";
+        return acpMessage("The configured mapping matched ({share} => {dataset}), but none of the resolved dataset-side paths matched an exact ZFS dataset mountpoint. Exact mountpoint matches are required before dataset delete can be used.", array("share" => $shareRoot, "dataset" => $datasetRoot));
       }
 
-      return "The configured mapping matched (" . $shareRoot . " => " . $datasetRoot . "), but this row does not resolve to an exact ZFS dataset mountpoint. Exact mountpoint matches are required before dataset delete can be used.";
+      return acpMessage("The configured mapping matched ({share} => {dataset}), but this row does not resolve to an exact ZFS dataset mountpoint. Exact mountpoint matches are required before dataset delete can be used.", array("share" => $shareRoot, "dataset" => $datasetRoot));
     }
 
     return "A configured ZFS mapping matched this path, but it does not resolve to an exact ZFS dataset mountpoint.";
@@ -537,7 +537,7 @@ function appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName) {
     return array(
       "ok" => true,
       "recursive" => false,
-      "message" => "Would destroy ZFS dataset '" . $normalizedDatasetName . "'.",
+      "message" => acpMessage("Would destroy ZFS dataset '{dataset}'.", array("dataset" => $normalizedDatasetName)),
       "impactSummary" => isset($impact["summary"]) ? $impact["summary"] : "",
       "childDatasets" => isset($impact["childDatasets"]) ? $impact["childDatasets"] : array(),
       "snapshots" => isset($impact["snapshots"]) ? $impact["snapshots"] : array(),
@@ -568,7 +568,7 @@ function appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName) {
     return array(
       "ok" => true,
       "recursive" => true,
-      "message" => "Would destroy ZFS dataset '" . $normalizedDatasetName . "' recursively.",
+      "message" => acpMessage("Would destroy ZFS dataset '{dataset}' recursively.", array("dataset" => $normalizedDatasetName)),
       "impactSummary" => isset($impact["summary"]) ? $impact["summary"] : "",
       "childDatasets" => isset($impact["childDatasets"]) ? $impact["childDatasets"] : array(),
       "snapshots" => isset($impact["snapshots"]) ? $impact["snapshots"] : array(),
@@ -660,12 +660,12 @@ function appdataCleanupPlusDescribeZfsDatasetDestroyImpact($datasetName, $recurs
 
   if ( $recursive ) {
     if ( ! empty($summaryParts) ) {
-      $summary = "Recursive destroy will also remove " . implode(" and ", $summaryParts) . ".";
+      $summary = acpMessage("Recursive destroy will also remove {impact}.", array("impact" => implode(" and ", $summaryParts)));
     } else {
       $summary = "Recursive destroy is required for this dataset.";
     }
   } elseif ( ! empty($summaryParts) ) {
-    $summary = "Destroy will also remove " . implode(" and ", $summaryParts) . ".";
+    $summary = acpMessage("Destroy will also remove {impact}.", array("impact" => implode(" and ", $summaryParts)));
   }
 
   return array(
@@ -708,7 +708,7 @@ function appdataCleanupPlusDestroyZfsDataset($datasetName, $recursive=false) {
   return array(
     "ok" => true,
     "message" => $recursive
-      ? "Destroyed ZFS dataset '" . $normalizedDatasetName . "' recursively."
-      : "Destroyed ZFS dataset '" . $normalizedDatasetName . "'."
+      ? acpMessage("Destroyed ZFS dataset '{dataset}' recursively.", array("dataset" => $normalizedDatasetName))
+      : acpMessage("Destroyed ZFS dataset '{dataset}'.", array("dataset" => $normalizedDatasetName))
   );
 }

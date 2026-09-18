@@ -864,6 +864,7 @@
       url: config.apiUrl,
       method: "POST",
       dataType: "json",
+      converters: {"text json": function(text) { return ACP.localizePresentation(JSON.parse(text)); }},
       headers: requestHeaders,
       data: ACP.buildApiRequestData(config, data)
     });
@@ -917,7 +918,7 @@
     var message = ACP.extractErrorMessage(xhr, fallback);
 
     if (retryAfter > 0 && message.indexOf("Retry after") === -1) {
-      message += " Retry after about " + String(retryAfter) + " seconds.";
+      message += " " + ACP.tr("Retry after about {count} seconds.", {count: retryAfter});
     }
 
     return message;
@@ -2203,11 +2204,11 @@
   }
 
   function buildTemplateActionLockReason(row) {
-    var sourceSummary = String(row.sourceSummary || row.sourceDisplay || "Saved Docker templates");
-    var targetSummary = String(row.targetSummary || "tracked container paths");
-    var sourceLabel = /^saved docker templates$/i.test(sourceSummary) ? sourceSummary : "Saved templates " + sourceSummary;
+    var sourceSummary = String(row.sourceSummary || row.sourceDisplay || "");
+    var targetSummary = String(row.targetSummary || ACP.tr("tracked container paths"));
+    var sourceLabel = !sourceSummary || /^saved docker templates$/i.test(sourceSummary) ? ACP.tr("Saved Docker templates") : ACP.tr("Saved templates {names}", {names: sourceSummary});
 
-    return sourceLabel + " still point here at " + targetSummary + ". If you clean this path, reinstalling from that saved template may expect or recreate it.";
+    return ACP.tr("{message} still point here at {paths}. If you clean this path, reinstalling from that saved template may expect or recreate it.", {message: sourceLabel, paths: targetSummary});
   }
 
   function applyLocalSafetyStateToRow(row) {
@@ -2215,6 +2216,7 @@
 
     nextRow.policyLocked = false;
     nextRow.policyReason = "";
+    nextRow.policyReasonCode = "";
 
     if (nextRow.ignored) {
       nextRow.canDelete = false;
@@ -2225,6 +2227,7 @@
       nextRow.canDelete = false;
       nextRow.policyLocked = true;
       nextRow.policyReason = nextRow.securityLockReason;
+      nextRow.policyReasonCode = nextRow.securityReasonCode || "";
       return nextRow;
     }
 
@@ -2233,6 +2236,7 @@
         nextRow.canDelete = false;
         nextRow.policyLocked = true;
         nextRow.policyReason = ACP.t(strings, "selectionHintZfsMode", "ZFS dataset-backed rows require permanent delete mode and cannot be quarantined.");
+        nextRow.policyReasonCode = "permanent_delete";
         return nextRow;
       }
     }
@@ -2337,7 +2341,7 @@
       notices.push({
         type: "info",
         title: ACP.t(strings, "noticeIgnoredTitle", "Ignore list active"),
-        message: Number(summary.ignored || 0) + " " + (Number(summary.ignored || 0) === 1 ? "path is" : "paths are") + (state.showIgnored ? " visible below for review or restore." : " currently hidden from normal cleanup results."),
+        message: state.showIgnored ? ACP.tr("Ignored paths visible for review or restore: {count}.", {count: Number(summary.ignored || 0)}) : ACP.tr("Ignored paths hidden from normal cleanup results: {count}.", {count: Number(summary.ignored || 0)}),
         action: "toggle-ignored-visibility",
         actionLabel: state.showIgnored
           ? ACP.t(strings, "hideIgnoredLabel", "Hide ignored")
@@ -3610,9 +3614,9 @@
   function buildAuditSummaryText() {
     var entries = getFilteredAuditHistoryForCopy();
     var lines = [
-      "Appdata Cleanup Plus audit history",
-      "Entries: " + String(entries.length),
-      state.auditQuery ? ("Filter: " + String(state.auditQuery)) : ""
+      ACP.tr("Appdata Cleanup Plus audit history"),
+      ACP.tr("Entries: {count}", {count: entries.length}),
+      state.auditQuery ? ACP.tr("Filter: {query}", {query: state.auditQuery}) : ""
     ];
 
     $.each(entries, function(_, entry) {
@@ -3621,21 +3625,21 @@
 
       $.each(summary, function(status, count) {
         if (Number(count || 0) > 0) {
-          counts.push(status + "=" + String(count));
+          counts.push(ACP.formatOperationResultStatus(strings, status === "conflicts" ? "conflict" : (status === "errors" ? "error" : status)).label + "=" + String(count));
         }
       });
 
       lines.push("");
-      lines.push((entry.operationLabel || "Action") + " - " + (entry.timestampLabel || entry.timestamp || "unknown time"));
+      lines.push((entry.operationLabel || ACP.tr("Action")) + " - " + (entry.timestampLabel || entry.timestamp || ACP.tr("unknown time")));
       if (entry.message) {
         lines.push(entry.message);
       }
       if (counts.length) {
-        lines.push("Summary: " + counts.join(", "));
+        lines.push(ACP.tr("Summary: {summary}", {summary: counts.join(", ")}));
       }
 
       $.each($.isArray(entry.pathsPreview) ? entry.pathsPreview : [], function(_, preview) {
-        lines.push("- " + String(preview.status || "result") + ": " + String(preview.path || ""));
+        lines.push("- " + ACP.formatOperationResultStatus(strings, preview.status).label + ": " + String(preview.path || ""));
       });
     });
 
@@ -4208,7 +4212,7 @@
     var riskReason = String(row.riskReason || "");
 
     if (securityReason) {
-      if (/symlink/i.test(securityReason)) {
+      if (row.securityReasonCode === "symlink") {
         pushBadgeDescriptor(descriptors, {
           kind: "reason",
           value: "symlink",
@@ -4217,7 +4221,7 @@
           title: securityReason,
           kindClass: "reason"
         });
-      } else if (/mount-point/i.test(securityReason)) {
+      } else if (row.securityReasonCode === "mount_point") {
         pushBadgeDescriptor(descriptors, {
           kind: "reason",
           value: "mount_point",
@@ -4226,7 +4230,7 @@
           title: securityReason,
           kindClass: "reason"
         });
-      } else if (/share root|mount root/i.test(securityReason)) {
+      } else if (row.securityReasonCode === "root_path") {
         pushBadgeDescriptor(descriptors, {
           kind: "reason",
           value: "root_path",
@@ -4235,7 +4239,7 @@
           title: securityReason,
           kindClass: "reason"
         });
-      } else if (/canonicalized safely/i.test(securityReason)) {
+      } else if (row.securityReasonCode === "unsafe_path") {
         pushBadgeDescriptor(descriptors, {
           kind: "reason",
           value: "unsafe_path",
@@ -4269,7 +4273,7 @@
       });
     }
 
-    if (row.storageKind === "zfs" && /permanent delete/i.test(policyReason)) {
+    if (row.storageKind === "zfs" && row.policyReasonCode === "permanent_delete") {
       pushBadgeDescriptor(descriptors, {
         kind: "reason",
         value: "delete_mode_off",
@@ -4294,8 +4298,8 @@
     if (
       row.policyLocked &&
       !securityReason &&
-      !/zfs dataset delete is disabled/i.test(policyReason) &&
-      !/permanent delete/i.test(policyReason)
+      row.policyReasonCode !== "zfs_disabled" &&
+      row.policyReasonCode !== "permanent_delete"
     ) {
       pushBadgeDescriptor(descriptors, {
         kind: "reason",
@@ -4897,7 +4901,7 @@
         nextRow.ignored = true;
         nextRow.ignoredAt = "";
         nextRow.ignoredAtLabel = "";
-        nextRow.ignoredReason = "This folder is hidden by your ignore list. Restore it to include this folder in cleanup scans again.";
+        nextRow.ignoredReason = ACP.tr("This folder is hidden by your ignore list. Restore it to include this folder in cleanup scans again.");
         nextRow.status = "ignored";
         nextRow.statusLabel = "Ignored";
       } else if (intent === "unignore") {
@@ -4906,7 +4910,7 @@
         nextRow.ignoredAtLabel = "";
         nextRow.ignoredReason = "";
         nextRow.status = state.dockerRunning ? "orphaned" : "docker_offline";
-        nextRow.statusLabel = state.dockerRunning ? "Orphaned" : "Docker offline";
+        nextRow.statusLabel = state.dockerRunning ? ACP.tr("Orphaned") : ACP.tr("Docker offline");
       }
 
       return applyLocalSafetyStateToRow(nextRow);
@@ -5067,7 +5071,7 @@
     var suffix = "";
 
     if (typeof totalCount === "number" && totalCount > previewCount) {
-      suffix = " (+" + String(totalCount - previewCount) + " more)";
+      suffix = " (+" + ACP.tr("{count} more", {count: totalCount - previewCount}) + ")";
     }
 
     return previewValues.join(", ") + suffix;

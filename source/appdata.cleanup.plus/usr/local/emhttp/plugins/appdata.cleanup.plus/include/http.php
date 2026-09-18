@@ -23,7 +23,7 @@ function jsonResponse($payload, $statusCode=200) {
   header("Content-Type: application/json");
   header("Pragma: no-cache");
   header("X-Content-Type-Options: nosniff");
-  echo appdataCleanupPlusJsonEncode($payload);
+  echo appdataCleanupPlusJsonEncode(acpLocalizeResponse($payload));
   exit;
 }
 
@@ -44,7 +44,7 @@ function appdataCleanupPlusBuildFatalFailurePayload($lastError) {
 
   return array(
     "ok" => false,
-    "message" => "A fatal backend error interrupted the request. Reference: " . $errorId,
+    "message" => acpMessage("A fatal backend error interrupted the request. Reference: {reference}", array("reference" => $errorId)),
     "errorId" => $errorId
   );
 }
@@ -76,7 +76,7 @@ function appdataCleanupPlusRespondToFatalShutdown() {
     header("X-Content-Type-Options: nosniff");
   }
 
-  echo appdataCleanupPlusJsonEncode(appdataCleanupPlusBuildFatalFailurePayload($lastError));
+  echo appdataCleanupPlusJsonEncode(acpLocalizeResponse(appdataCleanupPlusBuildFatalFailurePayload($lastError)));
 }
 
 function parseCandidateIds($rawIds) {

@@ -1,5 +1,6 @@
 <?php
 
+require_once(__DIR__ . "/i18n.php");
 require_once(__DIR__ . "/zfs.php");
 
 if ( ! function_exists("appdataCleanupPlusParseIniFile") ) {
@@ -261,10 +262,10 @@ function appdataCleanupPlusBuildVmManagerLockReason($path) {
   $managedLabel = isset($managedMatch["label"]) ? (string)$managedMatch["label"] : "VM Manager path";
 
   if ( isset($managedMatch["relation"]) && $managedMatch["relation"] === "contains" ) {
-    return $managedLabel . " '" . $managedRoot . "' sits inside this folder and is excluded for safety.";
+    return acpMessage("{message} '{path}' sits inside this folder and is excluded for safety.", array("message" => $managedLabel, "path" => $managedRoot));
   }
 
-  return $managedLabel . " '" . $managedRoot . "' is excluded for safety.";
+  return acpMessage("{message} '{path}' is excluded for safety.", array("message" => $managedLabel, "path" => $managedRoot));
 }
 
 function appdataCleanupPlusFindDockerManagedPathMatch($path) {
@@ -284,10 +285,10 @@ function appdataCleanupPlusBuildDockerManagedLockReason($path) {
   $managedLabel = isset($managedMatch["label"]) ? (string)$managedMatch["label"] : "Docker managed path";
 
   if ( isset($managedMatch["relation"]) && $managedMatch["relation"] === "contains" ) {
-    return $managedLabel . " '" . $managedRoot . "' sits inside this folder and is excluded for safety.";
+    return acpMessage("{message} '{path}' sits inside this folder and is excluded for safety.", array("message" => $managedLabel, "path" => $managedRoot));
   }
 
-  return $managedLabel . " '" . $managedRoot . "' is excluded for safety.";
+  return acpMessage("{message} '{path}' is excluded for safety.", array("message" => $managedLabel, "path" => $managedRoot));
 }
 
 function appdataCleanupPlusBuildManagedSystemLockReason($path) {

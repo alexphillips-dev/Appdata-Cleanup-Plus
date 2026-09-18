@@ -41,7 +41,51 @@
       return strings[key];
     }
 
-    return fallback;
+    return ACP.tr(fallback);
+  };
+
+  ACP.tr = function(text, parameters) {
+    var config = window.appdataCleanupPlusConfig || {};
+    var catalog = config.catalog || {};
+    var translated = Object.prototype.hasOwnProperty.call(catalog, text) ? catalog[text] : text;
+    return String(translated || text || "").replace(/\{(\w+)\}/g, function(token, key) {
+      return parameters && Object.prototype.hasOwnProperty.call(parameters, key) ? String(parameters[key]) : token;
+    });
+  };
+
+  ACP.localizePresentation = function(value, field) {
+    var config = window.appdataCleanupPlusConfig || {};
+    var language = config.languageTag || "en-US";
+    var dates = {timestampLabel: "timestamp", lastModifiedExact: "lastModified", quarantinedAtLabel: "quarantinedAt", purgeAtLabel: "purgeAt", ignoredAtLabel: "ignoredAt"};
+    var ages = {lastModifiedLabel: "lastModified", quarantinedAgeLabel: "quarantinedAt", relativeLabel: "timestamp"};
+    if (!value || typeof value !== "object" || ["bundle", "diagnostics", "settings", "metrics", "supportLogs", "environment", "privacy", "snapshot"].indexOf(field) !== -1) return value;
+    Object.keys(value).forEach(function(key) { value[key] = ACP.localizePresentation(value[key], key); });
+    if (typeof Intl === "undefined") return value;
+    Object.keys(dates).forEach(function(label) {
+      var raw = value[dates[label]];
+      var date = new Date(typeof raw === "number" ? raw * 1000 : raw);
+      if (!raw || !Object.prototype.hasOwnProperty.call(value, label) || !isFinite(date.getTime())) return;
+      try { value[label] = new Intl.DateTimeFormat(language, {dateStyle: "medium", timeStyle: "short", timeZone: config.timeZone || undefined}).format(date); } catch (_error) {}
+    });
+    Object.keys(ages).forEach(function(label) {
+      var raw = value[ages[label]];
+      var date = new Date(typeof raw === "number" ? raw * 1000 : raw);
+      var seconds = (date.getTime() - Date.now()) / 1000;
+      var units = [[31536000, "year"], [2592000, "month"], [86400, "day"], [3600, "hour"], [60, "minute"]];
+      if (!raw || !Object.prototype.hasOwnProperty.call(value, label) || !isFinite(seconds) || !Intl.RelativeTimeFormat) return;
+      if (Math.abs(seconds) < 60) { value[label] = ACP.tr("Just now"); return; }
+      units.some(function(unit) {
+        if (Math.abs(seconds) < unit[0]) return false;
+        value[label] = new Intl.RelativeTimeFormat(language, {numeric: "auto"}).format(Math.trunc(seconds / unit[0]), unit[1]);
+        return true;
+      });
+    });
+    if (typeof value.sizeBytes === "number" && value.sizeBytes > 0 && Object.prototype.hasOwnProperty.call(value, "sizeLabel")) {
+      var unit = Math.min(4, Math.floor(Math.log(value.sizeBytes) / Math.log(1024)));
+      var amount = value.sizeBytes / Math.pow(1024, unit);
+      value.sizeLabel = new Intl.NumberFormat(language, {maximumFractionDigits: unit && amount < 10 ? 1 : 0}).format(amount) + " " + ["B", "KB", "MB", "GB", "TB"][unit];
+    }
+    return value;
   };
 
   ACP.defaultSafetySettings = function() {
@@ -182,6 +226,9 @@
     if (!$modal.length) {
       return;
     }
+
+    $modal.attr("dir", (window.appdataCleanupPlusConfig || {}).direction || "ltr");
+    $modal.attr("lang", (window.appdataCleanupPlusConfig || {}).languageTag || "en-US");
 
     $baseText = $modal.children("p").first();
     $existingHost = $modal.children(".acp-modal-host");
