@@ -57,6 +57,12 @@ jobs:
             php -l "$file"
           done < <(git ls-files '*.php' '*.page')
 
+      - name: Check native Unraid themes in Chromium
+        run: |
+          npm install --prefix "$RUNNER_TEMP/acp-browser" --no-save --ignore-scripts playwright@1.63.0 jquery@3.7.1
+          "$RUNNER_TEMP/acp-browser/node_modules/.bin/playwright" install --with-deps chromium
+          ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/theme_ui.cjs
+
       - name: Check destructive confirmation flows
         run: bash scripts/test_ui_confirmation.sh
 

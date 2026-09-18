@@ -3,39 +3,6 @@
 
   var ACP = window.AppdataCleanupPlus = window.AppdataCleanupPlus || {};
 
-  ACP.modalThemeTokens = [
-    "--acp-panel",
-    "--acp-panel-soft",
-    "--acp-border",
-    "--acp-shadow",
-    "--acp-heading",
-    "--acp-text",
-    "--acp-muted",
-    "--acp-input-bg",
-    "--acp-input-border",
-    "--acp-input-text",
-    "--acp-input-focus",
-    "--acp-review-soft",
-    "--acp-review-text",
-    "--acp-filter-bg",
-    "--acp-accent-soft",
-    "--acp-accent-text",
-    "--acp-safe-soft",
-    "--acp-safe-text",
-    "--acp-path-bg",
-    "--acp-path-border",
-    "--acp-path-text",
-    "--acp-button-bg",
-    "--acp-button-border",
-    "--acp-button-text",
-    "--acp-button-hover-bg",
-    "--acp-button-hover-border",
-    "--acp-button-hover-text",
-    "--acp-button-primary-bg",
-    "--acp-button-primary-border",
-    "--acp-button-primary-text"
-  ];
-
   ACP.t = function(strings, key, fallback) {
     if (strings && strings[key]) {
       return strings[key];
@@ -237,6 +204,13 @@
     if (document.documentElement) {
       observer.observe(document.documentElement, options);
     }
+
+    if (document.head) {
+      observer.observe(document.head, {subtree: true, childList: true, attributes: true, attributeFilter: ["href", "media", "disabled"]});
+      document.head.addEventListener("load", function(event) {
+        if (event.target && event.target.tagName === "LINK") onChange();
+      }, true);
+    }
   };
 
   ACP.applyDeleteModalClass = function(className, htmlContent) {
@@ -318,18 +292,18 @@
 
   ACP.syncDeleteModalThemeTokens = function($modal) {
     var appNode = document.getElementById("acp-app");
-    var computed;
-    var i;
-
-    if (!$modal || !$modal.length || !appNode || !window.getComputedStyle) {
+    if (!$modal || !$modal.length || !appNode) {
       return;
     }
-
-    computed = window.getComputedStyle(appNode);
-
-    for (i = 0; i < ACP.modalThemeTokens.length; i += 1) {
-      $modal[0].style.setProperty(ACP.modalThemeTokens[i], computed.getPropertyValue(ACP.modalThemeTokens[i]));
-    }
+    // Dialogs live outside #acp-app. Share theme identity, not a partial snapshot
+    // of resolved colors that becomes stale after a theme change or modal reuse.
+    $modal.attr("data-acp-host-theme", appNode.getAttribute("data-acp-host-theme") || "");
+    $modal.attr("data-acp-theme-class", appNode.getAttribute("data-acp-theme-class") || "");
+    $modal.each(function() {
+      for (var i = this.style.length - 1; i >= 0; i -= 1) {
+        if (this.style[i].indexOf("--acp-") === 0) this.style.removeProperty(this.style[i]);
+      }
+    });
   };
 
   ACP.parseThemeColor = function(value) {
@@ -448,16 +422,12 @@
     var background = ACP.resolveHostSurfaceColor();
     var luminance = ACP.themeColorLuminance(background);
 
-    if (normalized.indexOf("white") !== -1 || normalized.indexOf("light") !== -1) {
+    if (normalized.indexOf("white") !== -1 || normalized.indexOf("light") !== -1 || normalized === "azure") {
       return "light";
     }
 
-    if (normalized.indexOf("black") !== -1) {
+    if (normalized.indexOf("black") !== -1 || normalized === "gray") {
       return "dark";
-    }
-
-    if (!background && (normalized.indexOf("gray") !== -1 || normalized.indexOf("azure") !== -1)) {
-      return "light";
     }
 
     if (!background) {
@@ -477,6 +447,13 @@
   };
 
   ACP.resolveHostThemeName = function() {
+    var links = document.querySelectorAll ? document.querySelectorAll('link[rel="stylesheet"]') : [];
+    var theme = "";
+    for (var i = 0; i < links.length; i += 1) {
+      var match = String(links[i].href || "").match(/\/(?:themes\/|default-|dynamix-)(black|white|azure|gray)\.css(?:[?#]|$)/i);
+      if (match && !links[i].disabled && (!links[i].media || !window.matchMedia || window.matchMedia(links[i].media).matches)) theme = match[1];
+    }
+    if (theme) return ACP.normalizeHostThemeName(theme);
     return ACP.normalizeHostThemeName(
       (document.documentElement && document.documentElement.getAttribute("data-acp-host-theme"))
       || (document.body && document.body.getAttribute("data-acp-host-theme"))

@@ -94,7 +94,7 @@ const locales = JSON.parse(fs.readFileSync(path.join(plugin, 'locales/locales.js
         await page.evaluate(() => { const app = document.querySelector('#acp-app'); [app, document.documentElement, document.body].forEach(node => node.setAttribute('data-acp-host-theme', 'white')); app.setAttribute('data-acp-theme-class', 'light'); });
         const light = await page.evaluate(() => { const style = getComputedStyle(document.querySelector('#acp-app')); return {direction:style.direction, panel:style.getPropertyValue('--acp-panel').trim()}; });
         assert.equal(light.direction, direction, 'Light theme preserves RTL');
-        assert.equal(light.panel, 'rgba(255, 255, 255, 0.98)');
+        assert.equal(light.panel, '#f2f2f2');
         assert.deepEqual(errors, []);
         await page.close();
       }

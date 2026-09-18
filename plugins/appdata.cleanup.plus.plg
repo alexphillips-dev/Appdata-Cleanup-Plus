@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.18.05">
-<!ENTITY md5 "bf24fde4e0d30984a478488722449a85">
+<!ENTITY version "2026.09.18.06">
+<!ENTITY md5 "3f74b45ae44b0999f7251d62a49d00e0">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.18.06
+- Follow Unraid's native Black, White, Azure, and Gray colors throughout the main page and every plugin dialog.
+- Keep page and dialog colors consistent when reopening dialogs or switching themes, with correct light and dark styling for Azure and Gray.
+- Restore native button styles and visible keyboard focus, and keep status badges and cleanup actions readable in all four themes.
+- Prevent summary cards from overflowing narrow mobile screens.
+
 ###2026.09.18.05
 - Fix cleanup being blocked when file browsers, backup tools, or monitoring containers mount a broad host path such as /mnt or /mnt/user.
 - Show broad container access separately from specific appdata mappings, and apply the same ownership rule during scanning, Details, and cleanup.

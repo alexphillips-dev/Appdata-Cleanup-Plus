@@ -4,7 +4,7 @@ $plugin = dirname(__DIR__) . '/source/appdata.cleanup.plus/usr/local/emhttp/plug
 require_once $plugin . '/include/helpers.php';
 session_start();
 $_SESSION['locale'] = $argv[1] ?? 'en_US';
-$display = array('theme' => 'black');
+$display = array('theme' => in_array($argv[2] ?? '', array('black', 'white', 'azure', 'gray'), true) ? $argv[2] : 'black');
 $page = file_get_contents($plugin . '/AppdataCleanupPlus.page');
 $page = preg_replace('/\A.*?---\r?\n/s', '', $page);
 $page = str_replace('require_once("/usr/local/emhttp/plugins/appdata.cleanup.plus/include/helpers.php");', '', $page);

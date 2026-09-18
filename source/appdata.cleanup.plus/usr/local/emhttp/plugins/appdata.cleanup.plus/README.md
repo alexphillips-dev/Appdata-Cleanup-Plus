@@ -45,7 +45,7 @@ The plugin is intentionally conservative around filesystem operations. Actions u
 
 | Modern Unraid UI | Server-side safety |
 |---|---|
-| Uses shared dark and light theme tokens, compact action bars, simple modal dialogs, readable status badges, and a workflow designed for repeated cleanup checks. | CSRF validation, canonical path checks, action snapshots, protected-path locks, restore collision handling, and progress tracking keep filesystem changes auditable. |
+| Follows Unraid's native Black, White, Azure, and Gray colors throughout the page and dialogs, with readable status badges and keyboard focus. | CSRF validation, canonical path checks, action snapshots, protected-path locks, restore collision handling, and progress tracking keep filesystem changes auditable. |
 
 ## Install
 

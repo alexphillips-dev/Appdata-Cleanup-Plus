@@ -1,215 +1,146 @@
+/* Use Unraid's semantic variables on current releases. The scoped fallbacks
+   match the native 7.0 themes, which predate those variables. */
+#acp-app,
+.sweet-alert[class*="acp-"] {
+  --acp-native-page: #1c1b1b;
+  --acp-native-soft: #262626;
+  --acp-native-text: #f2f2f2;
+  --acp-native-muted: #808080;
+  --acp-native-border: #404040;
+  --acp-native-input-border: #e5e5e5;
+  --acp-native-button-text: #ff8c2f;
+  --acp-native-button-border: transparent;
+  --acp-native-button-bg: linear-gradient(90deg, #e22828, #ff8c2f) 0 0 / 100% 2px no-repeat, linear-gradient(90deg, #e22828, #ff8c2f) 0 100% / 100% 2px no-repeat, linear-gradient(#e22828, #e22828) 0 0 / 2px 100% no-repeat, linear-gradient(#ff8c2f, #ff8c2f) 100% 0 / 2px 100% no-repeat;
+  --acp-native-button-hover: linear-gradient(90deg, #e22828, #ff8c2f);
+  --acp-native-button-hover-text: #ffffff;
+  --acp-page: var(--background-color, var(--acp-native-page));
+  --acp-panel: var(--background-color, var(--acp-native-page));
+  --acp-panel-soft: var(--mild-background-color, var(--acp-native-soft));
+  --acp-card: var(--acp-panel);
+  --acp-card-raised: var(--acp-panel-soft);
+  --acp-field: var(--acp-panel-soft);
+  --acp-bottom-bg: var(--acp-panel-soft);
+  --acp-text: var(--text-color, var(--acp-native-text));
+  --acp-heading: var(--acp-text);
+  --acp-muted: var(--alt-text-color, var(--acp-native-muted));
+  --acp-muted-strong: var(--acp-text);
+  --acp-border: var(--table-border-color, var(--acp-native-border));
+  --acp-border-faint: var(--acp-border);
+  --acp-border-strong: var(--border-color, var(--acp-native-border));
+  --acp-shadow: none;
+  --acp-accent: var(--button-text-color, var(--acp-native-button-text));
+  --acp-accent-soft: var(--acp-panel-soft);
+  --acp-accent-text: var(--acp-accent);
+  --acp-input-bg: transparent;
+  --acp-input-border: var(--input-border-color, var(--acp-native-input-border));
+  --acp-input-text: var(--acp-text);
+  --acp-input-focus: var(--link-text-color, #0088cc);
+  --acp-button-bg: var(--button-background, var(--acp-native-button-bg));
+  --acp-button-border: var(--acp-native-button-border);
+  --acp-button-text: var(--button-text-color, var(--acp-native-button-text));
+  --acp-button-hover-bg: var(--hover-button-background, var(--acp-native-button-hover));
+  --acp-button-hover-border: var(--hover-button-border, #0088cc);
+  --acp-button-hover-text: var(--hover-button-text-color, var(--acp-native-button-hover-text));
+  --acp-button-primary-bg: var(--acp-button-bg);
+  --acp-button-primary-border: var(--acp-button-border);
+  --acp-button-primary-text: var(--acp-button-text);
+  --acp-button-shadow: none;
+  --acp-filter-bg: var(--acp-panel);
+  --acp-filter-border: var(--acp-border);
+  --acp-filter-text: var(--acp-text);
+  --acp-filter-hover-bg: var(--acp-panel-soft);
+  --acp-filter-hover-border: var(--acp-input-focus);
+  --acp-filter-hover-text: var(--acp-text);
+  --acp-filter-active-bg: var(--acp-panel-soft);
+  --acp-filter-active-border: var(--acp-accent);
+  --acp-filter-active-text: var(--acp-text);
+  --acp-path-bg: var(--acp-panel-soft);
+  --acp-path-border: var(--acp-border);
+  --acp-path-text: var(--acp-text);
+  --acp-row-selected-bg: var(--acp-panel-soft);
+  --acp-icon-bg: var(--acp-panel-soft);
+  --acp-separator: var(--acp-border);
+  --acp-safe-soft: rgba(51, 204, 51, 0.12);
+  --acp-safe-text: #67d867;
+  --acp-review-soft: rgba(255, 153, 0, 0.12);
+  --acp-review-text: #ffbf54;
+  --acp-discovery-soft: rgba(0, 136, 204, 0.12);
+  --acp-discovery-text: #75bfff;
+  --acp-locked-soft: rgba(226, 40, 40, 0.12);
+  --acp-locked-text: #ff9e9e;
+  --acp-blocked-soft: var(--acp-panel-soft);
+  --acp-blocked-text: var(--acp-text);
+  --acp-template-soft: rgba(145, 88, 200, 0.12);
+  --acp-template-text: #c4a0eb;
+  --acp-zfs-soft: rgba(0, 153, 136, 0.12);
+  --acp-zfs-text: #65d9c8;
+  --acp-notice-safe-title: var(--acp-discovery-text);
+  --acp-notice-delete-title: var(--acp-locked-text);
+  color: var(--acp-text);
+  color-scheme: dark;
+}
+
+:is(#acp-app, .sweet-alert[class*="acp-"])[data-acp-host-theme="white"],
+:is(#acp-app, .sweet-alert[class*="acp-"])[data-acp-host-theme="light"] {
+  --acp-native-page: #f2f2f2;
+  --acp-native-soft: #f7f9f9;
+  --acp-native-text: #1c1b1b;
+  --acp-native-border: #d3d3d3;
+  --acp-native-input-border: #1c1b1b;
+}
+
+:is(#acp-app, .sweet-alert[class*="acp-"])[data-acp-host-theme="azure"] {
+  --acp-native-page: #e4e2e4;
+  --acp-native-soft: #edeaef;
+  --acp-native-text: #606e7f;
+  --acp-native-muted: #9794a0;
+  --acp-native-border: #606e7f;
+  --acp-native-input-border: #606e7f;
+  --acp-native-button-text: #9f9180;
+  --acp-native-button-border: #9f9180;
+  --acp-native-button-bg: #edeaef;
+  --acp-native-button-hover: #edeaef;
+  --acp-native-button-hover-text: #4f4f4f;
+}
+
+:is(#acp-app, .sweet-alert[class*="acp-"])[data-acp-host-theme="gray"],
+:is(#acp-app, .sweet-alert[class*="acp-"])[data-acp-host-theme="grey"] {
+  --acp-native-page: #1b1d1b;
+  --acp-native-soft: #121510;
+  --acp-native-text: #606e7f;
+  --acp-native-muted: #606e7f;
+  --acp-native-border: #606e7f;
+  --acp-native-input-border: #606e7f;
+  --acp-native-button-text: #606e7f;
+  --acp-native-button-border: #606e7f;
+  --acp-native-button-bg: #121510;
+  --acp-native-button-hover: #121510;
+  --acp-native-button-hover-text: #b0b0b0;
+}
+
+:is(#acp-app, .sweet-alert[class*="acp-"])[data-acp-theme-class="light"] {
+  --acp-safe-text: #376b0d;
+  --acp-review-text: #805400;
+  --acp-discovery-text: #00649b;
+  --acp-locked-text: #a61b1b;
+  --acp-template-text: #693797;
+  --acp-zfs-text: #006b60;
+  color-scheme: light;
+}
+
 .acp-shell {
   --acp-top-block-height: 94px;
-  --acp-panel: rgba(36, 40, 47, 0.98);
-  --acp-panel-soft: rgba(32, 35, 41, 0.94);
-  --acp-border: rgba(255, 255, 255, 0.08);
-  --acp-border-strong: rgba(241, 90, 36, 0.28);
-  --acp-muted: #b9c1cc;
-  --acp-text: #f4f6f8;
-  --acp-heading: #ffffff;
-  --acp-accent: #f15a24;
-  --acp-accent-soft: rgba(241, 90, 36, 0.12);
-  --acp-accent-text: #ffd8c9;
-  --acp-safe-soft: rgba(88, 194, 125, 0.14);
-  --acp-safe-text: #b8ffcd;
-  --acp-review-soft: rgba(242, 184, 75, 0.14);
-  --acp-review-text: #ffe3a2;
-  --acp-discovery-soft: rgba(86, 146, 255, 0.16);
-  --acp-discovery-text: #cfe1ff;
-  --acp-locked-soft: rgba(255, 96, 96, 0.16);
-  --acp-locked-text: #ffc0c0;
-  --acp-blocked-soft: rgba(149, 162, 182, 0.16);
-  --acp-blocked-text: #d9e0ea;
-  --acp-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
-  --acp-input-bg: rgba(13, 15, 20, 0.92);
-  --acp-input-border: rgba(255, 255, 255, 0.08);
-  --acp-input-text: #f4f6f8;
-  --acp-input-focus: rgba(241, 90, 36, 0.54);
-  --acp-button-bg: rgba(255, 255, 255, 0.03);
-  --acp-button-border: rgba(255, 255, 255, 0.12);
-  --acp-button-text: #f4f6f8;
-  --acp-button-hover-bg: rgba(241, 90, 36, 0.12);
-  --acp-button-hover-border: rgba(241, 90, 36, 0.58);
-  --acp-button-hover-text: var(--acp-button-text);
-  --acp-button-primary-bg: rgba(241, 90, 36, 0.16);
-  --acp-button-primary-border: rgba(241, 90, 36, 0.72);
-  --acp-button-primary-text: var(--acp-button-text);
-  --acp-button-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-  --acp-filter-bg: rgba(255, 255, 255, 0.03);
-  --acp-filter-border: rgba(255, 255, 255, 0.08);
-  --acp-filter-text: #b9c1cc;
-  --acp-filter-hover-bg: rgba(241, 90, 36, 0.08);
-  --acp-filter-hover-border: rgba(241, 90, 36, 0.32);
-  --acp-filter-hover-text: #ffd2bf;
-  --acp-filter-active-bg: rgba(241, 90, 36, 0.12);
-  --acp-filter-active-border: rgba(241, 90, 36, 0.44);
-  --acp-filter-active-text: #ffd2bf;
-  --acp-path-bg: rgba(0, 0, 0, 0.24);
-  --acp-path-border: rgba(255, 255, 255, 0.05);
-  --acp-path-text: #ffd2bf;
-  --acp-row-selected-bg: var(--acp-panel);
-  --acp-icon-bg: rgba(241, 90, 36, 0.1);
-  --acp-separator: rgba(255, 255, 255, 0.22);
-  --acp-notice-safe-title: #64b8ff;
-  --acp-notice-delete-title: #ff5252;
-  color: var(--acp-text);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   padding: 4px 0 72px;
 }
 
-
-
-html[data-acp-host-theme="black"] #acp-app,
-body[data-acp-host-theme="black"] #acp-app,
-#acp-app[data-acp-host-theme="black"] {
-  --acp-panel: rgba(36, 40, 47, 0.98);
-  --acp-panel-soft: rgba(32, 35, 41, 0.94);
-}
-
-html[data-acp-host-theme="gray"] #acp-app,
-body[data-acp-host-theme="gray"] #acp-app,
-html[data-acp-host-theme="grey"] #acp-app,
-body[data-acp-host-theme="grey"] #acp-app,
-#acp-app[data-acp-host-theme="gray"],
-#acp-app[data-acp-host-theme="grey"] {
-  --acp-panel: rgba(46, 49, 54, 0.98);
-  --acp-panel-soft: rgba(53, 57, 63, 0.94);
-  --acp-border: rgba(255, 255, 255, 0.1);
-  --acp-border-strong: rgba(255, 154, 74, 0.32);
-  --acp-accent: #ff9a4a;
-  --acp-accent-soft: rgba(255, 154, 74, 0.14);
-  --acp-accent-text: #ffe3cf;
-  --acp-input-focus: rgba(255, 154, 74, 0.48);
-  --acp-discovery-soft: rgba(101, 158, 255, 0.18);
-  --acp-discovery-text: #d9e7ff;
-  --acp-locked-soft: rgba(255, 116, 84, 0.18);
-  --acp-locked-text: #ffd2bf;
-  --acp-button-hover-bg: rgba(255, 154, 74, 0.12);
-  --acp-button-hover-border: rgba(255, 154, 74, 0.52);
-  --acp-button-hover-text: var(--acp-button-text);
-  --acp-button-primary-bg: rgba(255, 154, 74, 0.18);
-  --acp-button-primary-border: rgba(255, 154, 74, 0.62);
-  --acp-button-primary-text: var(--acp-button-text);
-  --acp-filter-hover-bg: rgba(255, 154, 74, 0.08);
-  --acp-filter-hover-border: rgba(255, 154, 74, 0.3);
-  --acp-filter-hover-text: #ffe3cf;
-  --acp-filter-active-bg: rgba(255, 154, 74, 0.14);
-  --acp-filter-active-border: rgba(255, 154, 74, 0.42);
-  --acp-filter-active-text: #ffe3cf;
-  --acp-path-text: #ffe3cf;
-  --acp-row-selected-bg: var(--acp-panel);
-  --acp-icon-bg: rgba(255, 154, 74, 0.12);
-}
-
-html[data-acp-host-theme="azure"] #acp-app,
-body[data-acp-host-theme="azure"] #acp-app,
-#acp-app[data-acp-host-theme="azure"] {
-  --acp-panel: rgba(31, 48, 69, 0.98);
-  --acp-panel-soft: rgba(39, 58, 83, 0.95);
-  --acp-border: rgba(129, 179, 219, 0.16);
-  --acp-border-strong: rgba(0, 120, 212, 0.34);
-  --acp-muted: #c4d4e5;
-  --acp-text: #f5fbff;
-  --acp-heading: #ffffff;
-  --acp-accent: #0078d4;
-  --acp-accent-soft: rgba(0, 120, 212, 0.16);
-  --acp-accent-text: #d7ecff;
-  --acp-discovery-soft: rgba(0, 120, 212, 0.2);
-  --acp-discovery-text: #d7ecff;
-  --acp-locked-soft: rgba(255, 107, 107, 0.18);
-  --acp-locked-text: #ffd6d6;
-  --acp-input-bg: rgba(11, 23, 37, 0.9);
-  --acp-input-border: rgba(129, 179, 219, 0.14);
-  --acp-input-focus: rgba(0, 120, 212, 0.5);
-  --acp-button-hover-bg: rgba(0, 120, 212, 0.12);
-  --acp-button-hover-border: rgba(0, 120, 212, 0.58);
-  --acp-button-hover-text: var(--acp-button-text);
-  --acp-button-primary-bg: rgba(0, 120, 212, 0.18);
-  --acp-button-primary-border: rgba(0, 120, 212, 0.62);
-  --acp-button-primary-text: var(--acp-button-text);
-  --acp-filter-hover-bg: rgba(0, 120, 212, 0.08);
-  --acp-filter-hover-border: rgba(0, 120, 212, 0.32);
-  --acp-filter-hover-text: #d7ecff;
-  --acp-filter-active-bg: rgba(0, 120, 212, 0.14);
-  --acp-filter-active-border: rgba(0, 120, 212, 0.44);
-  --acp-filter-active-text: #d7ecff;
-  --acp-path-bg: rgba(5, 22, 38, 0.38);
-  --acp-path-border: rgba(129, 179, 219, 0.12);
-  --acp-path-text: #bfe3ff;
-  --acp-row-selected-bg: var(--acp-panel);
-  --acp-icon-bg: rgba(0, 120, 212, 0.12);
-  --acp-separator: rgba(191, 227, 255, 0.22);
-  --acp-notice-safe-title: #7ec8ff;
-  --acp-notice-delete-title: #ff6b6b;
-}
-
-html[data-acp-host-theme="white"] #acp-app,
-body[data-acp-host-theme="white"] #acp-app,
-html[data-acp-host-theme="light"] #acp-app,
-body[data-acp-host-theme="light"] #acp-app,
-html[data-acp-host-theme="gray"] #acp-app[data-acp-theme-class="light"],
-body[data-acp-host-theme="gray"] #acp-app[data-acp-theme-class="light"],
-html[data-acp-host-theme="grey"] #acp-app[data-acp-theme-class="light"],
-body[data-acp-host-theme="grey"] #acp-app[data-acp-theme-class="light"],
-html[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
-body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
-#acp-app[data-acp-host-theme="white"],
-#acp-app[data-acp-host-theme="light"],
-#acp-app[data-acp-theme-class="light"] {
-  --acp-panel: rgba(255, 255, 255, 0.98);
-  --acp-panel-soft: rgba(248, 250, 252, 0.98);
-  --acp-border: rgba(15, 23, 42, 0.09);
-  --acp-border-strong: rgba(226, 91, 35, 0.28);
-  --acp-muted: #5a6678;
-  --acp-text: #18212d;
-  --acp-heading: #111827;
-  --acp-accent: #e25b23;
-  --acp-accent-soft: rgba(226, 91, 35, 0.1);
-  --acp-accent-text: #8b3512;
-  --acp-safe-soft: rgba(34, 161, 96, 0.12);
-  --acp-safe-text: #1f7a49;
-  --acp-review-soft: rgba(233, 181, 43, 0.16);
-  --acp-review-text: #916200;
-  --acp-discovery-soft: rgba(11, 107, 203, 0.12);
-  --acp-discovery-text: #0b6bcb;
-  --acp-locked-soft: rgba(214, 31, 31, 0.1);
-  --acp-locked-text: #b42318;
-  --acp-blocked-soft: rgba(111, 128, 150, 0.12);
-  --acp-blocked-text: #607088;
-  --acp-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
-  --acp-input-bg: rgba(247, 250, 252, 0.98);
-  --acp-input-border: rgba(15, 23, 42, 0.1);
-  --acp-input-text: #18212d;
-  --acp-input-focus: rgba(226, 91, 35, 0.44);
-  --acp-button-bg: rgba(255, 255, 255, 0.9);
-  --acp-button-border: rgba(15, 23, 42, 0.12);
-  --acp-button-text: #18212d;
-  --acp-button-hover-bg: rgba(226, 91, 35, 0.08);
-  --acp-button-hover-border: rgba(226, 91, 35, 0.38);
-  --acp-button-hover-text: var(--acp-button-text);
-  --acp-button-primary-bg: rgba(226, 91, 35, 0.12);
-  --acp-button-primary-border: rgba(226, 91, 35, 0.44);
-  --acp-button-primary-text: var(--acp-button-text);
-  --acp-button-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.24);
-  --acp-filter-bg: rgba(255, 255, 255, 0.9);
-  --acp-filter-border: rgba(15, 23, 42, 0.1);
-  --acp-filter-text: #556274;
-  --acp-filter-hover-bg: rgba(226, 91, 35, 0.06);
-  --acp-filter-hover-border: rgba(226, 91, 35, 0.24);
-  --acp-filter-hover-text: #8b3512;
-  --acp-filter-active-bg: rgba(226, 91, 35, 0.1);
-  --acp-filter-active-border: rgba(226, 91, 35, 0.32);
-  --acp-filter-active-text: #8b3512;
-  --acp-path-bg: rgba(15, 23, 42, 0.05);
-  --acp-path-border: rgba(15, 23, 42, 0.08);
-  --acp-path-text: #8b3512;
-  --acp-row-selected-bg: var(--acp-panel);
-  --acp-icon-bg: rgba(226, 91, 35, 0.08);
-  --acp-separator: rgba(15, 23, 42, 0.16);
-  --acp-notice-safe-title: #0b6bcb;
-  --acp-notice-delete-title: #d61f1f;
+#acp-app,
+#acp-app *,
+.sweet-alert[class*="acp-"],
+.sweet-alert[class*="acp-"] * {
+  box-sizing: border-box;
 }
 
 .acp-hero,
@@ -523,9 +454,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 .acp-button,
 .acp-filter {
   appearance: none;
-  background-image: none !important;
   box-shadow: none !important;
-  outline: none !important;
+  outline: none;
   text-shadow: none !important;
   transform: none !important;
 }
@@ -1209,7 +1139,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .acp-row-folder-icon {
   align-items: center;
-  color: #4aa3ff;
+  color: var(--acp-discovery-text);
   display: inline-flex;
   flex: 0 0 auto;
   height: 22px;
@@ -1229,7 +1159,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 .acp-row-dataset-icon {
-  color: #26d3c2;
+  color: var(--acp-zfs-text);
 }
 
 .acp-row-dataset-icon svg {
@@ -1295,8 +1225,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 .acp-badge-tone-template {
-  background: rgba(88, 46, 151, 0.28);
-  color: #b98cff;
+  background: var(--acp-template-soft);
+  color: var(--acp-template-text);
 }
 
 .acp-badge-tone-locked {
@@ -1773,10 +1703,10 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .acp-delete-simple-icon {
   align-items: center;
-  background: rgba(239, 68, 68, 0.14);
+  background: var(--acp-locked-soft);
   border: 1px solid rgba(239, 68, 68, 0.4);
   border-radius: 8px;
-  color: #f87171;
+  color: var(--acp-locked-text);
   display: flex;
   font-size: 15px;
   font-weight: 900;
@@ -2029,7 +1959,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 .acp-row-details-icon {
-  border: 2px solid #4aa8ff;
+  border: 2px solid var(--acp-discovery-text);
   border-radius: 3px;
   height: 22px;
   position: relative;
@@ -2038,7 +1968,7 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 .acp-row-details-icon::before {
   background: var(--acp-card);
-  border: 2px solid #4aa8ff;
+  border: 2px solid var(--acp-discovery-text);
   border-bottom: 0;
   border-radius: 3px 3px 0 0;
   content: "";
@@ -3472,29 +3402,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   }
 }
 
-/* Theme token bridge. Keep this block last so legacy Unraid theme rules cannot win. */
+/* Page layout; colors are supplied by the shared native theme tokens above. */
 #acp-app.acp-shell {
-  --acp-page: #0d1116;
-  --acp-panel: #14191f;
-  --acp-panel-soft: #171d24;
-  --acp-card: #14191f;
-  --acp-card-raised: #171d24;
-  --acp-field: #10151b;
-  --acp-border: rgba(148, 163, 184, 0.18);
-  --acp-border-faint: rgba(148, 163, 184, 0.14);
-  --acp-border-strong: rgba(148, 163, 184, 0.24);
-  --acp-shadow: 0 18px 40px rgba(0, 0, 0, 0.26);
-  --acp-input-bg: #10151b;
-  --acp-input-border: rgba(148, 163, 184, 0.22);
-  --acp-input-text: #eef2f7;
-  --acp-heading: #f8fafc;
-  --acp-text: #e2e8f0;
-  --acp-button-text: var(--acp-text);
-  --acp-button-hover-text: var(--acp-text);
-  --acp-button-primary-text: var(--acp-text);
-  --acp-muted: #aeb9c7;
-  --acp-muted-strong: #c4ccd6;
-  --acp-bottom-bg: #171d24;
   align-content: start;
   background: var(--acp-page);
   border: 1px solid var(--acp-border-faint);
@@ -3585,9 +3494,9 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 #acp-app .acp-summary-icon {
   align-items: center;
-  background: rgba(96, 165, 250, 0.14);
+  background: var(--acp-discovery-soft);
   border-radius: 50%;
-  color: #60a5fa;
+  color: var(--acp-discovery-text);
   display: flex;
   height: 58px;
   justify-content: center;
@@ -3608,23 +3517,23 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-summary-card.is-safe .acp-summary-icon {
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
+  background: var(--acp-safe-soft);
+  color: var(--acp-safe-text);
 }
 
 #acp-app .acp-summary-card.is-review .acp-summary-icon {
-  background: rgba(234, 179, 8, 0.16);
-  color: #facc15;
+  background: var(--acp-review-soft);
+  color: var(--acp-review-text);
 }
 
 #acp-app .acp-summary-card.is-blocked .acp-summary-icon {
-  background: rgba(239, 68, 68, 0.14);
-  color: #f87171;
+  background: var(--acp-locked-soft);
+  color: var(--acp-locked-text);
 }
 
 #acp-app .acp-summary-card.is-selected .acp-summary-icon {
-  background: rgba(168, 85, 247, 0.16);
-  color: #a78bfa;
+  background: var(--acp-template-soft);
+  color: var(--acp-template-text);
 }
 
 #acp-app .acp-summary-card.is-selected .acp-summary-icon svg {
@@ -3672,9 +3581,9 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 #acp-app .acp-mode-icon {
   align-items: center;
-  background: rgba(34, 197, 94, 0.14);
+  background: var(--acp-safe-soft);
   border-radius: 50%;
-  color: #4ade80;
+  color: var(--acp-safe-text);
   display: flex;
   font-size: 24px;
   font-weight: 800;
@@ -3685,8 +3594,8 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-mode-card.is-delete-mode .acp-mode-icon {
-  background: rgba(239, 68, 68, 0.14);
-  color: #f87171;
+  background: var(--acp-locked-soft);
+  color: var(--acp-locked-text);
 }
 
 #acp-app .acp-mode-card-title {
@@ -3700,16 +3609,16 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-mode-card-title strong {
-  background: rgba(34, 197, 94, 0.24);
+  background: var(--acp-safe-soft);
   border-radius: 999px;
-  color: #b7f7c9;
+  color: var(--acp-safe-text);
   font-size: 11px;
   padding: 4px 9px;
 }
 
 #acp-app .acp-mode-card.is-delete-mode .acp-mode-card-title strong {
-  background: rgba(239, 68, 68, 0.18);
-  color: #fecaca;
+  background: var(--acp-locked-soft);
+  color: var(--acp-locked-text);
 }
 
 #acp-app .acp-mode-card.is-manager-card {
@@ -3749,24 +3658,24 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-results-section-ready {
-  border-left: 3px solid #22c55e;
+  border-left: 3px solid var(--acp-safe-text);
 }
 
 #acp-app .acp-results-section-zfs {
-  border-left: 3px solid #26d3c2;
+  border-left: 3px solid var(--acp-zfs-text);
 }
 
 #acp-app .acp-results-section-ignored {
-  border-left: 3px solid #8b949e;
+  border-left: 3px solid var(--acp-muted);
 }
 
 #acp-app .acp-results-section-review,
 #acp-app .acp-results-section-template {
-  border-left: 3px solid #eab308;
+  border-left: 3px solid var(--acp-review-text);
 }
 
 #acp-app .acp-results-section-protected {
-  border-left: 3px solid #ef4444;
+  border-left: 3px solid var(--acp-locked-text);
 }
 
 #acp-app .acp-results-section-head {
@@ -3862,42 +3771,42 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 #acp-app .acp-badge.acp-badge-tone-ready,
 #acp-app .acp-badge.acp-badge-tone-safe,
 #acp-app .acp-badge.acp-badge-tone-selected {
-  background: rgba(22, 101, 52, 0.84);
-  border-color: rgba(34, 197, 94, 0.24);
-  color: #4dff88;
+  background: var(--acp-safe-soft);
+  border-color: var(--acp-safe-soft);
+  color: var(--acp-safe-text);
 }
 
 #acp-app .acp-badge.acp-badge-tone-discovery,
 #acp-app .acp-badge.acp-badge-tone-info {
-  background: rgba(30, 64, 126, 0.86);
+  background: var(--acp-discovery-soft);
   border-color: rgba(59, 130, 246, 0.24);
-  color: #60a5ff;
+  color: var(--acp-discovery-text);
 }
 
 #acp-app .acp-badge.acp-badge-tone-review,
 #acp-app .acp-badge.acp-badge-tone-warning {
-  background: rgba(120, 82, 0, 0.9);
+  background: var(--acp-review-soft);
   border-color: rgba(234, 179, 8, 0.24);
-  color: #ffd21a;
+  color: var(--acp-review-text);
 }
 
 #acp-app .acp-badge.acp-badge-tone-template {
-  background: rgba(88, 46, 151, 0.86);
+  background: var(--acp-template-soft);
   border-color: rgba(168, 85, 247, 0.24);
-  color: #b98cff;
+  color: var(--acp-template-text);
 }
 
 #acp-app .acp-badge.acp-badge-tone-zfs {
-  background: rgba(15, 118, 110, 0.86);
+  background: var(--acp-zfs-soft);
   border-color: rgba(45, 212, 191, 0.26);
-  color: #5eead4;
+  color: var(--acp-zfs-text);
 }
 
 #acp-app .acp-badge.acp-badge-tone-locked,
 #acp-app .acp-badge.acp-badge-tone-blocked {
-  background: rgba(127, 29, 29, 0.86);
+  background: var(--acp-locked-soft);
   border-color: rgba(248, 113, 113, 0.24);
-  color: #ff8b8b;
+  color: var(--acp-locked-text);
 }
 
 #acp-app .acp-button-primary {
@@ -3971,27 +3880,27 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 #acp-app .acp-bottom-actions .acp-button.acp-button-warning:not(:disabled) {
   background: var(--acp-review-soft);
   border-color: var(--acp-review-text);
-  color: var(--acp-button-text) !important;
+  color: var(--acp-review-text) !important;
 }
 
 #acp-app .acp-bottom-actions .acp-button.acp-button-warning:hover:not(:disabled),
 #acp-app .acp-bottom-actions .acp-button.acp-button-warning:focus-visible:not(:disabled) {
-  background: rgba(242, 184, 75, 0.2);
+  background: var(--acp-review-soft);
   border-color: var(--acp-review-text);
-  color: var(--acp-button-hover-text) !important;
+  color: var(--acp-review-text) !important;
 }
 
 #acp-app .acp-bottom-actions .acp-button.acp-button-danger:not(:disabled) {
-  background: rgba(239, 68, 68, 0.18);
+  background: var(--acp-locked-soft);
   border-color: var(--acp-notice-delete-title);
-  color: var(--acp-button-text) !important;
+  color: var(--acp-locked-text) !important;
 }
 
 #acp-app .acp-bottom-actions .acp-button.acp-button-danger:hover:not(:disabled),
 #acp-app .acp-bottom-actions .acp-button.acp-button-danger:focus-visible:not(:disabled) {
-  background: rgba(239, 68, 68, 0.26);
+  background: var(--acp-locked-soft);
   border-color: var(--acp-notice-delete-title);
-  color: var(--acp-button-hover-text) !important;
+  color: var(--acp-locked-text) !important;
 }
 
 @media (max-width: 1320px) {
@@ -4071,9 +3980,9 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 
 #acp-app .acp-mode-card.is-delete-mode .acp-mode-icon {
   align-items: center;
-  background: rgba(239, 68, 68, 0.14);
+  background: var(--acp-locked-soft);
   border-radius: 50%;
-  color: #f87171;
+  color: var(--acp-locked-text);
   display: flex;
   font-size: 24px;
   font-weight: 800;
@@ -4090,12 +3999,12 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
 }
 
 #acp-app .acp-mode-shield-shape {
-  fill: #22c55e;
+  fill: var(--acp-safe-text);
 }
 
 #acp-app .acp-mode-shield-check {
   fill: none;
-  stroke: #050608;
+  stroke: var(--acp-page);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2.8;
@@ -4440,108 +4349,6 @@ body[data-acp-host-theme="azure"] #acp-app[data-acp-theme-class="light"],
   }
 }
 
-html[data-acp-host-theme="black"] #acp-app.acp-shell,
-body[data-acp-host-theme="black"] #acp-app.acp-shell,
-#acp-app.acp-shell[data-acp-host-theme="black"] {
-  --acp-page: #0d1116;
-  --acp-panel: #14191f;
-  --acp-panel-soft: #171d24;
-  --acp-card: #14191f;
-  --acp-card-raised: #171d24;
-  --acp-field: #10151b;
-  --acp-border: rgba(148, 163, 184, 0.18);
-  --acp-border-faint: rgba(148, 163, 184, 0.14);
-  --acp-border-strong: rgba(148, 163, 184, 0.24);
-  --acp-input-bg: #10151b;
-  --acp-input-border: rgba(148, 163, 184, 0.22);
-  --acp-input-text: #eef2f7;
-  --acp-heading: #f8fafc;
-  --acp-text: #e2e8f0;
-  --acp-muted: #aeb9c7;
-  --acp-muted-strong: #c4ccd6;
-  --acp-bottom-bg: #171d24;
-}
-
-html[data-acp-host-theme="gray"] #acp-app.acp-shell,
-body[data-acp-host-theme="gray"] #acp-app.acp-shell,
-html[data-acp-host-theme="grey"] #acp-app.acp-shell,
-body[data-acp-host-theme="grey"] #acp-app.acp-shell,
-#acp-app.acp-shell[data-acp-host-theme="gray"],
-#acp-app.acp-shell[data-acp-host-theme="grey"] {
-  --acp-page: #1f2022;
-  --acp-panel: #2d3035;
-  --acp-panel-soft: #35393f;
-  --acp-card: #2d3035;
-  --acp-card-raised: #35393f;
-  --acp-field: #24272c;
-  --acp-border: rgba(255, 255, 255, 0.12);
-  --acp-border-faint: rgba(255, 255, 255, 0.09);
-  --acp-border-strong: rgba(255, 255, 255, 0.18);
-  --acp-input-bg: #24272c;
-  --acp-input-border: rgba(255, 255, 255, 0.14);
-  --acp-input-text: #f4f6f8;
-  --acp-heading: #ffffff;
-  --acp-text: #f1f4f7;
-  --acp-muted: #c0c8d2;
-  --acp-muted-strong: #d2d9e1;
-  --acp-bottom-bg: #35393f;
-}
-
-html[data-acp-host-theme="azure"] #acp-app.acp-shell,
-body[data-acp-host-theme="azure"] #acp-app.acp-shell,
-#acp-app.acp-shell[data-acp-host-theme="azure"] {
-  --acp-page: #102033;
-  --acp-panel: #1f3045;
-  --acp-panel-soft: #273a53;
-  --acp-card: #1f3045;
-  --acp-card-raised: #273a53;
-  --acp-field: #0b1725;
-  --acp-border: rgba(129, 179, 219, 0.18);
-  --acp-border-faint: rgba(129, 179, 219, 0.14);
-  --acp-border-strong: rgba(129, 179, 219, 0.26);
-  --acp-input-bg: #0b1725;
-  --acp-input-border: rgba(129, 179, 219, 0.18);
-  --acp-input-text: #f5fbff;
-  --acp-heading: #ffffff;
-  --acp-text: #edf7ff;
-  --acp-muted: #c4d4e5;
-  --acp-muted-strong: #d8e7f6;
-  --acp-bottom-bg: #273a53;
-}
-
-html[data-acp-host-theme="white"] #acp-app.acp-shell,
-body[data-acp-host-theme="white"] #acp-app.acp-shell,
-html[data-acp-host-theme="light"] #acp-app.acp-shell,
-body[data-acp-host-theme="light"] #acp-app.acp-shell,
-html[data-acp-host-theme="gray"] #acp-app.acp-shell[data-acp-theme-class="light"],
-body[data-acp-host-theme="gray"] #acp-app.acp-shell[data-acp-theme-class="light"],
-html[data-acp-host-theme="grey"] #acp-app.acp-shell[data-acp-theme-class="light"],
-body[data-acp-host-theme="grey"] #acp-app.acp-shell[data-acp-theme-class="light"],
-html[data-acp-host-theme="azure"] #acp-app.acp-shell[data-acp-theme-class="light"],
-body[data-acp-host-theme="azure"] #acp-app.acp-shell[data-acp-theme-class="light"],
-#acp-app.acp-shell[data-acp-host-theme="white"],
-#acp-app.acp-shell[data-acp-host-theme="light"],
-#acp-app.acp-shell[data-acp-theme-class="light"] {
-  --acp-page: #f8f9fb;
-  --acp-panel: rgba(255, 255, 255, 0.98);
-  --acp-panel-soft: rgba(248, 249, 251, 0.985);
-  --acp-card: rgba(255, 255, 255, 0.98);
-  --acp-card-raised: rgba(255, 255, 255, 0.94);
-  --acp-field: rgba(102, 115, 133, 0.08);
-  --acp-border: rgba(121, 133, 148, 0.2);
-  --acp-border-faint: rgba(121, 133, 148, 0.14);
-  --acp-border-strong: rgba(121, 133, 148, 0.3);
-  --acp-input-bg: rgba(255, 255, 255, 0.92);
-  --acp-input-border: rgba(121, 133, 148, 0.22);
-  --acp-input-text: #2b3441;
-  --acp-heading: #1f2937;
-  --acp-text: #2b3441;
-  --acp-muted: rgba(85, 100, 118, 0.86);
-  --acp-muted-strong: rgba(65, 78, 95, 0.9);
-  --acp-bottom-bg: #ffffff;
-  --acp-shadow: 0 12px 28px rgba(72, 84, 99, 0.14);
-}
-
 /* Keep filesystem paths, dataset identifiers and editable paths readable in RTL. */
 #acp-app code,
 .sweet-alert[class*="acp-"] code,
@@ -4578,4 +4385,50 @@ body[data-acp-host-theme="azure"] #acp-app.acp-shell[data-acp-theme-class="light
 .acp-template-row button { flex-shrink: 0; }
 @media (max-width: 600px) {
   .acp-template-card .acp-template-row { align-items: stretch; flex-direction: column; }
+}
+
+/* Native button backgrounds may be gradients; preserve their edge sizes. */
+#acp-app .acp-button,
+.sweet-alert[class*="acp-"] .acp-button,
+.sweet-alert.acp-delete-modal button {
+  background-size: var(--button-background-size, 100% 2px, 100% 2px, 2px 100%, 2px 100%) !important;
+}
+#acp-app .acp-button:hover:not(:disabled),
+.sweet-alert[class*="acp-"] .acp-button:hover:not(:disabled),
+.sweet-alert.acp-delete-modal button:hover:not(:disabled) {
+  background-size: cover !important;
+}
+.sweet-alert[class*="acp-"] {
+  background-color: var(--acp-panel);
+}
+.sweet-alert[class*="acp-"] h2,
+.sweet-alert[class*="acp-"] p {
+  color: var(--acp-text);
+}
+
+#acp-app .acp-input:focus,
+#acp-app .acp-select:focus,
+.sweet-alert[class*="acp-"] .acp-input:focus,
+.sweet-alert[class*="acp-"] .acp-select:focus {
+  background: var(--focus-input-bg-color, var(--acp-panel-soft));
+  border-color: var(--acp-input-focus);
+}
+
+#acp-app .acp-select,
+.sweet-alert[class*="acp-"] .acp-select {
+  appearance: auto;
+}
+
+#acp-app .acp-button:focus-visible,
+.sweet-alert[class*="acp-"] button:focus-visible {
+  outline: 2px solid var(--acp-input-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  #acp-app .acp-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+    width: 100%;
+  }
 }
