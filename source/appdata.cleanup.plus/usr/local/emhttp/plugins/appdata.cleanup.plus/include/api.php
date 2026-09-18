@@ -1294,7 +1294,7 @@ function buildDashboardPayload() {
 
   $availableVolumes = removeInstalledVolumeMatches($availableVolumes, $containers);
   appdataCleanupPlusMarkScanPhase($scanMetrics, "filter_installed", array("afterCount" => count($availableVolumes)));
-  $availableVolumes = removeComposeReferencedCandidates($availableVolumes, $composeProtectedPaths);
+  $availableVolumes = removeComposeReferencedCandidates($availableVolumes, $composeProtectedPaths, $settings);
   appdataCleanupPlusMarkScanPhase($scanMetrics, "filter_compose", array("afterCount" => count($availableVolumes)));
   $availableVolumes = filterToExistingCandidates($availableVolumes);
   appdataCleanupPlusMarkScanPhase($scanMetrics, "filter_existing", array("afterCount" => count($availableVolumes)));

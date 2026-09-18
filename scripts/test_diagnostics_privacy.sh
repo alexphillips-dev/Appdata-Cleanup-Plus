@@ -21,7 +21,8 @@ fi
 grep -Fq 'schemaVersion: 4' <<<"${payload_flow}" || fail "Client diagnostics schema version is missing."
 grep -Fq 'sanitizeDiagnosticsRowId' <<<"${payload_flow}" || fail "Client diagnostics row IDs must use export-scoped aliases."
 grep -Fq 'sanitizeDiagnosticsValue(payload' <<<"${payload_flow}" || fail "Client diagnostics payload needs a final recursive privacy scrub."
-grep -Fq 'delete nextRow.mountEvidence;' "${JS_FILE}" || fail "Container mount evidence must remain UI-only."
+grep -Fq 'nextRow.mountEvidence = sanitizeDiagnosticsMountEvidence' "${JS_FILE}" || fail "Specific container mount evidence must use an allowlisted sanitizer."
+grep -Fq 'nextRow.broadMountEvidence = sanitizeDiagnosticsMountEvidence' "${JS_FILE}" || fail "Broad container access evidence must use an allowlisted sanitizer."
 if grep -Eq 'templateManager|template-backups|TemplateBackup' <<<"${payload_flow}${server_bundle}"; then
     fail "Private template backups and manager state must not enter diagnostics exports."
 fi

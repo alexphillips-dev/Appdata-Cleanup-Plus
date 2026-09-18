@@ -55,7 +55,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     assert.match(await page.locator('.sweet-alert').textContent(),/Collision prevented/);
     // Mouse and keyboard disclosure use must not select a cleanup row.
     await page.evaluate(()=>{
-      const row = {id:'mount',name:'Example',path:'/mnt/user/appdata/example',displayPath:'/mnt/user/appdata/example',canDelete:true,mountEvidence:[{name:'Owner',paths:['/mnt/user/appdata']}]};
+      const row = {id:'mount',name:'Example',path:'/mnt/user/appdata/example',displayPath:'/mnt/user/appdata/example',canDelete:true,mountEvidence:[],broadMountEvidence:[{name:'Viewer',paths:['/mnt/user']}]};
       maintenance.state.rows=[row];
       document.querySelector('#acp-results').innerHTML=maintenance.buildRowHtml(row);
       document.querySelector('.sweet-alert').style.display='none';
@@ -64,9 +64,14 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     });
     await page.locator('.acp-mount-evidence summary').evaluate(el=>el.scrollIntoView({block:'center'}));
     await page.locator('.acp-mount-evidence summary').click();
+    assert.match(await page.locator('.acp-mount-evidence').textContent(),/Broad container access/);
+    assert.match(await page.locator('.acp-mount-evidence').textContent(),/does not block cleanup/);
+    assert.equal(await page.locator('.acp-row-checkbox').isDisabled(),false,'Broad access must leave the candidate selectable');
     assert.equal(await page.locator('.acp-row-checkbox').isChecked(),false);
     await page.locator('.acp-mount-evidence summary').press('Escape');
     assert.equal(await page.locator('.acp-mount-evidence').evaluate(el=>el.open),false);
+    await page.locator('.acp-row-checkbox').check();
+    assert.equal(await page.locator('.acp-row-checkbox').isChecked(),true,'The actual selection handler must accept a broadly accessible row');
     await page.evaluate(()=>{
       maintenance.state.scanVerification='incomplete';
       maintenance.state.scanWarningMessage='Ownership verification is incomplete.';

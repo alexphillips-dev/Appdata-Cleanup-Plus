@@ -91,6 +91,21 @@ try {
   $inventory = appdataCleanupPlusDockerInventory();
   check(!$inventory['ok'] && $inventory['diagnostics']['inspectCount'] === 32 && $inventory['diagnostics']['issues']['inspect_limit'] === 1, 'Inspect recovery must be bounded and fail closed beyond the limit.');
   $settings = getDefaultAppdataCleanupPlusSafetySettings();
+  foreach (array('/', '/mnt', '/mnt/user') as $mount) {
+    DockerClient::$records = array(containerRecord($mount, 'broad-viewer'));
+    $broadEvidence = array();
+    check(appdataCleanupPlusMountEvidence('/mnt/user/appdata/demo', appdataCleanupPlusDockerInventory()['containers'], $settings, $broadEvidence) === array() && count($broadEvidence) === 1, 'Broad access must be informational, not ownership.');
+    check(appdataCleanupPlusCurrentOwnershipLockReason('/mnt/user/appdata/demo', $settings) === '', 'Action-time ownership must allow broad access.');
+  }
+  $nestedSettings = $settings;
+  $nestedSettings['manualAppdataSources'] = array('/mnt/user/appdata/demo', '/srv/custom-appdata');
+  check(!appdataCleanupPlusIsBroadMountAccess('/mnt/user/appdata/demo/child', '/mnt/user/appdata', $nestedSettings), 'Nested sources must not turn a specific parent mount into broad access.');
+  check(appdataCleanupPlusIsBroadMountAccess('/srv/custom-appdata/demo', '/srv', $nestedSettings), 'Manual appdata sources must use the same broad-access boundary.');
+  check(!appdataCleanupPlusIsBroadMountAccess('/srv/unconfigured/demo', '/srv', $settings), 'Unknown source roots must retain conservative ownership checks.');
+  check(!appdataCleanupPlusIsBroadMountAccess('/mnt/user/appdata', '/mnt/user', $settings), 'The appdata source root itself must not receive an exception.');
+  check(!appdataCleanupPlusIsBroadMountAccess('/mnt/user/appdata/demo', '/mnt/cache/appdata', $settings), 'Pool aliases of the source root remain specific mappings.');
+  DockerClient::$records = array(containerRecord('/mnt/user'), containerRecord('/mnt/cache/appdata/demo'));
+  check(appdataCleanupPlusCurrentOwnershipLockReason('/mnt/user/appdata/demo', $settings) !== '', 'Broad access must not override a specific mapping from another container.');
   $ignoredLock = appdataCleanupPlusApplyDockerInventorySafetyToRows(array(array('ignored'=>true,'status'=>'ignored','canDelete'=>false)))[0];
   check($ignoredLock['scanVerificationLocked'] && $ignoredLock['status'] === 'ignored', 'Ignored rows must retain the verification lock for a later unignore.');
   foreach (array('/mnt/user/appdata/demo', '/mnt/user/appdata', '/mnt/user/appdata/demo/child') as $mount) {
@@ -106,6 +121,10 @@ try {
   check(appdataCleanupPlusExpandComposeEnv('${APPDATA}/demo', $env) === '/mnt/user/appdata/demo', 'Expand exported variables.');
   check(appdataCleanupPlusExpandComposeEnv('${EMPTY-fallback}', $env) === '', 'Unset-only default must preserve empty variables.');
   check(appdataCleanupPlusExpandComposeEnv('${EMPTY:-fallback}', $env) === 'fallback', 'Empty-or-unset default must work.');
+  file_put_contents($root . '/projects/demo/compose.yaml', "services:\n  viewer:\n    volumes:\n      - /mnt/user:/host\n");
+  check(appdataCleanupPlusCurrentOwnershipLockReason('/mnt/user/appdata/demo', $settings) === '', 'Compose broad mounts must not re-block cleanup at action time.');
+  $broadCandidate = array('/mnt/user/appdata/demo'=>array('HostDir'=>'/mnt/user/appdata/demo'));
+  check(removeComposeReferencedCandidates($broadCandidate, array('/mnt/user'), $settings) === $broadCandidate, 'Compose scan filtering must agree with action-time broad access.');
   foreach (array('/mnt/user/appdata/demo', '/mnt/user/./appdata/demo', '/mnt/user//appdata/demo', '/mnt/user/appdata/demo/child', '/mnt/user/appdata', '/mnt/user/appdata/My App') as $path) {
     foreach (array("      - \"$path:/config\"", "      - type: bind\n        source: \"$path\"\n        target: /config") as $volume) {
       file_put_contents($root . '/projects/demo/compose.yaml', "services:\n  app:\n    volumes:\n$volume\n");

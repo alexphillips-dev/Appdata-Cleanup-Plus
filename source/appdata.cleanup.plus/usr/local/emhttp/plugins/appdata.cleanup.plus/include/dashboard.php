@@ -309,22 +309,40 @@ function appdataCleanupPlusPathsOverlap($left, $right) {
   return appdataCleanupPlusPathMatchesOrIsDescendantByVariants($left, $right) || appdataCleanupPlusPathMatchesOrIsDescendantByVariants($right, $left);
 }
 
-function appdataCleanupPlusMountEvidence($path, $containers) {
+// A mount strictly above the appdata source grants broad visibility, not
+// ownership. Exact mounts and related paths within any containing source still
+// protect the candidate, including when configured sources are nested.
+function appdataCleanupPlusIsBroadMountAccess($path, $hostPath, $settings=null) {
+  $matched = false;
+  foreach ( getAppdataCleanupPlusConfiguredSourceRoots($settings) as $sourceRoot ) {
+    if ( ! appdataCleanupPlusPathMatchesOrIsDescendantByVariants($sourceRoot, $path) ) continue;
+    if ( appdataCleanupPlusPathsEquivalent($sourceRoot, $path) || ! appdataCleanupPlusPathMatchesOrIsDescendantByVariants($hostPath, $sourceRoot, false) ) return false;
+    $matched = true;
+  }
+  return $matched;
+}
+
+function appdataCleanupPlusMountEvidence($path, $containers, $settings=null, &$broadEvidence=null) {
   $evidence = array();
+  $broadEvidence = array();
   foreach ( $containers as $container ) {
     $record = appdataCleanupPlusNormalizeDockerRecord($container);
     $mounts = array();
+    $broadMounts = array();
     foreach ( appdataCleanupPlusExtractDockerVolumeHostPaths(array($record)) as $hostPath ) {
-      if ( appdataCleanupPlusPathsOverlap($path, $hostPath) ) $mounts[] = $hostPath;
+      if ( ! appdataCleanupPlusPathsOverlap($path, $hostPath) ) continue;
+      if ( appdataCleanupPlusIsBroadMountAccess($path, $hostPath, $settings) ) $broadMounts[] = $hostPath;
+      else $mounts[] = $hostPath;
     }
     if ( $mounts ) $evidence[] = array("name" => (string)($record["Name"] ?? ""), "paths" => array_values(array_unique($mounts)));
+    if ( $broadMounts ) $broadEvidence[] = array("name" => (string)($record["Name"] ?? ""), "paths" => array_values(array_unique($broadMounts)));
   }
   return $evidence;
 }
 
 function appdataCleanupPlusApplyMountEvidence($rows, $containers, $settings) {
   foreach ( $rows as &$row ) {
-    $row["mountEvidence"] = appdataCleanupPlusMountEvidence($row["path"], $containers);
+    $row["mountEvidence"] = appdataCleanupPlusMountEvidence($row["path"], $containers, $settings, $row["broadMountEvidence"]);
     if ( $row["mountEvidence"] ) {
       $row["securityLockReason"] = "An installed container mounts this folder, a parent folder, or a child folder. Review the container mounts before cleanup.";
       $row = applySafetyPolicyToRow($row, $settings);
@@ -338,12 +356,12 @@ function appdataCleanupPlusCurrentOwnershipLockReason($path, $settings, &$diagno
   $inventory = appdataCleanupPlusDockerInventory();
   $diagnostics = $inventory["diagnostics"];
   if ( ! $inventory["ok"] ) return $inventory["message"];
-  if ( appdataCleanupPlusMountEvidence($path, $inventory["containers"]) ) return "An installed container now mounts this folder, a parent folder, or a child folder. Rescan before continuing.";
+  if ( appdataCleanupPlusMountEvidence($path, $inventory["containers"], $settings) ) return "An installed container now mounts this folder, a parent folder, or a child folder. Rescan before continuing.";
   $meta = array();
   $paths = appdataCleanupPlusComposeReferencedPaths($settings, $meta);
   if ( ! empty($meta["uncertain"]) ) return appdataCleanupPlusComposeInventoryUncertainMessage();
   foreach ( $paths as $composePath ) {
-    if ( appdataCleanupPlusPathsOverlap($path, $composePath) ) return "A Docker Compose stack now references this folder. Rescan before continuing.";
+    if ( appdataCleanupPlusPathsOverlap($path, $composePath) && ! appdataCleanupPlusIsBroadMountAccess($path, $composePath, $settings) ) return "A Docker Compose stack now references this folder. Rescan before continuing.";
   }
   return "";
 }
@@ -604,7 +622,7 @@ function appdataCleanupPlusComposeReferencedPaths($settings=null, &$meta=null) {
   return $paths;
 }
 
-function removeComposeReferencedCandidates($availableVolumes, $composeProtectedPaths) {
+function removeComposeReferencedCandidates($availableVolumes, $composeProtectedPaths, $settings=null) {
   $filtered = $availableVolumes;
   $protectedKeys = array();
 
@@ -626,7 +644,7 @@ function removeComposeReferencedCandidates($availableVolumes, $composeProtectedP
     }
 
     foreach ( $composeProtectedPaths as $protectedPath ) {
-      if ( appdataCleanupPlusPathsOverlap($hostDir, $protectedPath) ) {
+      if ( appdataCleanupPlusPathsOverlap($hostDir, $protectedPath) && ! appdataCleanupPlusIsBroadMountAccess($hostDir, $protectedPath, $settings) ) {
         unset($filtered[$candidateKey]);
         break;
       }
@@ -1775,6 +1793,7 @@ function buildSnapshotCandidateMap($rows) {
       "targetSummary" => $row["targetSummary"],
       "templateRefs" => isset($row["templateRefs"]) ? $row["templateRefs"] : array(),
       "mountEvidence" => isset($row["mountEvidence"]) ? $row["mountEvidence"] : array(),
+      "broadMountEvidence" => isset($row["broadMountEvidence"]) ? $row["broadMountEvidence"] : array(),
       "scanVerificationLocked" => ! empty($row["scanVerificationLocked"]),
       "storageKind" => isset($row["storageKind"]) ? $row["storageKind"] : "filesystem",
       "storageLabel" => isset($row["storageLabel"]) ? $row["storageLabel"] : "Filesystem",
@@ -1847,7 +1866,8 @@ function appdataCleanupPlusBuildCandidateDetailPayload($candidate, $settings=nul
     "zfsSnapshotCount" => 0
   );
   $inventory = appdataCleanupPlusDockerInventory();
-  $payload["mountEvidence"] = $inventory["ok"] ? appdataCleanupPlusMountEvidence($resolvedPath, $inventory["containers"]) : (array)($candidate["mountEvidence"] ?? array());
+  $payload["broadMountEvidence"] = (array)($candidate["broadMountEvidence"] ?? array());
+  $payload["mountEvidence"] = $inventory["ok"] ? appdataCleanupPlusMountEvidence($resolvedPath, $inventory["containers"], $settings, $payload["broadMountEvidence"]) : (array)($candidate["mountEvidence"] ?? array());
   if (!$inventory["ok"] || !empty($candidate["scanVerificationLocked"])) {
     $payload = appdataCleanupPlusApplyDockerInventorySafetyToRows(array($payload))[0];
   }

@@ -71,10 +71,14 @@ assert.ok(!url.includes("2001:db8::1234"), "bracketed IPv6 addresses should not 
 const scrubbed = privacy.sanitizeDiagnosticsValue({ target: "/data/TaxRecords/customer-a" }, privacy.buildDiagnosticsRedactor(), "");
 assert.ok(!JSON.stringify(scrubbed).includes("TaxRecords"), "recursive target fields should be path-sanitized");
 
-const privateMountRow = {name:'PrivateApp',path:'/mnt/user/appdata/PrivateApp',mountEvidence:[{name:'PrivateContainer',paths:['/mnt/user/customer-records']}]};
-const privateMountExport = privacy.sanitizeDiagnosticsRow(privateMountRow, privacy.buildDiagnosticsRedactor());
-assert.ok(!Object.hasOwn(privateMountExport, 'mountEvidence'), 'Mount evidence is UI-only');
-assert.ok(!JSON.stringify(privateMountExport).includes('PrivateContainer'));
+const privateMountRow = {name:'PrivateApp',path:'/mnt/user/appdata/PrivateApp',mountEvidence:[{name:'PrivateContainer',paths:['/mnt/user/customer-records'],futureSecret:'private-canary'}],broadMountEvidence:[{name:'PrivateContainer',paths:['/mnt/user'],raw:'private-canary'}]};
+const mountRedactor = privacy.buildDiagnosticsRedactor();
+const privateMountExport = privacy.sanitizeDiagnosticsValue(privacy.sanitizeDiagnosticsRow(privateMountRow, mountRedactor), mountRedactor, '');
+assert.equal(privateMountExport.mountEvidence.length,1,'Diagnostics must retain specific mount evidence');
+assert.equal(privateMountExport.broadMountEvidence.length,1,'Diagnostics must distinguish broad access');
+assert.equal(privateMountExport.mountEvidence[0].name,privateMountExport.broadMountEvidence[0].name,'Export-scoped aliases must correlate the same container');
+assert.ok(!/PrivateContainer|customer-records|private-canary|PrivateApp/.test(JSON.stringify(privateMountExport)),'Names, private paths and unknown fields must not be exported');
+assert.deepEqual(Object.keys(privateMountExport.mountEvidence[0]).sort(),['name','paths']);
 assert.equal(privateMountRow.mountEvidence.length, 1, 'Export must not mutate UI evidence');
 const collisionRedactor = privacy.buildDiagnosticsRedactor();
 collisionRedactor.replacements = [{raw:'data',sanitized:'<app-1>'},{raw:'path',sanitized:'<app-2>'},{raw:'appdata',sanitized:'<app-3>'}];

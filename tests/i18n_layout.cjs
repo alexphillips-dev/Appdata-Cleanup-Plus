@@ -67,7 +67,7 @@ const locales = JSON.parse(fs.readFileSync(path.join(plugin, 'locales/locales.js
               html = ACP.buildToolsModalHtml(context);
               modalClass = 'acp-tools-modal';
             } else if (flow === 'mounts') {
-              html = ACP.buildMountEvidenceHtml([{name:'Container Example',paths:['/mnt/user/appdata/Example-long-mount-path']}]).replace('<details ', '<details open ');
+              html = ACP.buildMountEvidenceHtml([{name:'Container Example',paths:['/mnt/user/appdata/Example-long-mount-path']}]).replace('<details ', '<details open ') + ACP.buildMountEvidenceHtml([{name:'Broad viewer',paths:['/mnt/user']}],true).replace('<details ', '<details open ');
               modalClass = 'acp-row-details-modal';
             } else if (flow === 'quarantine') {
               context.state.quarantine = {summary:{count:21,sizeLabel:'0 B'},entries:[{id:'example',sourcePath:'/mnt/user/appdata/Delete',purgeBadgeLabel:ACP.plural('Purges in {count} days',21)}]};

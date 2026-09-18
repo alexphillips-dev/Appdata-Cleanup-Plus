@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.18.04">
-<!ENTITY md5 "4d14fec4ef714fd446d86bdd9f8bce1e">
+<!ENTITY version "2026.09.18.05">
+<!ENTITY md5 "bf24fde4e0d30984a478488722449a85">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.18.05
+- Fix cleanup being blocked when file browsers, backup tools, or monitoring containers mount a broad host path such as /mnt or /mnt/user.
+- Show broad container access separately from specific appdata mappings, and apply the same ownership rule during scanning, Details, and cleanup.
+- Preserve protection for specific folder mappings, appdata source roots, and containers that acquire a mapping after scanning.
+- Include sanitized specific-mount and broad-access evidence in diagnostics, and translate the revised explanations in every supported language.
+
 ###2026.09.18.04
 - Fix inflated detections and blocked cleanup caused by valid nameless or dead Docker entries; retain known container mappings and recover incomplete records when possible.
 - Label incomplete scans as Unverified, preserve the blocking reason with Safe Mode disabled, and avoid reporting an incomplete empty scan as clean.

@@ -2930,6 +2930,7 @@
   }
 
   function diagnosticsSchemaKey(key) {
+    if (["mountEvidence", "broadMountEvidence", "paths"].indexOf(String(key)) !== -1) return true;
     // Fixed schema keys are metadata, not user values. Unknown/path-based keys
     // still go through the full scrub. A folder named "data" must not rename
     // datasetName or appdataSources and make support exports unreadable.
@@ -3079,9 +3080,22 @@
     });
   }
 
+  function sanitizeDiagnosticsMountEvidence(evidence, redactor) {
+    return $.map(($.isArray(evidence) ? evidence : []).slice(0, 50), function(entry) {
+      entry = entry || {};
+      return {
+        name: sanitizeDiagnosticsName(entry.name || "", redactor, "container"),
+        paths: $.map(($.isArray(entry.paths) ? entry.paths : []).slice(0, 50), function(path) {
+          return sanitizeDiagnosticsPath(path, redactor);
+        })
+      };
+    });
+  }
+
   function sanitizeDiagnosticsRow(row, redactor) {
     var nextRow = $.extend(true, {}, row || {});
-    delete nextRow.mountEvidence;
+    nextRow.mountEvidence = sanitizeDiagnosticsMountEvidence(nextRow.mountEvidence, redactor);
+    nextRow.broadMountEvidence = sanitizeDiagnosticsMountEvidence(nextRow.broadMountEvidence, redactor);
 
     nextRow.id = sanitizeDiagnosticsRowId(nextRow.id || "", redactor);
     nextRow.name = sanitizeDiagnosticsName(nextRow.name || "", redactor, "app");
@@ -4548,7 +4562,7 @@
             "</div>" +
             '<div class="acp-row-size">' + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || ACP.tr("Unknown"))) + "</div>" +
             '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
-            '<div class="acp-row-badges">' + badgeHtml + ACP.buildMountEvidenceHtml(row.mountEvidence) + "</div>" +
+            '<div class="acp-row-badges">' + badgeHtml + ACP.buildMountEvidenceHtml(row.mountEvidence) + ACP.buildMountEvidenceHtml(row.broadMountEvidence, true) + "</div>" +
             '<div class="acp-row-side">' +
               rowActionHtml +
             "</div>" +

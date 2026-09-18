@@ -635,9 +635,11 @@
     return html.join('');
   };
 
-  ACP.buildMountEvidenceHtml = function(evidence) {
+  ACP.buildMountEvidenceHtml = function(evidence, broadAccess) {
     if (!$.isArray(evidence) || !evidence.length) return '';
-    var html = ['<details class="acp-mount-evidence"><summary>' + ACP.escapeHtml(ACP.tr("In use by container mounts")) + '</summary><p>' + ACP.escapeHtml(ACP.tr("These installed containers can access this folder through their mounts, including when the containers are stopped.")) + '</p>'];
+    var title = broadAccess ? ACP.tr("Broad container access") : ACP.tr("Specific container mounts");
+    var explanation = broadAccess ? ACP.tr("These containers can access this folder through a mount above the appdata source. This does not establish ownership and does not block cleanup.") : ACP.tr("These containers mount this folder or a related path within an appdata source. Cleanup is blocked, including when the containers are stopped.");
+    var html = ['<details class="acp-mount-evidence"><summary>' + ACP.escapeHtml(title) + '</summary><p>' + ACP.escapeHtml(explanation) + '</p>'];
     $.each(evidence, function(_, entry) {
       html.push('<div><strong>' + ACP.escapeHtml(entry.name || ACP.tr("Unnamed Docker entry")) + '</strong>');
       $.each(entry.paths || [], function(_, path) { html.push('<code class="acp-modal-path">' + ACP.escapeHtml(path) + '</code>'); });
@@ -802,6 +804,7 @@
     );
 
     html.push(ACP.buildMountEvidenceHtml(row.mountEvidence));
+    html.push(ACP.buildMountEvidenceHtml(row.broadMountEvidence, true));
     if (row.storageKind === "zfs") {
       html.push(
         '<section class="acp-row-details-card acp-row-details-card-full">',

@@ -87,7 +87,10 @@ for (const [locale, definition] of Object.entries(locales)) {
   assert.ok(templateHtml.includes(ACP.escapeHtml(ACP.tr('Template already exists'))));
   const mountHtml = ACP.buildMountEvidenceHtml([{name:'<b>PrivateApp</b>',paths:['/mnt/user/My App']}]);
   assert.ok(mountHtml.includes('<summary>') && !mountHtml.includes('<b>PrivateApp</b>'));
-  assert.ok(mountHtml.includes('/mnt/user/My App') && mountHtml.includes(ACP.escapeHtml(ACP.tr('In use by container mounts'))));
+  assert.ok(mountHtml.includes('/mnt/user/My App') && mountHtml.includes(ACP.escapeHtml(ACP.tr('Specific container mounts'))));
+  const broadHtml = ACP.buildMountEvidenceHtml([{name:'<b>Viewer</b>',paths:['/mnt/user']}],true);
+  assert.ok(broadHtml.includes(ACP.escapeHtml(ACP.tr('Broad container access'))) && !broadHtml.includes('<b>Viewer</b>'));
+  assert.ok(broadHtml.includes(ACP.escapeHtml(ACP.tr('These containers can access this folder through a mount above the appdata source. This does not establish ownership and does not block cleanup.'))));
   if (locale !== 'en_US') {
     for (const key of ['scanWarningMessage','reason','zfsNote','storageLabel']) assert.notEqual(payload[key],fixture.original[key],`${locale}: ${key}`);
     assert.ok(!payload.scanWarningMessage.includes('Filesystem discovery') && !payload.scanWarningMessage.includes('Scan results loaded'));

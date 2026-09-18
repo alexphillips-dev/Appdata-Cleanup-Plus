@@ -1075,6 +1075,38 @@ foreach ($failedInventory["rows"] as $unverifiedRow) {
 }
 $GLOBALS["acpTestDockerSuccess"] = true;
 array_pop($GLOBALS["acpTestDockerRecords"]);
+$specificDockerRecords = $GLOBALS["acpTestDockerRecords"];
+foreach (array("/mnt/user", "/mnt/user", "/mnt", "/mnt/user") as $index => $broadPath) {
+  $GLOBALS["acpTestDockerRecords"][] = array("Id" => "broad-fixture-" . $index, "Names" => array("/broad-viewer-" . $index), "Mounts" => array(array("Type" => "bind", "Source" => $broadPath, "Destination" => "/host")));
+}
+$broadDashboard = buildDashboardPayload()["payload"];
+behaviorSmokeAssertSame($beforeDeadRows, array_column($broadDashboard["rows"], "id"), "Broad viewer mounts must not change the dashboard candidate list.");
+$broadRow = behaviorSmokeFindRowByPath($broadDashboard["rows"], $filesystemOrphanPath);
+behaviorSmokeAssertSame(array(), $broadRow["mountEvidence"], "Broad mounts are not specific ownership evidence.");
+behaviorSmokeAssertSame(4, count($broadRow["broadMountEvidence"]), "All four broad viewers should remain visible as informational evidence.");
+behaviorSmokeAssertSame(true, $broadRow["canDelete"], "Broad visibility must not lock an orphan row.");
+$broadCandidate = buildSnapshotCandidateMap(array($broadRow))[$broadRow["id"]];
+$broadDetail = appdataCleanupPlusBuildCandidateDetailPayload($broadCandidate, getAppdataCleanupPlusSafetySettings());
+behaviorSmokeAssertSame(4, count($broadDetail["broadMountEvidence"]), "Details must retain broad access without introducing a lock.");
+behaviorSmokeAssertSame(false, !empty($broadDetail["policyLocked"]), "Opening Details must not lock a broadly accessible orphan.");
+$broadSettings = getAppdataCleanupPlusSafetySettings();
+$broadSettings["enablePermanentDelete"] = true;
+foreach (array("preview_quarantine", "preview_delete") as $operation) {
+  $broadPreview = executeCandidateOperation(array($broadCandidate), $broadSettings, $operation);
+  behaviorSmokeAssertSame("ready", $broadPreview["results"][0]["status"], "Both preview paths must accept informational broad mounts.");
+  behaviorSmokeAssertTrue(is_dir($filesystemOrphanPath), "Broad-access previews must not mutate the candidate.");
+}
+$broadDeletePath = $appdataShareRoot . "/broad-delete-fixture";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($broadDeletePath), "Broad delete fixture should exist.");
+file_put_contents($broadDeletePath . "/fixture.txt", "synthetic appdata");
+$broadDelete = executeCandidateOperation(array(array("path" => $broadDeletePath, "realPath" => (string)realpath($broadDeletePath))), $broadSettings, "delete");
+behaviorSmokeAssertSame("deleted", $broadDelete["results"][0]["status"], "Actual filesystem cleanup must proceed with broad viewers installed.");
+behaviorSmokeAssertSame(false, is_dir($broadDeletePath), "Only the disposable broad-delete fixture should be removed.");
+$GLOBALS["acpTestDockerRecords"][] = array("Id" => "new-owner", "Names" => array("/new-owner"), "Mounts" => array(array("Type" => "bind", "Source" => $filesystemOrphanPath, "Destination" => "/config")));
+$specificBlock = executeCandidateOperation(array($broadCandidate), $broadSettings, "delete");
+behaviorSmokeAssertSame("blocked", $specificBlock["results"][0]["status"], "A specific mapping added after scanning must still block actual deletion.");
+behaviorSmokeAssertTrue(is_dir($filesystemOrphanPath), "A newly owned folder must survive the action-time check.");
+$GLOBALS["acpTestDockerRecords"] = $specificDockerRecords;
 $guardSourceRoot = $stateRoot . "/filesystem-guard-source";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($guardSourceRoot . "/first"), "Filesystem guard fixture should create the first candidate.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($guardSourceRoot . "/second"), "Filesystem guard fixture should create the second candidate.");
@@ -1341,6 +1373,7 @@ $zfsBusyPreviewExecution = executeCandidateOperation(array(array(
 behaviorSmokeAssertSame("error", $zfsBusyPreviewExecution["results"][0]["status"], "Busy ZFS dataset previews should fail instead of escalating to recursive destroy.");
 behaviorSmokeAssertSame(false, ! empty($zfsBusyPreviewExecution["results"][0]["recursive"]), "Busy ZFS dataset previews should not mark recursive destroy as available.");
 behaviorSmokeAssertContains("dataset is busy", $zfsBusyPreviewExecution["results"][0]["message"], "Busy ZFS dataset previews should preserve the original dry-run failure.");
+$GLOBALS["acpTestDockerRecords"][] = array("Id" => "zfs-broad-viewer", "Names" => array("/zfs-broad-viewer"), "Mounts" => array(array("Type" => "bind", "Source" => "/mnt/user", "Destination" => "/host")));
 $zfsDeleteExecution = executeCandidateOperation(array(array(
   "id" => "templated-zfs",
   "name" => "templated-orphan",
@@ -1352,6 +1385,7 @@ $zfsDeleteExecution = executeCandidateOperation(array(array(
 )), getAppdataCleanupPlusSafetySettings(), "delete");
 behaviorSmokeAssertSame("deleted", $zfsDeleteExecution["results"][0]["status"], "ZFS-backed deletes should report deleted when the dataset destroy succeeds.");
 behaviorSmokeAssertSame(false, is_dir($templatedOrphanPath), "Successful ZFS-backed deletes should remove the mapped share path.");
+array_pop($GLOBALS["acpTestDockerRecords"]);
 $zfsRecursiveDeleteExecution = executeCandidateOperation(array(array(
   "id" => "sonarr-zfs",
   "name" => "Sonarr",
