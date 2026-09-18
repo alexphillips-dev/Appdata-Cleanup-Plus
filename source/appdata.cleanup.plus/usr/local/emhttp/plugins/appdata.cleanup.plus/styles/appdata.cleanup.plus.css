@@ -8,11 +8,7 @@
   --acp-native-muted: #808080;
   --acp-native-border: #404040;
   --acp-native-input-border: #e5e5e5;
-  --acp-native-button-text: #ff8c2f;
-  --acp-native-button-border: transparent;
-  --acp-native-button-bg: linear-gradient(90deg, #e22828, #ff8c2f) 0 0 / 100% 2px no-repeat, linear-gradient(90deg, #e22828, #ff8c2f) 0 100% / 100% 2px no-repeat, linear-gradient(#e22828, #e22828) 0 0 / 2px 100% no-repeat, linear-gradient(#ff8c2f, #ff8c2f) 100% 0 / 2px 100% no-repeat;
-  --acp-native-button-hover: linear-gradient(90deg, #e22828, #ff8c2f);
-  --acp-native-button-hover-text: #ffffff;
+  --acp-native-accent: #ff8c2f;
   --acp-page: var(--background-color, var(--acp-native-page));
   --acp-panel: var(--background-color, var(--acp-native-page));
   --acp-panel-soft: var(--mild-background-color, var(--acp-native-soft));
@@ -28,19 +24,20 @@
   --acp-border-faint: var(--acp-border);
   --acp-border-strong: var(--border-color, var(--acp-native-border));
   --acp-shadow: none;
-  --acp-accent: var(--button-text-color, var(--acp-native-button-text));
+  --acp-accent: var(--button-text-color, var(--acp-native-accent));
   --acp-accent-soft: var(--acp-panel-soft);
   --acp-accent-text: var(--acp-accent);
   --acp-input-bg: transparent;
   --acp-input-border: var(--input-border-color, var(--acp-native-input-border));
   --acp-input-text: var(--acp-text);
   --acp-input-focus: var(--link-text-color, #0088cc);
-  --acp-button-bg: var(--button-background, var(--acp-native-button-bg));
-  --acp-button-border: var(--acp-native-button-border);
-  --acp-button-text: var(--button-text-color, var(--acp-native-button-text));
-  --acp-button-hover-bg: var(--hover-button-background, var(--acp-native-button-hover));
-  --acp-button-hover-border: var(--hover-button-border, #0088cc);
-  --acp-button-hover-text: var(--hover-button-text-color, var(--acp-native-button-hover-text));
+  /* Keep the plugin's quiet, rounded buttons while following host surfaces. */
+  --acp-button-bg: transparent;
+  --acp-button-border: rgba(255, 255, 255, 0.18);
+  --acp-button-text: var(--acp-text);
+  --acp-button-hover-bg: var(--acp-panel-soft);
+  --acp-button-hover-border: var(--acp-accent);
+  --acp-button-hover-text: var(--acp-text);
   --acp-button-primary-bg: var(--acp-button-bg);
   --acp-button-primary-border: var(--acp-button-border);
   --acp-button-primary-text: var(--acp-button-text);
@@ -96,11 +93,7 @@
   --acp-native-muted: #9794a0;
   --acp-native-border: #606e7f;
   --acp-native-input-border: #606e7f;
-  --acp-native-button-text: #9f9180;
-  --acp-native-button-border: #9f9180;
-  --acp-native-button-bg: #edeaef;
-  --acp-native-button-hover: #edeaef;
-  --acp-native-button-hover-text: #4f4f4f;
+  --acp-native-accent: #9f9180;
 }
 
 :is(#acp-app, .sweet-alert[class*="acp-"])[data-acp-host-theme="gray"],
@@ -111,14 +104,11 @@
   --acp-native-muted: #606e7f;
   --acp-native-border: #606e7f;
   --acp-native-input-border: #606e7f;
-  --acp-native-button-text: #606e7f;
-  --acp-native-button-border: #606e7f;
-  --acp-native-button-bg: #121510;
-  --acp-native-button-hover: #121510;
-  --acp-native-button-hover-text: #b0b0b0;
+  --acp-native-accent: #606e7f;
 }
 
 :is(#acp-app, .sweet-alert[class*="acp-"])[data-acp-theme-class="light"] {
+  --acp-button-border: rgba(15, 23, 42, 0.18);
   --acp-safe-text: #376b0d;
   --acp-review-text: #805400;
   --acp-discovery-text: #00649b;
@@ -468,7 +458,8 @@
   display: none !important;
 }
 
-.acp-button {
+#acp-app .acp-button,
+.sweet-alert[class*="acp-"] .acp-button {
   align-items: center;
   background: var(--acp-button-bg);
   border: 1px solid var(--acp-button-border);
@@ -490,8 +481,10 @@
   white-space: nowrap;
 }
 
-.acp-button:hover:not(:disabled),
-.acp-button:focus-visible:not(:disabled) {
+#acp-app .acp-button:hover:not(:disabled),
+#acp-app .acp-button:focus-visible:not(:disabled),
+.sweet-alert[class*="acp-"] .acp-button:hover:not(:disabled),
+.sweet-alert[class*="acp-"] .acp-button:focus-visible:not(:disabled) {
   background: var(--acp-button-hover-bg);
   border-color: var(--acp-button-hover-border);
   box-shadow: var(--acp-button-shadow) !important;
@@ -4387,16 +4380,11 @@
   .acp-template-card .acp-template-row { align-items: stretch; flex-direction: column; }
 }
 
-/* Native button backgrounds may be gradients; preserve their edge sizes. */
+/* Host button gradients must not replace the plugin's flat button design. */
 #acp-app .acp-button,
 .sweet-alert[class*="acp-"] .acp-button,
 .sweet-alert.acp-delete-modal button {
-  background-size: var(--button-background-size, 100% 2px, 100% 2px, 2px 100%, 2px 100%) !important;
-}
-#acp-app .acp-button:hover:not(:disabled),
-.sweet-alert[class*="acp-"] .acp-button:hover:not(:disabled),
-.sweet-alert.acp-delete-modal button:hover:not(:disabled) {
-  background-size: cover !important;
+  background-image: none !important;
 }
 .sweet-alert[class*="acp-"] {
   background-color: var(--acp-panel);

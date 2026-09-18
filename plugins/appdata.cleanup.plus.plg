@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.18.06">
-<!ENTITY md5 "3f74b45ae44b0999f7251d62a49d00e0">
+<!ENTITY version "2026.09.18.07">
+<!ENTITY md5 "4a7cc5ed0e83e5729b096ef9114fc468">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.18.07
+- Restore the plugin's flat, rounded buttons with subtle borders and neutral text throughout the page and dialogs.
+- Keep native Unraid theme backgrounds and text while preventing native button gradients from replacing the plugin's button design in Black, White, Azure, and Gray.
+
 ###2026.09.18.06
 - Follow Unraid's native Black, White, Azure, and Gray colors throughout the main page and every plugin dialog.
 - Keep page and dialog colors consistent when reopening dialogs or switching themes, with correct light and dark styling for Azure and Gray.

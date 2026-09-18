@@ -69,14 +69,17 @@ async function nativeCss(version, theme) {
       assert.equal(baseline.kind,expectedClass);
       const controls=await page.evaluate(()=>{
         const probe=document.createElement('div'); probe.style.cssText='position:fixed;left:-10000px'; probe.innerHTML='<input type="text"><button>Native</button>';document.body.append(probe);
-        const pick=el=>{const c=getComputedStyle(el);return {text:c.color,bg:c.backgroundColor,image:c.backgroundImage};};
+        const pick=el=>{const c=getComputedStyle(el);return {text:c.color,bg:c.backgroundColor,image:c.backgroundImage,border:c.borderTopColor,borderWidth:c.borderTopWidth};};
         const result={input:pick(document.querySelector('#acp-app .acp-input')),nativeInput:pick(probe.querySelector('input')),button:pick(document.querySelector('#acp-app .acp-button')),nativeButton:pick(probe.querySelector('button'))};
         probe.remove(); return result;
       });
       assert.equal(controls.input.text,controls.nativeInput.text,`${version} ${theme}: native input text`);
       assert.equal(controls.input.bg,controls.nativeInput.bg,`${version} ${theme}: native input surface`);
-      assert.equal(controls.button.text,controls.nativeButton.text,`${version} ${theme}: native button text`);
-      assert.equal(controls.button.image,controls.nativeButton.image,`${version} ${theme}: native button background`);
+      assert.equal(controls.button.text,baseline.text,`${version} ${theme}: neutral plugin button text`);
+      assert.equal(controls.button.image,'none',`${version} ${theme}: flat plugin buttons`);
+      assert.equal(controls.button.borderWidth,'1px',`${version} ${theme}: plugin button border width`);
+      assert.notEqual(controls.button.border,'rgba(0, 0, 0, 0)',`${version} ${theme}: visible subtle button border`);
+      if (theme==='black' || theme==='white') assert.match(controls.nativeButton.image,/gradient/, 'Host buttons outside the plugin retain native styling');
       await page.locator('#acp-app .acp-input').first().focus();
       assert.notEqual(await page.locator('#acp-app .acp-input').first().evaluate(el=>getComputedStyle(el).borderColor),controls.input.bg,'Focused inputs need a visible border');
       await page.locator('#acp-app .acp-button').first().focus();
@@ -88,6 +91,14 @@ async function nativeCss(version, theme) {
         document.querySelector('.sweet-alert').style.display='none';
         document.querySelector('#acp-primary-action').classList.add('acp-button-danger');
       });
+      const ordinaryButton=page.locator('#acp-app .acp-button').first();
+      await ordinaryButton.hover();
+      await ordinaryButton.evaluate(el=>Promise.all(el.getAnimations().map(animation=>animation.finished)));
+      assert.equal(await ordinaryButton.evaluate(el=>getComputedStyle(el).color),baseline.text,'Hovered plugin buttons retain neutral text');
+      assert.equal(await ordinaryButton.evaluate(el=>getComputedStyle(el).backgroundImage),'none','Hover must not restore native gradients');
+      await ordinaryButton.evaluate(el=>el.disabled=true);
+      assert.equal(await ordinaryButton.evaluate(el=>getComputedStyle(el).backgroundImage),'none','Disabled buttons stay flat');
+      await ordinaryButton.evaluate(el=>el.disabled=false);
       for (const [kind,token] of [['warning','review'],['danger','locked']]) {
         const action=page.locator(`#acp-app .acp-bottom-actions .acp-button-${kind}`).first();
         await action.evaluate(el=>el.disabled=false);
@@ -119,6 +130,14 @@ async function nativeCss(version, theme) {
         assert.equal(result.bg,baseline.page,`${version} ${theme} ${flow}: modal surface`);
         assert.equal(result.text,baseline.text,`${version} ${theme} ${flow}: modal text`);
         assert.equal(result.kind,expectedClass);
+        const gradientButtons=await page.evaluate(()=>Array.from(document.querySelectorAll('#acp-app .acp-button, .sweet-alert button')).filter(el=>getComputedStyle(el).backgroundImage!=='none').map(el=>el.className));
+        assert.deepEqual(gradientButtons,[],`${version} ${theme} ${flow}: page and dialog buttons stay flat`);
+        const confirm=page.locator('.sweet-alert button.confirm');
+        await confirm.hover();
+        await confirm.evaluate(el=>Promise.all(el.getAnimations().map(animation=>animation.finished)));
+        assert.equal(await confirm.evaluate(el=>getComputedStyle(el).backgroundImage),'none',`${flow}: dialog hover stays flat`);
+        assert.equal(await confirm.evaluate(el=>getComputedStyle(el).color),baseline.text,`${flow}: dialog hover keeps neutral text`);
+        await page.mouse.move(0,0);
         if (result.overflow>width+2) console.error(await page.evaluate(()=>Array.from(document.querySelectorAll('#acp-app *, .sweet-alert *')).filter(el=>el.getBoundingClientRect().right>innerWidth+2).slice(0,12).map(el=>({tag:el.tagName,cls:el.className,width:el.getBoundingClientRect().width,cssWidth:getComputedStyle(el).width}))));
         assert.ok(result.overflow<=width+2,`${version} ${theme} ${flow} ${width}: page overflow ${result.overflow}`);
       }
