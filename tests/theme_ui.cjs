@@ -52,6 +52,12 @@ async function nativeCss(version, theme) {
         const modal=document.createElement('div'); modal.className='sweet-alert showSweetAlert'; modal.style.display='block';
         modal.innerHTML='<h2>Theme test</h2><p></p><div class="sa-button-container"><button class="cancel">Cancel</button><button class="confirm">Done</button></div>'; document.body.append(modal);
       });
+      // Fast runners can reach the assertions during the initial native-to-plugin
+      // color transition. Compare settled styles without disabling animations.
+      await page.evaluate(()=>{
+        void document.body.offsetWidth;
+        return Promise.all(document.getAnimations().filter(animation=>animation.effect.getTiming().iterations!==Infinity).map(animation=>animation.finished.catch(()=>{})));
+      });
       const expectedClass=['white','azure'].includes(theme)?'light':'dark';
       const baseline=await page.evaluate(()=>{
         const app=document.querySelector('#acp-app'), css=getComputedStyle(app), body=getComputedStyle(document.body);
