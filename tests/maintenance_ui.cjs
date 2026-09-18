@@ -53,7 +53,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     await page.evaluate(()=>{ requests.at(-1).deferred.reject({status:409,responseJSON:{message:'Collision prevented',templateManager:{templates:[],backups:[{id:'server-backup-id',name:'Saved app',filename:'saved.xml',canRestore:false}]}}}); });
     assert.ok(await page.locator('[data-action="restore-template"]').isDisabled());
     assert.match(await page.locator('.sweet-alert').textContent(),/Collision prevented/);
-    // Mouse and keyboard disclosure use must not select a cleanup row.
+    // Broad access belongs in Details, while the candidate stays selectable.
     await page.evaluate(()=>{
       const row = {id:'mount',name:'Example',path:'/mnt/user/appdata/example',displayPath:'/mnt/user/appdata/example',canDelete:true,mountEvidence:[],broadMountEvidence:[{name:'Viewer',paths:['/mnt/user']}]};
       maintenance.state.rows=[row];
@@ -62,16 +62,26 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
       document.querySelector('.sweet-alert').classList.remove('showSweetAlert');
       AppdataCleanupPlus.releaseModalScrollLock(false);
     });
-    await page.locator('.acp-mount-evidence summary').evaluate(el=>el.scrollIntoView({block:'center'}));
-    await page.locator('.acp-mount-evidence summary').click();
-    assert.match(await page.locator('.acp-mount-evidence').textContent(),/Broad container access/);
-    assert.match(await page.locator('.acp-mount-evidence').textContent(),/does not block cleanup/);
+    assert.equal(await page.locator('#acp-results .acp-mount-evidence').count(),0,'Broad access must not clutter the Source column');
+    const details=await page.evaluate(()=>AppdataCleanupPlus.buildRowDetailsModalHtml({strings:appdataCleanupPlusConfig.strings,state:maintenance.state},maintenance.state.rows[0]));
+    assert.match(details,/Broad container access/);
+    assert.match(details,/does not block cleanup/);
     assert.equal(await page.locator('.acp-row-checkbox').isDisabled(),false,'Broad access must leave the candidate selectable');
     assert.equal(await page.locator('.acp-row-checkbox').isChecked(),false);
-    await page.locator('.acp-mount-evidence summary').press('Escape');
-    assert.equal(await page.locator('.acp-mount-evidence').evaluate(el=>el.open),false);
     await page.locator('.acp-row-checkbox').check();
     assert.equal(await page.locator('.acp-row-checkbox').isChecked(),true,'The actual selection handler must accept a broadly accessible row');
+    // Specific mount blockers still disclose safely with mouse and keyboard.
+    await page.evaluate(()=>{
+      const row={...maintenance.state.rows[0],id:'specific',canDelete:false,mountEvidence:[{name:'Owner',paths:['/mnt/user/appdata/example']}],broadMountEvidence:[]};
+      maintenance.state.rows=[row];
+      document.querySelector('#acp-results').innerHTML=maintenance.buildRowHtml(row);
+    });
+    await page.locator('.acp-mount-evidence summary').click();
+    assert.match(await page.locator('.acp-mount-evidence').textContent(),/Specific container mounts/);
+    assert.equal(await page.locator('.acp-row-checkbox').isChecked(),false);
+    assert.equal(await page.locator('.acp-row-checkbox').isDisabled(),true);
+    await page.locator('.acp-mount-evidence summary').press('Escape');
+    assert.equal(await page.locator('.acp-mount-evidence').evaluate(el=>el.open),false);
     await page.evaluate(()=>{
       maintenance.state.scanVerification='incomplete';
       maintenance.state.scanWarningMessage='Ownership verification is incomplete.';

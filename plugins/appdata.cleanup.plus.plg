@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.18.07">
-<!ENTITY md5 "4a7cc5ed0e83e5729b096ef9114fc468">
+<!ENTITY version "2026.09.18.08">
+<!ENTITY md5 "a8e4ff4fa34aa1480be40990edf541b4">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.18.08
+- Simplify the Source column by showing broad container access only in the Details dialog.
+- Enlarge source-column badges with larger text and more padding for easier reading.
+
 ###2026.09.18.07
 - Restore the plugin's flat, rounded buttons with subtle borders and neutral text throughout the page and dialogs.
 - Keep native Unraid theme backgrounds and text while preventing native button gradients from replacing the plugin's button design in Black, White, Azure, and Gray.
