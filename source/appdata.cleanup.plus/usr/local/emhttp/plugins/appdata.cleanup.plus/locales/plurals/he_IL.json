@@ -1,0 +1,207 @@
+{
+  "{count} folders selected": {
+    "one": "נבחרה תיקיה אחת",
+    "two": "נבחרו {count} תיקיות",
+    "other": "נבחרו {count} תיקיות"
+  },
+  "{count} items total": {
+    "one": "סה\"כ פריט אחד",
+    "two": "{count} פריטים בסך הכל",
+    "other": "{count} פריטים בסך הכל"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "מעקב אחר תיקייה בהסגר",
+    "two": "מעקב אחר {count} תיקיות בהסגר",
+    "other": "מעקב אחר {count} תיקיות בהסגר"
+  },
+  "{count} items submitted": {
+    "one": "נשלח פריט אחד",
+    "two": "הוגשו {count} פריטים",
+    "other": "הוגשו {count} פריטים"
+  },
+  "Delete {count} folders": {
+    "one": "מחק תיקייה אחת",
+    "two": "מחק {count} תיקיות",
+    "other": "מחק {count} תיקיות"
+  },
+  "Delete {count} items": {
+    "one": "מחק פריט אחד",
+    "two": "מחק {count} פריטים",
+    "other": "מחק {count} פריטים"
+  },
+  "Destroy {count} datasets": {
+    "one": "השמדת מערך נתונים אחד",
+    "two": "הרס {count} מערכי נתונים",
+    "other": "הרס {count} מערכי נתונים"
+  },
+  "Quarantine {count} folders": {
+    "one": "תיקיית הסגר {count}",
+    "two": "הסגר {count} תיקיות",
+    "other": "הסגר {count} תיקיות"
+  },
+  "{count} conflicts found.": {
+    "one": "נמצא התנגשות אחת.",
+    "two": "נמצאו {count} התנגשויות.",
+    "other": "נמצאו {count} התנגשויות."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "תיקייה אחת שנבחרה עדיין יכולה לשחזר כרגיל.",
+    "two": "{count} תיקיות נבחרות עדיין יכולות לשחזר כרגיל.",
+    "other": "{count} תיקיות נבחרות עדיין יכולות לשחזר כרגיל."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "נסה שוב לאחר כשנייה אחת.",
+    "two": "נסה שוב לאחר כ-{count} שניות.",
+    "other": "נסה שוב לאחר כ-{count} שניות."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "נשמר {count} ZFS מיפוי וסריקה מחדש.",
+    "two": "שמר {count} ZFS מיפויים וסריקה מחדש.",
+    "other": "שמר {count} ZFS מיפויים וסריקה מחדש."
+  },
+  "Processed {count} folders.": {
+    "one": "עיבוד של תיקייה אחת.",
+    "two": "עיבדו {count} תיקיות.",
+    "other": "עיבדו {count} תיקיות."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} תיקייה גלויה.",
+    "two": "{count} תיקיות גלויות.",
+    "other": "{count} תיקיות גלויות."
+  },
+  "{count} more": {
+    "one": "עוד {count}",
+    "two": "עוד {count}",
+    "other": "עוד {count}"
+  },
+  "{count} minutes ago": {
+    "one": "לפני דקה אחת",
+    "two": "לפני {count} דקות",
+    "other": "לפני {count} דקות"
+  },
+  "{count} hours ago": {
+    "one": "לפני שעה",
+    "two": "לפני שעתיים",
+    "other": "לפני {count} שעות"
+  },
+  "{count} days ago": {
+    "one": "לפני יום אחד",
+    "two": "לפני יומיים",
+    "other": "לפני {count} ימים"
+  },
+  "{count} months ago": {
+    "one": "לפני חודש",
+    "two": "לפני חודשיים",
+    "other": "לפני {count} חודשים"
+  },
+  "{count} years ago": {
+    "one": "לפני שנה",
+    "two": "לפני שנתיים",
+    "other": "לפני {count} שנים"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "מתוכנן לטיהור תוך יום אחד.",
+    "two": "מתוכנן לטיהור בעוד יומיים.",
+    "other": "מתוכנן לטיהור בעוד {count} ימים."
+  },
+  "Purges in {count} days": {
+    "one": "טיהור תוך יום אחד",
+    "two": "טיהור תוך יומיים",
+    "other": "טיהור תוך {count} ימים"
+  },
+  "Purges in {count} hours": {
+    "one": "מטהר תוך שעה",
+    "two": "מטהר תוך שעתיים",
+    "other": "מטהר תוך {count} שעות"
+  },
+  "Purges in {count} minutes": {
+    "one": "מטהר תוך דקה אחת",
+    "two": "מטהר תוך {count} דקות",
+    "other": "מטהר תוך {count} דקות"
+  },
+  "{count} child datasets": {
+    "one": "מערך נתונים של ילד אחד",
+    "two": "{count} מערכי נתונים של ילדים",
+    "other": "{count} מערכי נתונים של ילדים"
+  },
+  "{count} snapshots": {
+    "one": "תמונת מצב {count}",
+    "two": "{count} צילומי מצב",
+    "other": "{count} צילומי מצב"
+  },
+  "{count} conflicts": {
+    "one": "{count} סכסוך",
+    "two": "{count} קונפליקטים",
+    "other": "{count} קונפליקטים"
+  },
+  "{count} errors": {
+    "one": "שגיאה אחת",
+    "two": "{count} שגיאות",
+    "other": "{count} שגיאות"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} פריט אחד נשלח.",
+    "two": "{message} נשלחו {count} פריטים.",
+    "other": "{message} הוגשו {count} פריטים."
+  },
+  "{count} items were submitted.": {
+    "one": "הוגש פריט אחד.",
+    "two": "הוגשו {count} פריטים.",
+    "other": "הוגשו {count} פריטים."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "הרס רקורסיבי יסיר גם מערך נתונים צאצא אחד.",
+    "two": "הרס רקורסיבי יסיר גם {count} מערכי נתונים של ילדים.",
+    "other": "הרס רקורסיבי יסיר גם {count} מערכי נתונים של ילדים."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "השמדה רקורסיבית תסיר גם תמונת מצב אחת.",
+    "two": "הרס רקורסיבי יסיר גם {count} צילומי מצב.",
+    "other": "הרס רקורסיבי יסיר גם {count} תצלומי מצב."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "המחיקה תסיר גם תמונת מצב אחת.",
+    "two": "Destroy יסיר גם {count} תמונות מצב.",
+    "other": "Destroy יסיר גם {count} תמונות מצב."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "תיקייה אחת הועברה להסגר.",
+    "two": "{count} תיקיות הועברו להסגר.",
+    "other": "{count} תיקיות הועברו להסגר."
+  },
+  "{count} folders were deleted.": {
+    "one": "תיקייה אחת נמחקה.",
+    "two": "{count} תיקיות נמחקו.",
+    "other": "{count} תיקיות נמחקו."
+  },
+  "{count} folders were restored.": {
+    "one": "תיקיה אחת שוחזרה.",
+    "two": "שוחזרו {count} תיקיות.",
+    "other": "שוחזרו {count} תיקיות."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "תיקייה אחת נמחקה לצמיתות.",
+    "two": "{count} תיקיות נוקו לצמיתות.",
+    "other": "{count} תיקיות נוקו לצמיתות."
+  },
+  "{count} items were skipped.": {
+    "one": "פריט אחד דילג.",
+    "two": "דילגו על {count} פריטים.",
+    "other": "{count} פריטים דילגו."
+  },
+  "{count} items were already missing.": {
+    "one": "פריט אחד כבר היה חסר.",
+    "two": "{count} פריטים כבר היו חסרים.",
+    "other": "{count} פריטים כבר היו חסרים."
+  },
+  "{count} items were blocked.": {
+    "one": "פריט אחד נחסם.",
+    "two": "{count} פריטים נחסמו.",
+    "other": "{count} פריטים נחסמו."
+  },
+  "{count} errors occurred.": {
+    "one": "אירעה שגיאה אחת.",
+    "two": "אירעו {count} שגיאות.",
+    "other": "אירעו {count} שגיאות."
+  }
+}

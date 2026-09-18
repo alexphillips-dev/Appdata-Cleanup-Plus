@@ -27,6 +27,9 @@ const locales = JSON.parse(fs.readFileSync(path.join(plugin, 'locales/locales.js
         for (const name of ['appdata.cleanup.plus.shared.js', 'appdata.cleanup.plus.panels.js']) {
           await page.addScriptTag({path:path.join(plugin, 'scripts', name)});
         }
+        const main = fs.readFileSync(path.join(plugin, 'scripts/appdata.cleanup.plus.js'), 'utf8');
+        assert.equal(main.split('$(init);').length, 2);
+        await page.addScriptTag({content:main.replace('$(init);', 'window.i18nLayoutFlows = {conflicts:buildRestoreConflictDialogHtml, operation:buildOperationContext, preview:buildOperationPreviewHtml};')});
         const direction = definition.rtl ? 'rtl' : 'ltr';
         const initial = await page.evaluate(() => ({scroll:document.documentElement.scrollWidth, direction:getComputedStyle(document.querySelector('#acp-app')).direction}));
         assert.ok(initial.scroll <= width + 2, `${locale} ${width}px: page overflow ${initial.scroll}`);
@@ -50,6 +53,33 @@ const locales = JSON.parse(fs.readFileSync(path.join(plugin, 'locales/locales.js
         assert.equal(modal.direction, direction);
         assert.equal(modal.codeDirection, 'ltr');
         assert.ok(modal.text.includes('/mnt/user/appdata/Delete'));
+        for (const flow of ['quarantine', 'conflicts', 'confirmation', 'history']) {
+          await page.evaluate(flow => {
+            const ACP = window.AppdataCleanupPlus;
+            const context = {strings:window.appdataCleanupPlusConfig.strings,state:{settings:ACP.defaultSafetySettings()}};
+            let html, modalClass;
+            if (flow === 'quarantine') {
+              context.state.quarantine = {summary:{count:21,sizeLabel:'0 B'},entries:[{id:'example',sourcePath:'/mnt/user/appdata/Delete',purgeBadgeLabel:ACP.plural('Purges in {count} days',21)}]};
+              html = ACP.buildQuarantineManagerModalHtml(context);
+              modalClass = 'acp-quarantine-manager-modal';
+            } else if (flow === 'conflicts') {
+              html = window.i18nLayoutFlows.conflicts({summary:{conflicts:2,ready:21},conflicts:[{id:'example',sourcePath:'/mnt/user/appdata/Delete',parentPath:'/mnt/user/appdata',suggestedName:'Delete-restored'}]});
+              modalClass = 'acp-quarantine-manager-modal';
+            } else if (flow === 'history') {
+              context.state.auditHistory = [{requestedCount:1}];
+              html = ACP.buildAuditHistoryModalHtml(context);
+              modalClass = 'acp-audit-history-modal';
+            } else {
+              const row = {id:'example',name:'Delete',path:'/mnt/user/appdata/Delete',storageKind:'filesystem',canDelete:true};
+              html = window.i18nLayoutFlows.preview([row],window.i18nLayoutFlows.operation('delete',[row]),{});
+              modalClass = 'acp-delete-modal-review';
+            }
+            ACP.applyDeleteModalClass('acp-delete-modal ' + modalClass, html);
+          }, flow);
+          const result = await page.evaluate(() => ({scroll:document.documentElement.scrollWidth,dir:document.querySelector('.sweet-alert').dir}));
+          assert.ok(result.scroll <= width + 2, `${locale} ${width}px ${flow}: overflow ${result.scroll}`);
+          assert.equal(result.dir, direction);
+        }
         await page.evaluate(() => { const app = document.querySelector('#acp-app'); [app, document.documentElement, document.body].forEach(node => node.setAttribute('data-acp-host-theme', 'white')); app.setAttribute('data-acp-theme-class', 'light'); });
         const light = await page.evaluate(() => { const style = getComputedStyle(document.querySelector('#acp-app')); return {direction:style.direction, panel:style.getPropertyValue('--acp-panel').trim()}; });
         assert.equal(light.direction, direction, 'Light theme preserves RTL');
@@ -57,7 +87,7 @@ const locales = JSON.parse(fs.readFileSync(path.join(plugin, 'locales/locales.js
         assert.deepEqual(errors, []);
         await page.close();
       }
-      console.log(`${locale}: desktop/mobile page and Details layout, RTL and light theme passed`);
+      console.log(`${locale}: desktop/mobile page, Details, quarantine, conflicts, confirmation, history, RTL and light theme passed`);
     }
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

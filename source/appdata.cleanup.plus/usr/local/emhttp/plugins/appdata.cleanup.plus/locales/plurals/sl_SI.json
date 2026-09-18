@@ -1,0 +1,248 @@
+{
+  "{count} folders selected": {
+    "one": "Izbrana je {count} mapa",
+    "two": "{count} izbrani mapi",
+    "few": "{count} izbrane mape",
+    "other": "Izbranih je {count} map"
+  },
+  "{count} items total": {
+    "one": "Skupaj {count} predmet",
+    "two": "Skupaj {count} predmeta",
+    "few": "Skupaj {count} artikli",
+    "other": "Skupaj {count} artiklov"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "Sledi {count} mapi v karanteni",
+    "two": "Sledi {count} mapama v karanteni",
+    "few": "Sledite {count} mapam v karanteni",
+    "other": "Sledi {count} map v karanteni"
+  },
+  "{count} items submitted": {
+    "one": "{count} predložen element",
+    "two": "{count} poslani artikli",
+    "few": "Predloženi {count} elementi",
+    "other": "{count} predloženih predmetov"
+  },
+  "Delete {count} folders": {
+    "one": "Izbriši {count} mapo",
+    "two": "Izbriši {count} mapi",
+    "few": "Izbriši {count} mape",
+    "other": "Izbriši {count} map"
+  },
+  "Delete {count} items": {
+    "one": "Izbriši {count} element",
+    "two": "Izbriši {count} predmeta",
+    "few": "Izbriši {count} elemente",
+    "other": "Izbriši {count} elementov"
+  },
+  "Destroy {count} datasets": {
+    "one": "Uniči {count} nabor podatkov",
+    "two": "Uniči {count} niza podatkov",
+    "few": "Uniči {count} nize podatkov",
+    "other": "Uniči {count} nizov podatkov"
+  },
+  "Quarantine {count} folders": {
+    "one": "Karantena {count} mapa",
+    "two": "Karantena {count} mapi",
+    "few": "Karantena {count} mape",
+    "other": "Karantena {count} map"
+  },
+  "{count} conflicts found.": {
+    "one": "Najden je bil {count} spor.",
+    "two": "Najdena sta {count} spora.",
+    "few": "Najdeni so bili {count} spori.",
+    "other": "Najdenih {count} sporov."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} izbrano mapo je še vedno mogoče normalno obnoviti.",
+    "two": "{count} izbrani mapi je še vedno mogoče normalno obnoviti.",
+    "few": "{count} izbrane mape je še vedno mogoče normalno obnoviti.",
+    "other": "{count} izbranih map je še vedno mogoče normalno obnoviti."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Po približno {count} sekundi poskusite znova.",
+    "two": "Po približno {count} sekundah poskusite znova.",
+    "few": "Po približno {count} sekundah poskusite znova.",
+    "other": "Po približno {count} sekundah poskusite znova."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Shranjeno {count} ZFS preslikav in ponovnega skeniranja.",
+    "two": "Shranjeni {count} ZFS preslikave in ponovno skeniranje.",
+    "few": "Shranjenih {count} ZFS preslikav in ponovnega skeniranja.",
+    "other": "Shranjenih {count} ZFS preslikav in ponovnega skeniranja."
+  },
+  "Processed {count} folders.": {
+    "one": "Obdelana {count} mapa.",
+    "two": "Obdelani {count} mapi.",
+    "few": "Obdelane {count} mape.",
+    "other": "Obdelanih {count} map."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} mapa je vidna.",
+    "two": "Vidni sta {count} mapi.",
+    "few": "Vidne so {count} mape.",
+    "other": "Vidnih je {count} map."
+  },
+  "{count} more": {
+    "one": "še {count}",
+    "two": "še {count}",
+    "few": "še {count}",
+    "other": "še {count}"
+  },
+  "{count} minutes ago": {
+    "one": "pred {count} minuto",
+    "two": "pred {count} minutama",
+    "few": "pred {count} minutami",
+    "other": "{count} minut nazaj"
+  },
+  "{count} hours ago": {
+    "one": "pred {count} uro",
+    "two": "pred {count} urama",
+    "few": "pred {count} urami",
+    "other": "pred {count} urami"
+  },
+  "{count} days ago": {
+    "one": "pred {count} dnevom",
+    "two": "{count} dni nazaj",
+    "few": "pred {count} dnevi",
+    "other": "{count} dni nazaj"
+  },
+  "{count} months ago": {
+    "one": "pred {count} mesecem",
+    "two": "{count} meseca nazaj",
+    "few": "pred {count} meseci",
+    "other": "pred {count} meseci"
+  },
+  "{count} years ago": {
+    "one": "pred {count} letom",
+    "two": "{count} leti nazaj",
+    "few": "pred {count} leti",
+    "other": "pred {count} leti"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Čiščenje je predvideno v {count} dnevu.",
+    "two": "Čiščenje je predvideno v {count} dneh.",
+    "few": "Čiščenje je predvideno v {count} dneh.",
+    "other": "Čiščenje je predvideno v {count} dneh."
+  },
+  "Purges in {count} days": {
+    "one": "Očisti v {count} dnevu",
+    "two": "Očisti v {count} dneh",
+    "few": "Očisti v {count} dneh",
+    "other": "Očisti v {count} dneh"
+  },
+  "Purges in {count} hours": {
+    "one": "Očisti v {count} uri",
+    "two": "Očisti v {count} urah",
+    "few": "Očisti v {count} urah",
+    "other": "Očisti v {count} urah"
+  },
+  "Purges in {count} minutes": {
+    "one": "Očisti v {count} minuti",
+    "two": "Očisti v {count} minutah",
+    "few": "Očisti v {count} minutah",
+    "other": "Očisti v {count} minutah"
+  },
+  "{count} child datasets": {
+    "one": "{count} podrejeni nabor podatkov",
+    "two": "{count} podrejeni nizi podatkov",
+    "few": "{count} podrejeni nabori podatkov",
+    "other": "{count} podrejenih nizov podatkov"
+  },
+  "{count} snapshots": {
+    "one": "{count} posnetek",
+    "two": "{count} posnetka",
+    "few": "{count} posnetki",
+    "other": "{count} posnetkov"
+  },
+  "{count} conflicts": {
+    "one": "{count} spor",
+    "two": "{count} konflikta",
+    "few": "{count} konflikti",
+    "other": "{count} konfliktov"
+  },
+  "{count} errors": {
+    "one": "{count} napaka",
+    "two": "{count} napaki",
+    "few": "{count} napake",
+    "other": "{count} napak"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} Predan je bil {count} element.",
+    "two": "{message} Predložena sta bila {count} predmeta.",
+    "few": "{message} Oddani so bili {count} elementi.",
+    "other": "{message} {count} predmetov je bilo oddanih."
+  },
+  "{count} items were submitted.": {
+    "one": "Predan je bil {count} predmet.",
+    "two": "Oddani sta bili {count} artikla.",
+    "few": "Oddani so bili {count} predmeti.",
+    "other": "Oddanih je bilo {count} predmetov."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Rekurzivno uničenje bo odstranilo tudi {count} podrejeni nabor podatkov.",
+    "two": "Rekurzivno uničenje bo odstranilo tudi {count} podrejena niza podatkov.",
+    "few": "Rekurzivno uničenje bo odstranilo tudi {count} podrejene nize podatkov.",
+    "other": "Rekurzivno uničenje bo odstranilo tudi {count} podrejenih naborov podatkov."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Rekurzivno uničenje bo odstranilo tudi {count} posnetek.",
+    "two": "Rekurzivno uničenje bo odstranilo tudi {count} posnetka.",
+    "few": "Rekurzivno uničenje bo odstranilo tudi {count} posnetke.",
+    "other": "Rekurzivno uničenje bo odstranilo tudi {count} posnetkov."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy bo odstranil tudi {count} posnetek.",
+    "two": "Destroy bo odstranil tudi {count} posnetka.",
+    "few": "Destroy bo odstranil tudi {count} posnetke.",
+    "other": "Destroy bo odstranil tudi {count} posnetkov."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} mapa je bila premaknjena v karanteno.",
+    "two": "{count} mapi sta bili premaknjeni v karanteno.",
+    "few": "{count} mape so bile premaknjene v karanteno.",
+    "other": "{count} map je bilo premaknjenih v karanteno."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} mapa je bila izbrisana.",
+    "two": "{count} mapi sta bili izbrisani.",
+    "few": "{count} mape so bile izbrisane.",
+    "other": "Izbrisanih je bilo {count} map."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} mapa je bila obnovljena.",
+    "two": "{count} mapi sta bili obnovljeni.",
+    "few": "{count} mape so bile obnovljene.",
+    "other": "Obnovljenih je bilo {count} map."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} mapa je bila trajno očiščena.",
+    "two": "{count} mapi sta bili trajno očiščeni.",
+    "few": "{count} mape so bile trajno očiščene.",
+    "other": "{count} map je bilo trajno očiščenih."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} element je bil preskočen.",
+    "two": "{count} elementa sta bila preskočena.",
+    "few": "{count} postavke so bile preskočene.",
+    "other": "{count} elementov je bilo preskočenih."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} element je že manjkal.",
+    "two": "{count} predmeta sta že manjkala.",
+    "few": "{count} artikli so že manjkali.",
+    "other": "{count} predmetov je že manjkalo."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} element je bil blokiran.",
+    "two": "{count} artikla sta bila blokirana.",
+    "few": "{count} elementi so bili blokirani.",
+    "other": "{count} elementov je bilo blokiranih."
+  },
+  "{count} errors occurred.": {
+    "one": "Prišlo je do {count} napake.",
+    "two": "Prišlo je do {count} napak.",
+    "few": "Prišlo je do {count} napak.",
+    "other": "Prišlo je do {count} napak."
+  }
+}

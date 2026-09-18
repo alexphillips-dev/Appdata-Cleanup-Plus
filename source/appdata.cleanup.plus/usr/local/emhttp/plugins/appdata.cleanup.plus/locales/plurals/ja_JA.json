@@ -1,0 +1,125 @@
+{
+  "{count} folders selected": {
+    "other": "{count} 個のフォルダーを選択中"
+  },
+  "{count} items total": {
+    "other": "合計{count}アイテム"
+  },
+  "{count} quarantined folders tracked": {
+    "other": "{count} つの隔離されたフォルダーが追跡されました"
+  },
+  "{count} items submitted": {
+    "other": "{count} 件のアイテムが投稿されました"
+  },
+  "Delete {count} folders": {
+    "other": "{count} 個のフォルダーを削除"
+  },
+  "Delete {count} items": {
+    "other": "{count} 件のアイテムを削除"
+  },
+  "Destroy {count} datasets": {
+    "other": "{count} つのデータセットを破棄する"
+  },
+  "Quarantine {count} folders": {
+    "other": "{count} 個のフォルダーを隔離"
+  },
+  "{count} conflicts found.": {
+    "other": "{count} 件の競合が見つかりました。"
+  },
+  "{count} selected folders can still restore normally.": {
+    "other": "選択した {count} つのフォルダーは引き続き正常に復元できます。"
+  },
+  "Retry after about {count} seconds.": {
+    "other": "約{count}秒後に再試行してください。"
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "other": "{count} ZFS マッピングと再スキャンを保存しました。"
+  },
+  "Processed {count} folders.": {
+    "other": "{count} つのフォルダーを処理しました。"
+  },
+  "{count} folders are visible.": {
+    "other": "{count} つのフォルダーが表示されます。"
+  },
+  "{count} more": {
+    "other": "あと{count}個"
+  },
+  "{count} minutes ago": {
+    "other": "{count}分前"
+  },
+  "{count} hours ago": {
+    "other": "{count}時間前"
+  },
+  "{count} days ago": {
+    "other": "{count}日前"
+  },
+  "{count} months ago": {
+    "other": "{count}ヶ月前"
+  },
+  "{count} years ago": {
+    "other": "{count}年前"
+  },
+  "Scheduled to purge in {count} days.": {
+    "other": "{count} 日以内にパージされる予定です。"
+  },
+  "Purges in {count} days": {
+    "other": "{count} 日でパージ"
+  },
+  "Purges in {count} hours": {
+    "other": "{count}時間でパージ"
+  },
+  "Purges in {count} minutes": {
+    "other": "{count}分でパージ"
+  },
+  "{count} child datasets": {
+    "other": "{count} つの子データセット"
+  },
+  "{count} snapshots": {
+    "other": "{count} スナップショット"
+  },
+  "{count} conflicts": {
+    "other": "{count} 件の競合"
+  },
+  "{count} errors": {
+    "other": "{count} エラー"
+  },
+  "{message} {count} items were submitted.": {
+    "other": "{message} {count} 件のアイテムが送信されました。"
+  },
+  "{count} items were submitted.": {
+    "other": "{count}件の商品が投稿されました。"
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "other": "再帰的な破棄では、{count} つの子データセットも削除されます。"
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "other": "再帰的に破棄すると、{count} 個のスナップショットも削除されます。"
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "other": "破棄すると、スナップショットも {count} つ削除されます。"
+  },
+  "{count} folders were moved to quarantine.": {
+    "other": "{count} 個のフォルダーが隔離に移動されました。"
+  },
+  "{count} folders were deleted.": {
+    "other": "{count} 個のフォルダーが削除されました。"
+  },
+  "{count} folders were restored.": {
+    "other": "{count}フォルダが復元されました。"
+  },
+  "{count} folders were permanently purged.": {
+    "other": "{count} つのフォルダーが完全に消去されました。"
+  },
+  "{count} items were skipped.": {
+    "other": "{count} 項目がスキップされました。"
+  },
+  "{count} items were already missing.": {
+    "other": "すでに {count} 個のアイテムが不足していました。"
+  },
+  "{count} items were blocked.": {
+    "other": "{count} 件のアイテムがブロックされました。"
+  },
+  "{count} errors occurred.": {
+    "other": "{count} 件のエラーが発生しました。"
+  }
+}

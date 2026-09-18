@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "{count} klasör seçildi",
+    "other": "{count} klasör seçildi"
+  },
+  "{count} items total": {
+    "one": "Toplam {count} öğe",
+    "other": "Toplam {count} ürün"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} karantinaya alınmış klasör izlendi",
+    "other": "Karantinaya alınmış {count} klasör izlendi"
+  },
+  "{count} items submitted": {
+    "one": "{count} öğe gönderildi",
+    "other": "{count} öğe gönderildi"
+  },
+  "Delete {count} folders": {
+    "one": "{count} klasörü sil",
+    "other": "{count} klasörü sil"
+  },
+  "Delete {count} items": {
+    "one": "{count} öğeyi sil",
+    "other": "{count} öğeyi sil"
+  },
+  "Destroy {count} datasets": {
+    "one": "{count} veri kümesini yok edin",
+    "other": "{count} veri kümesini yok edin"
+  },
+  "Quarantine {count} folders": {
+    "one": "{count} klasörü karantinaya al",
+    "other": "{count} klasörü karantinaya al"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} çakışma bulundu.",
+    "other": "{count} çakışma bulundu."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "Seçilen {count} klasör hâlâ normal şekilde geri yüklenebilir.",
+    "other": "Seçilen {count} klasör hala normal şekilde geri yüklenebilir."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Yaklaşık {count} saniye sonra tekrar deneyin.",
+    "other": "Yaklaşık {count} saniye sonra yeniden deneyin."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "{count} ZFS eşleme ve yeniden tarama kaydedildi.",
+    "other": "{count} ZFS eşleme ve yeniden tarama kaydedildi."
+  },
+  "Processed {count} folders.": {
+    "one": "{count} klasör işlendi.",
+    "other": "{count} klasör işlendi."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} klasör görünüyor.",
+    "other": "{count} klasör görünüyor."
+  },
+  "{count} more": {
+    "one": "{count} tane daha",
+    "other": "{count} tane daha"
+  },
+  "{count} minutes ago": {
+    "one": "{count} dakika önce",
+    "other": "{count} dakika önce"
+  },
+  "{count} hours ago": {
+    "one": "{count} saat önce",
+    "other": "{count} saat önce"
+  },
+  "{count} days ago": {
+    "one": "{count} gün önce",
+    "other": "{count} gün önce"
+  },
+  "{count} months ago": {
+    "one": "{count} ay önce",
+    "other": "{count} ay önce"
+  },
+  "{count} years ago": {
+    "one": "{count} yıl önce",
+    "other": "{count} yıl önce"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "{count} gün içinde temizlenmesi planlanıyor.",
+    "other": "{count} gün içinde temizlenmesi planlanıyor."
+  },
+  "Purges in {count} days": {
+    "one": "{count} günde temizlenir",
+    "other": "{count} günde temizleniyor"
+  },
+  "Purges in {count} hours": {
+    "one": "{count} saatte temizleniyor",
+    "other": "{count} saatte temizleniyor"
+  },
+  "Purges in {count} minutes": {
+    "one": "{count} dakikada temizlenir",
+    "other": "{count} dakikada temizlenir"
+  },
+  "{count} child datasets": {
+    "one": "{count} alt veri kümesi",
+    "other": "{count} alt veri kümesi"
+  },
+  "{count} snapshots": {
+    "one": "{count} anlık görüntü",
+    "other": "{count} anlık görüntü"
+  },
+  "{count} conflicts": {
+    "one": "{count} çatışma",
+    "other": "{count} çatışma"
+  },
+  "{count} errors": {
+    "one": "{count} hata",
+    "other": "{count} hata"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} öğe gönderildi.",
+    "other": "{message} {count} öğe gönderildi."
+  },
+  "{count} items were submitted.": {
+    "one": "{count} öğe gönderildi.",
+    "other": "{count} ürün gönderildi."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Özyinelemeli yok etme aynı zamanda {count} alt veri kümesini de kaldıracaktır.",
+    "other": "Özyinelemeli yok etme aynı zamanda {count} alt veri kümesini de kaldıracaktır."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Yinelemeli yok etme aynı zamanda {count} anlık görüntüyü de kaldıracaktır.",
+    "other": "Yinelemeli yok etme aynı zamanda {count} anlık görüntüyü de kaldıracaktır."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Yok etme ayrıca {count} anlık görüntüyü de kaldıracaktır.",
+    "other": "Yok etme ayrıca {count} anlık görüntüyü de kaldıracaktır."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} klasör karantinaya taşındı.",
+    "other": "{count} klasör karantinaya taşındı."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} klasör silindi.",
+    "other": "{count} klasör silindi."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} klasör geri yüklendi.",
+    "other": "{count} klasör geri yüklendi."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} klasör kalıcı olarak temizlendi.",
+    "other": "{count} klasör kalıcı olarak temizlendi."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} öğe atlandı.",
+    "other": "{count} öğe atlandı."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} öğe zaten eksikti.",
+    "other": "{count} ürün zaten eksikti."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} öğe engellendi.",
+    "other": "{count} öğe engellendi."
+  },
+  "{count} errors occurred.": {
+    "one": "{count} hata oluştu.",
+    "other": "{count} hata oluştu."
+  }
+}

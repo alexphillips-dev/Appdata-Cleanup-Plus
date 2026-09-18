@@ -652,20 +652,20 @@ function appdataCleanupPlusDescribeZfsDatasetDestroyImpact($datasetName, $recurs
   $snapshots = array_values(array_slice(array_keys($allSnapshots), 0, 4));
 
   if ( $recursive ) {
-    $summaryParts[] = appdataCleanupPlusSummarizeZfsImpactCount($childDatasetCount, "child dataset", "child datasets");
+    if ($childDatasetCount > 0) $summaryParts[] = acpCountMessage("Recursive destroy will also remove {count} child datasets.", $childDatasetCount);
   }
 
-  $summaryParts[] = appdataCleanupPlusSummarizeZfsImpactCount($snapshotCount, "snapshot", "snapshots");
+  if ($snapshotCount > 0) $summaryParts[] = acpCountMessage($recursive ? "Recursive destroy will also remove {count} snapshots." : "Destroy will also remove {count} snapshots.", $snapshotCount);
   $summaryParts = array_values(array_filter($summaryParts, "strlen"));
 
   if ( $recursive ) {
     if ( ! empty($summaryParts) ) {
-      $summary = acpMessage("Recursive destroy will also remove {impact}.", array("impact" => implode(" and ", $summaryParts)));
+      $summary = acpJoinMessages($summaryParts);
     } else {
       $summary = "Recursive destroy is required for this dataset.";
     }
   } elseif ( ! empty($summaryParts) ) {
-    $summary = acpMessage("Destroy will also remove {impact}.", array("impact" => implode(" and ", $summaryParts)));
+    $summary = acpJoinMessages($summaryParts);
   }
 
   return array(

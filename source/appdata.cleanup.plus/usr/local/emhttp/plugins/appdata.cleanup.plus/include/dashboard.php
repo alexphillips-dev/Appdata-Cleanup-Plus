@@ -444,7 +444,7 @@ function removeComposeReferencedCandidates($availableVolumes, $composeProtectedP
   return $filtered;
 }
 
-function summarizeCandidateValues($values, $limit=2) {
+function summarizeCandidateValues($values, $limit=2, $localized=false) {
   $values = array_values(array_filter($values, "strlen"));
 
   if ( empty($values) ) {
@@ -456,7 +456,8 @@ function summarizeCandidateValues($values, $limit=2) {
   $summary = implode(", ", array_slice($values, 0, $limit));
 
   if ( count($values) > $limit ) {
-    $summary .= " +" . (count($values) - $limit) . " more";
+    $parameters = array("values" => $summary, "count" => count($values) - $limit);
+    $summary = $localized ? acpT("{values}; additional entries: {count}", $parameters) : acpMessage("{values}; additional entries: {count}", $parameters);
   }
 
   return $summary;
@@ -651,40 +652,22 @@ function buildCandidatePathStats($resolvedPath, $classification, $securityLockRe
 
 function buildCandidateReason($sourceKind, $sourceNames, $targetPaths, $dockerRunning, $sourceRoot="") {
   if ( $sourceKind === "filesystem" ) {
-    $sourceLead = $sourceRoot ? acpMessage("Configured appdata source '{path}'", array("path" => $sourceRoot)) : "Configured appdata source scan";
-
     if ( ! $dockerRunning ) {
-      return acpMessage("{message} found this folder, but Docker is offline, so active container mappings could not be verified.", array("message" => $sourceLead));
+      return $sourceRoot ? acpMessage("Configured appdata source '{path}' found this folder, but Docker is offline, so active container mappings could not be verified.", array("path" => $sourceRoot)) : "The configured appdata source scan found this folder, but Docker is offline, so active container mappings could not be verified.";
     }
 
-    return acpMessage("{message} found this folder, and no saved Docker template or installed container currently references it.", array("message" => $sourceLead));
+    return $sourceRoot ? acpMessage("Configured appdata source '{path}' found this folder, and no saved Docker template or installed container currently references it.", array("path" => $sourceRoot)) : "The configured appdata source scan found this folder, and no saved Docker template or installed container currently references it.";
   }
 
-  $sourceSummary = summarizeCandidateValues($sourceNames);
-  $targetSummary = summarizeCandidateValues($targetPaths);
-  $sourceLabel = $sourceSummary ? acpMessage("Saved templates {names}", array("names" => $sourceSummary)) : "Saved Docker templates";
-
-  if ( ! $targetSummary ) {
-    $targetSummary = "tracked container paths";
-  }
-
-  if ( ! $dockerRunning ) {
-    return acpMessage("{message} still reference this folder at {paths}. Docker is offline, so active container mappings could not be verified.", array("message" => $sourceLabel, "paths" => $targetSummary));
-  }
-
-  return acpMessage("{message} still reference this folder at {paths}, but no installed container currently maps this host path.", array("message" => $sourceLabel, "paths" => $targetSummary));
+  $parameters = array("names" => implode(", ", $sourceNames) ?: "—", "paths" => implode(", ", $targetPaths) ?: "—");
+  return $dockerRunning
+    ? acpMessage("Saved templates: {names}. Container paths: {paths}. Saved Docker templates still reference this folder, but no installed container currently maps this host path.", $parameters)
+    : acpMessage("Saved templates: {names}. Container paths: {paths}. Saved Docker templates still reference this folder. Docker is offline, so active container mappings could not be verified.", $parameters);
 }
 
 function appdataCleanupPlusTemplateActionLockReason($sourceNames=array(), $targetPaths=array()) {
-  $sourceSummary = summarizeCandidateValues(is_array($sourceNames) ? $sourceNames : array());
-  $targetSummary = summarizeCandidateValues(is_array($targetPaths) ? $targetPaths : array());
-  $sourceLabel = $sourceSummary ? acpMessage("Saved templates {names}", array("names" => $sourceSummary)) : "Saved Docker templates";
-
-  if ( ! $targetSummary ) {
-    $targetSummary = "tracked container paths";
-  }
-
-  return acpMessage("{message} still point here at {paths}. If you clean this path, reinstalling from that saved template may expect or recreate it.", array("message" => $sourceLabel, "paths" => $targetSummary));
+  $parameters = array("names" => implode(", ", is_array($sourceNames) ? $sourceNames : array()) ?: "—", "paths" => implode(", ", is_array($targetPaths) ? $targetPaths : array()) ?: "—");
+  return acpMessage("Saved templates: {names}. Container paths: {paths}. Saved Docker templates still reference this folder. If you clean this path, reinstalling from a saved template may expect or recreate it.", $parameters);
 }
 
 function appdataCleanupPlusDockerInventoryUnverified($dockerRunning, $containers, $templateVolumes) {
@@ -777,58 +760,26 @@ function normalizeAuditSummary($summary) {
 
 function buildLatestAuditMessage($entry) {
   $timestamp = isset($entry["timestamp"]) ? strtotime((string)$entry["timestamp"]) : 0;
-  $summary = normalizeAuditSummary(isset($entry["summary"]) ? $entry["summary"] : array());
-  $operation = isset($entry["operation"]) ? (string)$entry["operation"] : "cleanup";
-  $parts = array();
-
-  if ( ! empty($summary["quarantined"]) ) {
-    $parts[] = acpMessage("{count} moved to quarantine", array("count" => $summary["quarantined"]));
+  $summary = normalizeAuditSummary($entry["summary"] ?? array());
+  $operation = (string)($entry["operation"] ?? "cleanup");
+  $parts = array(acpMessage("Last action: {operation}. Time: {date}.", array("operation" => buildAuditOperationLabel($operation), "date" => $timestamp ? formatDateTimeLabel($timestamp) : "recently")));
+  $messages = array(
+    "quarantined" => "{count} folders were moved to quarantine.",
+    "deleted" => "{count} folders were deleted.",
+    "restored" => "{count} folders were restored.",
+    "purged" => "{count} folders were permanently purged.",
+    "skipped" => "{count} items were skipped.",
+    "conflicts" => "{count} conflicts found.",
+    "missing" => "{count} items were already missing.",
+    "blocked" => "{count} items were blocked.",
+    "errors" => "{count} errors occurred."
+  );
+  foreach ($messages as $status => $template) {
+    if (!empty($summary[$status])) $parts[] = acpCountMessage($template, $summary[$status]);
   }
-
-  if ( ! empty($summary["deleted"]) ) {
-    $parts[] = acpMessage("{count} deleted", array("count" => $summary["deleted"]));
-  }
-
-  if ( ! empty($summary["restored"]) ) {
-    $parts[] = acpMessage("{count} restored", array("count" => $summary["restored"]));
-  }
-
-  if ( ! empty($summary["purged"]) ) {
-    $parts[] = acpMessage("{count} purged", array("count" => $summary["purged"]));
-  }
-
-  if ( ! empty($summary["skipped"]) ) {
-    $parts[] = acpMessage("{count} skipped", array("count" => $summary["skipped"]));
-  }
-
-  if ( ! empty($summary["conflicts"]) ) {
-    $parts[] = $summary["conflicts"] === 1 ? acpMessage("{count} conflict", array("count" => 1)) : acpMessage("{count} conflicts", array("count" => $summary["conflicts"]));
-  }
-
-  if ( ! empty($summary["missing"]) ) {
-    $parts[] = acpMessage("{count} already missing", array("count" => $summary["missing"]));
-  }
-
-  if ( ! empty($summary["blocked"]) ) {
-    $parts[] = acpMessage("{count} blocked", array("count" => $summary["blocked"]));
-  }
-
-  if ( ! empty($summary["errors"]) ) {
-    $parts[] = $summary["errors"] === 1 ? acpMessage("{count} error", array("count" => 1)) : acpMessage("{count} errors", array("count" => $summary["errors"]));
-  }
-
-  if ( empty($parts) ) {
-    $parts[] = "no changes recorded";
-  }
-
-  $message = acpMessage("Last {operation} ran {date}. {summary}.", array("operation" => strtolower(buildAuditOperationLabel($operation)), "date" => $timestamp ? formatDateTimeLabel($timestamp) : "recently", "summary" => ucfirst(implode(", ", $parts))));
-
-  if ( ! empty($entry["requestedCount"]) ) {
-    $requestedCount = (int)$entry["requestedCount"];
-    $message = $requestedCount === 1 ? acpMessage("{message} {count} item was submitted.", array("message" => $message, "count" => $requestedCount)) : acpMessage("{message} {count} items were submitted.", array("message" => $message, "count" => $requestedCount));
-  }
-
-  return $message;
+  if (count($parts) === 1) $parts[] = "No changes recorded.";
+  if (!empty($entry["requestedCount"])) $parts[] = acpCountMessage("{count} items were submitted.", $entry["requestedCount"]);
+  return acpJoinMessages($parts);
 }
 
 function buildAuditHistoryRows($limit=0) {
@@ -1013,8 +964,7 @@ function appdataCleanupPlusResolveExistingNestedReferencePath($candidatePath, $r
 }
 
 function appdataCleanupPlusBuildEmptyParentRemnantReason($sourceRoot) {
-  $sourceLead = $sourceRoot !== "" ? "Configured appdata source '" . $sourceRoot . "'" : "Configured appdata source scan";
-  return $sourceLead . " found this empty parent folder after nested appdata mount paths under it were removed.";
+  return $sourceRoot !== "" ? acpMessage("Configured appdata source '{path}' found this empty parent folder after nested appdata mount paths under it were removed.", array("path" => $sourceRoot)) : "The configured appdata source scan found this empty parent folder after nested appdata mount paths under it were removed.";
 }
 
 function appdataCleanupPlusFilesystemDiscoveryCandidateLimit() {

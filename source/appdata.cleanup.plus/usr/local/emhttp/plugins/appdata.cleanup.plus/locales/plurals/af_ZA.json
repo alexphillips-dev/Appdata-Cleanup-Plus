@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "{count} vouer gekies",
+    "other": "{count} dopgehou gekies"
+  },
+  "{count} items total": {
+    "one": "{count} item totaal",
+    "other": "{count} items totaal"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} vouer in kwarantyn nagespoor",
+    "other": "{count} dopgehou in kwarantyn opgespoor"
+  },
+  "{count} items submitted": {
+    "one": "{count} item ingedien",
+    "other": "{count} items ingedien"
+  },
+  "Delete {count} folders": {
+    "one": "Vee {count} vouer uit",
+    "other": "Vee {count} dopgehou uit"
+  },
+  "Delete {count} items": {
+    "one": "Vee {count} item uit",
+    "other": "Vee {count} items uit"
+  },
+  "Destroy {count} datasets": {
+    "one": "Vernietig {count} datastel",
+    "other": "Vernietig {count} datastelle"
+  },
+  "Quarantine {count} folders": {
+    "one": "Kwarantyn {count} gids",
+    "other": "Kwarantyn {count} dopgehou"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} konflik gevind.",
+    "other": "{count} konflikte gevind."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} geselekteerde vouer kan steeds normaal herstel.",
+    "other": "{count} geselekteerde dopgehou kan steeds normaal herstel."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Herprobeer na ongeveer {count} sekonde.",
+    "other": "Herprobeer na ongeveer {count} sekondes."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Gestoor {count} ZFS kartering en herskandering.",
+    "other": "Gestoor {count} ZFS kartering en herskandering."
+  },
+  "Processed {count} folders.": {
+    "one": "{count} vouer verwerk.",
+    "other": "{count} vouers verwerk."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} vouer is sigbaar.",
+    "other": "{count} dopgehou is sigbaar."
+  },
+  "{count} more": {
+    "one": "nog {count}",
+    "other": "nog {count}"
+  },
+  "{count} minutes ago": {
+    "one": "{count} minuut gelede",
+    "other": "{count} minute gelede"
+  },
+  "{count} hours ago": {
+    "one": "{count} uur gelede",
+    "other": "{count} ure gelede"
+  },
+  "{count} days ago": {
+    "one": "{count} dag gelede",
+    "other": "{count} dae gelede"
+  },
+  "{count} months ago": {
+    "one": "{count} maand gelede",
+    "other": "{count} maande gelede"
+  },
+  "{count} years ago": {
+    "one": "{count} jaar gelede",
+    "other": "{count} jaar gelede"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Geskeduleer om oor {count} dag skoon te maak.",
+    "other": "Geskeduleer om oor {count} dae skoon te maak."
+  },
+  "Purges in {count} days": {
+    "one": "Reinig in {count} dag",
+    "other": "Reinig binne {count} dae"
+  },
+  "Purges in {count} hours": {
+    "one": "Maak binne {count} uur skoon",
+    "other": "Maak binne {count} uur skoon"
+  },
+  "Purges in {count} minutes": {
+    "one": "Maak binne {count} minuut skoon",
+    "other": "Maak binne {count} minute skoon"
+  },
+  "{count} child datasets": {
+    "one": "{count} kinderdatastel",
+    "other": "{count} kinderdatastelle"
+  },
+  "{count} snapshots": {
+    "one": "{count} momentopname",
+    "other": "{count} kiekies"
+  },
+  "{count} conflicts": {
+    "one": "{count} konflik",
+    "other": "{count} konflikte"
+  },
+  "{count} errors": {
+    "one": "{count} fout",
+    "other": "{count} foute"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} item is ingedien.",
+    "other": "{message} {count} items is ingedien."
+  },
+  "{count} items were submitted.": {
+    "one": "{count} item is ingedien.",
+    "other": "{count} items is ingedien."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Rekursiewe vernietig sal ook {count} kinderdatastel verwyder.",
+    "other": "Rekursiewe vernietig sal ook {count} kinderdatastelle verwyder."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Rekursiewe vernietig sal ook {count} momentopname verwyder.",
+    "other": "Rekursiewe vernietig sal ook {count} foto's verwyder."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy sal ook {count} momentopname verwyder.",
+    "other": "Destroy sal ook {count} foto's verwyder."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} vouer is na kwarantyn geskuif.",
+    "other": "{count} dopgehou is na kwarantyn geskuif."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} vouer is uitgevee.",
+    "other": "{count} dopgehou is uitgevee."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} vouer is teruggestel.",
+    "other": "{count} dopgehou is herstel."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} vouer is permanent uitgevee.",
+    "other": "{count} dopgehou is permanent skoongemaak."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} item is oorgeslaan.",
+    "other": "{count} items is oorgeslaan."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} item het reeds ontbreek.",
+    "other": "{count} items was reeds vermis."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} item is geblokkeer.",
+    "other": "{count} items is geblokkeer."
+  },
+  "{count} errors occurred.": {
+    "one": "{count} fout het voorgekom.",
+    "other": "{count} foute het voorgekom."
+  }
+}

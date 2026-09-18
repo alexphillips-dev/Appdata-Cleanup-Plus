@@ -1,0 +1,248 @@
+{
+  "{count} folders selected": {
+    "one": "{count} vybratý priečinok",
+    "few": "{count} vybraté priečinky",
+    "many": "{count} vybratých priečinkov",
+    "other": "{count} vybratých priečinkov"
+  },
+  "{count} items total": {
+    "one": "celkom {count} položka",
+    "few": "Spolu {count} položky",
+    "many": "Spolu {count} položky",
+    "other": "Spolu {count} položiek"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "Sledovaný {count} priečinok v karanténe",
+    "few": "Sledované {count} priečinky v karanténe",
+    "many": "{count} sledovaných priečinkov v karanténe",
+    "other": "Sledovalo sa {count} priečinkov v karanténe"
+  },
+  "{count} items submitted": {
+    "one": "Bola odoslaná {count} položka",
+    "few": "Boli odoslané {count} položky",
+    "many": "{count} odoslaných položiek",
+    "other": "Bolo odoslaných {count} položiek"
+  },
+  "Delete {count} folders": {
+    "one": "Odstrániť {count} priečinok",
+    "few": "Odstráňte {count} priečinky",
+    "many": "Odstráňte priečinky {count}",
+    "other": "Odstráňte {count} priečinkov"
+  },
+  "Delete {count} items": {
+    "one": "Odstrániť {count} položku",
+    "few": "Odstrániť {count} položky",
+    "many": "Odstrániť {count} položky",
+    "other": "Odstrániť {count} položiek"
+  },
+  "Destroy {count} datasets": {
+    "one": "Zničte {count} množinu údajov",
+    "few": "Zničte {count} súbory údajov",
+    "many": "Zničte súbory údajov {count}",
+    "other": "Zničte {count} súborov údajov"
+  },
+  "Quarantine {count} folders": {
+    "one": "Karanténa {count} priečinok",
+    "few": "Karanténa {count} priečinky",
+    "many": "Karanténa priečinkov {count}",
+    "other": "Karanténa {count} priečinkov"
+  },
+  "{count} conflicts found.": {
+    "one": "Našiel sa {count} konflikt.",
+    "few": "Našli sa {count} konflikty.",
+    "many": "{count} nájdených konfliktov.",
+    "other": "Našlo sa {count} konfliktov."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} vybratý priečinok sa dá stále normálne obnoviť.",
+    "few": "{count} vybraté priečinky sa stále dajú normálne obnoviť.",
+    "many": "{count} vybraté priečinky sa dajú normálne obnoviť.",
+    "other": "{count} vybratých priečinkov sa dá stále normálne obnoviť."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Skúste to znova po približne {count} sekunde.",
+    "few": "Skúste to znova po približne {count} sekundách.",
+    "many": "Skúste to znova po približne {count} sekunde.",
+    "other": "Skúste to znova po približne {count} sekundách."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Uložené {count} ZFS mapovanie a opätovné skenovanie.",
+    "few": "Uložené {count} ZFS mapovania a opätovné skenovanie.",
+    "many": "Uložené {count} ZFS mapovania a opätovné skenovanie.",
+    "other": "Uložených {count} ZFS mapovaní a opätovného skenovania."
+  },
+  "Processed {count} folders.": {
+    "one": "Spracovaný {count} priečinok.",
+    "few": "Spracované {count} priečinky.",
+    "many": "Spracované priečinky {count}.",
+    "other": "Spracovaných {count} priečinkov."
+  },
+  "{count} folders are visible.": {
+    "one": "Je viditeľný {count} priečinok.",
+    "few": "Viditeľné sú {count} priečinky.",
+    "many": "Viditeľné sú priečinky {count}.",
+    "other": "Viditeľných je {count} priečinkov."
+  },
+  "{count} more": {
+    "one": "{count} ďalší",
+    "few": "{count} ďalšie",
+    "many": "{count} viac",
+    "other": "{count} ďalších"
+  },
+  "{count} minutes ago": {
+    "one": "pred {count} minútou",
+    "few": "pred {count} minútami",
+    "many": "pred {count} minútou",
+    "other": "pred {count} minútami"
+  },
+  "{count} hours ago": {
+    "one": "pred {count} hodinou",
+    "few": "pred {count} hodinami",
+    "many": "pred {count} hodinou",
+    "other": "pred {count} hodinami"
+  },
+  "{count} days ago": {
+    "one": "pred {count} dňom",
+    "few": "pred {count} dňami",
+    "many": "pred {count} dňami",
+    "other": "pred {count} dňami"
+  },
+  "{count} months ago": {
+    "one": "pred {count} mesiacom",
+    "few": "pred {count} mesiacmi",
+    "many": "pred {count} mesiacom",
+    "other": "pred {count} mesiacmi"
+  },
+  "{count} years ago": {
+    "one": "pred {count} rokom",
+    "few": "pred {count} rokmi",
+    "many": "pred {count} rokom",
+    "other": "pred {count} rokmi"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Vyčistenie je naplánované o {count} deň.",
+    "few": "Čistenie je naplánované o {count} dni.",
+    "many": "Vyčistenie je naplánované za {count} dňa.",
+    "other": "Vyčistenie je naplánované o {count} dní."
+  },
+  "Purges in {count} days": {
+    "one": "Čistenia za {count} deň",
+    "few": "Čistenie za {count} dni",
+    "many": "Čistenia za {count} dňa",
+    "other": "Čistenie do {count} dní"
+  },
+  "Purges in {count} hours": {
+    "one": "Čistenie za {count} hodinu",
+    "few": "Čistenie za {count} hodiny",
+    "many": "Čistenie za {count} hodiny",
+    "other": "Čistenie za {count} hodín"
+  },
+  "Purges in {count} minutes": {
+    "one": "Čistenie za {count} minútu",
+    "few": "Čistenie za {count} minúty",
+    "many": "Čistenie za {count} minúty",
+    "other": "Čistenie za {count} minút"
+  },
+  "{count} child datasets": {
+    "one": "{count} podradená množina údajov",
+    "few": "{count} podradené súbory údajov",
+    "many": "{count} podriadené množiny údajov",
+    "other": "{count} podriadených súborov údajov"
+  },
+  "{count} snapshots": {
+    "one": "{count} snímka",
+    "few": "{count} momentky",
+    "many": "Snímky {count}",
+    "other": "{count} momentiek"
+  },
+  "{count} conflicts": {
+    "one": "{count} konflikt",
+    "few": "{count} konflikty",
+    "many": "{count} konflikty",
+    "other": "{count} konfliktov"
+  },
+  "{count} errors": {
+    "one": "{count} chyba",
+    "few": "{count} chyby",
+    "many": "chyby {count}",
+    "other": "{count} chýb"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} Bola odoslaná {count} položka.",
+    "few": "{message} Boli odoslané {count} položky.",
+    "many": "{message} Bolo odoslaných {count} položiek.",
+    "other": "{message} Bolo odoslaných {count} položiek."
+  },
+  "{count} items were submitted.": {
+    "one": "Bola odoslaná {count} položka.",
+    "few": "Boli odoslané {count} položky.",
+    "many": "Bolo odoslaných {count} položiek.",
+    "other": "Bolo predložených {count} položiek."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Rekurzívne zničenie tiež odstráni {count} podradenú množinu údajov.",
+    "few": "Rekurzívne zničenie tiež odstráni {count} podradené súbory údajov.",
+    "many": "Rekurzívne zničenie odstráni aj podradené množiny údajov {count}.",
+    "other": "Rekurzívne zničenie tiež odstráni {count} podriadených súborov údajov."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Rekurzívne zničenie tiež odstráni {count} snímku.",
+    "few": "Rekurzívne zničenie tiež odstráni {count} snímky.",
+    "many": "Rekurzívne zničenie tiež odstráni snímky {count}.",
+    "other": "Rekurzívne zničenie tiež odstráni {count} snímok."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Zničiť odstráni aj {count} snímku.",
+    "few": "Destroy tiež odstráni {count} snímky.",
+    "many": "Destroy tiež odstráni snímky {count}.",
+    "other": "Destroy tiež odstráni {count} snímok."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} priečinok bol presunutý do karantény.",
+    "few": "{count} priečinky boli presunuté do karantény.",
+    "many": "{count} priečinkov bolo presunutých do karantény.",
+    "other": "{count} priečinkov bolo presunutých do karantény."
+  },
+  "{count} folders were deleted.": {
+    "one": "Bol odstránený {count} priečinok.",
+    "few": "Boli odstránené {count} priečinky.",
+    "many": "{count} priečinkov bolo odstránených.",
+    "other": "Bolo odstránených {count} priečinkov."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} priečinok bol obnovený.",
+    "few": "Boli obnovené {count} priečinky.",
+    "many": "Boli obnovené priečinky {count}.",
+    "other": "Obnovilo sa {count} priečinkov."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} priečinok bol natrvalo vyčistený.",
+    "few": "{count} priečinky boli natrvalo vyčistené.",
+    "many": "Priečinky {count} boli natrvalo vymazané.",
+    "other": "{count} priečinkov bolo trvalo vymazaných."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} položka bola preskočená.",
+    "few": "{count} položky boli preskočené.",
+    "many": "{count} položiek bolo preskočených.",
+    "other": "{count} položiek bolo preskočených."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} položka už chýbala.",
+    "few": "{count} položky už chýbali.",
+    "many": "Chýbalo už {count} položky.",
+    "other": "{count} položiek už chýbalo."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} položka bola zablokovaná.",
+    "few": "Boli zablokované {count} položky.",
+    "many": "{count} položiek bolo zablokovaných.",
+    "other": "Bolo zablokovaných {count} položiek."
+  },
+  "{count} errors occurred.": {
+    "one": "vyskytla sa {count} chyba.",
+    "few": "Vyskytli sa {count} chyby.",
+    "many": "Vyskytli sa chyby {count}.",
+    "other": "Vyskytlo sa {count} chýb."
+  }
+}

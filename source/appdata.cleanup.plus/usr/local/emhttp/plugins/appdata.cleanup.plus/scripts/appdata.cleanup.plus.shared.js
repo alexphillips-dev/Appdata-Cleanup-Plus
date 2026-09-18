@@ -53,6 +53,33 @@
     });
   };
 
+  ACP.pluralCategory = function(count) {
+    var data = (window.appdataCleanupPlusConfig || {}).plurals || {};
+    var rules = data.rules || {};
+    count = Math.max(0, Math.floor(Number(count) || 0));
+    return Object.keys(rules).filter(function(category) {
+      return category !== "other" && rules[category].some(function(terms) {
+        return terms.every(function(term) {
+          var value = term[0] === "n" || term[0] === "i" ? count : 0;
+          if (term[1]) value %= term[1];
+          var inside = term[3].some(function(range) { return value >= range[0] && value <= range[1]; });
+          return inside !== term[2];
+        });
+      });
+    })[0] || "other";
+  };
+
+  ACP.plural = function(text, count, parameters) {
+    var config = window.appdataCleanupPlusConfig || {};
+    var data = config.plurals || {};
+    var forms = (data.forms || {})[text] || {};
+    count = Math.max(0, Math.floor(Number(count) || 0));
+    var template = forms[ACP.pluralCategory(count)] || forms.other || (count === 1 ? (data.messages || {})[text] || text : text);
+    var values = $.extend({}, parameters || {}, {count: count});
+    if (typeof Intl !== "undefined" && Intl.NumberFormat) values.count = new Intl.NumberFormat(config.languageTag || "en-US").format(count);
+    return template.replace(/\{(\w+)\}/g, function(token, key) { return Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : token; });
+  };
+
   ACP.localizePresentation = function(value, field) {
     var config = window.appdataCleanupPlusConfig || {};
     var language = config.languageTag || "en-US";

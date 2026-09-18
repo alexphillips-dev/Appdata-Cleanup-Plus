@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "{count} kansio valittu",
+    "other": "{count} kansiota valittu"
+  },
+  "{count} items total": {
+    "one": "{count} kohde yhteensä",
+    "other": "{count} tuotetta yhteensä"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} karanteenissa oleva kansio seurattu",
+    "other": "{count} karanteenissa olevaa kansiota seurattu"
+  },
+  "{count} items submitted": {
+    "one": "{count} kohde lähetetty",
+    "other": "{count} kohdetta lähetetty"
+  },
+  "Delete {count} folders": {
+    "one": "Poista {count} kansio",
+    "other": "Poista {count} kansiota"
+  },
+  "Delete {count} items": {
+    "one": "Poista {count} kohde",
+    "other": "Poista {count} kohdetta"
+  },
+  "Destroy {count} datasets": {
+    "one": "Tuhoa {count} tietojoukko",
+    "other": "Tuhoa {count} tietojoukkoa"
+  },
+  "Quarantine {count} folders": {
+    "one": "Karanteeni {count} kansio",
+    "other": "Karanteeni {count} kansiota"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} ristiriita löydetty.",
+    "other": "{count} ristiriitaa löydetty."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} valittu kansio voidaan edelleen palauttaa normaalisti.",
+    "other": "{count} valittua kansiota voidaan edelleen palauttaa normaalisti."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Yritä uudelleen noin {count} sekunnin kuluttua.",
+    "other": "Yritä uudelleen noin {count} sekunnin kuluttua."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Tallennettiin {count} ZFS kartoitus ja uudelleenskannaus.",
+    "other": "Tallennettiin {count} ZFS kartoitusta ja uudelleenskannausta."
+  },
+  "Processed {count} folders.": {
+    "one": "Käsitelty {count} kansio.",
+    "other": "Käsitelty {count} kansiota."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} kansio on näkyvissä.",
+    "other": "{count} kansiota näkyy."
+  },
+  "{count} more": {
+    "one": "{count} lisää",
+    "other": "{count} lisää"
+  },
+  "{count} minutes ago": {
+    "one": "{count} minuutti sitten",
+    "other": "{count} minuuttia sitten"
+  },
+  "{count} hours ago": {
+    "one": "{count} tunti sitten",
+    "other": "{count} tuntia sitten"
+  },
+  "{count} days ago": {
+    "one": "{count} päivä sitten",
+    "other": "{count} päivää sitten"
+  },
+  "{count} months ago": {
+    "one": "{count} kuukausi sitten",
+    "other": "{count} kuukautta sitten"
+  },
+  "{count} years ago": {
+    "one": "{count} vuosi sitten",
+    "other": "{count} vuotta sitten"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Suunniteltu tyhjennettäväksi {count} päivässä.",
+    "other": "Suunniteltu tyhjennettäväksi {count} päivän kuluttua."
+  },
+  "Purges in {count} days": {
+    "one": "Tyhjennys {count} päivässä",
+    "other": "Tyhjennys {count} päivässä"
+  },
+  "Purges in {count} hours": {
+    "one": "Puhdistus {count} tunnissa",
+    "other": "Tyhjennys {count} tunnissa"
+  },
+  "Purges in {count} minutes": {
+    "one": "Puhdistus {count} minuutissa",
+    "other": "Tyhjennys {count} minuutissa"
+  },
+  "{count} child datasets": {
+    "one": "{count} lapsitietojoukko",
+    "other": "{count} lapsitietojoukkoa"
+  },
+  "{count} snapshots": {
+    "one": "{count} tilannekuva",
+    "other": "{count} tilannekuvaa"
+  },
+  "{count} conflicts": {
+    "one": "{count} konflikti",
+    "other": "{count} konfliktia"
+  },
+  "{count} errors": {
+    "one": "{count} virhe",
+    "other": "{count} virhettä"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} kohde lähetettiin.",
+    "other": "{message} {count} kohdetta lähetettiin."
+  },
+  "{count} items were submitted.": {
+    "one": "{count} kohde lähetettiin.",
+    "other": "{count} kohdetta lähetettiin."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Rekursiivinen tuhoaminen poistaa myös yhden alitietojoukon.",
+    "other": "Rekursiivinen tuhoaminen poistaa myös {count} alitietojoukkoa."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Rekursiivinen tuhoaminen poistaa myös {count} tilannekuvan.",
+    "other": "Rekursiivinen tuhoaminen poistaa myös {count} tilannekuvaa."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy poistaa myös {count} tilannekuvan.",
+    "other": "Destroy poistaa myös {count} tilannekuvaa."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} kansio siirrettiin karanteeniin.",
+    "other": "{count} kansiota siirrettiin karanteeniin."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} kansio poistettiin.",
+    "other": "{count} kansiota poistettiin."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} kansio palautettiin.",
+    "other": "{count} kansiota palautettiin."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} kansio tyhjennettiin pysyvästi.",
+    "other": "{count} kansiota tyhjennettiin pysyvästi."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} kohde ohitettiin.",
+    "other": "{count} kohdetta ohitettiin."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} kohde puuttui jo.",
+    "other": "{count} kohdetta puuttui jo."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} kohde estettiin.",
+    "other": "{count} kohdetta estettiin."
+  },
+  "{count} errors occurred.": {
+    "one": "Tapahtui {count} virhe.",
+    "other": "Tapahtui {count} virhettä."
+  }
+}

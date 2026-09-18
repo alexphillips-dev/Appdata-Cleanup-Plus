@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "{count} mapp har valts",
+    "other": "{count} mappar valda"
+  },
+  "{count} items total": {
+    "one": "{count} artikel totalt",
+    "other": "{count} artiklar totalt"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} mapp i karantän spåras",
+    "other": "{count} mappar i karantän spåras"
+  },
+  "{count} items submitted": {
+    "one": "{count} objekt har skickats",
+    "other": "{count} objekt inskickade"
+  },
+  "Delete {count} folders": {
+    "one": "Ta bort {count} mapp",
+    "other": "Ta bort {count} mappar"
+  },
+  "Delete {count} items": {
+    "one": "Ta bort {count} objekt",
+    "other": "Ta bort {count} objekt"
+  },
+  "Destroy {count} datasets": {
+    "one": "Förstör {count} dataset",
+    "other": "Förstör {count} datamängder"
+  },
+  "Quarantine {count} folders": {
+    "one": "Karantän {count} mapp",
+    "other": "Karantän {count} mappar"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} konflikt hittades.",
+    "other": "{count} konflikter hittades."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} vald mapp kan fortfarande återställas normalt.",
+    "other": "{count} valda mappar kan fortfarande återställas normalt."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Försök igen efter cirka {count} sekund.",
+    "other": "Försök igen efter cirka {count} sekunder."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Sparade {count} ZFS mappning och omsökning.",
+    "other": "Sparade {count} ZFS mappningar och genomsökning."
+  },
+  "Processed {count} folders.": {
+    "one": "Bearbetade {count} mapp.",
+    "other": "Bearbetade {count} mappar."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} mapp är synlig.",
+    "other": "{count} mappar är synliga."
+  },
+  "{count} more": {
+    "one": "{count} till",
+    "other": "{count} till"
+  },
+  "{count} minutes ago": {
+    "one": "{count} minut sedan",
+    "other": "{count} minuter sedan"
+  },
+  "{count} hours ago": {
+    "one": "{count} timme sedan",
+    "other": "{count} timmar sedan"
+  },
+  "{count} days ago": {
+    "one": "{count} dag sedan",
+    "other": "{count} dagar sedan"
+  },
+  "{count} months ago": {
+    "one": "{count} månad sedan",
+    "other": "{count} månader sedan"
+  },
+  "{count} years ago": {
+    "one": "{count} år sedan",
+    "other": "{count} år sedan"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Planerad att rensa om {count} dag.",
+    "other": "Planerad rensning om {count} dagar."
+  },
+  "Purges in {count} days": {
+    "one": "Rensar på {count} dag",
+    "other": "Rensar på {count} dagar"
+  },
+  "Purges in {count} hours": {
+    "one": "Rensar på {count} timme",
+    "other": "Rensar på {count} timmar"
+  },
+  "Purges in {count} minutes": {
+    "one": "Rensar på {count} minut",
+    "other": "Rensar på {count} minuter"
+  },
+  "{count} child datasets": {
+    "one": "{count} barndataset",
+    "other": "{count} underordnade dataset"
+  },
+  "{count} snapshots": {
+    "one": "{count} ögonblicksbild",
+    "other": "{count} ögonblicksbilder"
+  },
+  "{count} conflicts": {
+    "one": "{count} konflikt",
+    "other": "{count} konflikter"
+  },
+  "{count} errors": {
+    "one": "{count} fel",
+    "other": "{count} fel"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} objekt har skickats.",
+    "other": "{message} {count} objekt har skickats in."
+  },
+  "{count} items were submitted.": {
+    "one": "{count} objekt har skickats in.",
+    "other": "{count} objekt lämnades in."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Rekursiv förstöring tar också bort {count} underordnad datauppsättning.",
+    "other": "Rekursiv förstöring tar också bort {count} underordnade datauppsättningar."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Rekursiv förstöra tar också bort {count} ögonblicksbild.",
+    "other": "Rekursiv förstöring tar också bort {count} ögonblicksbilder."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy tar också bort {count} ögonblicksbild.",
+    "other": "Destroy tar också bort {count} ögonblicksbilder."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} mapp flyttades till karantän.",
+    "other": "{count} mappar flyttades till karantän."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} mapp raderades.",
+    "other": "{count} mappar raderades."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} mapp återställdes.",
+    "other": "{count} mappar återställdes."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} mapp rensades permanent.",
+    "other": "{count} mappar rensades permanent."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} objekt hoppades över.",
+    "other": "{count} objekt hoppades över."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} objekt saknades redan.",
+    "other": "{count} objekt saknades redan."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} objekt blockerades.",
+    "other": "{count} objekt blockerades."
+  },
+  "{count} errors occurred.": {
+    "one": "{count} fel inträffade.",
+    "other": "{count} fel uppstod."
+  }
+}

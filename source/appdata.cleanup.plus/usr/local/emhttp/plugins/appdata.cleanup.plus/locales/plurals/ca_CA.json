@@ -1,0 +1,207 @@
+{
+  "{count} folders selected": {
+    "one": "{count} carpeta seleccionada",
+    "many": "{count} carpetes seleccionades",
+    "other": "{count} carpetes seleccionades"
+  },
+  "{count} items total": {
+    "one": "{count} article en total",
+    "many": "{count} articles en total",
+    "other": "{count} articles en total"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "S'ha fet un seguiment d'{count} carpeta en quarantena",
+    "many": "Seguiment de {count} carpetes en quarantena",
+    "other": "Seguiment de {count} carpetes en quarantena"
+  },
+  "{count} items submitted": {
+    "one": "S'ha enviat {count} element",
+    "many": "{count} articles enviats",
+    "other": "S'han enviat {count} articles"
+  },
+  "Delete {count} folders": {
+    "one": "Suprimeix {count} carpeta",
+    "many": "Suprimeix {count} carpetes",
+    "other": "Suprimeix {count} carpetes"
+  },
+  "Delete {count} items": {
+    "one": "Suprimeix {count} element",
+    "many": "Suprimeix {count} elements",
+    "other": "Suprimeix {count} elements"
+  },
+  "Destroy {count} datasets": {
+    "one": "Destrueix {count} conjunt de dades",
+    "many": "Destrueix {count} conjunts de dades",
+    "other": "Destrueix {count} conjunts de dades"
+  },
+  "Quarantine {count} folders": {
+    "one": "Carpeta de quarantena {count}",
+    "many": "Posa en quarantena {count} carpetes",
+    "other": "Posa en quarantena {count} carpetes"
+  },
+  "{count} conflicts found.": {
+    "one": "S'ha trobat {count} conflicte.",
+    "many": "S'han trobat {count} conflictes.",
+    "other": "S'han trobat {count} conflictes."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} carpeta seleccionada encara es pot restaurar normalment.",
+    "many": "{count} carpetes seleccionades encara es poden restaurar normalment.",
+    "other": "{count} carpetes seleccionades encara es poden restaurar normalment."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Torna-ho a provar al cap d'aproximadament {count} segon.",
+    "many": "Torna-ho a provar després d'uns {count} segons.",
+    "other": "Torna-ho a provar després d'uns {count} segons."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "S'han desat {count} ZFS mapes i escaneigs.",
+    "many": "S'han desat {count} ZFS mapes i s'han tornat a escanejar.",
+    "other": "S'han desat {count} ZFS mapes i s'han tornat a escanejar."
+  },
+  "Processed {count} folders.": {
+    "one": "S'ha processat {count} carpeta.",
+    "many": "S'han processat {count} carpetes.",
+    "other": "S'han processat {count} carpetes."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} carpeta és visible.",
+    "many": "{count} carpetes són visibles.",
+    "other": "{count} carpetes són visibles."
+  },
+  "{count} more": {
+    "one": "{count} més",
+    "many": "{count} més",
+    "other": "{count} més"
+  },
+  "{count} minutes ago": {
+    "one": "fa {count} minut",
+    "many": "Fa {count} minuts",
+    "other": "fa {count} minuts"
+  },
+  "{count} hours ago": {
+    "one": "fa {count} hora",
+    "many": "Fa {count} hores",
+    "other": "fa {count} hores"
+  },
+  "{count} days ago": {
+    "one": "fa {count} dia",
+    "many": "Fa {count} dies",
+    "other": "fa {count} dies"
+  },
+  "{count} months ago": {
+    "one": "fa {count} mes",
+    "many": "Fa {count} mesos",
+    "other": "fa {count} mesos"
+  },
+  "{count} years ago": {
+    "one": "fa {count} any",
+    "many": "fa {count} anys",
+    "other": "fa {count} anys"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Programat per purgar en {count} dia.",
+    "many": "Programat per purgar en {count} dies.",
+    "other": "Programat per purgar en {count} dies."
+  },
+  "Purges in {count} days": {
+    "one": "Purgues en {count} dia",
+    "many": "Purgues en {count} dies",
+    "other": "Purgues en {count} dies"
+  },
+  "Purges in {count} hours": {
+    "one": "Purgues en {count} hora",
+    "many": "Purgues en {count} hores",
+    "other": "Purgues en {count} hores"
+  },
+  "Purges in {count} minutes": {
+    "one": "Purga en {count} minut",
+    "many": "Purga en {count} minuts",
+    "other": "Purga en {count} minuts"
+  },
+  "{count} child datasets": {
+    "one": "{count} conjunt de dades secundari",
+    "many": "{count} conjunts de dades infantils",
+    "other": "{count} conjunts de dades secundaris"
+  },
+  "{count} snapshots": {
+    "one": "{count} instantània",
+    "many": "{count} instantànies",
+    "other": "{count} instantànies"
+  },
+  "{count} conflicts": {
+    "one": "{count} conflicte",
+    "many": "{count} conflictes",
+    "other": "{count} conflictes"
+  },
+  "{count} errors": {
+    "one": "{count} error",
+    "many": "{count} errors",
+    "other": "{count} errors"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} S'ha enviat {count} element.",
+    "many": "{message} S'han enviat {count} articles.",
+    "other": "{message} S'han enviat {count} articles."
+  },
+  "{count} items were submitted.": {
+    "one": "S'ha enviat {count} element.",
+    "many": "S'han enviat {count} articles.",
+    "other": "S'han enviat {count} articles."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "La destrucció recursiva també suprimirà {count} conjunt de dades secundari.",
+    "many": "La destrucció recursiva també eliminarà {count} conjunts de dades secundaris.",
+    "other": "La destrucció recursiva també suprimirà {count} conjunts de dades secundaris."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "La destrucció recursiva també eliminarà {count} instantània.",
+    "many": "La destrucció recursiva també eliminarà {count} instantànies.",
+    "other": "La destrucció recursiva també eliminarà {count} instantànies."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destruir també eliminarà {count} instantània.",
+    "many": "Destruir també eliminarà {count} instantànies.",
+    "other": "Destruir també eliminarà {count} instantànies."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "S'ha mogut {count} carpeta a la quarantena.",
+    "many": "{count} carpetes es van traslladar a la quarantena.",
+    "other": "{count} carpetes es van traslladar a la quarantena."
+  },
+  "{count} folders were deleted.": {
+    "one": "S'ha suprimit {count} carpeta.",
+    "many": "S'han suprimit {count} carpetes.",
+    "other": "S'han suprimit {count} carpetes."
+  },
+  "{count} folders were restored.": {
+    "one": "S'ha restaurat {count} carpeta.",
+    "many": "S'han restaurat {count} carpetes.",
+    "other": "S'han restaurat {count} carpetes."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "S'ha eliminat {count} carpeta permanentment.",
+    "many": "S'han eliminat permanentment {count} carpetes.",
+    "other": "S'han eliminat {count} carpetes permanentment."
+  },
+  "{count} items were skipped.": {
+    "one": "S'ha omès {count} element.",
+    "many": "S'han omès {count} elements.",
+    "other": "S'han omès {count} elements."
+  },
+  "{count} items were already missing.": {
+    "one": "Ja faltava {count} element.",
+    "many": "Ja faltaven {count} articles.",
+    "other": "Ja faltaven {count} elements."
+  },
+  "{count} items were blocked.": {
+    "one": "S'ha bloquejat {count} element.",
+    "many": "S'han bloquejat {count} articles.",
+    "other": "S'han bloquejat {count} articles."
+  },
+  "{count} errors occurred.": {
+    "one": "S'ha produït {count} error.",
+    "many": "S'han produït {count} errors.",
+    "other": "S'han produït {count} errors."
+  }
+}

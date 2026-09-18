@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "{count} mappa kiválasztva",
+    "other": "{count} mappa kiválasztva"
+  },
+  "{count} items total": {
+    "one": "{count} tétel összesen",
+    "other": "{count} darab összesen"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} karanténba helyezett mappa nyomon követve",
+    "other": "{count} karanténba helyezett mappa nyomon követve"
+  },
+  "{count} items submitted": {
+    "one": "{count} elem elküldve",
+    "other": "{count} elem beküldve"
+  },
+  "Delete {count} folders": {
+    "one": "Töröljön {count} mappát",
+    "other": "{count} mappa törlése"
+  },
+  "Delete {count} items": {
+    "one": "{count} elem törlése",
+    "other": "{count} elem törlése"
+  },
+  "Destroy {count} datasets": {
+    "one": "{count} adatkészlet megsemmisítése",
+    "other": "{count} adatkészlet megsemmisítése"
+  },
+  "Quarantine {count} folders": {
+    "one": "Karantén {count} mappa",
+    "other": "Karantén {count} mappa"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} ütközés található.",
+    "other": "{count} ütközés található."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} kiválasztott mappa továbbra is normálisan visszaállítható.",
+    "other": "{count} kiválasztott mappa továbbra is normál módon visszaállítható."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Próbálja újra körülbelül {count} másodperc múlva.",
+    "other": "Próbálja újra körülbelül {count} másodperc múlva."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Mentett {count} ZFS leképezés és újrakeresés.",
+    "other": "Mentett {count} ZFS leképezést és újrakeresést."
+  },
+  "Processed {count} folders.": {
+    "one": "{count} mappa feldolgozva.",
+    "other": "{count} mappa feldolgozva."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} mappa látható.",
+    "other": "{count} mappa látható."
+  },
+  "{count} more": {
+    "one": "{count} még",
+    "other": "{count} további"
+  },
+  "{count} minutes ago": {
+    "one": "{count} perce",
+    "other": "{count} perce"
+  },
+  "{count} hours ago": {
+    "one": "{count} órája",
+    "other": "{count} órája"
+  },
+  "{count} days ago": {
+    "one": "{count} napja",
+    "other": "{count} napja"
+  },
+  "{count} months ago": {
+    "one": "{count} hónapja",
+    "other": "{count} hónapja"
+  },
+  "{count} years ago": {
+    "one": "{count} éve",
+    "other": "{count} évvel ezelőtt"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Ütemezett tisztítás {count} napon belül.",
+    "other": "A tervek szerint {count} napon belül kiürítik."
+  },
+  "Purges in {count} days": {
+    "one": "Tisztítás {count} nap alatt",
+    "other": "Tisztítás {count} napon belül"
+  },
+  "Purges in {count} hours": {
+    "one": "Tisztítás {count} óra alatt",
+    "other": "Tisztítás {count} óra alatt"
+  },
+  "Purges in {count} minutes": {
+    "one": "Tisztítás {count} perc alatt",
+    "other": "Tisztítás {count} perc alatt"
+  },
+  "{count} child datasets": {
+    "one": "{count} gyermek adatkészlet",
+    "other": "{count} gyermek adatkészlet"
+  },
+  "{count} snapshots": {
+    "one": "{count} pillanatfelvétel",
+    "other": "{count} pillanatfelvétel"
+  },
+  "{count} conflicts": {
+    "one": "{count} konfliktus",
+    "other": "{count} konfliktus"
+  },
+  "{count} errors": {
+    "one": "{count} hiba",
+    "other": "{count} hiba"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} elem lett elküldve.",
+    "other": "{message} {count} elem érkezett."
+  },
+  "{count} items were submitted.": {
+    "one": "{count} elem került beküldésre.",
+    "other": "{count} tétel érkezett."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "A rekurzív megsemmisítés {count} gyermekadatkészletet is eltávolít.",
+    "other": "A rekurzív megsemmisítés {count} gyermekadatkészletet is eltávolít."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "A rekurzív megsemmisítés {count} pillanatképet is eltávolít.",
+    "other": "A rekurzív megsemmisítés {count} pillanatképet is eltávolít."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "A Destroy {count} pillanatképet is eltávolít.",
+    "other": "A Destroy {count} pillanatképet is eltávolít."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} mappa karanténba került.",
+    "other": "{count} mappa karanténba került."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} mappa törölve.",
+    "other": "{count} mappa törölve."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} mappa visszaállításra került.",
+    "other": "{count} mappa visszaállításra került."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} mappa véglegesen törölve lett.",
+    "other": "{count} mappa véglegesen törölve lett."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} elem kimaradt.",
+    "other": "{count} elem kimaradt."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} elem már hiányzott.",
+    "other": "{count} elem már hiányzott."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} elem le lett tiltva.",
+    "other": "{count} elem le lett tiltva."
+  },
+  "{count} errors occurred.": {
+    "one": "{count} hiba történt.",
+    "other": "{count} hiba történt."
+  }
+}

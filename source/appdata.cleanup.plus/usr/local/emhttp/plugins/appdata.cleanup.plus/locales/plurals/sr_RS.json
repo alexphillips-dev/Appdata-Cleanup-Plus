@@ -1,0 +1,207 @@
+{
+  "{count} folders selected": {
+    "one": "Изабран је {count} фолдер",
+    "few": "Изабрана су {count} фасцикла",
+    "other": "Изабрано је {count} фасцикли"
+  },
+  "{count} items total": {
+    "one": "Укупно {count} ставка",
+    "few": "Укупно {count} ставке",
+    "other": "Укупно {count} предмета"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "Праћен је {count} директоријум у карантину",
+    "few": "Праћене су {count} фасцикле у карантину",
+    "other": "Праћено {count} фасцикли у карантину"
+  },
+  "{count} items submitted": {
+    "one": "{count} ставка је послата",
+    "few": "{count} ставке су послате",
+    "other": "{count} предмета је послато"
+  },
+  "Delete {count} folders": {
+    "one": "Избришите {count} фолдер",
+    "few": "Избришите {count} фасцикле",
+    "other": "Избришите {count} фасцикли"
+  },
+  "Delete {count} items": {
+    "one": "Избришите {count} ставку",
+    "few": "Избришите {count} ставке",
+    "other": "Избришите {count} ставки"
+  },
+  "Destroy {count} datasets": {
+    "one": "Уништи {count} скуп података",
+    "few": "Уништи {count} скупа података",
+    "other": "Уништи {count} скупова података"
+  },
+  "Quarantine {count} folders": {
+    "one": "Карантин {count} фолдер",
+    "few": "Ставите у карантин {count} фасцикле",
+    "other": "Ставите у карантин {count} фасцикли"
+  },
+  "{count} conflicts found.": {
+    "one": "Пронађен је {count} сукоб.",
+    "few": "Пронађена су {count} сукоба.",
+    "other": "{count} пронађених сукоба."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} изабрани фолдер и даље може нормално да се врати.",
+    "few": "{count} изабрана фолдера и даље могу нормално да се врате.",
+    "other": "{count} изабраних фасцикли се и даље могу нормално вратити."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Покушајте поново након отприлике {count} секунде.",
+    "few": "Покушајте поново након око {count} секунде.",
+    "other": "Покушајте поново након око {count} секунди."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Сачувано {count} ZFS мапирање и поновно скенирање.",
+    "few": "Сачувано {count} ZFS мапирања и поновно скенирање.",
+    "other": "Сачувано {count} ZFS мапирања и поновног скенирања."
+  },
+  "Processed {count} folders.": {
+    "one": "Обрађен {count} фолдер.",
+    "few": "Обрађено {count} фолдера.",
+    "other": "Обрађено {count} фасцикли."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} фолдер је видљив.",
+    "few": "{count} фасцикле су видљиве.",
+    "other": "Видљиво је {count} фасцикли."
+  },
+  "{count} more": {
+    "one": "још {count}",
+    "few": "још {count}",
+    "other": "још {count}"
+  },
+  "{count} minutes ago": {
+    "one": "пре {count} минут",
+    "few": "пре {count} минута",
+    "other": "пре {count} минута"
+  },
+  "{count} hours ago": {
+    "one": "пре {count} сат",
+    "few": "пре {count} сата",
+    "other": "пре {count} сати"
+  },
+  "{count} days ago": {
+    "one": "пре {count} дан",
+    "few": "пре {count} дана",
+    "other": "пре {count} дана"
+  },
+  "{count} months ago": {
+    "one": "пре {count} месец",
+    "few": "пре {count} месеца",
+    "other": "пре {count} месеци"
+  },
+  "{count} years ago": {
+    "one": "пре {count} године",
+    "few": "пре {count} године",
+    "other": "пре {count} година"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Заказано за чишћење за {count} дан.",
+    "few": "Планирано чишћење за {count} дана.",
+    "other": "Планирано чишћење за {count} дана."
+  },
+  "Purges in {count} days": {
+    "one": "Чишћење за {count} дан",
+    "few": "Чишћење за {count} дана",
+    "other": "Чишћење за {count} дана"
+  },
+  "Purges in {count} hours": {
+    "one": "Чишћење за {count} сат",
+    "few": "Чишћење за {count} сата",
+    "other": "Чишћење за {count} сати"
+  },
+  "Purges in {count} minutes": {
+    "one": "Чишћење за {count} минут",
+    "few": "Чишћење за {count} минута",
+    "other": "Чишћење за {count} минута"
+  },
+  "{count} child datasets": {
+    "one": "{count} дечији скуп података",
+    "few": "{count} дечија скупа података",
+    "other": "{count} дечјих скупова података"
+  },
+  "{count} snapshots": {
+    "one": "{count} снимак",
+    "few": "{count} снимка",
+    "other": "{count} снимака"
+  },
+  "{count} conflicts": {
+    "one": "{count} сукоб",
+    "few": "{count} сукоба",
+    "other": "{count} сукоба"
+  },
+  "{count} errors": {
+    "one": "{count} грешка",
+    "few": "{count} грешке",
+    "other": "{count} грешака"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} ставка је послата.",
+    "few": "{message} {count} ставке су послате.",
+    "other": "{message} {count} ставки је послато."
+  },
+  "{count} items were submitted.": {
+    "one": "{count} ставка је послата.",
+    "few": "Достављено је {count} предмета.",
+    "other": "Пристигло је {count} предмета."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Рекурзивно уништавање ће такође уклонити {count} подређени скуп података.",
+    "few": "Рекурзивно уништавање ће такође уклонити {count} подређена скупа података.",
+    "other": "Рекурзивно уништавање ће такође уклонити {count} подређених скупова података."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Рекурзивно уништавање ће такође уклонити {count} снимак.",
+    "few": "Рекурзивно уништавање ће такође уклонити {count} снимка.",
+    "other": "Рекурзивно уништавање ће такође уклонити {count} снимака."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Дестрои ће такође уклонити {count} снимак.",
+    "few": "Дестрои ће такође уклонити {count} снимка.",
+    "other": "Дестрои ће такође уклонити {count} снимака."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} фолдер је премештен у карантин.",
+    "few": "{count} фолдера су премештена у карантин.",
+    "other": "{count} фасцикли је премештено у карантин."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} фолдер је избрисан.",
+    "few": "{count} фолдера су избрисана.",
+    "other": "{count} фолдера је избрисано."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} фолдер је враћен.",
+    "few": "{count} фасцикле су враћене.",
+    "other": "{count} фасцикли је враћено."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} фолдер је трајно очишћен.",
+    "few": "{count} фасцикле су трајно очишћене.",
+    "other": "{count} фасцикли је трајно очишћено."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} ставка је прескочена.",
+    "few": "{count} ставке су прескочене.",
+    "other": "{count} ставки је прескочено."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} ставка је већ недостајала.",
+    "few": "{count} ставке су већ недостајале.",
+    "other": "Већ је недостајало {count} предмета."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} ставка је блокирана.",
+    "few": "{count} ставке су блокиране.",
+    "other": "{count} ставки је блокирано."
+  },
+  "{count} errors occurred.": {
+    "one": "Дошло је до {count} грешке.",
+    "few": "Дошло је до {count} грешке.",
+    "other": "Дошло је до {count} грешака."
+  }
+}

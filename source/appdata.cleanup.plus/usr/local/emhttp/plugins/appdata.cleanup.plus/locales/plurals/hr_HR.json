@@ -1,0 +1,207 @@
+{
+  "{count} folders selected": {
+    "one": "Odabrana je {count} mapa",
+    "few": "Odabrane su {count} mape",
+    "other": "Odabrano je {count} mapa"
+  },
+  "{count} items total": {
+    "one": "Ukupno {count} stavka",
+    "few": "Ukupno {count} stavke",
+    "other": "Ukupno {count} predmeta"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "Praćena je {count} mapa u karanteni",
+    "few": "Prate se {count} mape u karanteni",
+    "other": "Prati se {count} mapa u karanteni"
+  },
+  "{count} items submitted": {
+    "one": "Poslana je {count} stavka",
+    "few": "{count} predmeta poslana",
+    "other": "Predano je {count} stavki"
+  },
+  "Delete {count} folders": {
+    "one": "Izbriši {count} mapu",
+    "few": "Izbriši {count} mape",
+    "other": "Izbriši {count} mapa"
+  },
+  "Delete {count} items": {
+    "one": "Izbriši {count} stavku",
+    "few": "Izbriši {count} stavke",
+    "other": "Izbriši {count} stavki"
+  },
+  "Destroy {count} datasets": {
+    "one": "Uništi {count} skup podataka",
+    "few": "Uništi {count} skupa podataka",
+    "other": "Uništi {count} skupova podataka"
+  },
+  "Quarantine {count} folders": {
+    "one": "Karantena {count} mapa",
+    "few": "Karantena {count} mape",
+    "other": "Karantena {count} mapa"
+  },
+  "{count} conflicts found.": {
+    "one": "Pronađen je {count} sukob.",
+    "few": "Pronađena su {count} sukoba.",
+    "other": "Pronađeno je {count} sukoba."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} odabrana mapa još uvijek se može normalno vratiti.",
+    "few": "{count} odabrane mape i dalje se mogu normalno vratiti.",
+    "other": "{count} odabranih mapa i dalje se mogu normalno vratiti."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Pokušajte ponovno nakon otprilike {count} sekunde.",
+    "few": "Pokušajte ponovo nakon otprilike {count} sekunde.",
+    "other": "Pokušajte ponovno nakon otprilike {count} sekundi."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Spremljeno {count} ZFS mapiranje i ponovno skeniranje.",
+    "few": "Spremljena su {count} ZFS preslikavanja i ponovno skeniranje.",
+    "other": "Spremljeno {count} ZFS preslikavanja i ponovnog skeniranja."
+  },
+  "Processed {count} folders.": {
+    "one": "Obrađena {count} mapa.",
+    "few": "Obrađene {count} mape.",
+    "other": "Obrađeno {count} mapa."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} mapa je vidljiva.",
+    "few": "Vidljive su {count} mape.",
+    "other": "Vidljivo je {count} mapa."
+  },
+  "{count} more": {
+    "one": "još {count}",
+    "few": "još {count}",
+    "other": "još {count}"
+  },
+  "{count} minutes ago": {
+    "one": "Prije {count} minute",
+    "few": "prije {count} minute",
+    "other": "prije {count} minuta"
+  },
+  "{count} hours ago": {
+    "one": "prije {count} sat",
+    "few": "prije {count} sata",
+    "other": "prije {count} sati"
+  },
+  "{count} days ago": {
+    "one": "prije {count} dan",
+    "few": "prije {count} dana",
+    "other": "prije {count} dana"
+  },
+  "{count} months ago": {
+    "one": "prije {count} mjesec",
+    "few": "prije {count} mjeseca",
+    "other": "prije {count} mjeseci"
+  },
+  "{count} years ago": {
+    "one": "prije {count} godinu",
+    "few": "prije {count} godine",
+    "other": "prije {count} godina"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Predviđeno čišćenje za {count} dan.",
+    "few": "Predviđeno čišćenje za {count} dana.",
+    "other": "Predviđeno čišćenje za {count} dana."
+  },
+  "Purges in {count} days": {
+    "one": "Čisti za {count} dan",
+    "few": "Čisti se za {count} dana",
+    "other": "Čisti se za {count} dana"
+  },
+  "Purges in {count} hours": {
+    "one": "Čisti se za {count} sat",
+    "few": "Čisti se za {count} sata",
+    "other": "Čisti se za {count} sati"
+  },
+  "Purges in {count} minutes": {
+    "one": "Čisti za {count} minutu",
+    "few": "Čisti za {count} minute",
+    "other": "Čisti za {count} minuta"
+  },
+  "{count} child datasets": {
+    "one": "{count} podređeni skup podataka",
+    "few": "{count} podređena skupa podataka",
+    "other": "{count} podređenih skupova podataka"
+  },
+  "{count} snapshots": {
+    "one": "{count} snimka",
+    "few": "{count} snimke",
+    "other": "{count} snimaka"
+  },
+  "{count} conflicts": {
+    "one": "{count} sukob",
+    "few": "{count} sukoba",
+    "other": "{count} sukoba"
+  },
+  "{count} errors": {
+    "one": "{count} greška",
+    "few": "{count} pogreške",
+    "other": "{count} grešaka"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} Predan je {count} predmet.",
+    "few": "{message} {count} stavke su predane.",
+    "other": "{message} Predano je {count} stavki."
+  },
+  "{count} items were submitted.": {
+    "one": "Poslana je {count} stavka.",
+    "few": "Dostavljena su {count} predmeta.",
+    "other": "Dostavljeno je {count} stavki."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Rekurzivno uništavanje također će ukloniti {count} podređeni skup podataka.",
+    "few": "Rekurzivno uništavanje također će ukloniti {count} podređena skupa podataka.",
+    "other": "Rekurzivno uništavanje također će ukloniti {count} podređenih skupova podataka."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Rekurzivno uništavanje također će ukloniti {count} snimku.",
+    "few": "Rekurzivno uništavanje također će ukloniti {count} snimke.",
+    "other": "Rekurzivno uništavanje također će ukloniti {count} snimaka."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy će također ukloniti {count} snimku.",
+    "few": "Destroy će također ukloniti {count} snimke.",
+    "other": "Destroy će također ukloniti {count} snimaka."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} mapa premještena je u karantenu.",
+    "few": "{count} mape su premještene u karantenu.",
+    "other": "{count} mapa premješteno je u karantenu."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} mapa je izbrisana.",
+    "few": "Izbrisane su {count} mape.",
+    "other": "Izbrisano je {count} mapa."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} mapa je vraćena.",
+    "few": "Vraćene su {count} mape.",
+    "other": "Obnovljeno je {count} mapa."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} mapa je trajno očišćena.",
+    "few": "{count} mape su trajno očišćene.",
+    "other": "{count} mapa je trajno očišćeno."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} stavka je preskočena.",
+    "few": "{count} stavke su preskočene.",
+    "other": "{count} stavki je preskočeno."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} stavka je već nedostajala.",
+    "few": "{count} stavke su već nedostajale.",
+    "other": "Već je nedostajalo {count} stavki."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} stavka je blokirana.",
+    "few": "{count} stavke su blokirane.",
+    "other": "{count} stavki je blokirano."
+  },
+  "{count} errors occurred.": {
+    "one": "Dogodila se {count} pogreška.",
+    "few": "Dogodile su se {count} pogreške.",
+    "other": "Dogodilo se {count} grešaka."
+  }
+}

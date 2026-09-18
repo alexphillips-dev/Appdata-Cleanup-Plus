@@ -9,6 +9,9 @@ const read = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 const write = (file, value) => fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
 const locales = read(path.join(dir, 'locales.json'));
 const overrides = read(path.join(root, 'scripts/i18n_overrides.json'));
+const pluralMessages = read(path.join(root, 'scripts/i18n_plural_messages.json'));
+const pluralOverrides = read(path.join(root, 'scripts/i18n_plural_overrides.json'));
+const pluralRules = read(path.join(dir, 'plural-rules.json')).rules;
 const messages = JSON.parse(execFileSync('php', [path.join(root, 'scripts/extract_i18n.php')], {encoding: 'utf8'}));
 for (const text of read(path.join(root, 'scripts/i18n_messages.json'))) messages[text] = text;
 const decode = value => JSON.parse('"' + value + '"');
@@ -21,13 +24,33 @@ for (const name of fs.readdirSync(path.join(plugin, 'scripts')).filter(name => n
   for (const match of source.matchAll(/ACP\.(?:t\([^,]+,\s*"(?:[^"\\]|\\.)*",\s*|tr\()"((?:[^"\\]|\\.)*)"/g)) {
     const text = decode(match[1]); messages[text] = text;
   }
+  for (const match of source.matchAll(/ACP\.plural\("((?:[^"\\]|\\.)*)"/g)) {
+    if (!Object.hasOwn(pluralMessages, decode(match[1]))) throw Error(`${name}: missing complete plural template ${match[1]}`);
+  }
 }
 const sorted = Object.fromEntries(Object.entries(messages).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0));
 const englishFile = path.join(dir, 'en_US.json');
 const signature = text => (text.match(/\{\w+\}/g) || []).sort().join('|');
-const untranslated = (key, value) => key === value && key.length > 35 && /[a-z] [a-z]/i.test(key);
+const implicitCount = (locale, category) => {
+  const groups = pluralRules[locale][category].filter(terms => terms.every(([operand, mod, not, ranges]) => ['n','i'].includes(operand) || (ranges.some(([lo,hi]) => lo <= 0 && hi >= 0) !== not)));
+  if (!['one', 'two'].includes(category) || !groups.length) return false;
+  const count = category === 'one' ? 1 : 2;
+  return groups.every(terms => terms.some(([operand, mod, not, ranges]) => ['n','i'].includes(operand) && !mod && !not && ranges.length === 1 && ranges[0][0] === count && ranges[0][1] === count));
+};
+const pluralSignature = (text, key, locale, category) => signature(text) === signature(key) || (implicitCount(locale, category) && signature(text) === signature(key.replace('{count}', '')));
+// Shared technical terms can legitimately be identical. Short UI phrases are
+// otherwise checked just as strictly as long prose.
+const sharedTerms = new Set(['Appdata Cleanup Plus', 'appdata cleanup plus', 'gateway timeout', 'Docker offline', 'Docker is offline', 'ZFS dataset', 'ZFS dataset: {dataset}']);
+const untranslated = (key, value) => key === value && !sharedTerms.has(key) && /[a-z]{2} [a-z]{2}/i.test(key);
 const missingTechnicalTerms = (key, value) => ['Appdata Cleanup Plus', 'Unraid', 'Docker', 'ZFS', 'appdata'].some(term => key.split(term).length - 1 > value.toLowerCase().split(term.toLowerCase()).length - 1);
 const check = process.argv.includes('--check');
+const pluralMaster = path.join(dir, 'plural-messages.json');
+if (check) {
+  if (JSON.stringify(read(pluralMaster)) !== JSON.stringify(pluralMessages)) throw Error('Plural message master is stale');
+} else {
+  write(pluralMaster, pluralMessages);
+  fs.mkdirSync(path.join(dir, 'plurals'), {recursive:true});
+}
 if (check) {
   if (JSON.stringify(read(englishFile)) !== JSON.stringify(sorted)) throw Error('English catalog is stale; run node scripts/build_i18n.mjs');
 } else write(englishFile, sorted);
@@ -72,6 +95,7 @@ async function translate(batch, target, attempt = 0) {
   }
 }
 async function build(locale, definition) {
+  await buildPlurals(locale, definition);
   if (locale === 'en_US') return;
   const file = path.join(dir, locale + '.json');
   const prior = fs.existsSync(file) ? read(file) : {};
@@ -96,7 +120,74 @@ async function build(locale, definition) {
   if (!check) write(file, result);
   console.log(`${locale}: ${Object.keys(result).length}/${Object.keys(sorted).length}`);
 }
+
+async function buildPlurals(locale, definition) {
+  const file = path.join(dir, 'plurals', locale + '.json');
+  const prior = fs.existsSync(file) ? read(file) : {};
+  const categories = Object.keys(pluralRules[locale]);
+  const selector = new Intl.PluralRules(definition.tag);
+  const candidates = [1, 2, 5, 0, 3, 11, 21, 100, 101, 1000000, 1.1, ...Array.from({length:200}, (_, i) => i)];
+  const requests = [];
+  const result = {};
+  for (const [other, one] of Object.entries(pluralMessages)) {
+    result[other] = {};
+    for (const category of categories) {
+      const corrected = pluralOverrides[locale]?.[other]?.[category];
+      const value = corrected ?? prior[other]?.[category];
+      if (value && pluralSignature(value, other, locale, category)) { result[other][category] = value; continue; }
+      if (check) throw Error(`${locale}: missing plural ${category}: ${other}`);
+      if (locale === 'en_US') { result[other][category] = category === 'one' ? one : other; continue; }
+      const sample = candidates.find(n => selector.select(n) === category);
+      if (sample === undefined) throw Error(`${locale}: no sample for ${category}`);
+      const source = (sample === 1 ? one : other).replace('{count}', String(sample));
+      requests.push({other, category, sample, source});
+    }
+  }
+  if (requests.length && !process.argv.includes('--translate')) throw Error(`${locale}: ${requests.length} missing plural forms`);
+  for (const batch of batches([...new Set(requests.map(request => request.source))])) {
+    console.log(`${locale}: translating ${batch.length} plural examples`);
+    const translated = await translate(batch, definition.translate);
+    for (const request of requests.filter(request => batch.includes(request.source))) {
+      let value = translated[request.source];
+      // Translate services sometimes return native digits or localized separators.
+      value = value.replace(/[٠-٩۰-۹०-९০-৯๐-๙]/g, digit => String(digit.charCodeAt(0) - [0x660,0x6f0,0x966,0x9e6,0xe50].find(start => digit.charCodeAt(0) >= start && digit.charCodeAt(0) <= start + 9)));
+      if (request.sample === 1.1) value = value.replace(/1,1/g, '1.1');
+      if (request.sample === 1000000) value = value.replace(/1[.,\s\u00a0\u202f]?000[.,\s\u00a0\u202f]?000|1 (?:milhão|milhões|million|millions|millón|millones|milione|milioni)/gi, '1000000');
+      const number = String(request.sample);
+      // The real number provides grammatical context; it is restored to a placeholder.
+      const pattern = new RegExp('(?<![0-9])' + number.replace('.', '\\.') + '(?![0-9])', 'g');
+      let restored = value.replace(pattern, '{count}');
+      if (request.sample === 2 && !restored.includes('{count}')) {
+        const word = {et_EE:/\bkaks\b/i, fi_FI:/\bkaksi\b/i, de_DE:/\bzwei\b/i, nl_NL:/\btwee\b/i, lv_LV:/\bdiv[aiu]\b/i}[locale];
+        if (word) restored = restored.replace(word, '{count}');
+      }
+      if (!pluralSignature(restored, request.other, locale, request.category)) {
+        console.warn(`${locale}: plural number lost (${request.category}): ${request.other} => ${value}`);
+        continue;
+      }
+      result[request.other][request.category] = restored;
+    }
+    write(file, result);
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  const terminology = {ja_JA:['検疫','隔離'], zh_CN:['检疫','隔离'], zh_TW:['檢疫','隔離']}[locale];
+  for (const [key, forms] of Object.entries(result)) {
+    for (const category of categories) {
+      if (terminology && forms[category]) forms[category] = forms[category].split(terminology[0]).join(terminology[1]);
+      if (!forms[category] || !pluralSignature(forms[category], key, locale, category) || /<\/?[a-z][^>]*>|__\d+__|98765\d+/i.test(forms[category])) throw Error(`${locale}: invalid plural: ${key}`);
+      if (locale !== 'en_US' && untranslated(key, forms[category])) throw Error(`${locale}: untranslated plural: ${key}`);
+    }
+    result[key] = Object.fromEntries(categories.map(category => [category, forms[category]]));
+  }
+  if (check && JSON.stringify(read(file)) !== JSON.stringify(result)) throw Error(`${locale}: stale plural forms`);
+  if (!check) write(file, result);
+}
 const queue = Object.entries(locales);
+const failures = [];
 await Promise.all(Array.from({length: process.argv.includes('--translate') ? 2 : 1}, async () => {
-  while (queue.length) { const [locale, definition] = queue.shift(); await build(locale, definition); }
+  while (queue.length) {
+    const [locale, definition] = queue.shift();
+    try { await build(locale, definition); } catch (error) { failures.push(error.message); console.error(error.message); }
+  }
 }));
+if (failures.length) throw Error(failures.join('\n'));

@@ -1,0 +1,248 @@
+{
+  "{count} folders selected": {
+    "one": "Vybrána {count} složka",
+    "few": "Jsou vybrány {count} složky",
+    "many": "{count} vybrané složky",
+    "other": "Vybráno {count} složek"
+  },
+  "{count} items total": {
+    "one": "Celkem {count} položka",
+    "few": "Celkem {count} položky",
+    "many": "Celkem {count} položky",
+    "other": "Celkem {count} položek"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "Byla sledována {count} složka v karanténě",
+    "few": "Byly sledovány {count} složky v karanténě",
+    "many": "{count} sledovány složky v karanténě",
+    "other": "Bylo sledováno {count} složek v karanténě"
+  },
+  "{count} items submitted": {
+    "one": "Odeslaná {count} položka",
+    "few": "Odeslané {count} položky",
+    "many": "Odeslané položky {count}",
+    "other": "Odeslano {count} položek"
+  },
+  "Delete {count} folders": {
+    "one": "Smazat {count} složku",
+    "few": "Smazat {count} složky",
+    "many": "Odstraňte složky {count}",
+    "other": "Smazat {count} složek"
+  },
+  "Delete {count} items": {
+    "one": "Smazat {count} položku",
+    "few": "Smazat {count} položky",
+    "many": "Smazat položky {count}",
+    "other": "Smazat {count} položek"
+  },
+  "Destroy {count} datasets": {
+    "one": "Zničte {count} datovou sadu",
+    "few": "Zničte {count} datové sady",
+    "many": "Zničte datové sady {count}",
+    "other": "Zničte {count} datových sad"
+  },
+  "Quarantine {count} folders": {
+    "one": "Karanténa {count} složka",
+    "few": "Karanténa {count} složky",
+    "many": "Karanténa {count} složek",
+    "other": "Karanténa {count} složek"
+  },
+  "{count} conflicts found.": {
+    "one": "Nalezen {count} konflikt.",
+    "few": "Byly nalezeny {count} konflikty.",
+    "many": "{count} nalezeny konflikty.",
+    "other": "Bylo nalezeno {count} konfliktů."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} vybraná složka lze stále normálně obnovit.",
+    "few": "{count} vybrané složky lze stále normálně obnovit.",
+    "many": "{count} vybrané složky lze stále normálně obnovit.",
+    "other": "{count} vybraných složek lze stále normálně obnovit."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Zkuste to znovu asi za {count} sekundu.",
+    "few": "Zkuste to znovu asi za {count} sekundy.",
+    "many": "Zkuste to znovu asi za {count} sekundy.",
+    "other": "Zkuste to znovu asi za {count} sekund."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Uloženo {count} ZFS mapování a opětovné skenování.",
+    "few": "Uloženo {count} ZFS mapování a opětovné skenování.",
+    "many": "Uložená {count} ZFS mapování a opětovné skenování.",
+    "other": "Uloženo {count} ZFS mapování a opětovné skenování."
+  },
+  "Processed {count} folders.": {
+    "one": "Zpracována {count} složka.",
+    "few": "Zpracovány {count} složky.",
+    "many": "Zpracované složky {count}.",
+    "other": "Zpracováno {count} složek."
+  },
+  "{count} folders are visible.": {
+    "one": "Je viditelná {count} složka.",
+    "few": "Jsou viditelné {count} složky.",
+    "many": "Jsou viditelné složky {count}.",
+    "other": "Je vidět {count} složek."
+  },
+  "{count} more": {
+    "one": "{count} další",
+    "few": "{count} další",
+    "many": "{count} více",
+    "other": "{count} dalších"
+  },
+  "{count} minutes ago": {
+    "one": "před {count} minutou",
+    "few": "před {count} minutami",
+    "many": "před {count} minutou",
+    "other": "před {count} minutami"
+  },
+  "{count} hours ago": {
+    "one": "před {count} hodinou",
+    "few": "před {count} hodinami",
+    "many": "před {count} hodinou",
+    "other": "před {count} hodinami"
+  },
+  "{count} days ago": {
+    "one": "před {count} dnem",
+    "few": "před {count} dny",
+    "many": "před {count} dnem",
+    "other": "před {count} dny"
+  },
+  "{count} months ago": {
+    "one": "před {count} měsícem",
+    "few": "před {count} měsíci",
+    "many": "před {count} měsícem",
+    "other": "před {count} měsíci"
+  },
+  "{count} years ago": {
+    "one": "před {count} rokem",
+    "few": "před {count} lety",
+    "many": "před {count} lety",
+    "other": "před {count} lety"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Čištění je naplánováno za {count} den.",
+    "few": "Čištění je naplánováno za {count} dny.",
+    "many": "Čištění je naplánováno za {count} dne.",
+    "other": "Čištění je naplánováno za {count} dní."
+  },
+  "Purges in {count} days": {
+    "one": "Čištění za {count} den",
+    "few": "Čištění za {count} dny",
+    "many": "Čištění za {count} dne",
+    "other": "Čištění za {count} dní"
+  },
+  "Purges in {count} hours": {
+    "one": "Čištění za {count} hodinu",
+    "few": "Čištění za {count} hodiny",
+    "many": "Čištění za {count} hodiny",
+    "other": "Čištění za {count} hodin"
+  },
+  "Purges in {count} minutes": {
+    "one": "Čištění za {count} minutu",
+    "few": "Čištění za {count} minuty",
+    "many": "Čištění za {count} minuty",
+    "other": "Čištění za {count} minut"
+  },
+  "{count} child datasets": {
+    "one": "{count} podřízená datová sada",
+    "few": "{count} podřízené datové sady",
+    "many": "{count} podřízené datové sady",
+    "other": "{count} podřízených datových sad"
+  },
+  "{count} snapshots": {
+    "one": "{count} snímek",
+    "few": "{count} snímky",
+    "many": "Snímky {count}",
+    "other": "{count} snímků"
+  },
+  "{count} conflicts": {
+    "one": "{count} konflikt",
+    "few": "{count} konflikty",
+    "many": "{count} konflikty",
+    "other": "{count} konfliktů"
+  },
+  "{count} errors": {
+    "one": "{count} chyba",
+    "few": "{count} chyby",
+    "many": "chyby {count}",
+    "other": "{count} chyb"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} Byla odeslána {count} položka.",
+    "few": "{message} Byly odeslány {count} položky.",
+    "many": "{message} Bylo odesláno {count} položek.",
+    "other": "{message} Bylo odesláno {count} položek."
+  },
+  "{count} items were submitted.": {
+    "one": "Byla odeslána {count} položka.",
+    "few": "Byly předloženy {count} položky.",
+    "many": "Bylo odesláno {count} položky.",
+    "other": "Bylo předloženo {count} položek."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Rekurzivní zničení také odstraní {count} podřízenou datovou sadu.",
+    "few": "Rekurzivní zničení také odstraní {count} podřízené datové sady.",
+    "many": "Rekurzivní zničení také odstraní podřízené datové sady {count}.",
+    "other": "Rekurzivní zničení také odstraní {count} podřízených datových sad."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Rekurzivní zničení také odstraní {count} snímek.",
+    "few": "Rekurzivní zničení také odstraní {count} snímky.",
+    "many": "Rekurzivní zničení také odstraní snímky {count}.",
+    "other": "Rekurzivní zničení také odstraní {count} snímků."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Zničit také odstraní {count} snímek.",
+    "few": "Destroy také odstraní {count} snímky.",
+    "many": "Destroy také odstraní snímky {count}.",
+    "other": "Destroy také odstraní {count} snímků."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} složka byla přesunuta do karantény.",
+    "few": "{count} složky byly přesunuty do karantény.",
+    "many": "{count} složek bylo přesunuto do karantény.",
+    "other": "{count} složek bylo přesunuto do karantény."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} složka byla smazána.",
+    "few": "{count} složky byly odstraněny.",
+    "many": "{count} složky byly odstraněny.",
+    "other": "Bylo smazáno {count} složek."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} složka byla obnovena.",
+    "few": "Byly obnoveny {count} složky.",
+    "many": "{count} složky byly obnoveny.",
+    "other": "Bylo obnoveno {count} složek."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} složka byla trvale vymazána.",
+    "few": "{count} složky byly trvale vymazány.",
+    "many": "Složky {count} byly trvale vymazány.",
+    "other": "{count} složek bylo trvale vymazáno."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} položka byla přeskočena.",
+    "few": "{count} položky byly přeskočeny.",
+    "many": "{count} položek bylo přeskočeno.",
+    "other": "{count} položek bylo přeskočeno."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} položka již chyběla.",
+    "few": "{count} položky již chyběly.",
+    "many": "Chybělo již {count} položky.",
+    "other": "{count} položek již chybělo."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} položka byla zablokována.",
+    "few": "{count} položky byly zablokovány.",
+    "many": "{count} položek bylo zablokováno.",
+    "other": "{count} položek bylo zablokováno."
+  },
+  "{count} errors occurred.": {
+    "one": "došlo k {count} chybě.",
+    "few": "došlo ke {count} chybám.",
+    "many": "došlo k chybám {count}.",
+    "other": "Vyskytlo se {count} chyb."
+  }
+}

@@ -1,0 +1,248 @@
+{
+  "{count} folders selected": {
+    "one": "Вибрано {count} папку",
+    "few": "Вибрано {count} папки",
+    "many": "Вибрано {count} папок",
+    "other": "{count} вибрано папки"
+  },
+  "{count} items total": {
+    "one": "Всього {count} шт",
+    "few": "Всього {count} шт",
+    "many": "Всього {count} предметів",
+    "other": "Всього {count} шт"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "Відстежено {count} папку в карантині",
+    "few": "Відстежено {count} папки на карантині",
+    "many": "Відстежено {count} папок на карантині",
+    "other": "{count} Відстежено папки в карантині"
+  },
+  "{count} items submitted": {
+    "one": "Надіслано {count} товар",
+    "few": "Надіслано {count} предмети",
+    "many": "Надіслано {count} предметів",
+    "other": "{count} подано пунктів"
+  },
+  "Delete {count} folders": {
+    "one": "Видалити {count} папку",
+    "few": "Видалити {count} папки",
+    "many": "Видалити {count} папок",
+    "other": "Видалити папки {count}"
+  },
+  "Delete {count} items": {
+    "one": "Видалити {count} елемент",
+    "few": "Видалити {count} елементи",
+    "many": "Видалити {count} елементів",
+    "other": "Видалити {count} п"
+  },
+  "Destroy {count} datasets": {
+    "one": "Знищити {count} набір даних",
+    "few": "Знищити {count} набори даних",
+    "many": "Знищити {count} наборів даних",
+    "other": "Знищити набори даних {count}"
+  },
+  "Quarantine {count} folders": {
+    "one": "Карантин {count} папка",
+    "few": "Карантин {count} папки",
+    "many": "Карантин {count} папок",
+    "other": "Карантинні папки {count}"
+  },
+  "{count} conflicts found.": {
+    "one": "Знайдено {count} конфлікт.",
+    "few": "Знайдено {count} конфлікти.",
+    "many": "Знайдено {count} конфліктів.",
+    "other": "{count} знайдено конфлікти."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} вибрану папку все ще можна нормально відновити.",
+    "few": "{count} вибрані папки все ще можна нормально відновити.",
+    "many": "{count} вибраних папок все ще можна нормально відновити.",
+    "other": "{count} вибрані папки все ще можна нормально відновити."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Повторіть приблизно через {count} секунду.",
+    "few": "Повторіть приблизно через {count} секунди.",
+    "many": "Повторіть приблизно через {count} секунд.",
+    "other": "Повторіть приблизно через {count} секунди."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Збережено {count} ZFS картографування та повторне сканування.",
+    "few": "Збережено {count} ZFS зіставлення та повторне сканування.",
+    "many": "Збережено {count} ZFS карт і повторне сканування.",
+    "other": "Збережено {count} ZFS зіставлення та повторне сканування."
+  },
+  "Processed {count} folders.": {
+    "one": "Оброблено {count} папку.",
+    "few": "Оброблено {count} папки.",
+    "many": "Оброблено {count} папок.",
+    "other": "Оброблено папки {count}."
+  },
+  "{count} folders are visible.": {
+    "one": "Видно {count} папку.",
+    "few": "Видно {count} папки.",
+    "many": "Видно {count} папок.",
+    "other": "Видно папки {count}."
+  },
+  "{count} more": {
+    "one": "ще {count}",
+    "few": "ще {count}",
+    "many": "ще {count}",
+    "other": "{count} більше"
+  },
+  "{count} minutes ago": {
+    "one": "{count} хвилину тому",
+    "few": "{count} хвилини тому",
+    "many": "{count} хвилин тому",
+    "other": "{count} хвилини тому"
+  },
+  "{count} hours ago": {
+    "one": "{count} годину тому",
+    "few": "{count} години тому",
+    "many": "{count} годин тому",
+    "other": "{count} години тому"
+  },
+  "{count} days ago": {
+    "one": "{count} день тому",
+    "few": "{count} дні тому",
+    "many": "{count} днів тому",
+    "other": "{count} дня тому"
+  },
+  "{count} months ago": {
+    "one": "{count} місяць тому",
+    "few": "{count} місяці тому",
+    "many": "{count} місяців тому",
+    "other": "{count} місяці тому"
+  },
+  "{count} years ago": {
+    "one": "{count} рік тому",
+    "few": "{count} роки тому",
+    "many": "{count} років тому",
+    "other": "{count} років тому"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Очищення заплановано через {count} день.",
+    "few": "Продувка запланована через {count} дні.",
+    "many": "Очищення заплановано через {count} днів.",
+    "other": "Очищення заплановано через {count} дня."
+  },
+  "Purges in {count} days": {
+    "one": "Очищає за {count} день",
+    "few": "Очищає за {count} дні",
+    "many": "Очищає через {count} днів",
+    "other": "Очищає за {count} дня"
+  },
+  "Purges in {count} hours": {
+    "one": "Очищає за {count} годину",
+    "few": "Очищає за {count} години",
+    "many": "Очищається за {count} годин",
+    "other": "Очищає за {count} години"
+  },
+  "Purges in {count} minutes": {
+    "one": "Очищає за {count} хвилину",
+    "few": "Очищає за {count} хвилини",
+    "many": "Очищає за {count} хвилин",
+    "other": "Очищає за {count} хвилини"
+  },
+  "{count} child datasets": {
+    "one": "{count} дочірній набір даних",
+    "few": "{count} дочірніх набори даних",
+    "many": "{count} дочірніх наборів даних",
+    "other": "{count} дочірні набори даних"
+  },
+  "{count} snapshots": {
+    "one": "{count} знімок",
+    "few": "{count} знімки",
+    "many": "{count} знімків",
+    "other": "{count} знімки"
+  },
+  "{count} conflicts": {
+    "one": "{count} конфлікт",
+    "few": "{count} конфлікти",
+    "many": "{count} конфліктів",
+    "other": "{count} конфлікти"
+  },
+  "{count} errors": {
+    "one": "{count} помилка",
+    "few": "{count} помилки",
+    "many": "{count} помилок",
+    "other": "{count} помилки"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} Надіслано {count} пункт.",
+    "few": "{message} Подано {count} шт.",
+    "many": "{message} подано {count} пунктів.",
+    "other": "Подано {message} {count} пунктів."
+  },
+  "{count} items were submitted.": {
+    "one": "Надіслано {count} товар.",
+    "few": "Подано {count} предмети.",
+    "many": "Подано {count} пунктів.",
+    "other": "Подано {count} п.п."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Рекурсивне знищення також видалить {count} дочірній набір даних.",
+    "few": "Рекурсивне знищення також видалить {count} дочірніх набори даних.",
+    "many": "Рекурсивне знищення також видалить {count} дочірніх наборів даних.",
+    "other": "Рекурсивне знищення також видалить дочірні набори даних {count}."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Рекурсивне знищення також видалить {count} знімок.",
+    "few": "Рекурсивне знищення також видалить {count} знімки.",
+    "many": "Рекурсивне знищення також видалить {count} знімків.",
+    "other": "Рекурсивне знищення також видалить знімки {count}."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy також видалить {count} знімок.",
+    "few": "Destroy також видалить {count} знімки.",
+    "many": "Destroy також видалить {count} знімків.",
+    "other": "Destroy також видалить знімки {count}."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} папку переміщено на карантин.",
+    "few": "{count} папки переміщено на карантин.",
+    "many": "{count} папок переміщено на карантин.",
+    "other": "{count} папки переміщено на карантин."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} папку видалено.",
+    "few": "Видалено {count} папки.",
+    "many": "Видалено {count} папок.",
+    "other": "{count} папки були видалені."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} папку відновлено.",
+    "few": "Відновлено {count} папки.",
+    "many": "Відновлено {count} папок.",
+    "other": "Відновлено папки {count}."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} папку видалено назавжди.",
+    "few": "{count} папки видалено назавжди.",
+    "many": "{count} папок очищено назавжди.",
+    "other": "Папки {count} остаточно видалено."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} елемент пропущено.",
+    "few": "{count} елементи були пропущені.",
+    "many": "{count} пунктів було пропущено.",
+    "other": "{count} пунктів було пропущено."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} елемент уже відсутній.",
+    "few": "{count} предмети вже були відсутні.",
+    "many": "Вже бракувало {count} предметів.",
+    "other": "{count} елемента вже бракувало."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} елемент заблоковано.",
+    "few": "Заблоковано {count} елементи.",
+    "many": "Заблоковано {count} пунктів.",
+    "other": "Заблоковано {count} пунктів."
+  },
+  "{count} errors occurred.": {
+    "one": "Сталася {count} помилка.",
+    "few": "Сталося {count} помилки.",
+    "many": "Сталося {count} помилок.",
+    "other": "Сталися помилки {count}."
+  }
+}

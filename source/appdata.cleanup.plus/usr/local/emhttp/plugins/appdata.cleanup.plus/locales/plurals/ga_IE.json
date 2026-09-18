@@ -1,0 +1,289 @@
+{
+  "{count} folders selected": {
+    "one": "{count} fillteán roghnaithe",
+    "two": "{count} fhillteán roghnaithe",
+    "few": "{count} fhillteán roghnaithe",
+    "many": "{count} bhfillteán roghnaithe",
+    "other": "{count} fillteán roghnaithe"
+  },
+  "{count} items total": {
+    "one": "{count} mhír san iomlán",
+    "two": "{count} mhír san iomlán",
+    "few": "{count} mhír san iomlán",
+    "many": "{count} míreanna san iomlán",
+    "other": "{count} mír san iomlán"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "Rianaíodh {count} fhillteán coraintín",
+    "two": "Rianaíodh {count} fhillteán coraintín",
+    "few": "Rianaíodh {count} fhillteán coraintín",
+    "many": "Rianaíodh {count} bhfillteán coraintín",
+    "other": "Rianaíodh {count} bhfillteán coraintín"
+  },
+  "{count} items submitted": {
+    "one": "{count} mhír curtha isteach",
+    "two": "{count} mhír curtha isteach",
+    "few": "{count} mhír curtha isteach",
+    "many": "{count} mír curtha isteach",
+    "other": "{count} mír curtha isteach"
+  },
+  "Delete {count} folders": {
+    "one": "Scrios {count} fhillteán",
+    "two": "Scrios {count} fhillteán",
+    "few": "Scrios {count} fhillteán",
+    "many": "Scrios {count} bhfillteán",
+    "other": "Scrios {count} fillteán"
+  },
+  "Delete {count} items": {
+    "one": "Scrios {count} mhír",
+    "two": "Scrios {count} mhír",
+    "few": "Scrios {count} mhír",
+    "many": "Scrios {count} mír",
+    "other": "Scrios {count} mír"
+  },
+  "Destroy {count} datasets": {
+    "one": "Scrios {count} tacar sonraí",
+    "two": "Scrios {count} thacar sonraí",
+    "few": "Scrios {count} thacar sonraí",
+    "many": "Scrios {count} tacar sonraí",
+    "other": "Scrios {count} tacar sonraí"
+  },
+  "Quarantine {count} folders": {
+    "one": "Coraintín {count} fillteán",
+    "two": "Coraintín {count} fillteáin",
+    "few": "Coraintín {count} fillteáin",
+    "many": "Coraintín {count} fillteáin",
+    "other": "Coraintín {count} fillteáin"
+  },
+  "{count} conflicts found.": {
+    "one": "Aimsíodh {count} choimhlint.",
+    "two": "Aimsíodh {count} choimhlint.",
+    "few": "Aimsíodh {count} choimhlint.",
+    "many": "Aimsíodh {count} gcoimhlint.",
+    "other": "Aimsíodh {count} coimhlint."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "Is féidir {count} fhillteán roghnaithe a chur ar ais de ghnáth.",
+    "two": "Is féidir {count} fhillteán roghnaithe a athchóiriú de ghnáth.",
+    "few": "Is féidir {count} fhillteán roghnaithe a chur ar ais de ghnáth.",
+    "many": "Is féidir {count} bhfillteán roghnaithe a athchóiriú de ghnáth.",
+    "other": "Is féidir {count} bhfillteán roghnaithe a chur ar ais de ghnáth."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Bain triail eile as tar éis thart ar {count} soicind.",
+    "two": "Bain triail eile as tar éis thart ar {count} soicind.",
+    "few": "Bain triail eile as tar éis thart ar {count} soicind.",
+    "many": "Bain triail eile as tar éis thart ar {count} soicind.",
+    "other": "Bain triail eile as tar éis timpeall {count} soicind."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Sábháilte {count} ZFS mapáil agus athscanadh.",
+    "two": "Sábháilte {count} ZFS léarscáiliú agus athscanadh.",
+    "few": "Sábháilte {count} ZFS léarscáiliú agus athscanadh.",
+    "many": "Sábháilte {count} ZFS léarscáiliú agus athscanadh.",
+    "other": "Sábháilte {count} ZFS mapáil agus athscanadh."
+  },
+  "Processed {count} folders.": {
+    "one": "Próiseáilte {count} fhillteán.",
+    "two": "Próiseáladh {count} fhillteán.",
+    "few": "Próiseáladh {count} fhillteán.",
+    "many": "Próiseáladh {count} bhfillteán.",
+    "other": "Próiseáladh {count} fillteán."
+  },
+  "{count} folders are visible.": {
+    "one": "Tá fillteán amháin le feiceáil.",
+    "two": "Tá {count} fhillteán le feiceáil.",
+    "few": "Tá {count} fhillteán le feiceáil.",
+    "many": "Tá {count} bhfillteán le feiceáil.",
+    "other": "Tá {count} fillteán le feiceáil."
+  },
+  "{count} more": {
+    "one": "{count} eile",
+    "two": "{count} níos mó",
+    "few": "{count} eile",
+    "many": "{count} níos mó",
+    "other": "{count} níos mó"
+  },
+  "{count} minutes ago": {
+    "one": "{count} nóiméad ó shin",
+    "two": "{count} nóiméad ó shin",
+    "few": "{count} nóiméad ó shin",
+    "many": "{count} nóiméad ó shin",
+    "other": "{count} nóiméad ó shin"
+  },
+  "{count} hours ago": {
+    "one": "{count} uair ó shin",
+    "two": "{count} uair ó shin",
+    "few": "{count} uair ó shin",
+    "many": "{count} uair an chloig ó shin",
+    "other": "{count} uair ó shin"
+  },
+  "{count} days ago": {
+    "one": "{count} lá ó shin",
+    "two": "{count} lá ó shin",
+    "few": "{count} lá ó shin",
+    "many": "{count} lá ó shin",
+    "other": "{count} lá ó shin"
+  },
+  "{count} months ago": {
+    "one": "{count} mí ó shin",
+    "two": "{count} mhí ó shin",
+    "few": "{count} mhí ó shin",
+    "many": "{count} mí ó shin",
+    "other": "{count} mí ó shin"
+  },
+  "{count} years ago": {
+    "one": "{count} bhliain ó shin",
+    "two": "{count} bhliain ó shin",
+    "few": "{count} bliana ó shin",
+    "many": "{count} mbliana ó shin",
+    "other": "{count} bliain ó shin"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Sceidealta a ghlanadh i {count} lá.",
+    "two": "Sceidealta a ghlanadh i {count} lá.",
+    "few": "Sceidealta a ghlanadh i {count} lá.",
+    "many": "Sceidealta a ghlanadh i {count} lá.",
+    "other": "Sceidealta a ghlanadh i {count} lá."
+  },
+  "Purges in {count} days": {
+    "one": "Purges i {count} lá",
+    "two": "Purges i {count} lá",
+    "few": "Purges i {count} lá",
+    "many": "Purges i {count} lá",
+    "other": "Purges i {count} lá"
+  },
+  "Purges in {count} hours": {
+    "one": "Purges i {count} uair an chloig",
+    "two": "Purges i {count} uair an chloig",
+    "few": "Purges i {count} uair an chloig",
+    "many": "Purges i {count} uair an chloig",
+    "other": "Purges i {count} uair an chloig"
+  },
+  "Purges in {count} minutes": {
+    "one": "Purges i {count} nóiméad",
+    "two": "Purges i {count} nóiméad",
+    "few": "Purges i {count} nóiméad",
+    "many": "Purges i {count} nóiméad",
+    "other": "Purges i {count} nóiméad"
+  },
+  "{count} child datasets": {
+    "one": "{count} tacar sonraí linbh",
+    "two": "{count} thacar sonraí leanaí",
+    "few": "{count} tacar sonraí leanaí",
+    "many": "{count} tacar sonraí leanaí",
+    "other": "{count} tacar sonraí leanaí"
+  },
+  "{count} snapshots": {
+    "one": "{count} radharc",
+    "two": "{count} seat",
+    "few": "{count} radharc",
+    "many": "{count} scéith",
+    "other": "{count} pictiúr"
+  },
+  "{count} conflicts": {
+    "one": "{count} choimhlint",
+    "two": "{count} choimhlint",
+    "few": "{count} choimhlint",
+    "many": "{count} coimhlint",
+    "other": "{count} coimhlint"
+  },
+  "{count} errors": {
+    "one": "{count} earráid",
+    "two": "{count} earráid",
+    "few": "{count} earráid",
+    "many": "{count} earráid",
+    "other": "{count} earráid"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} Cuireadh {count} mhír isteach.",
+    "two": "{message} Cuireadh {count} mhír isteach.",
+    "few": "{message} Cuireadh {count} mhír isteach.",
+    "many": "{message} Cuireadh {count} mír isteach.",
+    "other": "Cuireadh {message} {count} mír isteach."
+  },
+  "{count} items were submitted.": {
+    "one": "Cuireadh {count} mhír isteach.",
+    "two": "Cuireadh {count} mhír isteach.",
+    "few": "Cuireadh {count} mhír isteach.",
+    "many": "Cuireadh {count} mír isteach.",
+    "other": "Cuireadh {count} mír isteach."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Bainfidh scrios athfhillteach {count} tacar sonraí linbh freisin.",
+    "two": "Bainfidh scrios athfhillteach {count} thacar sonraí leanaí freisin.",
+    "few": "Bainfidh scrios athfhillteach {count} thacar sonraí leanaí freisin.",
+    "many": "Bainfidh scrios athfhillteach {count} tacar sonraí leanaí freisin.",
+    "other": "Bainfidh scrios athfhillteach {count} tacar sonraí leanaí freisin."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Bainfidh scrios athchúrsach {count} pictiúr freisin.",
+    "two": "Bainfidh scrios athchúrsach {count} seat freisin.",
+    "few": "Bainfidh scrios athchúrsach {count} ghrianghraf freisin.",
+    "many": "Bainfidh scrios athchúrsach {count} ngrianghraf freisin.",
+    "other": "Bainfidh scrios athchúrsach {count} seat freisin."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Bainfidh scrios freisin {count} seat.",
+    "two": "Beidh Scrios freisin bhaint {count} snapshots.",
+    "few": "Beidh Scrios freisin bhaint {count} snapshots.",
+    "many": "Bainfidh scrios freisin {count} seat.",
+    "other": "Bainfidh Scrios freisin {count} seatanna."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "Bogadh fillteán amháin go coraintín.",
+    "two": "Bogadh {count} fhillteán go coraintín.",
+    "few": "Aistríodh {count} fhillteán go coraintín.",
+    "many": "Aistríodh {count} bhfillteán go coraintín.",
+    "other": "Bogadh {count} bhfillteán go coraintín."
+  },
+  "{count} folders were deleted.": {
+    "one": "Scriosadh {count} fhillteán.",
+    "two": "Scriosadh {count} fhillteán.",
+    "few": "Scriosadh {count} fhillteán.",
+    "many": "Scriosadh {count} bhfillteán.",
+    "other": "Scriosadh {count} bhfillteán."
+  },
+  "{count} folders were restored.": {
+    "one": "Athchóiríodh {count} fhillteán.",
+    "two": "Athchóiríodh {count} fhillteán.",
+    "few": "Athchóiríodh {count} fhillteán.",
+    "many": "Athchóiríodh {count} bhfillteán.",
+    "other": "Athchóiríodh {count} bhfillteán."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "Glanadh fillteán amháin go buan.",
+    "two": "Glanadh {count} fhillteán go buan.",
+    "few": "Glanadh {count} fhillteán go buan.",
+    "many": "Glanadh {count} bhfillteán go buan.",
+    "other": "Glanadh {count} bhfillteán go buan."
+  },
+  "{count} items were skipped.": {
+    "one": "Léiríodh {count} mhír.",
+    "two": "Léiríodh {count} mhír.",
+    "few": "Léiríodh {count} mhír.",
+    "many": "Léiríodh {count} mír.",
+    "other": "Léiríodh {count} mír."
+  },
+  "{count} items were already missing.": {
+    "one": "Bhí mír amháin ar iarraidh cheana féin.",
+    "two": "Bhí {count} mhír ar iarraidh cheana féin.",
+    "few": "Bhí {count} mhír ar iarraidh cheana féin.",
+    "many": "Bhí {count} mír ar iarraidh cheana féin.",
+    "other": "Bhí {count} mír ar iarraidh cheana féin."
+  },
+  "{count} items were blocked.": {
+    "one": "Cuireadh bac ar mhír {count}.",
+    "two": "Cuireadh bac ar {count} mhír.",
+    "few": "Cuireadh bac ar {count} mhír.",
+    "many": "Cuireadh bac ar {count} mír.",
+    "other": "Cuireadh bac ar {count} mír."
+  },
+  "{count} errors occurred.": {
+    "one": "Tharla earráid {count}.",
+    "two": "Tharla {count} earráid.",
+    "few": "Tharla {count} earráid.",
+    "many": "Tharla {count} earráid.",
+    "other": "Tharla {count} earráid."
+  }
+}

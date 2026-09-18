@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "{count} Ordner ausgewählt",
+    "other": "{count} Ordner ausgewählt"
+  },
+  "{count} items total": {
+    "one": "Insgesamt {count} Artikel",
+    "other": "Insgesamt {count} Artikel"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} Quarantäneordner verfolgt",
+    "other": "{count} Quarantäneordner verfolgt"
+  },
+  "{count} items submitted": {
+    "one": "{count} Artikel eingereicht",
+    "other": "{count} Artikel eingereicht"
+  },
+  "Delete {count} folders": {
+    "one": "{count} Ordner löschen",
+    "other": "{count} Ordner löschen"
+  },
+  "Delete {count} items": {
+    "one": "{count} Element löschen",
+    "other": "{count} Elemente löschen"
+  },
+  "Destroy {count} datasets": {
+    "one": "Zerstöre {count} Datensatz",
+    "other": "Zerstöre {count} Datensätze"
+  },
+  "Quarantine {count} folders": {
+    "one": "Ordner „Quarantäne {count}“.",
+    "other": "{count} Ordner unter Quarantäne stellen"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} Konflikt gefunden.",
+    "other": "{count} Konflikte gefunden."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} ausgewählter Ordner kann weiterhin normal wiederhergestellt werden.",
+    "other": "{count} ausgewählte Ordner können weiterhin normal wiederhergestellt werden."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Versuchen Sie es nach etwa einer Sekunde erneut.",
+    "other": "Versuchen Sie es nach etwa {count} Sekunden erneut."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "{count} ZFS Kartierung und erneutes Scannen gespeichert.",
+    "other": "{count} ZFS Zuordnungen und erneutes Scannen gespeichert."
+  },
+  "Processed {count} folders.": {
+    "one": "{count} Ordner verarbeitet.",
+    "other": "{count} Ordner verarbeitet."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} Ordner ist sichtbar.",
+    "other": "{count} Ordner sind sichtbar."
+  },
+  "{count} more": {
+    "one": "{count} mehr",
+    "other": "{count} weitere"
+  },
+  "{count} minutes ago": {
+    "one": "Vor {count} Minute",
+    "other": "Vor {count} Minuten"
+  },
+  "{count} hours ago": {
+    "one": "Vor {count} Stunde",
+    "other": "Vor {count} Stunden"
+  },
+  "{count} days ago": {
+    "one": "Vor {count} Tag",
+    "other": "Vor {count} Tagen"
+  },
+  "{count} months ago": {
+    "one": "Vor {count} Monat",
+    "other": "Vor {count} Monaten"
+  },
+  "{count} years ago": {
+    "one": "Vor {count} Jahr",
+    "other": "Vor {count} Jahren"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Geplante Löschung in {count} Tag.",
+    "other": "Die Säuberung ist in {count} Tagen geplant."
+  },
+  "Purges in {count} days": {
+    "one": "Reinigt in {count} Tag",
+    "other": "Reinigt in {count} Tagen"
+  },
+  "Purges in {count} hours": {
+    "one": "Reinigt in {count} Stunde",
+    "other": "Reinigt in {count} Stunden"
+  },
+  "Purges in {count} minutes": {
+    "one": "Reinigt in {count} Minute",
+    "other": "Reinigt in {count} Minuten"
+  },
+  "{count} child datasets": {
+    "one": "{count} untergeordneter Datensatz",
+    "other": "{count} untergeordnete Datensätze"
+  },
+  "{count} snapshots": {
+    "one": "{count} Schnappschuss",
+    "other": "{count} Schnappschüsse"
+  },
+  "{count} conflicts": {
+    "one": "{count} Konflikt",
+    "other": "{count} Konflikte"
+  },
+  "{count} errors": {
+    "one": "{count} Fehler",
+    "other": "{count} Fehler"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} Artikel wurde eingereicht.",
+    "other": "{message} {count} Artikel wurden eingereicht."
+  },
+  "{count} items were submitted.": {
+    "one": "{count} Artikel wurde eingereicht.",
+    "other": "{count} Artikel wurden eingereicht."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Durch die rekursive Zerstörung wird auch ein untergeordneter Datensatz entfernt.",
+    "other": "Durch die rekursive Zerstörung werden auch {count} untergeordnete Datensätze entfernt."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Durch rekursives Zerstören wird außerdem {count} Snapshot entfernt.",
+    "other": "Durch rekursives Zerstören werden außerdem {count} Snapshots entfernt."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Durch Zerstören wird auch {count} Schnappschuss entfernt.",
+    "other": "Durch Zerstören werden außerdem {count} Schnappschüsse entfernt."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} Ordner wurde in die Quarantäne verschoben.",
+    "other": "{count} Ordner wurden in die Quarantäne verschoben."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} Ordner wurde gelöscht.",
+    "other": "{count} Ordner wurden gelöscht."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} Ordner wurde wiederhergestellt.",
+    "other": "{count} Ordner wurden wiederhergestellt."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} Ordner wurde dauerhaft gelöscht.",
+    "other": "{count} Ordner wurden dauerhaft gelöscht."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} Element wurde übersprungen.",
+    "other": "{count} Elemente wurden übersprungen."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} Artikel fehlte bereits.",
+    "other": "{count} Artikel fehlten bereits."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} Artikel wurde blockiert.",
+    "other": "{count} Artikel wurden blockiert."
+  },
+  "{count} errors occurred.": {
+    "one": "{count} Fehler ist aufgetreten.",
+    "other": "Es sind {count} Fehler aufgetreten."
+  }
+}

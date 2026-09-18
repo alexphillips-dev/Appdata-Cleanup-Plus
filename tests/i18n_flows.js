@@ -1,0 +1,89 @@
+"use strict";
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const {execFileSync} = require('node:child_process');
+const root = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus');
+const locales = JSON.parse(fs.readFileSync(path.join(root, 'locales/locales.json'), 'utf8'));
+const cases = JSON.parse(execFileSync('php', [path.join(__dirname, 'i18n_cases.php')], {encoding:'utf8', maxBuffer:10e6}));
+const source = name => fs.readFileSync(path.join(root, 'scripts', name), 'utf8');
+const main = source('appdata.cleanup.plus.js');
+assert.equal(main.split('$(init);').length, 2, 'Test harness must intercept only page initialization');
+const hook = 'window.flow = {state:state, buildOperationContext:buildOperationContext, buildActionConfirmButtonText:buildActionConfirmButtonText, buildRestoreConflictDialogHtml:buildRestoreConflictDialogHtml, buildQuarantineSelectionSummaryText:buildQuarantineSelectionSummaryText, applyLocalCandidateState:applyLocalCandidateState, getRowStateDescriptor:getRowStateDescriptor, buildOperationPreviewHtml:buildOperationPreviewHtml, buildOperationProgressHtml:buildOperationProgressHtml, buildTemplateActionLockReason:buildTemplateActionLockReason};';
+for (const [locale, definition] of Object.entries(locales)) {
+  const fixture = cases[locale];
+  const catalog = JSON.parse(fs.readFileSync(path.join(root, 'locales', locale + '.json'), 'utf8'));
+  const window = {appdataCleanupPlusConfig:{catalog, plurals:fixture.plurals, languageTag:definition.tag}};
+  const $ = function() { throw Error('Unexpected DOM access in presentation fixture'); };
+  Object.assign($, {isArray:Array.isArray, isPlainObject:v=>!!v && typeof v==='object' && !Array.isArray(v), trim:v=>String(v||'').trim(), extend:Object.assign,
+    grep:(a,f)=>a.filter(f), map:(a,f)=>Object.keys(a||{}).map(k=>f(a[k],k)).filter(v=>v!==null), inArray:(v,a)=>a.indexOf(v),
+    each:(a,f)=>Object.keys(a||{}).forEach(k=>f(k,a[k]))});
+  const context = vm.createContext({window, document:{}, jQuery:$, Intl, Date, console});
+  vm.runInContext(source('appdata.cleanup.plus.shared.js'), context);
+  vm.runInContext(source('appdata.cleanup.plus.panels.js'), context);
+  vm.runInContext(main.replace('$(init);', hook), context);
+  const ACP = window.AppdataCleanupPlus, flow = window.flow;
+  const selector = new Intl.PluralRules(definition.tag);
+  fixture.counts.forEach((n,i)=>{
+    assert.equal(fixture.categories[i], selector.select(n), `${locale}: PHP category ${n}`);
+    assert.equal(ACP.pluralCategory(n), selector.select(n), `${locale}: JS category ${n}`);
+  });
+  // Complete rendered flows cover zero, singular, dual, few, many and teen boundaries.
+  for (const n of [0,1,2,3,5,11,21,22,101]) {
+    const row = {id:'example',name:'<b>Delete</b>',sourceKind:'filesystem',sourceNames:[],targetPaths:[],canDelete:true,storageKind:'filesystem',risk:'deletable',path:'/mnt/user/Delete'};
+    const operation = flow.buildOperationContext('delete', [row]);
+    const button = flow.buildActionConfirmButtonText(operation,n);
+    assert.equal(button, ACP.plural('Delete {count} folders',n));
+    assert.equal(flow.buildActionConfirmButtonText(flow.buildOperationContext('delete',[{storageKind:'zfs'}]),n),ACP.plural('Destroy {count} datasets',n));
+    assert.equal(flow.buildActionConfirmButtonText(flow.buildOperationContext('delete',[row,{storageKind:'zfs'}]),n),ACP.plural('Delete {count} items',n));
+    assert.equal(flow.buildActionConfirmButtonText(flow.buildOperationContext('quarantine',[row]),n),ACP.plural('Quarantine {count} folders',n));
+    const preview = flow.buildOperationPreviewHtml([Object.assign({},row,{path:'/mnt/user/<b>Delete</b>'})],operation,{});
+    assert.ok(!preview.includes('<b>Delete</b>') && preview.includes('&lt;b&gt;Delete&lt;/b&gt;'));
+    const progress = flow.buildOperationProgressHtml({completedRoots:n,totalRoots:n+1},operation,false);
+    assert.ok(progress.includes(ACP.escapeHtml(ACP.plural('Processed {count} folders.',n))));
+    assert.equal(flow.buildQuarantineSelectionSummaryText(n), ACP.plural('{count} folders selected',n));
+    const conflict = flow.buildRestoreConflictDialogHtml({summary:{ready:n,conflicts:n},conflicts:[]});
+    assert.ok(conflict.includes(ACP.escapeHtml(ACP.plural('{count} conflicts found.',n))));
+    if (n) assert.ok(conflict.includes(ACP.escapeHtml(ACP.plural('{count} selected folders can still restore normally.',n))));
+    const quarantine = ACP.buildQuarantineManagerModalHtml({strings:{},state:{settings:{},quarantine:{summary:{count:n,sizeLabel:'0 B'},entries:[]}}});
+    if (n) assert.ok(quarantine.includes(ACP.escapeHtml(ACP.plural('{count} quarantined folders tracked',n))));
+    if (locale !== 'en_US') {
+      assert.ok(!conflict.includes('conflicts found') && !conflict.includes('still restore normally'));
+      assert.ok(!quarantine.includes(' tracked'));
+      assert.notEqual(button, `Delete ${n} folders`);
+    }
+  }
+  const history = ACP.buildAuditHistoryModalHtml({strings:{},state:{auditHistory:[{requestedCount:1}]}});
+  assert.ok(history.includes(ACP.escapeHtml(ACP.plural('{count} items submitted',1))));
+  flow.state.rows = [{id:'example',sourceKind:'filesystem',canDelete:true,risk:'deletable'}];
+  assert.equal(flow.applyLocalCandidateState(['example'],'ignore'),true);
+  assert.equal(flow.getRowStateDescriptor(flow.state.rows[0]).label,catalog.Ignored);
+  const evidenceRow = {sourceNames:['Delete','<b>Example</b>'],targetPaths:['/mnt/user/Delete']};
+  const evidence = flow.buildTemplateActionLockReason(evidenceRow);
+  assert.ok(evidence.includes('Delete') && evidence.includes('/mnt/user/Delete'));
+  assert.ok(!evidence.includes('tracked container paths') && !evidence.includes('+2 more'));
+  const payload = fixture.payload;
+  assert.deepEqual(payload.bundle, fixture.original.bundle);
+  assert.deepEqual(payload.settings, fixture.original.settings);
+  assert.deepEqual(payload.candidate.sourceNames, fixture.original.candidate.sourceNames);
+  assert.deepEqual(payload.candidate.targetPaths, fixture.original.candidate.targetPaths);
+  assert.ok(payload.candidate.reason.includes('<b>ExampleC</b>') && payload.candidate.reason.includes('/mnt/user/Delete'));
+  assert.ok(!payload.candidate.reason.includes('tracked container paths') && !payload.candidate.reason.includes('+2 more'));
+  const tools = ACP.buildToolsModalHtml({state:{fixtureTools:{status:{zfsNote:payload.zfsNote}}},strings:{}});
+  assert.ok(tools.includes(ACP.escapeHtml(payload.zfsNote)));
+  if (locale !== 'en_US') {
+    for (const key of ['scanWarningMessage','reason','zfsNote','storageLabel']) assert.notEqual(payload[key],fixture.original[key],`${locale}: ${key}`);
+    assert.ok(!payload.scanWarningMessage.includes('Filesystem discovery') && !payload.scanWarningMessage.includes('Scan results loaded'));
+    assert.ok(!payload.history.message.includes('folders were deleted') && !payload.history.message.includes('items were submitted'));
+    assert.ok(!fixture.legacyImpact.includes('Recursive destroy'));
+    assert.equal(fixture.oldImpact, fixture.legacyImpact, 'Legacy stored impact uses current complete messages');
+    for (const timer of fixture.purgeTimers) assert.ok(!timer.includes('Purges in'), `${locale}: purge countdown`);
+  }
+  if (locale === 'pl_PL') assert.equal(flow.buildActionConfirmButtonText(flow.buildOperationContext('delete',[{storageKind:'filesystem'}]),1),'Usuń 1 folder');
+  if (locale === 'ja_JA') assert.equal(ACP.plural('Delete {count} folders',2),'2 個のフォルダーを削除');
+  if (locale === 'ar_AR') assert.equal(ACP.plural('{count} snapshots',2),'لقطتان');
+  if (locale === 'en_US') assert.equal(ACP.plural('{count} items submitted',1),'1 item submitted');
+}
+assert.deepEqual(cases.ru_RU.snapshots,['1 снимок','2 снимка','5 снимков','21 снимок']);
+console.log('i18n_flows: all 42 locales; PHP/JS CLDR parity, confirmation, conflicts, selection, quarantine, ignore, Tools, warnings, history and literal data passed.');

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.18.01">
-<!ENTITY md5 "7d01023179491a43324b4b00897f102f">
+<!ENTITY version "2026.09.18.02">
+<!ENTITY md5 "791f697de5ec899d939ec9ea4288a0bf">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.18.02
+- Language accuracy: Use complete translated messages and native plural rules for selection counts, confirmations, restore conflicts, quarantine schedules, ZFS impact previews, and history across all 42 supported languages.
+- Translation coverage: Translate remaining scan warnings, empty-folder explanations, Tools notes, immediate ignored badges, and short labels that previously stayed in English.
+- Wording and compatibility: Correct confirmed Polish, Russian, Japanese, Arabic, and other catalog issues while preserving literal paths, names, diagnostics, and existing safety checks. Existing ZFS history and countdown messages use the corrected presentation too.
+- Quality checks: Add regressions for real interface flows and desktop/mobile dialog layouts. Machine-translated wording still benefits from native-speaker review.
+
 ###2026.09.18.01
 - Language support: Bundle all 42 languages registered by Unraid or available as official language packs, automatically following the selected webGUI language with an English fallback and no online translation dependency.
 - Translated workflows: Localize scan explanations, help, settings, safety warnings, confirmations, cleanup results, quarantine schedules, restore, history, and Tools while preserving paths, names, saved state, and diagnostic evidence.

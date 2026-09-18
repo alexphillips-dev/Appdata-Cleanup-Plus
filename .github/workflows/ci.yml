@@ -44,6 +44,7 @@ jobs:
           php tests/i18n_smoke.php
           node tests/i18n_client.js
           node tests/i18n_page.js
+          node tests/i18n_flows.js
 
       - name: Check PHP syntax
         run: |

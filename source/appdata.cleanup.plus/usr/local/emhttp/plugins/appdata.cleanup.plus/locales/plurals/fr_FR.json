@@ -1,0 +1,207 @@
+{
+  "{count} folders selected": {
+    "one": "{count} dossier sélectionné",
+    "many": "{count} dossiers sélectionnés",
+    "other": "{count} dossiers sélectionnés"
+  },
+  "{count} items total": {
+    "one": "{count} article au total",
+    "many": "{count} articles au total",
+    "other": "{count} articles au total"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} dossier mis en quarantaine suivi",
+    "many": "{count} dossiers mis en quarantaine suivis",
+    "other": "{count} dossiers en quarantaine suivis"
+  },
+  "{count} items submitted": {
+    "one": "{count} article soumis",
+    "many": "{count} articles soumis",
+    "other": "{count} articles soumis"
+  },
+  "Delete {count} folders": {
+    "one": "Supprimer {count} dossier",
+    "many": "Supprimer {count} dossiers",
+    "other": "Supprimer {count} dossiers"
+  },
+  "Delete {count} items": {
+    "one": "Supprimer {count} élément",
+    "many": "Supprimer {count} éléments",
+    "other": "Supprimer {count} éléments"
+  },
+  "Destroy {count} datasets": {
+    "one": "Détruire {count} ensemble de données",
+    "many": "Détruire {count} ensembles de données",
+    "other": "Détruire {count} ensembles de données"
+  },
+  "Quarantine {count} folders": {
+    "one": "Dossier Quarantaine {count}",
+    "many": "Mettre en quarantaine {count} dossiers",
+    "other": "Mettre en quarantaine {count} dossiers"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} conflit trouvé.",
+    "many": "{count} conflits trouvés.",
+    "other": "{count} conflits trouvés."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} dossier sélectionné peut toujours être restauré normalement.",
+    "many": "{count} dossiers sélectionnés peuvent toujours être restaurés normalement.",
+    "other": "{count} dossiers sélectionnés peuvent toujours être restaurés normalement."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Réessayez après environ {count} seconde.",
+    "many": "Réessayez après environ {count} secondes.",
+    "other": "Réessayez après environ {count} secondes."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "{count} ZFS cartographie et nouvelle analyse enregistrées.",
+    "many": "Enregistrement de {count} ZFS mappages et nouvelle analyse.",
+    "other": "Enregistrement de {count} ZFS mappages et nouvelle analyse."
+  },
+  "Processed {count} folders.": {
+    "one": "Traité {count} dossier.",
+    "many": "Traité {count} dossiers.",
+    "other": "Traité {count} dossiers."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} dossier est visible.",
+    "many": "{count} dossiers sont visibles.",
+    "other": "{count} dossiers sont visibles."
+  },
+  "{count} more": {
+    "one": "{count} de plus",
+    "many": "{count} de plus",
+    "other": "{count} de plus"
+  },
+  "{count} minutes ago": {
+    "one": "il y a {count} minute",
+    "many": "il y a {count} minutes",
+    "other": "il y a {count} minutes"
+  },
+  "{count} hours ago": {
+    "one": "il y a {count} heure",
+    "many": "il y a {count} heures",
+    "other": "il y a {count} heures"
+  },
+  "{count} days ago": {
+    "one": "il y a {count} jour",
+    "many": "il y a {count} jours",
+    "other": "il y a {count} jours"
+  },
+  "{count} months ago": {
+    "one": "il y a {count} mois",
+    "many": "il y a {count} mois",
+    "other": "il y a {count} mois"
+  },
+  "{count} years ago": {
+    "one": "il y a {count} an",
+    "many": "il y a {count} ans",
+    "other": "il y a {count} ans"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Purge prévue dans {count} jour.",
+    "many": "Purge prévue dans {count} jours.",
+    "other": "Purge prévue dans {count} jours."
+  },
+  "Purges in {count} days": {
+    "one": "Purge en {count} jour",
+    "many": "Purge dans {count} jours",
+    "other": "Purge en {count} jours"
+  },
+  "Purges in {count} hours": {
+    "one": "Purge en {count} heure",
+    "many": "Purge en {count} heures",
+    "other": "Purge en {count} heures"
+  },
+  "Purges in {count} minutes": {
+    "one": "Purge en {count} minute",
+    "many": "Purge en {count} minutes",
+    "other": "Purge en {count} minutes"
+  },
+  "{count} child datasets": {
+    "one": "{count} ensemble de données enfant",
+    "many": "{count} ensembles de données enfants",
+    "other": "{count} ensembles de données enfants"
+  },
+  "{count} snapshots": {
+    "one": "{count} instantané",
+    "many": "{count} instantanés",
+    "other": "{count} instantanés"
+  },
+  "{count} conflicts": {
+    "one": "{count} conflit",
+    "many": "{count} conflits",
+    "other": "{count} conflits"
+  },
+  "{count} errors": {
+    "one": "{count} erreur",
+    "many": "{count} erreurs",
+    "other": "{count} erreurs"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} article a été soumis.",
+    "many": "{message} {count} éléments ont été soumis.",
+    "other": "{message} {count} éléments ont été soumis."
+  },
+  "{count} items were submitted.": {
+    "one": "{count} article a été soumis.",
+    "many": "{count} d’articles ont été soumis.",
+    "other": "{count} éléments ont été soumis."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "La destruction récursive supprimera également {count} ensemble de données enfant.",
+    "many": "La destruction récursive supprimera également {count} ensembles de données enfants.",
+    "other": "La destruction récursive supprimera également {count} ensembles de données enfants."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "La destruction récursive supprimera également {count} instantané.",
+    "many": "La destruction récursive supprimera également {count} instantanés.",
+    "other": "La destruction récursive supprimera également {count} instantanés."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "La destruction supprimera également {count} instantané.",
+    "many": "Destroy supprimera également {count} instantanés.",
+    "other": "Destroy supprimera également {count} instantanés."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} dossier a été placé en quarantaine.",
+    "many": "{count} dossiers ont été placés en quarantaine.",
+    "other": "{count} dossiers ont été déplacés en quarantaine."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} dossier a été supprimé.",
+    "many": "{count} dossiers ont été supprimés.",
+    "other": "{count} dossiers ont été supprimés."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} dossier a été restauré.",
+    "many": "{count} dossiers ont été restaurés.",
+    "other": "{count} dossiers ont été restaurés."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} dossier a été définitivement purgé.",
+    "many": "{count} de dossiers ont été définitivement purgés.",
+    "other": "{count} dossiers ont été définitivement purgés."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} élément a été ignoré.",
+    "many": "{count} éléments ont été ignorés.",
+    "other": "{count} éléments ont été ignorés."
+  },
+  "{count} items were already missing.": {
+    "one": "Il manquait déjà {count} article.",
+    "many": "Il manquait déjà {count} d’articles.",
+    "other": "Il manquait déjà {count} éléments."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} article a été bloqué.",
+    "many": "{count} d'articles ont été bloqués.",
+    "other": "{count} articles ont été bloqués."
+  },
+  "{count} errors occurred.": {
+    "one": "{count} erreur s'est produite.",
+    "many": "{count} d'erreurs se sont produites.",
+    "other": "{count} erreurs se sont produites."
+  }
+}

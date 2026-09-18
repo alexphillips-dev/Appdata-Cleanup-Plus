@@ -1,43 +1,294 @@
 {
-  "af_ZA":{"Delete":"Verwyder","Quarantine":"Kwarantyn","Restore":"Herstel","Purge":"Permanent verwyder"},
-  "ar_AR":{"Delete":"حذف","Quarantine":"عزل","Restore":"استعادة","Purge":"حذف نهائي"},
-  "bn_BN":{"Delete":"মুছুন","Quarantine":"আলাদা করে রাখুন","Restore":"পুনরুদ্ধার করুন","Purge":"স্থায়ীভাবে মুছুন"},
-  "bs_BA":{"Delete":"Izbriši","Quarantine":"Karantena","Restore":"Vrati","Purge":"Trajno izbriši"},
-  "ca_CA":{"Delete":"Suprimeix","Quarantine":"Quarantena","Restore":"Restaura","Purge":"Suprimeix definitivament"},
-  "cs_CZ":{"Delete":"Smazat","Quarantine":"Karanténa","Restore":"Obnovit","Purge":"Trvale smazat"},
-  "da_DA":{"Delete":"Slet","Quarantine":"Karantæne","Restore":"Gendan","Purge":"Slet permanent"},
-  "de_DE":{"Delete":"Löschen","Quarantine":"Quarantäne","Restore":"Wiederherstellen","Purge":"Endgültig löschen"},
-  "el_GR":{"Delete":"Διαγραφή","Quarantine":"Καραντίνα","Restore":"Επαναφορά","Purge":"Οριστική διαγραφή"},
-  "es_ES":{"Delete":"Eliminar","Quarantine":"Cuarentena","Restore":"Restaurar","Purge":"Eliminar definitivamente"},
-  "et_EE":{"Delete":"Kustuta","Quarantine":"Karantiin","Restore":"Taasta","Purge":"Kustuta jäädavalt"},
-  "fa_FA":{"Delete":"حذف","Quarantine":"قرنطینه","Restore":"بازیابی","Purge":"حذف دائمی"},
-  "fi_FI":{"Delete":"Poista","Quarantine":"Karanteeni","Restore":"Palauta","Purge":"Poista pysyvästi"},
-  "fr_FR":{"Delete":"Supprimer","Quarantine":"Quarantaine","Restore":"Restaurer","Purge":"Supprimer définitivement"},
-  "ga_IE":{"Delete":"Scrios","Quarantine":"Coraintín","Restore":"Athchóirigh","Purge":"Scrios go buan"},
-  "he_IL":{"Delete":"מחיקה","Quarantine":"בידוד","Restore":"שחזור","Purge":"מחיקה לצמיתות"},
-  "hi_IN":{"Delete":"हटाएँ","Quarantine":"अलग रखें","Restore":"पुनर्स्थापित करें","Purge":"स्थायी रूप से हटाएँ"},
-  "hr_HR":{"Delete":"Izbriši","Quarantine":"Karantena","Restore":"Vrati","Purge":"Trajno izbriši"},
-  "hu_HU":{"Delete":"Törlés","Quarantine":"Karantén","Restore":"Visszaállítás","Purge":"Végleges törlés"},
-  "id_ID":{"Delete":"Hapus","Quarantine":"Karantina","Restore":"Pulihkan","Purge":"Hapus permanen"},
-  "it_IT":{"Delete":"Elimina","Quarantine":"Quarantena","Restore":"Ripristina","Purge":"Elimina definitivamente"},
-  "ja_JA":{"Delete":"削除","Quarantine":"隔離","Restore":"復元","Purge":"完全に削除"},
-  "ko_KO":{"Delete":"삭제","Quarantine":"격리","Restore":"복원","Purge":"영구 삭제"},
-  "lv_LV":{"Delete":"Dzēst","Quarantine":"Karantīna","Restore":"Atjaunot","Purge":"Neatgriezeniski dzēst"},
-  "nl_NL":{"Delete":"Verwijderen","Quarantine":"Quarantaine","Restore":"Herstellen","Purge":"Definitief verwijderen"},
-  "no_NO":{"Delete":"Slett","Quarantine":"Karantene","Restore":"Gjenopprett","Purge":"Slett permanent"},
-  "pl_PL":{"Delete":"Usuń","Quarantine":"Kwarantanna","Restore":"Przywróć","Purge":"Usuń trwale"},
-  "pt_BR":{"Delete":"Excluir","Quarantine":"Quarentena","Restore":"Restaurar","Purge":"Excluir permanentemente"},
-  "pt_PT":{"Delete":"Eliminar","Quarantine":"Quarentena","Restore":"Restaurar","Purge":"Eliminar permanentemente"},
-  "ro_RO":{"Delete":"Șterge","Quarantine":"Carantină","Restore":"Restaurează","Purge":"Șterge definitiv"},
-  "ru_RU":{"Delete":"Удалить","Quarantine":"Карантин","Restore":"Восстановить","Purge":"Удалить навсегда"},
-  "sk_SK":{"Delete":"Vymazať","Quarantine":"Karanténa","Restore":"Obnoviť","Purge":"Natrvalo vymazať"},
-  "sl_SI":{"Delete":"Izbriši","Quarantine":"Karantena","Restore":"Obnovi","Purge":"Trajno izbriši"},
-  "sr_RS":{"Delete":"Обриши","Quarantine":"Карантин","Restore":"Врати","Purge":"Трајно обриши"},
-  "sv_SE":{"Delete":"Ta bort","Quarantine":"Karantän","Restore":"Återställ","Purge":"Ta bort permanent"},
-  "th_TH":{"Delete":"ลบ","Quarantine":"กักกัน","Restore":"กู้คืน","Purge":"ลบอย่างถาวร"},
-  "tr_TR":{"Delete":"Sil","Quarantine":"Karantina","Restore":"Geri yükle","Purge":"Kalıcı olarak sil"},
-  "uk_UA":{"Delete":"Видалити","Quarantine":"Карантин","Restore":"Відновити","Purge":"Видалити назавжди"},
-  "vi_VN":{"Delete":"Xóa","Quarantine":"Cách ly","Restore":"Khôi phục","Purge":"Xóa vĩnh viễn"},
-  "zh_CN":{"Delete":"删除","Quarantine":"隔离","Restore":"恢复","Purge":"永久删除"},
-  "zh_TW":{"Delete":"刪除","Quarantine":"隔離","Restore":"還原","Purge":"永久刪除"}
+  "af_ZA": {
+    "Delete": "Verwyder",
+    "Quarantine": "Kwarantyn",
+    "Restore": "Herstel",
+    "Purge": "Permanent verwyder"
+  },
+  "ar_AR": {
+    "Delete": "حذف",
+    "Quarantine": "عزل",
+    "Restore": "استعادة",
+    "Purge": "حذف نهائي",
+    "dataset": "مجموعة بيانات"
+  },
+  "bn_BN": {
+    "Delete": "মুছুন",
+    "Quarantine": "আলাদা করে রাখুন",
+    "Restore": "পুনরুদ্ধার করুন",
+    "Purge": "স্থায়ীভাবে মুছুন"
+  },
+  "bs_BA": {
+    "Delete": "Izbriši",
+    "Quarantine": "Karantena",
+    "Restore": "Vrati",
+    "Purge": "Trajno izbriši",
+    "Action gate": "Dostupnost radnje",
+    "DRY RUN": "PROBNO IZVRŠAVANJE",
+    "Destroy mode": "Način uništavanja",
+    "Bind": "Povezano",
+    "Config": "Konfiguracija",
+    "Created": "Kreirano",
+    "Current": "Trenutno",
+    "Detected": "Otkriveno",
+    "Discovery": "Otkrivanje",
+    "Folder": "Fascikla",
+    "OFF": "ISKLJUČENO",
+    "Policy": "Pravila",
+    "Purged": "Trajno obrisano",
+    "Rescan": "Ponovo skeniraj",
+    "Restored": "Vraćeno",
+    "Target": "Odredište",
+    "folder": "fascikla",
+    "Appdata Sources": "Izvori appdata podataka",
+    "Clear draft": "Očisti nacrt",
+    "Fixture root": "Korijenska putanja testnih podataka",
+    "Inside default share": "Unutar zadane dijeljene mape",
+    "Picker target": "Odredište odabira",
+    "Root path": "Korijenska putanja",
+    "Safe Mode": "Sigurni način rada",
+    "Set purge": "Zakaži trajno brisanje",
+    "Template refs": "Reference predložaka",
+    "Test fixtures": "Testni podaci",
+    "ignored hidden": "ignorirani skriveni",
+    "Locations scanned: {paths}.": "Skenirane lokacije: {paths}."
+  },
+  "ca_CA": {
+    "Delete": "Suprimeix",
+    "Quarantine": "Quarantena",
+    "Restore": "Restaura",
+    "Purge": "Suprimeix definitivament"
+  },
+  "cs_CZ": {
+    "Delete": "Smazat",
+    "Quarantine": "Karanténa",
+    "Restore": "Obnovit",
+    "Purge": "Trvale smazat"
+  },
+  "da_DA": {
+    "Delete": "Slet",
+    "Quarantine": "Karantæne",
+    "Restore": "Gendan",
+    "Purge": "Slet permanent",
+    "Destroy mode": "Sletningstilstand"
+  },
+  "de_DE": {
+    "Delete": "Löschen",
+    "Quarantine": "Quarantäne",
+    "Restore": "Wiederherstellen",
+    "Purge": "Endgültig löschen"
+  },
+  "el_GR": {
+    "Delete": "Διαγραφή",
+    "Quarantine": "Καραντίνα",
+    "Restore": "Επαναφορά",
+    "Purge": "Οριστική διαγραφή"
+  },
+  "es_ES": {
+    "Delete": "Eliminar",
+    "Quarantine": "Cuarentena",
+    "Restore": "Restaurar",
+    "Purge": "Eliminar definitivamente"
+  },
+  "et_EE": {
+    "Delete": "Kustuta",
+    "Quarantine": "Karantiin",
+    "Restore": "Taasta",
+    "Purge": "Kustuta jäädavalt"
+  },
+  "fa_FA": {
+    "Delete": "حذف",
+    "Quarantine": "قرنطینه",
+    "Restore": "بازیابی",
+    "Purge": "حذف دائمی",
+    "DRY RUN": "آزمایش بدون تغییر"
+  },
+  "fi_FI": {
+    "Delete": "Poista",
+    "Quarantine": "Karanteeni",
+    "Restore": "Palauta",
+    "Purge": "Poista pysyvästi"
+  },
+  "fr_FR": {
+    "Delete": "Supprimer",
+    "Quarantine": "Quarantaine",
+    "Restore": "Restaurer",
+    "Purge": "Supprimer définitivement"
+  },
+  "ga_IE": {
+    "Delete": "Scrios",
+    "Quarantine": "Coraintín",
+    "Restore": "Athchóirigh",
+    "Purge": "Scrios go buan"
+  },
+  "he_IL": {
+    "Delete": "מחיקה",
+    "Quarantine": "בידוד",
+    "Restore": "שחזור",
+    "Purge": "מחיקה לצמיתות"
+  },
+  "hi_IN": {
+    "Delete": "हटाएँ",
+    "Quarantine": "अलग रखें",
+    "Restore": "पुनर्स्थापित करें",
+    "Purge": "स्थायी रूप से हटाएँ"
+  },
+  "hr_HR": {
+    "Delete": "Izbriši",
+    "Quarantine": "Karantena",
+    "Restore": "Vrati",
+    "Purge": "Trajno izbriši"
+  },
+  "hu_HU": {
+    "Delete": "Törlés",
+    "Quarantine": "Karantén",
+    "Restore": "Visszaállítás",
+    "Purge": "Végleges törlés",
+    "Bind": "Csatolás",
+    "Blocked": "Blokkolva",
+    "Cleanup": "Tisztítás",
+    "Clear": "Törlés",
+    "Conflict": "Ütközés",
+    "Created": "Létrehozva",
+    "Dataset": "Adatkészlet"
+  },
+  "id_ID": {
+    "Delete": "Hapus",
+    "Quarantine": "Karantina",
+    "Restore": "Pulihkan",
+    "Purge": "Hapus permanen"
+  },
+  "it_IT": {
+    "Delete": "Elimina",
+    "Quarantine": "Quarantena",
+    "Restore": "Ripristina",
+    "Purge": "Elimina definitivamente"
+  },
+  "ja_JA": {
+    "Delete": "削除",
+    "Quarantine": "隔離",
+    "Restore": "復元",
+    "Purge": "完全に削除"
+  },
+  "ko_KO": {
+    "Delete": "삭제",
+    "Quarantine": "격리",
+    "Restore": "복원",
+    "Purge": "영구 삭제"
+  },
+  "lv_LV": {
+    "Delete": "Dzēst",
+    "Quarantine": "Karantīna",
+    "Restore": "Atjaunot",
+    "Purge": "Neatgriezeniski dzēst",
+    "DRY RUN": "IZMĒĢINĀJUMS BEZ IZMAIŅĀM"
+  },
+  "nl_NL": {
+    "Delete": "Verwijderen",
+    "Quarantine": "Quarantaine",
+    "Restore": "Herstellen",
+    "Purge": "Definitief verwijderen",
+    "ZFS dataset mount root": "Hoofdkoppelpunt van de ZFS-dataset"
+  },
+  "no_NO": {
+    "Delete": "Slett",
+    "Quarantine": "Karantene",
+    "Restore": "Gjenopprett",
+    "Purge": "Slett permanent"
+  },
+  "pl_PL": {
+    "Delete": "Usuń",
+    "Quarantine": "Kwarantanna",
+    "Restore": "Przywróć",
+    "Purge": "Usuń trwale",
+    "folder": "folder"
+  },
+  "pt_BR": {
+    "Delete": "Excluir",
+    "Quarantine": "Quarentena",
+    "Restore": "Restaurar",
+    "Purge": "Excluir permanentemente"
+  },
+  "pt_PT": {
+    "Delete": "Eliminar",
+    "Quarantine": "Quarentena",
+    "Restore": "Restaurar",
+    "Purge": "Eliminar permanentemente"
+  },
+  "ro_RO": {
+    "Delete": "Șterge",
+    "Quarantine": "Carantină",
+    "Restore": "Restaurează",
+    "Purge": "Șterge definitiv"
+  },
+  "ru_RU": {
+    "Delete": "Удалить",
+    "Quarantine": "Карантин",
+    "Restore": "Восстановить",
+    "Purge": "Удалить навсегда"
+  },
+  "sk_SK": {
+    "Delete": "Vymazať",
+    "Quarantine": "Karanténa",
+    "Restore": "Obnoviť",
+    "Purge": "Natrvalo vymazať"
+  },
+  "sl_SI": {
+    "Delete": "Izbriši",
+    "Quarantine": "Karantena",
+    "Restore": "Obnovi",
+    "Purge": "Trajno izbriši",
+    "DRY RUN": "PREIZKUS BREZ SPREMEMB"
+  },
+  "sr_RS": {
+    "Delete": "Обриши",
+    "Quarantine": "Карантин",
+    "Restore": "Врати",
+    "Purge": "Трајно обриши"
+  },
+  "sv_SE": {
+    "Delete": "Ta bort",
+    "Quarantine": "Karantän",
+    "Restore": "Återställ",
+    "Purge": "Ta bort permanent",
+    "Action gate": "Åtgärdens tillgänglighet"
+  },
+  "th_TH": {
+    "Delete": "ลบ",
+    "Quarantine": "กักกัน",
+    "Restore": "กู้คืน",
+    "Purge": "ลบอย่างถาวร",
+    "Action": "การดำเนินการ",
+    "Action gate": "ความพร้อมในการดำเนินการ"
+  },
+  "tr_TR": {
+    "Delete": "Sil",
+    "Quarantine": "Karantina",
+    "Restore": "Geri yükle",
+    "Purge": "Kalıcı olarak sil"
+  },
+  "uk_UA": {
+    "Delete": "Видалити",
+    "Quarantine": "Карантин",
+    "Restore": "Відновити",
+    "Purge": "Видалити назавжди"
+  },
+  "vi_VN": {
+    "Delete": "Xóa",
+    "Quarantine": "Cách ly",
+    "Restore": "Khôi phục",
+    "Purge": "Xóa vĩnh viễn"
+  },
+  "zh_CN": {
+    "Delete": "删除",
+    "Quarantine": "隔离",
+    "Restore": "恢复",
+    "Purge": "永久删除"
+  },
+  "zh_TW": {
+    "Delete": "刪除",
+    "Quarantine": "隔離",
+    "Restore": "還原",
+    "Purge": "永久刪除"
+  }
 }

@@ -1,0 +1,207 @@
+{
+  "{count} folders selected": {
+    "one": "Odabran je {count} folder",
+    "few": "{count} foldera odabrana",
+    "other": "{count} foldera odabrano"
+  },
+  "{count} items total": {
+    "one": "{count} stavka ukupno",
+    "few": "{count} stavke ukupno",
+    "other": "{count} stavki ukupno"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "Praćen je {count} folder u karantinu",
+    "few": "Praćena {count} mapa u karantinu",
+    "other": "Praćeno {count} mapa u karantinu"
+  },
+  "{count} items submitted": {
+    "one": "Poslana je {count} stavka",
+    "few": "Poslano {count} artikla",
+    "other": "Poslano {count} stavki"
+  },
+  "Delete {count} folders": {
+    "one": "Izbrišite {count} folder",
+    "few": "Izbrišite {count} foldera",
+    "other": "Izbrišite {count} foldera"
+  },
+  "Delete {count} items": {
+    "one": "Izbrišite {count} stavku",
+    "few": "Izbrišite {count} stavke",
+    "other": "Izbrišite {count} stavki"
+  },
+  "Destroy {count} datasets": {
+    "one": "Uništi {count} skup podataka",
+    "few": "Uništiti {count} skupa podataka",
+    "other": "Uništiti {count} skupova podataka"
+  },
+  "Quarantine {count} folders": {
+    "one": "Karantin {count} folder",
+    "few": "Stavite u karantin {count} foldera",
+    "other": "Stavite u karantin {count} foldera"
+  },
+  "{count} conflicts found.": {
+    "one": "Pronađen je {count} sukob.",
+    "few": "Pronađena su {count} konflikta.",
+    "other": "Pronađeno je {count} sukoba."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} odabrani folder se i dalje može normalno vratiti.",
+    "few": "{count} odabrana foldera se i dalje mogu normalno vratiti.",
+    "other": "{count} odabranih foldera se i dalje može normalno vratiti."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Pokušajte ponovo nakon otprilike {count} sekunde.",
+    "few": "Pokušajte ponovo nakon otprilike {count} sekunde.",
+    "other": "Pokušajte ponovo nakon otprilike {count} sekundi."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Sačuvano {count} ZFS mapiranje i ponovno skeniranje.",
+    "few": "Sačuvana {count} ZFS mapiranja i ponovno skeniranje.",
+    "other": "Sačuvano {count} ZFS mapiranja i ponovnog skeniranja."
+  },
+  "Processed {count} folders.": {
+    "one": "Obrađen {count} folder.",
+    "few": "Obrađeno {count} foldera.",
+    "other": "Obrađeno {count} foldera."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} folder je vidljiv.",
+    "few": "{count} foldera su vidljiva.",
+    "other": "Vidljivo je {count} foldera."
+  },
+  "{count} more": {
+    "one": "Još {count}",
+    "few": "Još {count}",
+    "other": "Još {count}"
+  },
+  "{count} minutes ago": {
+    "one": "prije {count} minute",
+    "few": "prije {count} minute",
+    "other": "prije {count} minuta"
+  },
+  "{count} hours ago": {
+    "one": "prije {count} sat",
+    "few": "prije {count} sata",
+    "other": "prije {count} sati"
+  },
+  "{count} days ago": {
+    "one": "prije {count} dan",
+    "few": "prije {count} dana",
+    "other": "prije {count} dana"
+  },
+  "{count} months ago": {
+    "one": "prije {count} mjesec",
+    "few": "prije {count} mjeseca",
+    "other": "prije {count} mjeseci"
+  },
+  "{count} years ago": {
+    "one": "prije {count} godine",
+    "few": "prije {count} godine",
+    "other": "prije {count} godina"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Planirano čišćenje za {count} dan.",
+    "few": "Planirano čišćenje za {count} dana.",
+    "other": "Planirano čišćenje za {count} dana."
+  },
+  "Purges in {count} days": {
+    "one": "Čišćenje za {count} dan",
+    "few": "Čišćenje za {count} dana",
+    "other": "Čišćenje za {count} dana"
+  },
+  "Purges in {count} hours": {
+    "one": "Čišćenje za {count} sat",
+    "few": "Čišćenje za {count} sata",
+    "other": "Čišćenje za {count} sati"
+  },
+  "Purges in {count} minutes": {
+    "one": "Čišćenje za {count} minut",
+    "few": "Čišćenje za {count} minute",
+    "other": "Čišćenje za {count} minuta"
+  },
+  "{count} child datasets": {
+    "one": "{count} dječji skup podataka",
+    "few": "{count} dječja skupa podataka",
+    "other": "{count} dječjih skupova podataka"
+  },
+  "{count} snapshots": {
+    "one": "{count} snimak",
+    "few": "{count} snimka",
+    "other": "{count} snimaka"
+  },
+  "{count} conflicts": {
+    "one": "{count} sukob",
+    "few": "{count} sukoba",
+    "other": "{count} sukoba"
+  },
+  "{count} errors": {
+    "one": "{count} greška",
+    "few": "{count} greške",
+    "other": "{count} grešaka"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} stavka je dostavljena.",
+    "few": "{message} {count} stavke su predate.",
+    "other": "{message} Poslano je {count} stavki."
+  },
+  "{count} items were submitted.": {
+    "one": "{count} stavka je dostavljena.",
+    "few": "Dostavljena su {count} predmeta.",
+    "other": "Pristiglo je {count} predmeta."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Rekurzivno uništavanje će također ukloniti {count} podređeni skup podataka.",
+    "few": "Rekurzivno uništavanje će također ukloniti {count} podređena skupa podataka.",
+    "other": "Rekurzivno uništavanje će također ukloniti {count} podređenih skupova podataka."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Rekurzivno uništavanje će također ukloniti {count} snimak.",
+    "few": "Rekurzivno uništavanje će također ukloniti {count} snimka.",
+    "other": "Rekurzivno uništavanje će također ukloniti {count} snimaka."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy će također ukloniti {count} snimak.",
+    "few": "Destroy će također ukloniti {count} snimka.",
+    "other": "Destroy će također ukloniti {count} snimaka."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} folder je premješten u karantin.",
+    "few": "{count} foldera su premeštena u karantin.",
+    "other": "{count} foldera je premešteno u karantin."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} folder je izbrisan.",
+    "few": "{count} foldera su izbrisana.",
+    "other": "{count} foldera je obrisano."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} folder je vraćen.",
+    "few": "{count} foldera su vraćena.",
+    "other": "{count} foldera je vraćeno."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} folder je trajno očišćen.",
+    "few": "{count} foldera su trajno očišćena.",
+    "other": "{count} foldera je trajno očišćeno."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} stavka je preskočena.",
+    "few": "{count} stavke su preskočene.",
+    "other": "{count} stavki je preskočeno."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} stavka je već nedostajala.",
+    "few": "{count} stavke su već nedostajale.",
+    "other": "Već je nedostajalo {count} predmeta."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} stavka je blokirana.",
+    "few": "{count} stavke su blokirane.",
+    "other": "{count} stavki je blokirano."
+  },
+  "{count} errors occurred.": {
+    "one": "Došlo je do {count} greške.",
+    "few": "Došlo je do {count} greške.",
+    "other": "Desilo se {count} grešaka."
+  }
+}

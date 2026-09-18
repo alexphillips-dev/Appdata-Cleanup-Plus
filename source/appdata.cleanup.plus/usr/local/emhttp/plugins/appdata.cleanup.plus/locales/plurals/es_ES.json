@@ -1,0 +1,207 @@
+{
+  "{count} folders selected": {
+    "one": "{count} carpeta seleccionada",
+    "many": "{count} carpetas seleccionadas",
+    "other": "{count} carpetas seleccionadas"
+  },
+  "{count} items total": {
+    "one": "{count} artículo en total",
+    "many": "{count} artículos en total",
+    "other": "{count} artículos en total"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} carpeta en cuarentena rastreada",
+    "many": "Se rastrearon {count} carpetas en cuarentena",
+    "other": "{count} carpetas en cuarentena rastreadas"
+  },
+  "{count} items submitted": {
+    "one": "{count} artículo enviado",
+    "many": "{count} artículos enviados",
+    "other": "{count} artículos enviados"
+  },
+  "Delete {count} folders": {
+    "one": "Eliminar {count} carpeta",
+    "many": "Eliminar {count} carpetas",
+    "other": "Eliminar {count} carpetas"
+  },
+  "Delete {count} items": {
+    "one": "Eliminar {count} elemento",
+    "many": "Eliminar {count} elementos",
+    "other": "Eliminar {count} elementos"
+  },
+  "Destroy {count} datasets": {
+    "one": "Destruir {count} conjunto de datos",
+    "many": "Destruye {count} conjuntos de datos",
+    "other": "Destruye {count} conjuntos de datos"
+  },
+  "Quarantine {count} folders": {
+    "one": "Carpeta de cuarentena {count}",
+    "many": "Poner en cuarentena {count} carpetas",
+    "other": "Poner en cuarentena {count} carpetas"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} conflicto encontrado.",
+    "many": "{count} conflictos encontrados.",
+    "other": "Se encontraron {count} conflictos."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} carpeta seleccionada aún se puede restaurar normalmente.",
+    "many": "{count} carpetas seleccionadas aún se pueden restaurar normalmente.",
+    "other": "{count} carpetas seleccionadas aún se pueden restaurar normalmente."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Vuelva a intentarlo después de aproximadamente {count} segundo.",
+    "many": "Vuelva a intentarlo después de aproximadamente {count} segundos.",
+    "other": "Vuelva a intentarlo después de unos {count} segundos."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Guardó {count} ZFS mapeo y reescaneo.",
+    "many": "Se guardaron {count} ZFS asignaciones y se volvieron a escanear.",
+    "other": "Se guardaron {count} ZFS asignaciones y se volvieron a escanear."
+  },
+  "Processed {count} folders.": {
+    "one": "Procesado {count} carpeta.",
+    "many": "Procesó {count} carpetas.",
+    "other": "Procesó {count} carpetas."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} carpeta es visible.",
+    "many": "{count} carpetas son visibles.",
+    "other": "{count} carpetas son visibles."
+  },
+  "{count} more": {
+    "one": "{count} más",
+    "many": "{count} más",
+    "other": "{count} más"
+  },
+  "{count} minutes ago": {
+    "one": "Hace {count} minuto",
+    "many": "Hace {count} minutos",
+    "other": "hace {count} minutos"
+  },
+  "{count} hours ago": {
+    "one": "Hace {count} hora",
+    "many": "Hace {count} horas",
+    "other": "Hace {count} horas"
+  },
+  "{count} days ago": {
+    "one": "Hace {count} día",
+    "many": "Hace {count} días",
+    "other": "Hace {count} días"
+  },
+  "{count} months ago": {
+    "one": "hace {count} mes",
+    "many": "hace {count} meses",
+    "other": "hace {count} meses"
+  },
+  "{count} years ago": {
+    "one": "hace {count} año",
+    "many": "hace {count} años",
+    "other": "hace {count} años"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Programado para purgar en {count} día.",
+    "many": "Programado para purgar en {count} días.",
+    "other": "Programado para purgar en {count} días."
+  },
+  "Purges in {count} days": {
+    "one": "Purgas en {count} día",
+    "many": "Purgas en {count} días",
+    "other": "Purgas en {count} días"
+  },
+  "Purges in {count} hours": {
+    "one": "Purgas en {count} hora",
+    "many": "Purgas en {count} horas",
+    "other": "Purgas en {count} horas"
+  },
+  "Purges in {count} minutes": {
+    "one": "Purgas en {count} minuto",
+    "many": "Purgas en {count} minutos",
+    "other": "Purgas en {count} minutos"
+  },
+  "{count} child datasets": {
+    "one": "{count} conjunto de datos secundario",
+    "many": "{count} conjuntos de datos infantiles",
+    "other": "{count} conjuntos de datos secundarios"
+  },
+  "{count} snapshots": {
+    "one": "{count} instantánea",
+    "many": "{count} instantáneas",
+    "other": "{count} instantáneas"
+  },
+  "{count} conflicts": {
+    "one": "{count} conflicto",
+    "many": "{count} conflictos",
+    "other": "{count} conflictos"
+  },
+  "{count} errors": {
+    "one": "{count} error",
+    "many": "{count} errores",
+    "other": "{count} errores"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} Se envió {count} artículo.",
+    "many": "{message} Se enviaron {count} artículos.",
+    "other": "{message} Se enviaron {count} artículos."
+  },
+  "{count} items were submitted.": {
+    "one": "Se envió {count} artículo.",
+    "many": "Se enviaron {count} artículos.",
+    "other": "Se enviaron {count} artículos."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "La destrucción recursiva también eliminará {count} conjunto de datos secundario.",
+    "many": "La destrucción recursiva también eliminará {count} conjuntos de datos secundarios.",
+    "other": "La destrucción recursiva también eliminará {count} conjuntos de datos secundarios."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "La destrucción recursiva también eliminará {count} instantánea.",
+    "many": "La destrucción recursiva también eliminará {count} instantáneas.",
+    "other": "La destrucción recursiva también eliminará {count} instantáneas."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destruir también eliminará {count} instantánea.",
+    "many": "Destroy también eliminará {count} instantáneas.",
+    "other": "Destroy también eliminará {count} instantáneas."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} carpeta fue movida a cuarentena.",
+    "many": "Se pusieron en cuarentena {count} de carpetas.",
+    "other": "Se movieron {count} carpetas a cuarentena."
+  },
+  "{count} folders were deleted.": {
+    "one": "Se eliminó {count} carpeta.",
+    "many": "Se eliminaron {count} carpetas.",
+    "other": "Se eliminaron {count} carpetas."
+  },
+  "{count} folders were restored.": {
+    "one": "Se restauró {count} carpeta.",
+    "many": "Se restauraron {count} carpetas.",
+    "other": "Se restauraron {count} carpetas."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} carpeta se eliminó permanentemente.",
+    "many": "Se eliminaron permanentemente {count} de carpetas.",
+    "other": "Se eliminaron permanentemente {count} carpetas."
+  },
+  "{count} items were skipped.": {
+    "one": "Se omitió {count} elemento.",
+    "many": "Se omitieron {count} artículos.",
+    "other": "Se omitieron {count} artículos."
+  },
+  "{count} items were already missing.": {
+    "one": "Ya faltaba {count} artículo.",
+    "many": "Ya faltaban {count} artículos.",
+    "other": "Ya faltaban {count} artículos."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} elemento fue bloqueado.",
+    "many": "Se bloquearon {count} artículos.",
+    "other": "Se bloquearon {count} artículos."
+  },
+  "{count} errors occurred.": {
+    "one": "Se produjo {count} error.",
+    "many": "Se produjeron {count} de errores.",
+    "other": "Se produjeron {count} errores."
+  }
+}

@@ -33,11 +33,72 @@ function acpCatalog($locale=null) {
 }
 
 function acpT($text, $parameters=array()) {
+  if (isset($parameters['count']) && acpPluralKey($text) !== null) return acpP($text, $parameters['count'], $parameters);
   $catalog = acpCatalog();
   $translated = isset($catalog[$text]) && is_string($catalog[$text]) && $catalog[$text] !== '' ? $catalog[$text] : $text;
   $replace = array();
   foreach ($parameters as $key => $value) $replace['{' . $key . '}'] = (string)$value;
   return strtr($translated, $replace);
+}
+
+function acpPluralData() {
+  static $data = array();
+  $locale = acpLocale();
+  if (!isset($data[$locale])) {
+    $rules = json_decode(file_get_contents(__DIR__ . '/../locales/plural-rules.json'), true);
+    $data[$locale] = array(
+      'rules' => $rules['rules'][$locale],
+      'messages' => json_decode(file_get_contents(__DIR__ . '/../locales/plural-messages.json'), true),
+      'forms' => json_decode(file_get_contents(__DIR__ . '/../locales/plurals/' . $locale . '.json'), true)
+    );
+  }
+  return $data[$locale];
+}
+
+function acpPluralKey($text) {
+  foreach (acpPluralData()['messages'] as $other => $one) {
+    if ($text === $other || $text === $one) return $other;
+  }
+  return null;
+}
+
+// Counts in this plugin are non-negative integers, never compact notation.
+// Evaluate bundled CLDR relations as data; no eval or optional intl dependency.
+function acpPluralCategory($count) {
+  $count = max(0, (int)$count);
+  foreach (acpPluralData()['rules'] as $category => $groups) {
+    if ($category === 'other') continue;
+    foreach ($groups as $terms) {
+      $matches = true;
+      foreach ($terms as $term) {
+        $value = in_array($term[0], array('n', 'i'), true) ? $count : 0;
+        if ($term[1]) $value %= $term[1];
+        $inside = false;
+        foreach ($term[3] as $range) if ($value >= $range[0] && $value <= $range[1]) $inside = true;
+        if ($inside === $term[2]) { $matches = false; break; }
+      }
+      if ($matches) return $category;
+    }
+  }
+  return 'other';
+}
+
+function acpP($text, $count, $parameters=array()) {
+  $count = max(0, (int)$count);
+  $data = acpPluralData();
+  $key = acpPluralKey($text) ?? $text;
+  $forms = $data['forms'][$key] ?? array();
+  $template = $forms[acpPluralCategory($count)] ?? $forms['other'] ?? ($count === 1 ? ($data['messages'][$key] ?? $key) : $key);
+  $parameters['count'] = $count;
+  $replace = array();
+  foreach ($parameters as $name => $value) $replace['{' . $name . '}'] = (string)$value;
+  return strtr($template, $replace);
+}
+
+function acpCountMessage($text, $count, $parameters=array()) {
+  $data = acpPluralData();
+  $parameters['count'] = max(0, (int)$count);
+  return acpMessage($parameters['count'] === 1 ? ($data['messages'][$text] ?? $text) : $text, $parameters);
 }
 
 function acpH($text) {
@@ -49,17 +110,58 @@ function acpH($text) {
 function acpMessage($text, $parameters=array()) {
   $replace = array();
   foreach ($parameters as $key => $value) $replace['{' . $key . '}'] = (string)$value;
-  return strtr($text, $replace);
+  $message = strtr($text, $replace);
+  $GLOBALS['acpMessageTemplates'][$message] = array($text, $parameters);
+  return $message;
+}
+
+function acpJoinMessages($messages) {
+  $messages = array_values(array_filter($messages, 'strlen'));
+  $text = implode(' ', $messages);
+  if (count($messages) > 1) $GLOBALS['acpMessageParts'][$text] = $messages;
+  return $text;
+}
+
+function acpLocalizeParameters($parameters, $depth) {
+  foreach ($parameters as $name => $value) {
+    if ($name === 'date') $value = acpLocalizeDate($value);
+    if (in_array($name, array('message', 'operation', 'interval'), true)) $value = acpLocalizeText($value, $depth + 1);
+    $parameters[$name] = $value;
+  }
+  return $parameters;
 }
 
 function acpLocalizeText($text, $depth=0) {
   if (!is_string($text) || $text === '' || acpLocale() === 'en_US' || $depth > 8) return $text;
+  // Upgrade legacy stored impact/countdown text into complete plural messages.
+  if (preg_match('/^(Recursive destroy|Destroy) will also remove (?:(\d+) child datasets?(?: and )?)?(?:(\d+) snapshots?)?\.$/D', $text, $legacy)) {
+    $parts = array();
+    if (!empty($legacy[2])) $parts[] = acpP('Recursive destroy will also remove {count} child datasets.', $legacy[2]);
+    if (!empty($legacy[3])) $parts[] = acpP($legacy[1] === 'Recursive destroy' ? 'Recursive destroy will also remove {count} snapshots.' : 'Destroy will also remove {count} snapshots.', $legacy[3]);
+    if ($parts) return implode(' ', $parts);
+  }
+  if (preg_match('/^Purges in (\d+)([dhm])$/D', $text, $legacy)) {
+    $keys = array('d'=>'Purges in {count} days', 'h'=>'Purges in {count} hours', 'm'=>'Purges in {count} minutes');
+    return acpP($keys[$legacy[2]], $legacy[1]);
+  }
   $catalog = acpCatalog();
   if (isset($catalog[$text])) return $catalog[$text];
+  if (isset($GLOBALS['acpMessageParts'][$text])) return implode(' ', array_map(function($part) use ($depth) { return acpLocalizeText($part, $depth + 1); }, $GLOBALS['acpMessageParts'][$text]));
+  if (isset($GLOBALS['acpMessageTemplates'][$text])) {
+    $entry = $GLOBALS['acpMessageTemplates'][$text];
+    // Legacy impact/summary templates use the compatibility matcher below.
+    if (!isset($entry[1]['impact']) && !isset($entry[1]['summary'])) return acpT($entry[0], acpLocalizeParameters($entry[1], $depth));
+  }
+  // Persisted ZFS impact messages contain only these complete count sentences.
+  if (preg_match('/^Recursive destroy will also remove [0-9]+ child datasets?\. (?:Recursive destroy|Destroy) will also remove [0-9]+ snapshots?\.$/D', $text)) {
+    return implode(' ', array_map(function($part) use ($depth) { return acpLocalizeText($part, $depth + 1); }, preg_split('/(?<=\.) /', $text)));
+  }
   static $patterns;
   if ($patterns === null) {
     $patterns = array();
-    foreach (acpCatalog('en_US') as $template) {
+    $templates = array_values(acpCatalog('en_US'));
+    foreach (acpPluralData()['messages'] as $other => $one) { $templates[] = $other; $templates[] = $one; }
+    foreach (array_unique($templates) as $template) {
       if (!preg_match_all('/\{(\w+)\}/', $template, $matches)) continue;
       $pattern = preg_quote($template, '~');
       foreach ($matches[1] as $name) $pattern = str_replace(preg_quote('{' . $name . '}', '~'), $name === 'count' ? '([0-9]+)' : '(.+?)', $pattern);
@@ -100,7 +202,12 @@ function acpLocalizeResponse($payload, $field='') {
     }
     if (isset($payload['sourceNames']) && $payload['sourceNames'] === array()) {
       foreach (array('sourceDisplay', 'sourceSummary') as $key) {
-        if (isset($payload[$key]) && in_array($payload[$key], array('Saved Docker templates', 'Configured appdata source'), true)) $payload[$key] = acpT($payload[$key]);
+        if (isset($payload[$key]) && in_array($payload[$key], array('Saved Docker templates', 'Configured appdata source', 'Recovered from quarantine storage'), true)) $payload[$key] = acpT($payload[$key]);
+      }
+    }
+    foreach (array('sourceNames' => array('sourceDisplay', 'sourceSummary'), 'targetPaths' => array('targetSummary')) as $list => $labels) {
+      if (!empty($payload[$list]) && is_array($payload[$list])) {
+        foreach ($labels as $label) if (isset($payload[$label])) $payload[$label] = summarizeCandidateValues($payload[$list], 2, true);
       }
     }
     if (isset($payload['targetPaths']) && $payload['targetPaths'] === array() && ($payload['targetSummary'] ?? '') === 'tracked container paths') $payload['targetSummary'] = acpT('tracked container paths');
@@ -109,7 +216,7 @@ function acpLocalizeResponse($payload, $field='') {
   }
   if (in_array($field, array('timestampLabel', 'lastModifiedExact', 'purgeAtLabel', 'ignoredAtLabel', 'createdAtLabel', 'restoredAtLabel', 'quarantinedAtLabel'), true)) return acpLocalizeDate($payload);
   $fields = array('message', 'reason', 'policyReason', 'securityLockReason', 'lockReason', 'ignoredReason', 'label', 'title', 'description', 'warnings', 'notices', 'errors', 'headline', 'recommendation', 'sourceLabel', 'statusLabel', 'storageLabel', 'operationLabel', 'sizeLabel', 'lastModifiedLabel', 'relativeLabel', 'purgeBadgeLabel', 'summary', 'riskLabel', 'riskReason', 'resolutionReason', 'resolutionMessage', 'zfsResolutionReason', 'zfsResolutionDetail', 'zfsResolutionMessage', 'zfsImpactSummary', 'zfsPreviewError');
-  $fields = array_merge($fields, array('quarantinedAgeLabel', 'impactSummary', 'purgeErrorMessage', 'resolutionDetail', 'scanWarningMessage', 'validationMessage'));
+  $fields = array_merge($fields, array('quarantinedAgeLabel', 'impactSummary', 'purgeErrorMessage', 'resolutionDetail', 'scanWarningMessage', 'validationMessage', 'zfsNote'));
   return in_array($field, $fields, true) ? acpLocalizeText($payload) : $payload;
 }
 

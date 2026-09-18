@@ -1,0 +1,207 @@
+{
+  "{count} folders selected": {
+    "one": "{count} folder selectat",
+    "few": "{count} foldere selectate",
+    "other": "{count} de dosare selectate"
+  },
+  "{count} items total": {
+    "one": "{count} articol în total",
+    "few": "{count} articole in total",
+    "other": "{count} de articole în total"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} dosar în carantină urmărit",
+    "few": "{count} dosare aflate în carantină urmărite",
+    "other": "{count} de dosare aflate în carantină urmărite"
+  },
+  "{count} items submitted": {
+    "one": "{count} articol trimis",
+    "few": "{count} articole trimise",
+    "other": "{count} de articole trimise"
+  },
+  "Delete {count} folders": {
+    "one": "Ștergeți {count} dosar",
+    "few": "Ștergeți {count} foldere",
+    "other": "Ștergeți {count} de foldere"
+  },
+  "Delete {count} items": {
+    "one": "Ștergeți {count} articol",
+    "few": "Șterge {count} articole",
+    "other": "Ștergeți {count} de articole"
+  },
+  "Destroy {count} datasets": {
+    "one": "Distrugeți {count} set de date",
+    "few": "Distrugeți {count} seturi de date",
+    "other": "Distrugeți {count} de seturi de date"
+  },
+  "Quarantine {count} folders": {
+    "one": "Dosarul de carantină {count}",
+    "few": "Carantină {count} dosare",
+    "other": "Pune în carantină {count} de dosare"
+  },
+  "{count} conflicts found.": {
+    "one": "S-a găsit {count} conflict.",
+    "few": "S-au găsit {count} conflicte.",
+    "other": "{count} de conflicte găsite."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} folder selectat se poate restabili în mod normal.",
+    "few": "{count} foldere selectate se pot restaura în continuare normal.",
+    "other": "{count} de foldere selectate se pot restaura în continuare normal."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Reîncercați după aproximativ {count} secundă.",
+    "few": "Reîncercați după aproximativ {count} secunde.",
+    "other": "Reîncercați după aproximativ {count} de secunde."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Salvat {count} ZFS cartografiere și rescanare.",
+    "few": "S-au salvat {count} ZFS mapări și rescanare.",
+    "other": "S-au salvat {count} ZFS mapări și rescanare."
+  },
+  "Processed {count} folders.": {
+    "one": "Procesat {count} folder.",
+    "few": "Procesate {count} foldere.",
+    "other": "Procesate {count} de dosare."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} folder este vizibil.",
+    "few": "Sunt vizibile {count} foldere.",
+    "other": "Sunt vizibile {count} de dosare."
+  },
+  "{count} more": {
+    "one": "încă {count}",
+    "few": "încă {count}",
+    "other": "încă {count}"
+  },
+  "{count} minutes ago": {
+    "one": "acum {count} minut",
+    "few": "acum {count} minute",
+    "other": "acum {count} de minute"
+  },
+  "{count} hours ago": {
+    "one": "acum {count} oră",
+    "few": "acum {count} ore",
+    "other": "acum {count} de ore"
+  },
+  "{count} days ago": {
+    "one": "acum {count} zi",
+    "few": "acum {count} zile",
+    "other": "acum {count} de zile"
+  },
+  "{count} months ago": {
+    "one": "acum {count} luna",
+    "few": "acum {count} luni",
+    "other": "acum {count} de luni"
+  },
+  "{count} years ago": {
+    "one": "acum {count} an",
+    "few": "acum {count} ani",
+    "other": "acum {count} de ani"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Programat pentru epurare în {count} zi.",
+    "few": "Epurare programată în {count} zile.",
+    "other": "Epurare programată în {count} de zile."
+  },
+  "Purges in {count} days": {
+    "one": "Se purifică în {count} zi",
+    "few": "Se curăță în {count} zile",
+    "other": "Se epurează în {count} de zile"
+  },
+  "Purges in {count} hours": {
+    "one": "Se epurează în {count} oră",
+    "few": "Se curăță în {count} ore",
+    "other": "Se epurează în {count} de ore"
+  },
+  "Purges in {count} minutes": {
+    "one": "Se curăță în {count} minut",
+    "few": "Se curăță în {count} minute",
+    "other": "Se curăță în {count} de minute"
+  },
+  "{count} child datasets": {
+    "one": "{count} set de date copil",
+    "few": "{count} seturi de date copil",
+    "other": "{count} de seturi de date copil"
+  },
+  "{count} snapshots": {
+    "one": "{count} instantaneu",
+    "few": "{count} instantanee",
+    "other": "{count} de instantanee"
+  },
+  "{count} conflicts": {
+    "one": "{count} conflict",
+    "few": "{count} conflicte",
+    "other": "{count} de conflicte"
+  },
+  "{count} errors": {
+    "one": "{count} eroare",
+    "few": "{count} erori",
+    "other": "{count} de erori"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} A fost trimis {count} articol.",
+    "few": "{message} Au fost trimise {count} articole.",
+    "other": "{message} Au fost trimise {count} de articole."
+  },
+  "{count} items were submitted.": {
+    "one": "A fost trimis {count} articol.",
+    "few": "Au fost trimise {count} articole.",
+    "other": "Au fost depuse {count} de articole."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Distrugerea recursiva va elimina, de asemenea, {count} set de date copil.",
+    "few": "Distrugerea recursiva va elimina și {count} seturi de date copil.",
+    "other": "Distrugerea recursiva va elimina, de asemenea, {count} de seturi de date copil."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Distrugerea recursiva va elimina, de asemenea, {count} instantaneu.",
+    "few": "Distrugerea recursiva va elimina, de asemenea, {count} instantanee.",
+    "other": "Distrugerea recursiva va elimina, de asemenea, {count} de instantanee."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy va elimina și {count} instantaneu.",
+    "few": "Destroy va elimina și {count} instantanee.",
+    "other": "Destroy va elimina și {count} de instantanee."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} dosar a fost mutat în carantină.",
+    "few": "{count} dosare au fost mutate în carantină.",
+    "other": "{count} de dosare au fost mutate în carantină."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} dosar a fost șters.",
+    "few": "{count} foldere au fost șterse.",
+    "other": "{count} de dosare au fost șterse."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} folder a fost restaurat.",
+    "few": "{count} foldere au fost restaurate.",
+    "other": "{count} de foldere au fost restaurate."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} dosar a fost șters definitiv.",
+    "few": "{count} foldere au fost eliminate definitiv.",
+    "other": "{count} de dosare au fost eliminate definitiv."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} articol a fost omis.",
+    "few": "{count} articole au fost omise.",
+    "other": "{count} de articole au fost omise."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} articol lipsea deja.",
+    "few": "{count} articole lipseau deja.",
+    "other": "{count} de articole lipseau deja."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} articol a fost blocat.",
+    "few": "{count} articole au fost blocate.",
+    "other": "{count} de articole au fost blocate."
+  },
+  "{count} errors occurred.": {
+    "one": "A apărut {count} eroare.",
+    "few": "Au apărut {count} erori.",
+    "other": "Au apărut {count} de erori."
+  }
+}

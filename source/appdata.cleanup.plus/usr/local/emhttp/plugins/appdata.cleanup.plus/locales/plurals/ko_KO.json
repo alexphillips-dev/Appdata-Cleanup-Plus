@@ -1,0 +1,125 @@
+{
+  "{count} folders selected": {
+    "other": "폴더 {count}개 선택됨"
+  },
+  "{count} items total": {
+    "other": "총 {count}개 항목"
+  },
+  "{count} quarantined folders tracked": {
+    "other": "격리된 폴더 {count}개 추적됨"
+  },
+  "{count} items submitted": {
+    "other": "항목 {count}개 제출됨"
+  },
+  "Delete {count} folders": {
+    "other": "폴더 {count}개 삭제"
+  },
+  "Delete {count} items": {
+    "other": "항목 {count}개 삭제"
+  },
+  "Destroy {count} datasets": {
+    "other": "데이터세트 {count}개 삭제"
+  },
+  "Quarantine {count} folders": {
+    "other": "격리 {count} 폴더"
+  },
+  "{count} conflicts found.": {
+    "other": "{count}개의 충돌이 발견되었습니다."
+  },
+  "{count} selected folders can still restore normally.": {
+    "other": "선택한 폴더 {count}개는 여전히 정상적으로 복원할 수 있습니다."
+  },
+  "Retry after about {count} seconds.": {
+    "other": "약 {count}초 후에 다시 시도하세요."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "other": "{count} ZFS 매핑 및 재스캔이 저장되었습니다."
+  },
+  "Processed {count} folders.": {
+    "other": "폴더 {count}개를 처리했습니다."
+  },
+  "{count} folders are visible.": {
+    "other": "{count}개의 폴더가 표시됩니다."
+  },
+  "{count} more": {
+    "other": "{count}개 더"
+  },
+  "{count} minutes ago": {
+    "other": "{count}분 전"
+  },
+  "{count} hours ago": {
+    "other": "{count}시간 전"
+  },
+  "{count} days ago": {
+    "other": "{count}일 전"
+  },
+  "{count} months ago": {
+    "other": "{count}개월 전"
+  },
+  "{count} years ago": {
+    "other": "{count}년 전"
+  },
+  "Scheduled to purge in {count} days.": {
+    "other": "{count}일 후에 삭제되도록 예약되었습니다."
+  },
+  "Purges in {count} days": {
+    "other": "{count}일 만에 삭제"
+  },
+  "Purges in {count} hours": {
+    "other": "{count}시간 안에 퍼지"
+  },
+  "Purges in {count} minutes": {
+    "other": "{count}분 안에 퍼지"
+  },
+  "{count} child datasets": {
+    "other": "하위 데이터 세트 {count}개"
+  },
+  "{count} snapshots": {
+    "other": "스냅샷 {count}개"
+  },
+  "{count} conflicts": {
+    "other": "충돌 {count}개"
+  },
+  "{count} errors": {
+    "other": "오류 {count}개"
+  },
+  "{message} {count} items were submitted.": {
+    "other": "{message} {count}개의 항목이 제출되었습니다."
+  },
+  "{count} items were submitted.": {
+    "other": "{count}개의 항목이 제출되었습니다."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "other": "재귀적 삭제는 하위 데이터 세트 {count}개도 제거합니다."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "other": "재귀 제거는 스냅샷 {count}개도 제거합니다."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "other": "삭제하면 스냅샷 {count}개도 제거됩니다."
+  },
+  "{count} folders were moved to quarantine.": {
+    "other": "폴더 {count}개가 격리 저장소로 이동되었습니다."
+  },
+  "{count} folders were deleted.": {
+    "other": "폴더 {count}개가 삭제되었습니다."
+  },
+  "{count} folders were restored.": {
+    "other": "폴더 {count}개가 복원되었습니다."
+  },
+  "{count} folders were permanently purged.": {
+    "other": "폴더 {count}개가 영구적으로 삭제되었습니다."
+  },
+  "{count} items were skipped.": {
+    "other": "항목 {count}개를 건너뛰었습니다."
+  },
+  "{count} items were already missing.": {
+    "other": "{count}개의 항목이 이미 누락되었습니다."
+  },
+  "{count} items were blocked.": {
+    "other": "항목 {count}개가 차단되었습니다."
+  },
+  "{count} errors occurred.": {
+    "other": "{count}개의 오류가 발생했습니다."
+  }
+}

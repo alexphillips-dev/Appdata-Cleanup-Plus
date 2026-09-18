@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "{count} mappe er valgt",
+    "other": "{count} mapper valgt"
+  },
+  "{count} items total": {
+    "one": "{count} vare totalt",
+    "other": "{count} varer totalt"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} mappe i karantene spores",
+    "other": "{count} mapper i karantene spores"
+  },
+  "{count} items submitted": {
+    "one": "{count} vare sendt inn",
+    "other": "{count} elementer sendt inn"
+  },
+  "Delete {count} folders": {
+    "one": "Slett {count} mappe",
+    "other": "Slett {count} mapper"
+  },
+  "Delete {count} items": {
+    "one": "Slett {count} element",
+    "other": "Slett {count} elementer"
+  },
+  "Destroy {count} datasets": {
+    "one": "Ødelegg {count} datasett",
+    "other": "Ødelegg {count} datasett"
+  },
+  "Quarantine {count} folders": {
+    "one": "Karantene {count} mappe",
+    "other": "Karantene {count} mapper"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} konflikt funnet.",
+    "other": "{count} konflikter funnet."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} valgt mappe kan fortsatt gjenopprette normalt.",
+    "other": "{count} valgte mapper kan fortsatt gjenopprette normalt."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Prøv igjen etter ca. {count} sekund.",
+    "other": "Prøv igjen etter ca. {count} sekunder."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Lagret {count} ZFS kartlegging og ny skanning.",
+    "other": "Lagret {count} ZFS tilordninger og ny skanning."
+  },
+  "Processed {count} folders.": {
+    "one": "Behandlet {count} mappe.",
+    "other": "Behandlet {count} mapper."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} mappe er synlig.",
+    "other": "{count} mapper er synlige."
+  },
+  "{count} more": {
+    "one": "{count} til",
+    "other": "{count} til"
+  },
+  "{count} minutes ago": {
+    "one": "{count} minutt siden",
+    "other": "{count} minutter siden"
+  },
+  "{count} hours ago": {
+    "one": "{count} time siden",
+    "other": "{count} timer siden"
+  },
+  "{count} days ago": {
+    "one": "{count} dag siden",
+    "other": "{count} dager siden"
+  },
+  "{count} months ago": {
+    "one": "{count} måned siden",
+    "other": "{count} måneder siden"
+  },
+  "{count} years ago": {
+    "one": "{count} år siden",
+    "other": "{count} år siden"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Planlagt å rense om {count} dag.",
+    "other": "Planlagt å rense om {count} dager."
+  },
+  "Purges in {count} days": {
+    "one": "Renser på {count} dag",
+    "other": "Renser på {count} dager"
+  },
+  "Purges in {count} hours": {
+    "one": "Renser på {count} time",
+    "other": "Renser på {count} timer"
+  },
+  "Purges in {count} minutes": {
+    "one": "Renser på {count} minutt",
+    "other": "Renser på {count} minutter"
+  },
+  "{count} child datasets": {
+    "one": "{count} barnedatasett",
+    "other": "{count} barnedatasett"
+  },
+  "{count} snapshots": {
+    "one": "{count} øyeblikksbilde",
+    "other": "{count} øyeblikksbilder"
+  },
+  "{count} conflicts": {
+    "one": "{count} konflikt",
+    "other": "{count} konflikter"
+  },
+  "{count} errors": {
+    "one": "{count} feil",
+    "other": "{count} feil"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} element ble sendt.",
+    "other": "{message} {count} elementer ble sendt inn."
+  },
+  "{count} items were submitted.": {
+    "one": "{count} vare ble sendt inn.",
+    "other": "{count} saker ble sendt inn."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Rekursiv ødeleggelse vil også fjerne {count} underordnet datasett.",
+    "other": "Rekursiv ødeleggelse vil også fjerne {count} underordnede datasett."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Rekursiv ødeleggelse vil også fjerne {count} øyeblikksbilde.",
+    "other": "Rekursiv ødeleggelse vil også fjerne {count} øyeblikksbilder."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy vil også fjerne {count} øyeblikksbilde.",
+    "other": "Destroy vil også fjerne {count} øyeblikksbilder."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} mappe ble flyttet til karantene.",
+    "other": "{count} mapper ble flyttet til karantene."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} mappe ble slettet.",
+    "other": "{count} mapper ble slettet."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} mappe ble gjenopprettet.",
+    "other": "{count} mapper ble gjenopprettet."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} mappe ble slettet permanent.",
+    "other": "{count} mapper ble slettet permanent."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} element ble hoppet over.",
+    "other": "{count} elementer ble hoppet over."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} element manglet allerede.",
+    "other": "{count} elementer manglet allerede."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} element ble blokkert.",
+    "other": "{count} elementer ble blokkert."
+  },
+  "{count} errors occurred.": {
+    "one": "{count} feil oppstod.",
+    "other": "{count} feil oppstod."
+  }
+}

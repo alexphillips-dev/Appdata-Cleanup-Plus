@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "{count} map geselecteerd",
+    "other": "{count} mappen geselecteerd"
+  },
+  "{count} items total": {
+    "one": "Totaal {count} artikel",
+    "other": "{count} artikelen totaal"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} in quarantaine geplaatste map bijgehouden",
+    "other": "Er zijn {count} in quarantaine geplaatste mappen bijgehouden"
+  },
+  "{count} items submitted": {
+    "one": "{count} artikel ingediend",
+    "other": "{count} artikelen ingediend"
+  },
+  "Delete {count} folders": {
+    "one": "Verwijder {count} map",
+    "other": "Verwijder {count} mappen"
+  },
+  "Delete {count} items": {
+    "one": "Verwijder {count} artikel",
+    "other": "Verwijder {count} items"
+  },
+  "Destroy {count} datasets": {
+    "one": "Vernietig {count} dataset",
+    "other": "Vernietig {count} datasets"
+  },
+  "Quarantine {count} folders": {
+    "one": "{count} map in quarantaine plaatsen",
+    "other": "{count} mappen in quarantaine plaatsen"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} conflict gevonden.",
+    "other": "{count} conflicten gevonden."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} geselecteerde map kan nog steeds normaal worden hersteld.",
+    "other": "{count} geselecteerde mappen kunnen nog steeds normaal worden hersteld."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Probeer het na ongeveer {count} seconde opnieuw.",
+    "other": "Probeer het na ongeveer {count} seconden opnieuw."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "{count} ZFS mapping en opnieuw scannen opgeslagen.",
+    "other": "{count} ZFS toewijzingen opgeslagen en opnieuw gescand."
+  },
+  "Processed {count} folders.": {
+    "one": "{count} map verwerkt.",
+    "other": "{count} mappen verwerkt."
+  },
+  "{count} folders are visible.": {
+    "one": "Er is {count} map zichtbaar.",
+    "other": "Er zijn {count} mappen zichtbaar."
+  },
+  "{count} more": {
+    "one": "Nog {count}",
+    "other": "Nog {count}"
+  },
+  "{count} minutes ago": {
+    "one": "{count} minuut geleden",
+    "other": "{count} minuten geleden"
+  },
+  "{count} hours ago": {
+    "one": "{count} uur geleden",
+    "other": "{count} uur geleden"
+  },
+  "{count} days ago": {
+    "one": "{count} dag geleden",
+    "other": "{count} dagen geleden"
+  },
+  "{count} months ago": {
+    "one": "{count} maand geleden",
+    "other": "{count} maanden geleden"
+  },
+  "{count} years ago": {
+    "one": "{count} jaar geleden",
+    "other": "{count} jaar geleden"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Gepland om binnen {count} dag te zuiveren.",
+    "other": "Gepland om binnen {count} dagen te zuiveren."
+  },
+  "Purges in {count} days": {
+    "one": "Reinigt in {count} dag",
+    "other": "Opruimen in {count} dagen"
+  },
+  "Purges in {count} hours": {
+    "one": "Reinigt binnen {count} uur",
+    "other": "Reinigt binnen {count} uur"
+  },
+  "Purges in {count} minutes": {
+    "one": "Reinigt in {count} minuut",
+    "other": "Reinigt in {count} minuten"
+  },
+  "{count} child datasets": {
+    "one": "{count} onderliggende dataset",
+    "other": "{count} onderliggende gegevenssets"
+  },
+  "{count} snapshots": {
+    "one": "{count} momentopname",
+    "other": "{count} momentopnamen"
+  },
+  "{count} conflicts": {
+    "one": "{count} conflict",
+    "other": "{count} conflicten"
+  },
+  "{count} errors": {
+    "one": "{count} fout",
+    "other": "{count} fouten"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} item is ingediend.",
+    "other": "{message} Er zijn {count} items ingediend."
+  },
+  "{count} items were submitted.": {
+    "one": "Er is {count} item ingediend.",
+    "other": "Er zijn {count} artikelen ingediend."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Recursief vernietigen verwijdert ook één onderliggende dataset.",
+    "other": "Recursief vernietigen verwijdert ook {count} onderliggende datasets."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Recursief vernietigen verwijdert ook {count} momentopname.",
+    "other": "Recursief vernietigen verwijdert ook {count} snapshots."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Met Vernietigen wordt ook {count} momentopname verwijderd.",
+    "other": "Vernietigen verwijdert ook {count} snapshots."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} map is in quarantaine geplaatst.",
+    "other": "Er zijn {count} mappen in quarantaine geplaatst."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} map is verwijderd.",
+    "other": "Er zijn {count} mappen verwijderd."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} map is hersteld.",
+    "other": "Er zijn {count} mappen hersteld."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} map is permanent verwijderd.",
+    "other": "{count} mappen zijn permanent verwijderd."
+  },
+  "{count} items were skipped.": {
+    "one": "Er is {count} item overgeslagen.",
+    "other": "Er zijn {count} items overgeslagen."
+  },
+  "{count} items were already missing.": {
+    "one": "Er ontbrak al {count} artikel.",
+    "other": "Er ontbraken al {count} items."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} artikel is geblokkeerd.",
+    "other": "Er zijn {count} artikelen geblokkeerd."
+  },
+  "{count} errors occurred.": {
+    "one": "Er is {count} fout opgetreden.",
+    "other": "Er zijn {count} fouten opgetreden."
+  }
+}

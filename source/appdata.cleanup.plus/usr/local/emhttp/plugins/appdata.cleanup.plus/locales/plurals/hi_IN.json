@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "{count} फ़ोल्डर चयनित",
+    "other": "{count} फ़ोल्डर चयनित"
+  },
+  "{count} items total": {
+    "one": "कुल {count} आइटम",
+    "other": "कुल {count} आइटम"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} संगरोधित फ़ोल्डर ट्रैक किया गया",
+    "other": "{count} संगरोधित फ़ोल्डर ट्रैक किए गए"
+  },
+  "{count} items submitted": {
+    "one": "{count} आइटम सबमिट किया गया",
+    "other": "{count} आइटम सबमिट किए गए"
+  },
+  "Delete {count} folders": {
+    "one": "{count} फ़ोल्डर हटाएँ",
+    "other": "{count} फ़ोल्डर हटाएँ"
+  },
+  "Delete {count} items": {
+    "one": "{count} आइटम हटाएँ",
+    "other": "{count} आइटम हटाएँ"
+  },
+  "Destroy {count} datasets": {
+    "one": "{count} डेटासेट नष्ट करें",
+    "other": "{count} डेटासेट नष्ट करें"
+  },
+  "Quarantine {count} folders": {
+    "one": "संगरोध {count} फ़ोल्डर",
+    "other": "{count} फ़ोल्डरों को संगरोधित करें"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} विरोध पाया गया.",
+    "other": "{count} विरोध पाए गए."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} चयनित फ़ोल्डर अभी भी सामान्य रूप से पुनर्स्थापित हो सकता है।",
+    "other": "{count} चयनित फ़ोल्डर अभी भी सामान्य रूप से पुनर्स्थापित हो सकते हैं।"
+  },
+  "Retry after about {count} seconds.": {
+    "one": "लगभग {count} सेकंड के बाद पुनः प्रयास करें.",
+    "other": "लगभग {count} सेकंड के बाद पुनः प्रयास करें."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "{count} ZFS मैपिंग और पुनः स्कैनिंग सहेजी गई।",
+    "other": "{count} ZFS मैपिंग और पुनः स्कैनिंग सहेजी गई।"
+  },
+  "Processed {count} folders.": {
+    "one": "{count} फ़ोल्डर संसाधित.",
+    "other": "{count} फ़ोल्डर संसाधित किए गए."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} फ़ोल्डर दिखाई दे रहा है.",
+    "other": "{count} फ़ोल्डर दिखाई दे रहे हैं."
+  },
+  "{count} more": {
+    "one": "{count} और",
+    "other": "{count} और"
+  },
+  "{count} minutes ago": {
+    "one": "{count} मिनट पहले",
+    "other": "{count} मिनट पहले"
+  },
+  "{count} hours ago": {
+    "one": "{count} घंटा पहले",
+    "other": "{count} घंटे पहले"
+  },
+  "{count} days ago": {
+    "one": "{count} दिन पहले",
+    "other": "{count} दिन पहले"
+  },
+  "{count} months ago": {
+    "one": "{count} महीने पहले",
+    "other": "{count} महीने पहले"
+  },
+  "{count} years ago": {
+    "one": "{count} साल पहले",
+    "other": "{count} साल पहले"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "{count} दिन में शुद्ध करने का शेड्यूल।",
+    "other": "{count} दिनों में शुद्ध करने का शेड्यूल।"
+  },
+  "Purges in {count} days": {
+    "one": "{count} दिन में शुद्धि",
+    "other": "{count} दिन में शुद्धिकरण"
+  },
+  "Purges in {count} hours": {
+    "one": "{count} घंटे में शुद्धिकरण",
+    "other": "{count} घंटे में शुद्धिकरण"
+  },
+  "Purges in {count} minutes": {
+    "one": "{count} मिनट में शुद्ध हो जाता है",
+    "other": "{count} मिनट में शुद्ध हो जाता है"
+  },
+  "{count} child datasets": {
+    "one": "{count} चाइल्ड डेटासेट",
+    "other": "{count} चाइल्ड डेटासेट"
+  },
+  "{count} snapshots": {
+    "one": "{count} स्नैपशॉट",
+    "other": "{count} स्नैपशॉट"
+  },
+  "{count} conflicts": {
+    "one": "{count} संघर्ष",
+    "other": "{count} संघर्ष"
+  },
+  "{count} errors": {
+    "one": "{count} त्रुटि",
+    "other": "{count} त्रुटियाँ"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} आइटम सबमिट किया गया था।",
+    "other": "{message} {count} आइटम सबमिट किए गए।"
+  },
+  "{count} items were submitted.": {
+    "one": "{count} आइटम सबमिट किया गया था.",
+    "other": "{count} आइटम सबमिट किए गए."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "पुनरावर्ती विनाश {count} चाइल्ड डेटासेट को भी हटा देगा।",
+    "other": "पुनरावर्ती विनाश {count} चाइल्ड डेटासेट को भी हटा देगा।"
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "पुनरावर्ती विनाश {count} स्नैपशॉट को भी हटा देगा।",
+    "other": "पुनरावर्ती विनाश {count} स्नैपशॉट भी हटा देगा।"
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "नष्ट करने से {count} स्नैपशॉट भी हट जाएगा।",
+    "other": "डिस्ट्रॉय {count} स्नैपशॉट भी हटा देगा।"
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} फ़ोल्डर को संगरोध में ले जाया गया।",
+    "other": "{count} फ़ोल्डरों को संगरोध में ले जाया गया।"
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} फ़ोल्डर हटा दिया गया.",
+    "other": "{count} फ़ोल्डर हटा दिए गए."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} फ़ोल्डर पुनर्स्थापित किया गया.",
+    "other": "{count} फ़ोल्डर पुनर्स्थापित किए गए."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} फ़ोल्डर स्थायी रूप से मिटा दिया गया था.",
+    "other": "{count} फ़ोल्डर स्थायी रूप से मिटा दिए गए."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} आइटम छोड़ दिया गया था.",
+    "other": "{count} आइटम छोड़ दिए गए."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} आइटम पहले से ही गायब था.",
+    "other": "{count} वस्तुएँ पहले से ही गायब थीं।"
+  },
+  "{count} items were blocked.": {
+    "one": "{count} आइटम अवरुद्ध किया गया था.",
+    "other": "{count} आइटम ब्लॉक कर दिए गए."
+  },
+  "{count} errors occurred.": {
+    "one": "{count} त्रुटि हुई.",
+    "other": "{count} त्रुटियाँ हुईं."
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "{count} folders selected": {
+    "other": "{count} folder dipilih"
+  },
+  "{count} items total": {
+    "other": "jumlah {count} barang"
+  },
+  "{count} quarantined folders tracked": {
+    "other": "{count} folder karantina dilacak"
+  },
+  "{count} items submitted": {
+    "other": "{count} item dikirimkan"
+  },
+  "Delete {count} folders": {
+    "other": "Hapus {count} folder"
+  },
+  "Delete {count} items": {
+    "other": "Hapus {count} item"
+  },
+  "Destroy {count} datasets": {
+    "other": "Hancurkan {count} kumpulan data"
+  },
+  "Quarantine {count} folders": {
+    "other": "Karantina {count} map"
+  },
+  "{count} conflicts found.": {
+    "other": "{count} konflik ditemukan."
+  },
+  "{count} selected folders can still restore normally.": {
+    "other": "{count} folder yang dipilih masih bisa direstorasi secara normal."
+  },
+  "Retry after about {count} seconds.": {
+    "other": "Coba lagi setelah sekitar {count} detik."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "other": "Menyimpan {count} ZFS pemetaan dan pemindaian ulang."
+  },
+  "Processed {count} folders.": {
+    "other": "Diproses {count} folder."
+  },
+  "{count} folders are visible.": {
+    "other": "{count} folder terlihat."
+  },
+  "{count} more": {
+    "other": "{count} lagi"
+  },
+  "{count} minutes ago": {
+    "other": "{count} menit yang lalu"
+  },
+  "{count} hours ago": {
+    "other": "{count} jam yang lalu"
+  },
+  "{count} days ago": {
+    "other": "{count} hari yang lalu"
+  },
+  "{count} months ago": {
+    "other": "{count} bulan yang lalu"
+  },
+  "{count} years ago": {
+    "other": "{count} tahun yang lalu"
+  },
+  "Scheduled to purge in {count} days.": {
+    "other": "Dijadwalkan untuk dibersihkan dalam {count} hari."
+  },
+  "Purges in {count} days": {
+    "other": "Membersihkan dalam {count} hari"
+  },
+  "Purges in {count} hours": {
+    "other": "Membersihkan dalam {count} jam"
+  },
+  "Purges in {count} minutes": {
+    "other": "Membersihkan dalam {count} menit"
+  },
+  "{count} child datasets": {
+    "other": "{count} kumpulan data anak"
+  },
+  "{count} snapshots": {
+    "other": "{count} cuplikan"
+  },
+  "{count} conflicts": {
+    "other": "{count} konflik"
+  },
+  "{count} errors": {
+    "other": "{count} kesalahan"
+  },
+  "{message} {count} items were submitted.": {
+    "other": "{message} {count} item telah dikirimkan."
+  },
+  "{count} items were submitted.": {
+    "other": "{count} item telah dikirimkan."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "other": "Penghancuran rekursif juga akan menghapus {count} dataset anak."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "other": "Penghancuran rekursif juga akan menghapus {count} snapshot."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "other": "Hancurkan juga akan menghapus {count} snapshot."
+  },
+  "{count} folders were moved to quarantine.": {
+    "other": "{count} folder dipindahkan ke karantina."
+  },
+  "{count} folders were deleted.": {
+    "other": "{count} folder telah dihapus."
+  },
+  "{count} folders were restored.": {
+    "other": "{count} folder telah dipulihkan."
+  },
+  "{count} folders were permanently purged.": {
+    "other": "{count} folder telah dihapus secara permanen."
+  },
+  "{count} items were skipped.": {
+    "other": "{count} item dilewati."
+  },
+  "{count} items were already missing.": {
+    "other": "{count} item sudah hilang."
+  },
+  "{count} items were blocked.": {
+    "other": "{count} item diblokir."
+  },
+  "{count} errors occurred.": {
+    "other": "{count} kesalahan terjadi."
+  }
+}

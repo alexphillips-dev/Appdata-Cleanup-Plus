@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "{count} folder selected",
+    "other": "{count} folders selected"
+  },
+  "{count} items total": {
+    "one": "{count} item total",
+    "other": "{count} items total"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} quarantined folder tracked",
+    "other": "{count} quarantined folders tracked"
+  },
+  "{count} items submitted": {
+    "one": "{count} item submitted",
+    "other": "{count} items submitted"
+  },
+  "Delete {count} folders": {
+    "one": "Delete {count} folder",
+    "other": "Delete {count} folders"
+  },
+  "Delete {count} items": {
+    "one": "Delete {count} item",
+    "other": "Delete {count} items"
+  },
+  "Destroy {count} datasets": {
+    "one": "Destroy {count} dataset",
+    "other": "Destroy {count} datasets"
+  },
+  "Quarantine {count} folders": {
+    "one": "Quarantine {count} folder",
+    "other": "Quarantine {count} folders"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} conflict found.",
+    "other": "{count} conflicts found."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} selected folder can still restore normally.",
+    "other": "{count} selected folders can still restore normally."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Retry after about {count} second.",
+    "other": "Retry after about {count} seconds."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Saved {count} ZFS mapping and rescanning.",
+    "other": "Saved {count} ZFS mappings and rescanning."
+  },
+  "Processed {count} folders.": {
+    "one": "Processed {count} folder.",
+    "other": "Processed {count} folders."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} folder is visible.",
+    "other": "{count} folders are visible."
+  },
+  "{count} more": {
+    "one": "{count} more",
+    "other": "{count} more"
+  },
+  "{count} minutes ago": {
+    "one": "{count} minute ago",
+    "other": "{count} minutes ago"
+  },
+  "{count} hours ago": {
+    "one": "{count} hour ago",
+    "other": "{count} hours ago"
+  },
+  "{count} days ago": {
+    "one": "{count} day ago",
+    "other": "{count} days ago"
+  },
+  "{count} months ago": {
+    "one": "{count} month ago",
+    "other": "{count} months ago"
+  },
+  "{count} years ago": {
+    "one": "{count} year ago",
+    "other": "{count} years ago"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Scheduled to purge in {count} day.",
+    "other": "Scheduled to purge in {count} days."
+  },
+  "Purges in {count} days": {
+    "one": "Purges in {count} day",
+    "other": "Purges in {count} days"
+  },
+  "Purges in {count} hours": {
+    "one": "Purges in {count} hour",
+    "other": "Purges in {count} hours"
+  },
+  "Purges in {count} minutes": {
+    "one": "Purges in {count} minute",
+    "other": "Purges in {count} minutes"
+  },
+  "{count} child datasets": {
+    "one": "{count} child dataset",
+    "other": "{count} child datasets"
+  },
+  "{count} snapshots": {
+    "one": "{count} snapshot",
+    "other": "{count} snapshots"
+  },
+  "{count} conflicts": {
+    "one": "{count} conflict",
+    "other": "{count} conflicts"
+  },
+  "{count} errors": {
+    "one": "{count} error",
+    "other": "{count} errors"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} item was submitted.",
+    "other": "{message} {count} items were submitted."
+  },
+  "{count} items were submitted.": {
+    "one": "{count} item was submitted.",
+    "other": "{count} items were submitted."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Recursive destroy will also remove {count} child dataset.",
+    "other": "Recursive destroy will also remove {count} child datasets."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Recursive destroy will also remove {count} snapshot.",
+    "other": "Recursive destroy will also remove {count} snapshots."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy will also remove {count} snapshot.",
+    "other": "Destroy will also remove {count} snapshots."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} folder was moved to quarantine.",
+    "other": "{count} folders were moved to quarantine."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} folder was deleted.",
+    "other": "{count} folders were deleted."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} folder was restored.",
+    "other": "{count} folders were restored."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} folder was permanently purged.",
+    "other": "{count} folders were permanently purged."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} item was skipped.",
+    "other": "{count} items were skipped."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} item was already missing.",
+    "other": "{count} items were already missing."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} item was blocked.",
+    "other": "{count} items were blocked."
+  },
+  "{count} errors occurred.": {
+    "one": "{count} error occurred.",
+    "other": "{count} errors occurred."
+  }
+}

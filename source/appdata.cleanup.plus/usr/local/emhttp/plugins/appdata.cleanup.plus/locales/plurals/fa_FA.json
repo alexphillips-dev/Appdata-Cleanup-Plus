@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "{count} پوشه انتخاب شد",
+    "other": "{count} پوشه انتخاب شد"
+  },
+  "{count} items total": {
+    "one": "کل {count} مورد",
+    "other": "در کل {count} مورد"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count} پوشه قرنطینه شده ردیابی شد",
+    "other": "{count} پوشه قرنطینه شده ردیابی شد"
+  },
+  "{count} items submitted": {
+    "one": "{count} مورد ارسال شد",
+    "other": "{count} مورد ارسال شد"
+  },
+  "Delete {count} folders": {
+    "one": "حذف {count} پوشه",
+    "other": "حذف {count} پوشه"
+  },
+  "Delete {count} items": {
+    "one": "حذف {count} مورد",
+    "other": "حذف {count} مورد"
+  },
+  "Destroy {count} datasets": {
+    "one": "{count} مجموعه داده را از بین ببرید",
+    "other": "{count} مجموعه داده را از بین ببرید"
+  },
+  "Quarantine {count} folders": {
+    "one": "قرنطینه {count} پوشه",
+    "other": "{count} پوشه را قرنطینه کنید"
+  },
+  "{count} conflicts found.": {
+    "one": "{count} تضاد پیدا شد.",
+    "other": "{count} تضاد پیدا شد."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} پوشه انتخاب شده همچنان می تواند به طور عادی بازیابی شود.",
+    "other": "{count} پوشه انتخاب شده همچنان می توانند به طور عادی بازیابی شوند."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "بعد از حدود {count} ثانیه دوباره امتحان کنید.",
+    "other": "بعد از حدود {count} ثانیه دوباره امتحان کنید."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "{count} ZFS نقشه برداری و اسکن مجدد ذخیره شد.",
+    "other": "{count} ZFS نقشه برداری و اسکن مجدد ذخیره شد."
+  },
+  "Processed {count} folders.": {
+    "one": "{count} پوشه پردازش شد.",
+    "other": "{count} پوشه پردازش شد."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} پوشه قابل مشاهده است.",
+    "other": "{count} پوشه قابل مشاهده است."
+  },
+  "{count} more": {
+    "one": "{count} بیشتر",
+    "other": "{count} تا دیگه"
+  },
+  "{count} minutes ago": {
+    "one": "{count} دقیقه پیش",
+    "other": "{count} دقیقه پیش"
+  },
+  "{count} hours ago": {
+    "one": "{count} ساعت پیش",
+    "other": "{count} ساعت پیش"
+  },
+  "{count} days ago": {
+    "one": "{count} روز پیش",
+    "other": "{count} روز پیش"
+  },
+  "{count} months ago": {
+    "one": "{count} ماه پیش",
+    "other": "{count} ماه پیش"
+  },
+  "{count} years ago": {
+    "one": "{count} سال پیش",
+    "other": "{count} سال پیش"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "برای پاکسازی در {count} روز برنامه ریزی شده است.",
+    "other": "برای پاکسازی در {count} روز برنامه ریزی شده است."
+  },
+  "Purges in {count} days": {
+    "one": "پاکسازی در {count} روز",
+    "other": "پاکسازی در {count} روز"
+  },
+  "Purges in {count} hours": {
+    "one": "در {count} ساعت پاک می شود",
+    "other": "در {count} ساعت پاک می شود"
+  },
+  "Purges in {count} minutes": {
+    "one": "در {count} دقیقه پاک می شود",
+    "other": "در {count} دقیقه پاک می شود"
+  },
+  "{count} child datasets": {
+    "one": "{count} مجموعه داده فرزند",
+    "other": "{count} مجموعه داده کودک"
+  },
+  "{count} snapshots": {
+    "one": "{count} عکس فوری",
+    "other": "{count} عکس فوری"
+  },
+  "{count} conflicts": {
+    "one": "{count} درگیری",
+    "other": "{count} درگیری"
+  },
+  "{count} errors": {
+    "one": "{count} خطا",
+    "other": "{count} خطا"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count} مورد ارسال شد.",
+    "other": "{message} {count} مورد ارسال شد."
+  },
+  "{count} items were submitted.": {
+    "one": "{count} مورد ارسال شد",
+    "other": "{count} مورد ارسال شد."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "تخریب بازگشتی همچنین {count} مجموعه داده فرزند را حذف می کند.",
+    "other": "تخریب بازگشتی همچنین {count} مجموعه داده فرزند را حذف می کند."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "تخریب بازگشتی نیز {count} عکس فوری را حذف می کند.",
+    "other": "تخریب بازگشتی همچنین {count} عکس فوری را حذف می کند."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy همچنین {count} عکس فوری را حذف می کند.",
+    "other": "Destroy همچنین {count} عکس فوری را حذف می کند."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} پوشه به قرنطینه منتقل شد.",
+    "other": "{count} پوشه به قرنطینه منتقل شد."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} پوشه حذف شد",
+    "other": "{count} پوشه حذف شد"
+  },
+  "{count} folders were restored.": {
+    "one": "{count} پوشه بازیابی شد.",
+    "other": "{count} پوشه بازیابی شد."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} پوشه برای همیشه پاک شد.",
+    "other": "{count} پوشه برای همیشه پاک شد."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} مورد حذف شد.",
+    "other": "{count} مورد حذف شد."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} مورد قبلاً وجود نداشت.",
+    "other": "{count} مورد قبلاً وجود نداشت."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} مورد مسدود شد.",
+    "other": "{count} مورد مسدود شد"
+  },
+  "{count} errors occurred.": {
+    "one": "{count} خطا رخ داد.",
+    "other": "{count} خطا رخ داد."
+  }
+}

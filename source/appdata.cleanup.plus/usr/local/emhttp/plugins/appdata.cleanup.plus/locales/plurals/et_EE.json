@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "Valitud on {count} kaust",
+    "other": "Valitud on {count} kausta"
+  },
+  "{count} items total": {
+    "one": "Kokku {count} toode",
+    "other": "Kokku {count} eset"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "Jälgiti {count} karantiini pandud kausta",
+    "other": "Jälgitud on {count} karantiini pandud kausta"
+  },
+  "{count} items submitted": {
+    "one": "Esitati {count} üksus",
+    "other": "Esitati {count} eset"
+  },
+  "Delete {count} folders": {
+    "one": "Kustuta {count} kaust",
+    "other": "Kustutage {count} kausta"
+  },
+  "Delete {count} items": {
+    "one": "Kustuta {count} üksus",
+    "other": "Kustuta {count} üksust"
+  },
+  "Destroy {count} datasets": {
+    "one": "Hävitage {count} andmestik",
+    "other": "Hävitage {count} andmekogumit"
+  },
+  "Quarantine {count} folders": {
+    "one": "Karantiin {count} kaust",
+    "other": "Karantiin {count} kausta"
+  },
+  "{count} conflicts found.": {
+    "one": "Leiti {count} konflikt.",
+    "other": "Leiti {count} konflikti."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} valitud kausta saab endiselt normaalselt taastada.",
+    "other": "{count} valitud kausta saab endiselt normaalselt taastada."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Proovige uuesti umbes {count} sekundi pärast.",
+    "other": "Proovige uuesti umbes {count} sekundi pärast."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Salvestati {count} ZFS kaardistamine ja uuesti skannimine.",
+    "other": "Salvestati {count} ZFS vastendust ja uuesti skannimist."
+  },
+  "Processed {count} folders.": {
+    "one": "Töödeldud {count} kaust.",
+    "other": "Töödeldud {count} kausta."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} kaust on nähtav.",
+    "other": "{count} kausta on näha."
+  },
+  "{count} more": {
+    "one": "{count} veel",
+    "other": "{count} veel"
+  },
+  "{count} minutes ago": {
+    "one": "{count} minut tagasi",
+    "other": "{count} minutit tagasi"
+  },
+  "{count} hours ago": {
+    "one": "{count} tund tagasi",
+    "other": "{count} tundi tagasi"
+  },
+  "{count} days ago": {
+    "one": "{count} päev tagasi",
+    "other": "{count} päeva tagasi"
+  },
+  "{count} months ago": {
+    "one": "{count} kuu tagasi",
+    "other": "{count} kuud tagasi"
+  },
+  "{count} years ago": {
+    "one": "{count} aasta tagasi",
+    "other": "{count} aastat tagasi"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Kavandatud puhastamine {count} päeva pärast.",
+    "other": "Kavandatud puhastamine {count} päeva pärast."
+  },
+  "Purges in {count} days": {
+    "one": "Puhastamine {count} päevaga",
+    "other": "Puhastamine {count} päevaga"
+  },
+  "Purges in {count} hours": {
+    "one": "Puhastamine {count} tunniga",
+    "other": "Puhastamine {count} tunniga"
+  },
+  "Purges in {count} minutes": {
+    "one": "Puhastamine {count} minutiga",
+    "other": "Puhastab {count} minutiga"
+  },
+  "{count} child datasets": {
+    "one": "{count} lapse andmestik",
+    "other": "{count} alamandmestikku"
+  },
+  "{count} snapshots": {
+    "one": "{count} hetktõmmis",
+    "other": "{count} pilti"
+  },
+  "{count} conflicts": {
+    "one": "{count} konflikt",
+    "other": "{count} konflikti"
+  },
+  "{count} errors": {
+    "one": "{count} viga",
+    "other": "{count} viga"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} Esitati {count} üksus.",
+    "other": "{message} Esitati {count} üksust."
+  },
+  "{count} items were submitted.": {
+    "one": "Esitati {count} üksus.",
+    "other": "Esitati {count} eset."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Rekursiivne hävitamine eemaldab ka {count} alamandmestiku.",
+    "other": "Rekursiivne hävitamine eemaldab ka {count} alamandmestikku."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Rekursiivne hävitamine eemaldab ka {count} hetktõmmise.",
+    "other": "Rekursiivne hävitamine eemaldab ka {count} hetktõmmist."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy eemaldab ka {count} hetktõmmise.",
+    "other": "Destroy eemaldab ka {count} hetktõmmist."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} kaust teisaldati karantiini.",
+    "other": "{count} kausta viidi karantiini."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} kaust kustutati.",
+    "other": "{count} kausta kustutati."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} kaust taastati.",
+    "other": "{count} kausta taastati."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} kaust kustutati jäädavalt.",
+    "other": "{count} kausta kustutati jäädavalt."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} üksus jäeti vahele.",
+    "other": "{count} üksust jäeti vahele."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} üksus oli juba puudu.",
+    "other": "{count} eset oli juba puudu."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} üksus blokeeriti.",
+    "other": "{count} üksust blokeeriti."
+  },
+  "{count} errors occurred.": {
+    "one": "Ilmnes {count} viga.",
+    "other": "Ilmnes {count} viga."
+  }
+}

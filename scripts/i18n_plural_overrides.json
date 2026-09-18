@@ -1,0 +1,26 @@
+{
+  "lv_LV": {
+    "{count} selected folders can still restore normally.": {"one":"Joprojām var atjaunot {count} atlasīto mapi."}
+  },
+  "pl_PL": {
+    "Delete {count} folders": {"one":"Usuń {count} folder", "few":"Usuń {count} foldery", "many":"Usuń {count} folderów", "other":"Usuń {count} folderu"},
+    "{count} snapshots": {"one":"{count} migawka", "few":"{count} migawki", "many":"{count} migawek", "other":"{count} migawki"}
+  },
+  "ru_RU": {
+    "{count} snapshots": {"one":"{count} снимок", "few":"{count} снимка", "many":"{count} снимков", "other":"{count} снимка"},
+    "Recursive destroy will also remove {count} snapshots.": {"one":"Рекурсивное уничтожение также удалит {count} снимок.", "few":"Рекурсивное уничтожение также удалит {count} снимка.", "many":"Рекурсивное уничтожение также удалит {count} снимков.", "other":"Рекурсивное уничтожение также удалит {count} снимка."}
+  },
+  "ja_JA": {
+    "{count} folders selected": {"other":"{count} 個のフォルダーを選択中"},
+    "Delete {count} folders": {"other":"{count} 個のフォルダーを削除"},
+    "Quarantine {count} folders": {"other":"{count} 個のフォルダーを隔離"},
+    "Recursive destroy will also remove {count} snapshots.": {"other":"再帰的に破棄すると、{count} 個のスナップショットも削除されます。"}
+  },
+  "ar_AR": {
+    "{count} snapshots": {"zero":"{count} لقطات", "one":"لقطة واحدة", "two":"لقطتان", "few":"{count} لقطات", "many":"{count} لقطة", "other":"{count} لقطة"},
+    "{count} conflicts found.": {"zero":"تم العثور على {count} تعارضات.", "one":"تم العثور على تعارض واحد.", "two":"تم العثور على تعارضين.", "few":"تم العثور على {count} تعارضات.", "many":"تم العثور على {count} تعارضًا.", "other":"تم العثور على {count} تعارض."}
+  },
+  "he_IL": {
+    "Destroy will also remove {count} snapshots.": {"one":"המחיקה תסיר גם תמונת מצב אחת."}
+  }
+}

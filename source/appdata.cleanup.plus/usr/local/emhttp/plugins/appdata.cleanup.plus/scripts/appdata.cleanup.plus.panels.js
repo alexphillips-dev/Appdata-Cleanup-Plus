@@ -129,7 +129,7 @@
     var selectionDisabled = false;
     var summary = quarantine.summary || { count: 0, sizeLabel: "0 B" };
     var subtitle = summary.count
-      ? (summary.count + " " + (summary.count === 1 ? ACP.t(strings, "quarantineCountSingular", "quarantined folder") : ACP.t(strings, "quarantineCountPlural", "quarantined folders")) + " tracked" + (summary.sizeLabel ? " | " + summary.sizeLabel : ""))
+      ? (ACP.plural("{count} quarantined folders tracked", summary.count) + (summary.sizeLabel ? " | " + summary.sizeLabel : ""))
       : ACP.t(strings, "quarantineSummaryEmpty", "No quarantined folders are tracked right now.");
     $.each(entries, function(_, entry) {
       if (selected[String(entry.id || "")]) {
@@ -138,7 +138,7 @@
     });
     allSelected = entries.length > 0 && selectedCount >= entries.length;
     selectionDisabled = !!quarantine.loading || selectedCount === 0;
-    var selectedSummary = selectedCount + " " + (selectedCount === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
+    var selectedSummary = ACP.plural("{count} folders selected", selectedCount);
     var bulkActions = [
       '<button type="button" class="acp-button acp-button-secondary" data-action="refresh-quarantine"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantineRefreshLabel", "Refresh")) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="select-all-quarantine"' + (quarantine.loading || !entries.length || allSelected ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "selectAllLabel", "Select all")) + "</button>",
@@ -273,7 +273,7 @@
         html.push("</div>");
         html.push('<div class="acp-simple-badge-row">');
         html.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(entry.operationLabel || "") + "</span>");
-        html.push('<span class="acp-modal-stat is-scheduled">' + ACP.escapeHtml(String(entry.requestedCount || 0)) + " " + ACP.escapeHtml(ACP.t(strings, "auditRequestedLabel", "items submitted")) + "</span>");
+        html.push('<span class="acp-modal-stat is-scheduled">' + ACP.escapeHtml(ACP.plural("{count} items submitted", entry.requestedCount || 0)) + "</span>");
         html.push("</div>");
         html.push("</div>");
         if (entry.message) {

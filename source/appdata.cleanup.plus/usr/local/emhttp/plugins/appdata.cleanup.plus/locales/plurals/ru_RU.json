@@ -1,0 +1,248 @@
+{
+  "{count} folders selected": {
+    "one": "выбрана {count} папка",
+    "few": "выбрано {count} папки",
+    "many": "Выбрано {count} папок",
+    "other": "Выбрано {count} папок"
+  },
+  "{count} items total": {
+    "one": "всего {count} предмет",
+    "few": "всего {count} шт.",
+    "many": "всего {count} предметов",
+    "other": "всего {count} шт."
+  },
+  "{count} quarantined folders tracked": {
+    "one": "Отслеживается {count} папка на карантине",
+    "few": "Отслеживаются {count} папки на карантине",
+    "many": "Отслеживается {count} папок на карантине",
+    "other": "{count} папки на карантине отслеживаются"
+  },
+  "{count} items submitted": {
+    "one": "отправлен {count} объект",
+    "few": "отправлено {count} объекта",
+    "many": "отправлено {count} объектов",
+    "other": "{count} отправлено"
+  },
+  "Delete {count} folders": {
+    "one": "Удалить {count} папку",
+    "few": "Удалить {count} папки",
+    "many": "Удалить {count} папок",
+    "other": "Удалить папки {count}"
+  },
+  "Delete {count} items": {
+    "one": "Удалить {count} элемент",
+    "few": "Удалить {count} объекта",
+    "many": "Удалить {count} элементов",
+    "other": "Удалить {count} элементов"
+  },
+  "Destroy {count} datasets": {
+    "one": "Уничтожить {count} набор данных",
+    "few": "Уничтожить {count} набора данных",
+    "many": "Уничтожить {count} наборов данных",
+    "other": "Уничтожить наборы данных {count}"
+  },
+  "Quarantine {count} folders": {
+    "one": "Карантин {count} папка",
+    "few": "Карантин {count} папки",
+    "many": "Карантин {count} папок",
+    "other": "Карантин папок {count}"
+  },
+  "{count} conflicts found.": {
+    "one": "Обнаружен {count} конфликт.",
+    "few": "Обнаружено {count} конфликта.",
+    "many": "Найдено {count} конфликтов.",
+    "other": "{count} обнаружены конфликты."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} выбранную папку еще можно нормально восстановить.",
+    "few": "{count} выбранные папки еще можно нормально восстановить.",
+    "many": "{count} выбранных папок еще можно нормально восстановить.",
+    "other": "{count} выбранные папки еще можно нормально восстановить."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Повторите попытку примерно через {count} секунду.",
+    "few": "Повторите попытку примерно через {count} секунды.",
+    "many": "Повторите попытку примерно через {count} секунд.",
+    "other": "Повторите попытку примерно через {count} секунды."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Сохранено {count} ZFS картографирование и повторное сканирование.",
+    "few": "Сохранено {count} сопоставления ZFS и повторное сканирование.",
+    "many": "Сохранено {count} ZFS сопоставлений и повторное сканирование.",
+    "other": "Сохранено отображение {count} ZFS и повторное сканирование."
+  },
+  "Processed {count} folders.": {
+    "one": "Обработана {count} папка.",
+    "few": "Обработал {count} папки.",
+    "many": "Обработано {count} папок.",
+    "other": "Обработаны папки {count}."
+  },
+  "{count} folders are visible.": {
+    "one": "Видна {count} папка.",
+    "few": "Видны {count} папки.",
+    "many": "Видны {count} папок.",
+    "other": "Папки {count} видны."
+  },
+  "{count} more": {
+    "one": "еще {count}",
+    "few": "еще {count}",
+    "many": "еще {count}",
+    "other": "еще {count}"
+  },
+  "{count} minutes ago": {
+    "one": "{count} минуту назад",
+    "few": "{count} минуты назад",
+    "many": "{count} минут назад",
+    "other": "{count} минуты назад"
+  },
+  "{count} hours ago": {
+    "one": "{count} час назад",
+    "few": "{count} часа назад",
+    "many": "{count} часов назад",
+    "other": "{count} часа назад"
+  },
+  "{count} days ago": {
+    "one": "{count} день назад",
+    "few": "{count} дня назад",
+    "many": "{count} дней назад",
+    "other": "{count} дня назад"
+  },
+  "{count} months ago": {
+    "one": "{count} месяц назад",
+    "few": "{count} месяца назад",
+    "many": "{count} месяцев назад",
+    "other": "{count} месяца назад"
+  },
+  "{count} years ago": {
+    "one": "{count} год назад",
+    "few": "{count} года назад",
+    "many": "{count} лет назад",
+    "other": "{count} года назад"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Планируется провести чистку через {count} день.",
+    "few": "Планируется чистка через {count} дня.",
+    "many": "Планируется провести чистку через {count} дней.",
+    "other": "Планируется провести чистку через {count} дня."
+  },
+  "Purges in {count} days": {
+    "one": "Чистка за {count} день",
+    "few": "Чистка за {count} дня",
+    "many": "Чистка за {count} дней",
+    "other": "Чистка за {count} дня"
+  },
+  "Purges in {count} hours": {
+    "one": "Чистка за {count} час",
+    "few": "Чистка за {count} часа",
+    "many": "Чистка за {count} часов",
+    "other": "Чистка за {count} часа"
+  },
+  "Purges in {count} minutes": {
+    "one": "Очистка за {count} минуту",
+    "few": "Очистка за {count} минуты",
+    "many": "Очистка за {count} минут",
+    "other": "Очистка за {count} минуты"
+  },
+  "{count} child datasets": {
+    "one": "{count} дочерний набор данных",
+    "few": "{count} дочерних набора данных",
+    "many": "{count} дочерних наборов данных",
+    "other": "{count} дочерние наборы данных"
+  },
+  "{count} snapshots": {
+    "one": "{count} снимок",
+    "few": "{count} снимка",
+    "many": "{count} снимков",
+    "other": "{count} снимка"
+  },
+  "{count} conflicts": {
+    "one": "{count} конфликт",
+    "few": "{count} конфликта",
+    "many": "{count} конфликтов",
+    "other": "{count} конфликты"
+  },
+  "{count} errors": {
+    "one": "{count} ошибка",
+    "few": "{count} ошибки",
+    "many": "{count} ошибок",
+    "other": "{count} ошибки"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} отправлен {count} объект.",
+    "few": "{message} Было отправлено {count} объекта.",
+    "many": "{message} Было отправлено {count} материалов.",
+    "other": "{message} отправлено {count} шт."
+  },
+  "{count} items were submitted.": {
+    "one": "Был отправлен {count} объект.",
+    "few": "Было представлено {count} объекта.",
+    "many": "Было представлено {count} объектов.",
+    "other": "Было отправлено {count} шт."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Рекурсивное уничтожение также удалит {count} дочерний набор данных.",
+    "few": "Рекурсивное уничтожение также удалит {count} дочерних набора данных.",
+    "many": "Рекурсивное уничтожение также удалит {count} дочерних наборов данных.",
+    "other": "Рекурсивное уничтожение также удалит дочерние наборы данных {count}."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Рекурсивное уничтожение также удалит {count} снимок.",
+    "few": "Рекурсивное уничтожение также удалит {count} снимка.",
+    "many": "Рекурсивное уничтожение также удалит {count} снимков.",
+    "other": "Рекурсивное уничтожение также удалит {count} снимка."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Уничтожить также удалит {count} снимок.",
+    "few": "Уничтожить также удалит {count} снимка.",
+    "many": "Уничтожить также удалит {count} снимков.",
+    "other": "Destroy также удалит снимки версии {count}."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} папка перемещена в карантин.",
+    "few": "{count} папки перемещены в карантин.",
+    "many": "{count} папок перемещены на карантин.",
+    "other": "Папки {count} перемещены в карантин."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} папка удалена.",
+    "few": "{count} папки были удалены.",
+    "many": "{count} папок были удалены.",
+    "other": "{count} папки были удалены."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} папка восстановлена.",
+    "few": "{count} папки восстановлены.",
+    "many": "Восстановлено {count} папок.",
+    "other": "Папки {count} были восстановлены."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} папка была удалена без возможности восстановления.",
+    "few": "{count} папки были удалены навсегда.",
+    "many": "{count} папок были удалены навсегда.",
+    "other": "Папки {count} были окончательно удалены."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} элемент был пропущен.",
+    "few": "{count} пункта пропущено.",
+    "many": "{count} пунктов пропущено.",
+    "other": "{count} элемент был пропущен."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} предмет уже отсутствовал.",
+    "few": "{count} предмета уже не было.",
+    "many": "{count} предметов уже не было.",
+    "other": "{count} предметов уже не было."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} объект заблокирован.",
+    "few": "{count} объекта были заблокированы.",
+    "many": "Заблокировано {count} объектов.",
+    "other": "{count} объект был заблокирован."
+  },
+  "{count} errors occurred.": {
+    "one": "Произошла {count} ошибка.",
+    "few": "Произошло {count} ошибки.",
+    "many": "Произошло {count} ошибок.",
+    "other": "{count} произошли ошибки."
+  }
+}

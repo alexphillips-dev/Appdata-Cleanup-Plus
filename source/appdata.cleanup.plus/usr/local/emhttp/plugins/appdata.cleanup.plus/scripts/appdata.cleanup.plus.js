@@ -918,7 +918,7 @@
     var message = ACP.extractErrorMessage(xhr, fallback);
 
     if (retryAfter > 0 && message.indexOf("Retry after") === -1) {
-      message += " " + ACP.tr("Retry after about {count} seconds.", {count: retryAfter});
+      message += " " + ACP.plural("Retry after about {count} seconds.", retryAfter);
     }
 
     return message;
@@ -2192,9 +2192,7 @@
         };
         state.zfsPathMappingBrowser.activeField = "shareRoot";
         setZfsPathMappingsFeedback(
-          mappingCount === 1
-            ? ACP.t(strings, "zfsPathMappingsSavedSingleMessage", "Saved 1 ZFS mapping and rescanning.")
-            : ACP.t(strings, "zfsPathMappingsSavedManyMessage", "Saved {count} ZFS mappings and rescanning.").replace("{count}", String(mappingCount))
+          ACP.plural("Saved {count} ZFS mappings and rescanning.", mappingCount)
         );
       },
       onFailure: function(xhr) {
@@ -2204,11 +2202,10 @@
   }
 
   function buildTemplateActionLockReason(row) {
-    var sourceSummary = String(row.sourceSummary || row.sourceDisplay || "");
-    var targetSummary = String(row.targetSummary || ACP.tr("tracked container paths"));
-    var sourceLabel = !sourceSummary || /^saved docker templates$/i.test(sourceSummary) ? ACP.tr("Saved Docker templates") : ACP.tr("Saved templates {names}", {names: sourceSummary});
-
-    return ACP.tr("{message} still point here at {paths}. If you clean this path, reinstalling from that saved template may expect or recreate it.", {message: sourceLabel, paths: targetSummary});
+    var parts = [ACP.tr("Saved Docker templates still reference this folder. If you clean this path, reinstalling from a saved template may expect or recreate it.")];
+    if ((row.sourceNames || []).length) parts.push(ACP.tr("Saved templates: {names}.", {names: row.sourceNames.join(", ")}));
+    if ((row.targetPaths || []).length) parts.push(ACP.tr("Container paths: {paths}.", {paths: row.targetPaths.join(", ")}));
+    return parts.join(" ");
   }
 
   function applyLocalSafetyStateToRow(row) {
@@ -2563,10 +2560,8 @@
 
     parts.push(ACP.t(strings, "emptyNoUnusedFoundMessage", "No unused appdata folders were found under the current scan paths."));
 
-    if (insights.scanRoots.length === 1) {
-      parts.push(ACP.t(strings, "emptyScannedSinglePrefix", "Scanned appdata root:") + " " + insights.scanRoots[0] + ".");
-    } else if (insights.scanRoots.length > 1) {
-      parts.push(ACP.t(strings, "emptyScannedPluralPrefix", "Scanned appdata roots:") + " " + insights.scanRoots.join(", ") + ".");
+    if (insights.scanRoots.length > 0) {
+      parts.push(ACP.tr("Locations scanned: {paths}.", {paths: insights.scanRoots.join(", ")}));
     } else {
       parts.push(ACP.t(strings, "emptyNoRootsMessage", "No appdata source roots are configured right now."));
     }
@@ -3708,9 +3703,7 @@
   }
 
   function buildQuarantineSelectionSummaryText(selectedCount) {
-    return selectedCount + " " + (selectedCount === 1
-      ? ACP.t(strings, "selectedSingular", "folder selected")
-      : ACP.t(strings, "selectedPlural", "folders selected"));
+    return ACP.plural("{count} folders selected", selectedCount);
   }
 
   function normalizeDefaultQuarantinePurgeDaysValue(value) {
@@ -3921,11 +3914,11 @@
       facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "storageLabel", "Storage")) + "</strong> " + ACP.escapeHtml(ACP.t(strings, "zfsMappingPendingLabel", "Mapped share path")) + "</span>");
     }
 
-    facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + "</strong> " + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || "Unknown")) + "</span>");
+    facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + "</strong> " + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || ACP.tr("Unknown"))) + "</span>");
     facts.push(
       '<span class="acp-row-meta-item"' + (row.lastModifiedExact ? ' title="' + ACP.escapeHtml(row.lastModifiedExact) + '"' : "") + '><strong>' +
       ACP.escapeHtml(ACP.t(strings, "updatedLabel", "Updated")) +
-      "</strong> " + ACP.escapeHtml(row.lastModifiedLabel || "Unknown") + "</span>"
+      "</strong> " + ACP.escapeHtml(row.lastModifiedLabel || ACP.tr("Unknown")) + "</span>"
     );
 
     return facts.join('<span class="acp-row-meta-separator">|</span>');
@@ -4156,7 +4149,7 @@
     return {
       kind: "status",
       value: String(row.status || "orphaned"),
-      label: row.statusLabel || "Orphaned",
+      label: row.statusLabel || ACP.tr("Orphaned"),
       tone: "neutral",
       title: title,
       kindClass: "status"
@@ -4373,7 +4366,7 @@
     var summary = buildSectionActionabilitySummary(rows);
 
     badges.push(buildBadgeHtml({
-      label: String((rows || []).length || 0) + " " + ACP.t(strings, "visibleSummary", "visible"),
+      label: ACP.plural("{count} folders are visible.", (rows || []).length),
       tone: "neutral",
       kindClass: "count"
     }));
@@ -4438,10 +4431,10 @@
               "</div>" +
             "</div>" +
             '<div class="acp-row-used">' +
-              '<span>' + ACP.escapeHtml(row.lastModifiedLabel || "Unknown") + "</span>" +
+              '<span>' + ACP.escapeHtml(row.lastModifiedLabel || ACP.tr("Unknown")) + "</span>" +
               '<small>' + ACP.escapeHtml(ACP.t(strings, "updatedLabel", "Updated")) + "</small>" +
             "</div>" +
-            '<div class="acp-row-size">' + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || "Unknown")) + "</div>" +
+            '<div class="acp-row-size">' + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || ACP.tr("Unknown"))) + "</div>" +
             '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
             '<div class="acp-row-badges">' + badgeHtml + "</div>" +
             '<div class="acp-row-side">' +
@@ -4635,8 +4628,8 @@
     var visibleSelectableCount = $.grep(getVisibleRows(), function(row) {
       return isReadySelectableRow(row);
     }).length;
-    var summaryText = selectedRows.length + " " + (selectedRows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
-    var totalText = String(Number(state.summary.total || 0)) + " " + ACP.t(strings, "itemsTotalLabel", "items total");
+    var summaryText = ACP.plural("{count} folders selected", selectedRows.length);
+    var totalText = ACP.plural("{count} items total", state.summary.total || 0);
     var detailText = ACP.t(strings, "selectionHintIdle", "Select ready rows to clean them. Protected paths stay blocked.");
 
     if (!state.scanToken && Number(state.summary.total || 0) > 0) {
@@ -4903,7 +4896,7 @@
         nextRow.ignoredAtLabel = "";
         nextRow.ignoredReason = ACP.tr("This folder is hidden by your ignore list. Restore it to include this folder in cleanup scans again.");
         nextRow.status = "ignored";
-        nextRow.statusLabel = "Ignored";
+        nextRow.statusLabel = ACP.tr("Ignored");
       } else if (intent === "unignore") {
         nextRow.ignored = false;
         nextRow.ignoredAt = "";
@@ -5050,13 +5043,16 @@
       successStatus: preview ? "ready" : (isDelete ? "deleted" : "quarantined"),
       warningLabel: preview ? ACP.t(strings, "previewWarningLabel", "DRY RUN") : ACP.t(strings, "deleteWarningLabel", "WARNING"),
       deleteTargetLabelSingular: deleteTargetLabelSingular,
-      deleteTargetLabelPlural: deleteTargetLabelPlural
+      deleteTargetLabelPlural: deleteTargetLabelPlural,
+      targetKind: zfsCount > 0 ? (folderCount > 0 ? "items" : "datasets") : "folders"
     };
   }
 
   function buildActionConfirmButtonText(context, count) {
-    var noun = count === 1 ? context.deleteTargetLabelSingular : context.deleteTargetLabelPlural;
-    return context.confirmButtonLabel + " " + count + " " + noun;
+    if (context.baseOperation === "quarantine") return ACP.plural("Quarantine {count} folders", count);
+    if (context.targetKind === "datasets") return ACP.plural("Destroy {count} datasets", count);
+    if (context.targetKind === "items") return ACP.plural("Delete {count} items", count);
+    return ACP.plural("Delete {count} folders", count);
   }
 
   function selectionIncludesZfsRows(rows) {
@@ -5071,18 +5067,18 @@
     var suffix = "";
 
     if (typeof totalCount === "number" && totalCount > previewCount) {
-      suffix = " (+" + ACP.tr("{count} more", {count: totalCount - previewCount}) + ")";
+      suffix = " (+" + ACP.plural("{count} more", totalCount - previewCount) + ")";
     }
 
     return previewValues.join(", ") + suffix;
   }
 
   function getDeleteConfirmationTitle(context) {
-    if (context.confirmButtonLabel === ACP.t(strings, "deleteDatasetActionLabel", "Destroy")) {
+    if (context.targetKind === "datasets") {
       return ACP.t(strings, "destroyCheckboxTitle", "Confirm dataset destroy");
     }
 
-    if (context.deleteTargetLabelPlural === ACP.t(strings, "deleteItemPlural", "items")) {
+    if (context.targetKind === "items") {
       return ACP.t(strings, "deleteMixedCheckboxTitle", "Confirm delete");
     }
 
@@ -5126,7 +5122,7 @@
     var settings = options || {};
     var safeCount = rows.length;
     var preview = rows.slice(0, 6);
-    var selectedLabel = rows.length + " " + (rows.length === 1 ? ACP.t(strings, "selectedSingular", "folder selected") : ACP.t(strings, "selectedPlural", "folders selected"));
+    var selectedLabel = ACP.plural("{count} folders selected", rows.length);
     var actionLabel = context.baseOperation === "delete"
       ? ACP.t(strings, "deleteImmediateLabel", "Permanent delete")
       : ACP.t(strings, "quarantineActionLabel", "Quarantine");
@@ -5175,7 +5171,7 @@
     });
 
     if (rows.length > preview.length) {
-      html.push('<li class="acp-modal-list-more">+' + ACP.escapeHtml(String(rows.length - preview.length)) + " more</li>");
+      html.push('<li class="acp-modal-list-more">' + ACP.escapeHtml(ACP.plural("{count} more", rows.length - preview.length)) + "</li>");
     }
 
     html.push("</ul></section>");
@@ -5369,7 +5365,7 @@
       "</div>",
       '<div class="acp-modal-stats">',
       '<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(String(percent)) + "%</span>",
-      '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(String(completedRoots)) + (totalRoots > 0 ? (" / " + ACP.escapeHtml(String(totalRoots))) : "") + " " + ACP.escapeHtml(ACP.t(strings, "deleteFolderPlural", "folders")) + "</span>",
+      '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.plural("Processed {count} folders.", completedRoots)) + (totalRoots > 0 ? (" " + ACP.escapeHtml(ACP.plural("{count} items total", totalRoots))) : "") + "</span>",
       "</div>"
     ];
 
@@ -5875,7 +5871,7 @@
       '<div class="acp-modal-flag">' + ACP.escapeHtml(ACP.t(strings, "resultConflictLabel", "Conflict")) + "</div>",
       '<div class="acp-modal-copy">',
       '<div class="acp-modal-lead">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictLead", "One or more original restore paths already exist. Choose how to handle the conflicts.")) + "</div>",
-      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(conflictCount + " conflict" + (conflictCount === 1 ? "" : "s") + " found" + (readyCount > 0 ? ". " + readyCount + " selected folder" + (readyCount === 1 ? " can" : "s can") + " still restore normally." : ".")) + "</div>",
+      '<div class="acp-modal-subcopy">' + ACP.escapeHtml(ACP.plural("{count} conflicts found.", conflictCount) + (readyCount > 0 ? " " + ACP.plural("{count} selected folders can still restore normally.", readyCount) : "")) + "</div>",
       "</div>",
       '<div class="acp-modal-panel">',
       '<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreConflictListTitle", "Conflicting restore paths")) + "</div>",

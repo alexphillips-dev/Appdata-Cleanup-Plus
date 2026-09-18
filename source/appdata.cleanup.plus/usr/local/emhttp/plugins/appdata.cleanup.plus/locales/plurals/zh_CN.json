@@ -1,0 +1,125 @@
+{
+  "{count} folders selected": {
+    "other": "已选择 {count} 个文件夹"
+  },
+  "{count} items total": {
+    "other": "共 {count} 项"
+  },
+  "{count} quarantined folders tracked": {
+    "other": "跟踪 {count} 个隔离文件夹"
+  },
+  "{count} items submitted": {
+    "other": "已提交 {count} 项"
+  },
+  "Delete {count} folders": {
+    "other": "删除 {count} 个文件夹"
+  },
+  "Delete {count} items": {
+    "other": "删除 {count} 项"
+  },
+  "Destroy {count} datasets": {
+    "other": "销毁{count}个数据集"
+  },
+  "Quarantine {count} folders": {
+    "other": "隔离 {count} 个文件夹"
+  },
+  "{count} conflicts found.": {
+    "other": "发现 {count} 个冲突。"
+  },
+  "{count} selected folders can still restore normally.": {
+    "other": "{count}个选定的文件夹仍然可以正常恢复。"
+  },
+  "Retry after about {count} seconds.": {
+    "other": "大约 {count} 秒后重试。"
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "other": "已保存 {count} ZFS 映射和重新扫描。"
+  },
+  "Processed {count} folders.": {
+    "other": "已处理 {count} 个文件夹。"
+  },
+  "{count} folders are visible.": {
+    "other": "{count} 个文件夹可见。"
+  },
+  "{count} more": {
+    "other": "还有 {count} 个"
+  },
+  "{count} minutes ago": {
+    "other": "{count} 分钟前"
+  },
+  "{count} hours ago": {
+    "other": "{count} 小时前"
+  },
+  "{count} days ago": {
+    "other": "{count} 天前"
+  },
+  "{count} months ago": {
+    "other": "{count}个月前"
+  },
+  "{count} years ago": {
+    "other": "{count}年前"
+  },
+  "Scheduled to purge in {count} days.": {
+    "other": "预计{count}天内清理。"
+  },
+  "Purges in {count} days": {
+    "other": "{count}天内清除"
+  },
+  "Purges in {count} hours": {
+    "other": "{count}小时内清除"
+  },
+  "Purges in {count} minutes": {
+    "other": "{count}分钟内清除"
+  },
+  "{count} child datasets": {
+    "other": "{count} 个子数据集"
+  },
+  "{count} snapshots": {
+    "other": "{count} 快照"
+  },
+  "{count} conflicts": {
+    "other": "{count} 冲突"
+  },
+  "{count} errors": {
+    "other": "{count} 个错误"
+  },
+  "{message} {count} items were submitted.": {
+    "other": "{message} 已提交 {count} 项。"
+  },
+  "{count} items were submitted.": {
+    "other": "已提交 {count} 项。"
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "other": "递归销毁还将删除 {count} 个子数据集。"
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "other": "递归销毁还将删除 {count} 个快照。"
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "other": "销毁还将删除 {count} 个快照。"
+  },
+  "{count} folders were moved to quarantine.": {
+    "other": "{count} 个文件夹已移至隔离区。"
+  },
+  "{count} folders were deleted.": {
+    "other": "{count} 个文件夹被删除。"
+  },
+  "{count} folders were restored.": {
+    "other": "{count} 个文件夹已恢复。"
+  },
+  "{count} folders were permanently purged.": {
+    "other": "{count} 个文件夹被永久清除。"
+  },
+  "{count} items were skipped.": {
+    "other": "跳过了 {count} 项。"
+  },
+  "{count} items were already missing.": {
+    "other": "{count} 件物品已经丢失。"
+  },
+  "{count} items were blocked.": {
+    "other": "{count} 项被屏蔽。"
+  },
+  "{count} errors occurred.": {
+    "other": "发生 {count} 个错误。"
+  }
+}

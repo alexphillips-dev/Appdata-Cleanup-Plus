@@ -1,0 +1,330 @@
+{
+  "{count} folders selected": {
+    "zero": "تم تحديد {count} مجلدات",
+    "one": "تم اختيار مجلد واحد",
+    "two": "تم تحديد مجلدين",
+    "few": "تم تحديد {count} مجلدات",
+    "many": "تم تحديد {count} مجلدًا",
+    "other": "تم تحديد {count} مجلد"
+  },
+  "{count} items total": {
+    "zero": "{count} عناصر المجموع",
+    "one": "{count} عنصر المجموع",
+    "two": "مجموع {count} عنصر",
+    "few": "إجمالي {count} عناصر",
+    "many": "إجمالي {count} عنصرًا",
+    "other": "إجمالي {count} عنصر"
+  },
+  "{count} quarantined folders tracked": {
+    "zero": "تم تتبع {count} مجلدات معزولة",
+    "one": "تم تعقب مجلد واحد معزول",
+    "two": "تم تعقب مجلدين معزولين",
+    "few": "تم تعقب {count} مجلدات معزولة",
+    "many": "تم تتبع {count} مجلدًا معزولًا",
+    "other": "تم تعقب {count} مجلد معزول"
+  },
+  "{count} items submitted": {
+    "zero": "{count} العناصر المقدمة",
+    "one": "تم إرسال عنصر واحد",
+    "two": "تم إرسال {count} عنصر",
+    "few": "تم تقديم {count} عناصر",
+    "many": "تم تقديم {count} مادة",
+    "other": "تم تقديم {count} مادة"
+  },
+  "Delete {count} folders": {
+    "zero": "حذف {count} مجلدات",
+    "one": "حذف مجلد واحد",
+    "two": "حذف مجلدين",
+    "few": "حذف {count} مجلدات",
+    "many": "حذف {count} مجلدا",
+    "other": "حذف {count} مجلد"
+  },
+  "Delete {count} items": {
+    "zero": "حذف {count} عنصر",
+    "one": "حذف عنصر واحد",
+    "two": "حذف عنصرين",
+    "few": "حذف {count} عناصر",
+    "many": "حذف {count} مادة",
+    "other": "حذف {count} عنصر"
+  },
+  "Destroy {count} datasets": {
+    "zero": "تدمير {count} مجموعات البيانات",
+    "one": "تدمير مجموعة بيانات واحدة",
+    "two": "تدمير مجموعتي بيانات",
+    "few": "تدمير {count} مجموعات بيانات",
+    "many": "تدمير {count} مجموعة بيانات",
+    "other": "تدمير {count} مجموعة بيانات"
+  },
+  "Quarantine {count} folders": {
+    "zero": "الحجر الصحي {count} مجلدات",
+    "one": "مجلد الحجر الصحي {count}",
+    "two": "الحجر الصحي {count} مجلدات",
+    "few": "الحجر الصحي {count} مجلدات",
+    "many": "الحجر الصحي {count} مجلدا",
+    "other": "الحجر الصحي {count} مجلد"
+  },
+  "{count} conflicts found.": {
+    "zero": "تم العثور على {count} تعارضات.",
+    "one": "تم العثور على تعارض واحد.",
+    "two": "تم العثور على تعارضين.",
+    "few": "تم العثور على {count} تعارضات.",
+    "many": "تم العثور على {count} تعارضًا.",
+    "other": "تم العثور على {count} تعارض."
+  },
+  "{count} selected folders can still restore normally.": {
+    "zero": "{count} المجلدات المحددة لا يزال من الممكن استعادتها بشكل طبيعي.",
+    "one": "لا يزال من الممكن استعادة مجلد واحد محدد بشكل طبيعي.",
+    "two": "لا يزال من الممكن استعادة المجلدين المحددين بشكل طبيعي.",
+    "few": "لا يزال من الممكن استعادة {count} مجلدات محددة بشكل طبيعي.",
+    "many": "لا يزال من الممكن استعادة {count} مجلدًا محددًا بشكل طبيعي.",
+    "other": "لا يزال من الممكن استعادة {count} مجلد محدد بشكل طبيعي."
+  },
+  "Retry after about {count} seconds.": {
+    "zero": "أعد المحاولة بعد حوالي {count} ثانية.",
+    "one": "أعد المحاولة بعد حوالي ثانية واحدة.",
+    "two": "أعد المحاولة بعد حوالي ثانيتين.",
+    "few": "أعد المحاولة بعد حوالي {count} ثوانٍ.",
+    "many": "أعد المحاولة بعد حوالي {count} ثانية.",
+    "other": "أعد المحاولة بعد حوالي {count} ثانية."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "zero": "تم حفظ {count} ZFS من التعيينات وإعادة المسح.",
+    "one": "تم حفظ {count} ZFS رسم الخرائط وإعادة المسح.",
+    "two": "تم حفظ {count} ZFS من التعيينات وإعادة المسح.",
+    "few": "تم حفظ {count} ZFS تعيينات وإعادة المسح.",
+    "many": "تم حفظ {count} ZFS تعيينًا وإعادة المسح.",
+    "other": "تم حفظ {count} ZFS من التعيينات وإعادة المسح."
+  },
+  "Processed {count} folders.": {
+    "zero": "تمت معالجة {count} مجلدات.",
+    "one": "تمت معالجة مجلد واحد.",
+    "two": "معالجة {count} المجلدات.",
+    "few": "معالجة {count} مجلدات.",
+    "many": "معالجة {count} مجلدا.",
+    "other": "معالجة {count} مجلد."
+  },
+  "{count} folders are visible.": {
+    "zero": "{count} مجلدات مرئية.",
+    "one": "مجلد واحد مرئي.",
+    "two": "{count} مجلدات مرئية.",
+    "few": "{count} مجلدات مرئية.",
+    "many": "{count} مجلدا مرئية.",
+    "other": "{count} مجلد مرئية."
+  },
+  "{count} more": {
+    "zero": "{count} أكثر",
+    "one": "{count} أكثر",
+    "two": "{count} أكثر",
+    "few": "{count} أكثر",
+    "many": "{count} آخرين",
+    "other": "{count} أكثر"
+  },
+  "{count} minutes ago": {
+    "zero": "منذ {count} دقيقة",
+    "one": "منذ دقيقة واحدة",
+    "two": "منذ دقيقتين",
+    "few": "منذ {count} دقائق",
+    "many": "منذ {count} دقيقة",
+    "other": "منذ {count} دقيقة"
+  },
+  "{count} hours ago": {
+    "zero": "منذ {count} ساعات",
+    "one": "منذ ساعة واحدة",
+    "two": "منذ ساعتين",
+    "few": "منذ {count} ساعات",
+    "many": "منذ {count} ساعة",
+    "other": "منذ {count} ساعة"
+  },
+  "{count} days ago": {
+    "zero": "منذ {count} أيام",
+    "one": "منذ يوم واحد",
+    "two": "منذ يومين",
+    "few": "منذ {count} أيام",
+    "many": "منذ {count} يوما",
+    "other": "منذ {count} يوم"
+  },
+  "{count} months ago": {
+    "zero": "منذ {count} أشهر",
+    "one": "منذ شهر واحد",
+    "two": "منذ شهرين",
+    "few": "منذ {count} أشهر",
+    "many": "منذ {count} شهرا",
+    "other": "منذ {count} شهر"
+  },
+  "{count} years ago": {
+    "zero": "منذ {count} سنوات",
+    "one": "منذ سنة واحدة",
+    "two": "منذ عامين",
+    "few": "منذ {count} سنوات",
+    "many": "منذ {count} عاما",
+    "other": "منذ {count} عام"
+  },
+  "Scheduled to purge in {count} days.": {
+    "zero": "تمت جدولة عملية التطهير خلال {count} يومًا.",
+    "one": "تمت جدولة التطهير خلال يوم واحد.",
+    "two": "من المقرر أن يتم التطهير خلال يومين.",
+    "few": "من المقرر أن يتم التطهير خلال {count} أيام.",
+    "many": "من المقرر أن يتم التطهير خلال {count} يومًا.",
+    "other": "من المقرر أن يتم التطهير خلال {count} يوم."
+  },
+  "Purges in {count} days": {
+    "zero": "التطهير في {count} أيام",
+    "one": "التطهير في يوم واحد",
+    "two": "التطهير في {count} أيام",
+    "few": "التطهير في {count} أيام",
+    "many": "التطهير في {count} يوما",
+    "other": "التطهير في {count} يوم"
+  },
+  "Purges in {count} hours": {
+    "zero": "التطهير في {count} ساعة",
+    "one": "التطهير في {count} ساعة",
+    "two": "التطهير في {count} ساعة",
+    "few": "تطهير في {count} ساعات",
+    "many": "التطهير في {count} ساعة",
+    "other": "تطهير في {count} ساعة"
+  },
+  "Purges in {count} minutes": {
+    "zero": "التطهير في {count} دقيقة",
+    "one": "التطهير في {count} دقيقة",
+    "two": "تطهير في {count} دقيقة",
+    "few": "تطهير في {count} دقائق",
+    "many": "التطهير في {count} دقيقة",
+    "other": "التطهير في {count} دقيقة"
+  },
+  "{count} child datasets": {
+    "zero": "{count} مجموعات بيانات فرعية",
+    "one": "{count} مجموعة بيانات فرعية",
+    "two": "{count} مجموعات بيانات فرعية",
+    "few": "{count} مجموعات بيانات فرعية",
+    "many": "{count} مجموعة بيانات فرعية",
+    "other": "{count} مجموعة بيانات فرعية"
+  },
+  "{count} snapshots": {
+    "zero": "{count} لقطات",
+    "one": "لقطة واحدة",
+    "two": "لقطتان",
+    "few": "{count} لقطات",
+    "many": "{count} لقطة",
+    "other": "{count} لقطة"
+  },
+  "{count} conflicts": {
+    "zero": "{count} صراعات",
+    "one": "{count} الصراع",
+    "two": "{count} الصراعات",
+    "few": "{count} صراعات",
+    "many": "{count} صراعا",
+    "other": "{count} صراع"
+  },
+  "{count} errors": {
+    "zero": "{count} أخطاء",
+    "one": "خطأ واحد",
+    "two": "{count} أخطاء",
+    "few": "{count} أخطاء",
+    "many": "{count} خطأ",
+    "other": "{count} خطأ"
+  },
+  "{message} {count} items were submitted.": {
+    "zero": "{message} تم إرسال {count} عناصر.",
+    "one": "{message} تم إرسال عنصر واحد.",
+    "two": "{message} تم إرسال مادتين.",
+    "few": "{message} تم تقديم {count} عناصر.",
+    "many": "{message} تم تقديم {count} مادة.",
+    "other": "{message} تم تقديم {count} عنصر."
+  },
+  "{count} items were submitted.": {
+    "zero": "تم تقديم {count} العناصر.",
+    "one": "تم إرسال عنصر واحد.",
+    "two": "تم تقديم {count} العناصر.",
+    "few": "تم تقديم {count} عناصر.",
+    "many": "تم تقديم {count} مادة.",
+    "other": "تم تقديم {count} مادة."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "zero": "سيؤدي التدمير العودي أيضًا إلى إزالة {count} مجموعات بيانات فرعية.",
+    "one": "سيؤدي التدمير العودي أيضًا إلى إزالة مجموعة بيانات فرعية واحدة.",
+    "two": "سيؤدي التدمير العودي أيضًا إلى إزالة مجموعتي بيانات فرعيتين.",
+    "few": "سيؤدي التدمير العودي أيضًا إلى إزالة {count} مجموعات بيانات فرعية.",
+    "many": "سيؤدي التدمير العودي أيضًا إلى إزالة {count} مجموعة بيانات فرعية.",
+    "other": "سيؤدي التدمير العودي أيضًا إلى إزالة {count} مجموعة بيانات فرعية."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "zero": "سيؤدي التدمير العودي أيضًا إلى إزالة {count} لقطات.",
+    "one": "سيؤدي التدمير العودي أيضًا إلى إزالة لقطة واحدة.",
+    "two": "سيؤدي التدمير العودي أيضًا إلى إزالة لقطتين.",
+    "few": "سيؤدي التدمير العودي أيضًا إلى إزالة {count} لقطات.",
+    "many": "سيؤدي التدمير العودي أيضًا إلى إزالة {count} لقطة.",
+    "other": "سيؤدي التدمير العودي أيضًا إلى إزالة {count} لقطة."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "zero": "سيؤدي التدمير أيضًا إلى إزالة {count} لقطات.",
+    "one": "سيؤدي التدمير أيضًا إلى إزالة لقطة واحدة.",
+    "two": "سيؤدي التدمير أيضًا إلى إزالة لقطتين.",
+    "few": "سيؤدي التدمير أيضًا إلى إزالة {count} لقطات.",
+    "many": "سيؤدي التدمير أيضًا إلى إزالة {count} لقطة.",
+    "other": "سيؤدي التدمير أيضًا إلى إزالة {count} لقطة."
+  },
+  "{count} folders were moved to quarantine.": {
+    "zero": "تم نقل {count} مجلدات إلى العزل.",
+    "one": "تم نقل مجلد واحد إلى وحدة العزل.",
+    "two": "تم نقل مجلدين إلى العزل.",
+    "few": "تم نقل {count} مجلدات إلى الحجر الصحي.",
+    "many": "تم نقل {count} مجلدًا إلى الحجر الصحي.",
+    "other": "تم نقل {count} مجلد إلى الحجر الصحي."
+  },
+  "{count} folders were deleted.": {
+    "zero": "تم حذف {count} مجلدات.",
+    "one": "تم حذف مجلد واحد.",
+    "two": "تم حذف مجلدين.",
+    "few": "تم حذف {count} مجلدات.",
+    "many": "تم حذف {count} مجلدا.",
+    "other": "تم حذف {count} مجلد."
+  },
+  "{count} folders were restored.": {
+    "zero": "تمت استعادة {count} مجلدات.",
+    "one": "تمت استعادة مجلد واحد.",
+    "two": "تمت استعادة مجلدين.",
+    "few": "تمت استعادة {count} مجلدات.",
+    "many": "تمت استعادة {count} مجلدا.",
+    "other": "تمت استعادة {count} مجلد."
+  },
+  "{count} folders were permanently purged.": {
+    "zero": "تمت إزالة {count} مجلدات نهائيًا.",
+    "one": "تمت إزالة مجلد واحد نهائيًا.",
+    "two": "تمت إزالة مجلدين نهائيًا.",
+    "few": "تمت إزالة {count} مجلدات نهائيًا.",
+    "many": "تمت إزالة {count} مجلدًا نهائيًا.",
+    "other": "تمت إزالة {count} مجلد نهائيًا."
+  },
+  "{count} items were skipped.": {
+    "zero": "تم تخطي {count} عنصر.",
+    "one": "تم تخطي عنصر واحد.",
+    "two": "تم تخطي عنصرين.",
+    "few": "تم تخطي {count} عناصر.",
+    "many": "تم تخطي {count} عنصرًا.",
+    "other": "تم تخطي {count} عنصر."
+  },
+  "{count} items were already missing.": {
+    "zero": "{count} العناصر كانت مفقودة بالفعل.",
+    "one": "كان هناك عنصر واحد مفقود بالفعل.",
+    "two": "{count} العناصر كانت مفقودة بالفعل.",
+    "few": "{count} عناصر كانت مفقودة بالفعل.",
+    "many": "{count} عنصرًا كانت مفقودة بالفعل.",
+    "other": "{count} عنصر كانت مفقودة بالفعل."
+  },
+  "{count} items were blocked.": {
+    "zero": "تم حظر {count} عناصر.",
+    "one": "تم حظر عنصر واحد.",
+    "two": "تم حظر عنصرين.",
+    "few": "تم حظر {count} عناصر.",
+    "many": "تم حظر {count} عنصرًا.",
+    "other": "تم حظر {count} عنصر."
+  },
+  "{count} errors occurred.": {
+    "zero": "حدثت {count} أخطاء.",
+    "one": "حدث خطأ واحد.",
+    "two": "حدث {count} خطأ.",
+    "few": "حدثت {count} أخطاء.",
+    "many": "حدث {count} خطأ.",
+    "other": "حدث {count} خطأ."
+  }
+}

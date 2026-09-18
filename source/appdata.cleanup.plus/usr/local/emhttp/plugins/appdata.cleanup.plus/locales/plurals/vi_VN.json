@@ -1,0 +1,125 @@
+{
+  "{count} folders selected": {
+    "other": "Đã chọn {count} thư mục"
+  },
+  "{count} items total": {
+    "other": "Tổng cộng {count} mặt hàng"
+  },
+  "{count} quarantined folders tracked": {
+    "other": "Đã theo dõi {count} thư mục cách ly"
+  },
+  "{count} items submitted": {
+    "other": "{count} mục đã được gửi"
+  },
+  "Delete {count} folders": {
+    "other": "Xóa {count} thư mục"
+  },
+  "Delete {count} items": {
+    "other": "Xóa {count} mục"
+  },
+  "Destroy {count} datasets": {
+    "other": "Phá hủy {count} tập dữ liệu"
+  },
+  "Quarantine {count} folders": {
+    "other": "Cách ly {count} thư mục"
+  },
+  "{count} conflicts found.": {
+    "other": "{count} xung đột được tìm thấy."
+  },
+  "{count} selected folders can still restore normally.": {
+    "other": "{count} thư mục đã chọn vẫn có thể khôi phục bình thường."
+  },
+  "Retry after about {count} seconds.": {
+    "other": "Thử lại sau khoảng {count} giây."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "other": "Đã lưu {count} ZFS ánh xạ và quét lại."
+  },
+  "Processed {count} folders.": {
+    "other": "Đã xử lý {count} thư mục."
+  },
+  "{count} folders are visible.": {
+    "other": "{count} thư mục được hiển thị."
+  },
+  "{count} more": {
+    "other": "{count} cái nữa"
+  },
+  "{count} minutes ago": {
+    "other": "{count} phút trước"
+  },
+  "{count} hours ago": {
+    "other": "{count} giờ trước"
+  },
+  "{count} days ago": {
+    "other": "{count} ngày trước"
+  },
+  "{count} months ago": {
+    "other": "{count} tháng trước"
+  },
+  "{count} years ago": {
+    "other": "{count} năm trước"
+  },
+  "Scheduled to purge in {count} days.": {
+    "other": "Dự kiến thanh lọc trong {count} ngày."
+  },
+  "Purges in {count} days": {
+    "other": "Thanh lọc trong {count} ngày"
+  },
+  "Purges in {count} hours": {
+    "other": "Thanh lọc trong {count} giờ"
+  },
+  "Purges in {count} minutes": {
+    "other": "Thanh lọc trong {count} phút"
+  },
+  "{count} child datasets": {
+    "other": "{count} tập dữ liệu con"
+  },
+  "{count} snapshots": {
+    "other": "{count} ảnh chụp nhanh"
+  },
+  "{count} conflicts": {
+    "other": "{count} xung đột"
+  },
+  "{count} errors": {
+    "other": "{count} lỗi"
+  },
+  "{message} {count} items were submitted.": {
+    "other": "{message} {count} mục đã được gửi."
+  },
+  "{count} items were submitted.": {
+    "other": "{count} mục đã được gửi."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "other": "Phá hủy đệ quy cũng sẽ xóa {count} tập dữ liệu con."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "other": "Phá hủy đệ quy cũng sẽ xóa {count} ảnh chụp nhanh."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "other": "Phá hủy cũng sẽ xóa {count} ảnh chụp nhanh."
+  },
+  "{count} folders were moved to quarantine.": {
+    "other": "{count} thư mục đã được chuyển đến vùng cách ly."
+  },
+  "{count} folders were deleted.": {
+    "other": "{count} thư mục đã bị xóa."
+  },
+  "{count} folders were restored.": {
+    "other": "{count} thư mục đã được khôi phục."
+  },
+  "{count} folders were permanently purged.": {
+    "other": "{count} thư mục đã bị xóa vĩnh viễn."
+  },
+  "{count} items were skipped.": {
+    "other": "{count} mục đã bị bỏ qua."
+  },
+  "{count} items were already missing.": {
+    "other": "{count} mục đã bị thiếu."
+  },
+  "{count} items were blocked.": {
+    "other": "{count} mục đã bị chặn."
+  },
+  "{count} errors occurred.": {
+    "other": "Đã xảy ra {count} lỗi."
+  }
+}

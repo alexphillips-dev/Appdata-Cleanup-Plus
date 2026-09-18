@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "{count}টি ফোল্ডার নির্বাচন করা হয়েছে৷",
+    "other": "{count}টি ফোল্ডার নির্বাচন করা হয়েছে৷"
+  },
+  "{count} items total": {
+    "one": "মোট {count}টি আইটেম",
+    "other": "মোট {count}টি আইটেম"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "{count}টি কোয়ারেন্টাইন ফোল্ডার ট্র্যাক করা হয়েছে৷",
+    "other": "{count}টি কোয়ারেন্টাইন ফোল্ডার ট্র্যাক করা হয়েছে"
+  },
+  "{count} items submitted": {
+    "one": "{count}টি আইটেম জমা দেওয়া হয়েছে",
+    "other": "{count}টি আইটেম জমা দেওয়া হয়েছে"
+  },
+  "Delete {count} folders": {
+    "one": "{count}টি ফোল্ডার মুছুন",
+    "other": "{count}টি ফোল্ডার মুছুন"
+  },
+  "Delete {count} items": {
+    "one": "{count}টি আইটেম মুছুন",
+    "other": "{count}টি আইটেম মুছুন"
+  },
+  "Destroy {count} datasets": {
+    "one": "{count}টি ডেটাসেট ধ্বংস করুন",
+    "other": "{count}টি ডেটাসেট ধ্বংস করুন"
+  },
+  "Quarantine {count} folders": {
+    "one": "কোয়ারেন্টাইন {count} ফোল্ডার",
+    "other": "কোয়ারেন্টাইন {count} ফোল্ডার"
+  },
+  "{count} conflicts found.": {
+    "one": "{count}টি বিরোধ পাওয়া গেছে।",
+    "other": "{count}টি বিরোধ পাওয়া গেছে।"
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count}টি নির্বাচিত ফোল্ডার এখনও স্বাভাবিকভাবে পুনরুদ্ধার করতে পারে৷",
+    "other": "{count}টি নির্বাচিত ফোল্ডার এখনও স্বাভাবিকভাবে পুনরুদ্ধার করতে পারে৷"
+  },
+  "Retry after about {count} seconds.": {
+    "one": "প্রায় {count} সেকেন্ড পরে আবার চেষ্টা করুন।",
+    "other": "প্রায় {count} সেকেন্ড পরে পুনরায় চেষ্টা করুন।"
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "সংরক্ষিত {count} ZFS ম্যাপিং এবং পুনরায় স্ক্যান করা হয়েছে৷",
+    "other": "সংরক্ষিত {count} ZFS ম্যাপিং এবং পুনঃস্ক্যানিং।"
+  },
+  "Processed {count} folders.": {
+    "one": "{count}টি ফোল্ডার প্রক্রিয়া করা হয়েছে৷",
+    "other": "{count}টি ফোল্ডার প্রক্রিয়া করা হয়েছে।"
+  },
+  "{count} folders are visible.": {
+    "one": "{count}টি ফোল্ডার দৃশ্যমান।",
+    "other": "{count}টি ফোল্ডার দৃশ্যমান।"
+  },
+  "{count} more": {
+    "one": "আরও {count}টি",
+    "other": "আরো {count}"
+  },
+  "{count} minutes ago": {
+    "one": "{count} মিনিট আগে",
+    "other": "{count} মিনিট আগে"
+  },
+  "{count} hours ago": {
+    "one": "{count} ঘণ্টা আগে",
+    "other": "{count} ঘন্টা আগে"
+  },
+  "{count} days ago": {
+    "one": "{count} দিন আগে",
+    "other": "{count} দিন আগে"
+  },
+  "{count} months ago": {
+    "one": "{count} মাস আগে",
+    "other": "{count} মাস আগে"
+  },
+  "{count} years ago": {
+    "one": "{count} বছর আগে",
+    "other": "{count} বছর আগে"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "{count} দিনের মধ্যে পরিষ্কার করার জন্য নির্ধারিত।",
+    "other": "{count} দিনের মধ্যে পরিষ্কার করার জন্য নির্ধারিত।"
+  },
+  "Purges in {count} days": {
+    "one": "{count} দিনের মধ্যে পরিষ্কার করে",
+    "other": "{count} দিনের মধ্যে পরিষ্কার করে"
+  },
+  "Purges in {count} hours": {
+    "one": "{count} ঘন্টার মধ্যে পরিষ্কার করে",
+    "other": "{count} ঘন্টার মধ্যে পরিষ্কার করে"
+  },
+  "Purges in {count} minutes": {
+    "one": "{count} মিনিটের মধ্যে পরিষ্কার করে",
+    "other": "{count} মিনিটের মধ্যে পরিষ্কার করে"
+  },
+  "{count} child datasets": {
+    "one": "{count} চাইল্ড ডেটাসেট",
+    "other": "{count} শিশু ডেটাসেট"
+  },
+  "{count} snapshots": {
+    "one": "{count} স্ন্যাপশট",
+    "other": "{count} স্ন্যাপশট"
+  },
+  "{count} conflicts": {
+    "one": "{count} দ্বন্দ্ব",
+    "other": "{count} দ্বন্দ্ব"
+  },
+  "{count} errors": {
+    "one": "{count}টি ত্রুটি",
+    "other": "{count}টি ত্রুটি"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} {count}টি আইটেম জমা দেওয়া হয়েছে।",
+    "other": "{message} {count}টি আইটেম জমা দেওয়া হয়েছে।"
+  },
+  "{count} items were submitted.": {
+    "one": "{count}টি আইটেম জমা দেওয়া হয়েছে।",
+    "other": "{count}টি আইটেম জমা দেওয়া হয়েছিল।"
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "রিকার্সিভ ডেষ্ট {count} চাইল্ড ডেটাসেটও সরিয়ে দেবে।",
+    "other": "রিকার্সিভ ডেষ্ট {count}টি চাইল্ড ডেটাসেটও সরিয়ে দেবে।"
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "পুনরাবৃত্ত ধ্বংস {count} স্ন্যাপশট মুছে ফেলবে।",
+    "other": "রিকার্সিভ ডেষ্টও {count}টি স্ন্যাপশট মুছে ফেলবে।"
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Destroy {count}টি স্ন্যাপশটও সরিয়ে দেবে।",
+    "other": "Destroy {count}টি স্ন্যাপশটও সরিয়ে দেবে।"
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count}টি ফোল্ডার কোয়ারেন্টাইনে সরানো হয়েছে।",
+    "other": "{count}টি ফোল্ডার কোয়ারেন্টাইনে সরানো হয়েছে।"
+  },
+  "{count} folders were deleted.": {
+    "one": "{count}টি ফোল্ডার মুছে ফেলা হয়েছে৷",
+    "other": "{count}টি ফোল্ডার মুছে ফেলা হয়েছে।"
+  },
+  "{count} folders were restored.": {
+    "one": "{count}টি ফোল্ডার পুনরুদ্ধার করা হয়েছে৷",
+    "other": "{count}টি ফোল্ডার পুনরুদ্ধার করা হয়েছে৷"
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count}টি ফোল্ডার স্থায়ীভাবে পরিস্কার করা হয়েছে৷",
+    "other": "{count}টি ফোল্ডার স্থায়ীভাবে মুছে ফেলা হয়েছে৷"
+  },
+  "{count} items were skipped.": {
+    "one": "{count}টি আইটেম এড়িয়ে যাওয়া হয়েছে।",
+    "other": "{count}টি আইটেম এড়িয়ে গেছে।"
+  },
+  "{count} items were already missing.": {
+    "one": "{count}টি আইটেম ইতিমধ্যেই অনুপস্থিত ছিল৷",
+    "other": "{count} টি আইটেম ইতিমধ্যে অনুপস্থিত ছিল."
+  },
+  "{count} items were blocked.": {
+    "one": "{count}টি আইটেম ব্লক করা হয়েছে।",
+    "other": "{count}টি আইটেম ব্লক করা হয়েছে।"
+  },
+  "{count} errors occurred.": {
+    "one": "{count}টি ত্রুটি ঘটেছে৷",
+    "other": "{count}টি ত্রুটি ঘটেছে৷"
+  }
+}

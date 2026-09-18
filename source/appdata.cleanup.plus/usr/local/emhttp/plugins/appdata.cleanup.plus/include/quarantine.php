@@ -118,23 +118,23 @@ function syncTrackedQuarantineEntriesToDefaultPurgeSchedule($settings, $previous
 function formatAppdataCleanupPlusFutureIntervalLabel($secondsRemaining) {
   $seconds = max(0, (int)$secondsRemaining);
   $units = array(
-    array("seconds" => 86400, "suffix" => "d"),
-    array("seconds" => 3600, "suffix" => "h"),
-    array("seconds" => 60, "suffix" => "m")
+    array("seconds" => 86400, "message" => "Purges in {count} days"),
+    array("seconds" => 3600, "message" => "Purges in {count} hours"),
+    array("seconds" => 60, "message" => "Purges in {count} minutes")
   );
 
   if ( $seconds < 60 ) {
-    return "in under 1m";
+    return "Purges in under one minute";
   }
 
   foreach ( $units as $unit ) {
     if ( $seconds >= $unit["seconds"] ) {
       $value = (int)floor($seconds / $unit["seconds"]);
-      return "in " . $value . $unit["suffix"];
+      return acpCountMessage($unit["message"], $value);
     }
   }
 
-  return "in under 1m";
+  return "Purges in under one minute";
 }
 
 function buildAppdataCleanupPlusScheduledPurgeMeta($purgeAt) {
@@ -159,7 +159,7 @@ function buildAppdataCleanupPlusScheduledPurgeMeta($purgeAt) {
     $badgeLabel = "Due now";
     $tone = "is-blocked";
   } else {
-    $badgeLabel = "Purges " . formatAppdataCleanupPlusFutureIntervalLabel($secondsRemaining);
+    $badgeLabel = formatAppdataCleanupPlusFutureIntervalLabel($secondsRemaining);
 
     if ( $secondsRemaining <= 3 * 86400 ) {
       $tone = "is-review";

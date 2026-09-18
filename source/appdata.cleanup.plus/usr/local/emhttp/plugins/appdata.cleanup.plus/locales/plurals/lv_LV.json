@@ -1,0 +1,207 @@
+{
+  "{count} folders selected": {
+    "zero": "Atlasītas {count} mapes",
+    "one": "Atlasīta {count} mape",
+    "other": "Atlasītas {count} mapes"
+  },
+  "{count} items total": {
+    "zero": "Kopā {count} preces",
+    "one": "Kopā {count} prece",
+    "other": "Kopā {count} preces"
+  },
+  "{count} quarantined folders tracked": {
+    "zero": "Izsekots {count} karantīnā ievietotu mapju",
+    "one": "Izsekota {count} karantīnā ievietota mape",
+    "other": "Izsekotas {count} karantīnā ievietotas mapes"
+  },
+  "{count} items submitted": {
+    "zero": "Iesūtīts {count} vienumu",
+    "one": "Iesniegta {count} prece",
+    "other": "Iesniegti {count} vienumi"
+  },
+  "Delete {count} folders": {
+    "zero": "Dzēst {count} mapes",
+    "one": "Dzēst {count} mapi",
+    "other": "Dzēst {count} mapes"
+  },
+  "Delete {count} items": {
+    "zero": "Dzēst {count} vienumu",
+    "one": "Dzēst {count} vienumu",
+    "other": "Dzēst {count} vienumus"
+  },
+  "Destroy {count} datasets": {
+    "zero": "Iznīcināt {count} datu kopas",
+    "one": "Iznīcināt {count} datu kopu",
+    "other": "Iznīciniet {count} datu kopas"
+  },
+  "Quarantine {count} folders": {
+    "zero": "Karantīnā {count} mapes",
+    "one": "Karantīna {count} mape",
+    "other": "Karantīna {count} mapes"
+  },
+  "{count} conflicts found.": {
+    "zero": "Atrasti {count} konflikti.",
+    "one": "Atrasts {count} konflikts.",
+    "other": "Atrasti {count} konflikti."
+  },
+  "{count} selected folders can still restore normally.": {
+    "zero": "{count} atlasītās mapes joprojām var atjaunot normāli.",
+    "one": "Joprojām var atjaunot {count} atlasīto mapi.",
+    "other": "{count} atlasītās mapes joprojām var atjaunot normāli."
+  },
+  "Retry after about {count} seconds.": {
+    "zero": "Mēģiniet vēlreiz pēc aptuveni {count} sekundēm.",
+    "one": "Mēģiniet vēlreiz pēc aptuveni {count} sekundes.",
+    "other": "Mēģiniet vēlreiz pēc aptuveni {count} sekundēm."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "zero": "Saglabāti {count} ZFS kartējumi un atkārtota skenēšana.",
+    "one": "Saglabāta {count} ZFS kartēšana un atkārtota skenēšana.",
+    "other": "Saglabāti {count} ZFS kartējumi un atkārtota skenēšana."
+  },
+  "Processed {count} folders.": {
+    "zero": "Apstrādātas {count} mapes.",
+    "one": "Apstrādāta {count} mape.",
+    "other": "Apstrādātas {count} mapes."
+  },
+  "{count} folders are visible.": {
+    "zero": "Ir redzamas {count} mapes.",
+    "one": "Ir redzama {count} mape.",
+    "other": "Ir redzamas {count} mapes."
+  },
+  "{count} more": {
+    "zero": "{count} vēl",
+    "one": "vēl {count}",
+    "other": "vēl {count}"
+  },
+  "{count} minutes ago": {
+    "zero": "pirms {count} minūtēm",
+    "one": "pirms {count} minūtes",
+    "other": "pirms {count} minūtēm"
+  },
+  "{count} hours ago": {
+    "zero": "pirms {count} stundām",
+    "one": "pirms {count} stundas",
+    "other": "pirms {count} stundām"
+  },
+  "{count} days ago": {
+    "zero": "pirms {count} dienām",
+    "one": "pirms {count} dienas",
+    "other": "pirms {count} dienām"
+  },
+  "{count} months ago": {
+    "zero": "pirms {count} mēnešiem",
+    "one": "pirms {count} mēneša",
+    "other": "pirms {count} mēnešiem"
+  },
+  "{count} years ago": {
+    "zero": "pirms {count} gadiem",
+    "one": "pirms {count} gada",
+    "other": "pirms {count} gadiem"
+  },
+  "Scheduled to purge in {count} days.": {
+    "zero": "Plānots iztīrīt {count} dienu laikā.",
+    "one": "Plānots iztīrīt {count} dienas laikā.",
+    "other": "Plānots iztīrīt {count} dienu laikā."
+  },
+  "Purges in {count} days": {
+    "zero": "Iztīrīšana {count} dienu laikā",
+    "one": "Iztīrīšana {count} dienā",
+    "other": "Attīrīšana {count} dienu laikā"
+  },
+  "Purges in {count} hours": {
+    "zero": "Iztīrīšana {count} stundās",
+    "one": "Iztīrīšana {count} stundas laikā",
+    "other": "Iztīrīšana {count} stundu laikā"
+  },
+  "Purges in {count} minutes": {
+    "zero": "Iztīrīšana notiek {count} minūtēs",
+    "one": "Iztīrīšana notiek {count} minūtē",
+    "other": "Iztīrīšana notiek {count} minūtēs"
+  },
+  "{count} child datasets": {
+    "zero": "{count} bērnu datu kopu",
+    "one": "{count} bērnu datu kopa",
+    "other": "{count} bērnu datu kopas"
+  },
+  "{count} snapshots": {
+    "zero": "{count} momentuzņēmumi",
+    "one": "{count} momentuzņēmums",
+    "other": "{count} momentuzņēmumi"
+  },
+  "{count} conflicts": {
+    "zero": "{count} konfliktu",
+    "one": "{count} konflikts",
+    "other": "{count} konflikti"
+  },
+  "{count} errors": {
+    "zero": "{count} kļūdu",
+    "one": "{count} kļūda",
+    "other": "{count} kļūdas"
+  },
+  "{message} {count} items were submitted.": {
+    "zero": "{message} Tika iesniegti {count} vienumi.",
+    "one": "{message} Tika iesniegts {count} vienums.",
+    "other": "{message} Tika iesniegti {count} vienumi."
+  },
+  "{count} items were submitted.": {
+    "zero": "Tika iesniegti {count} vienumi.",
+    "one": "Tika iesniegts {count} vienums.",
+    "other": "Tika iesniegti {count} vienumi."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "zero": "Rekursīva iznīcināšana noņems arī {count} bērnu datu kopas.",
+    "one": "Rekursīvā iznīcināšana noņems arī {count} pakārtoto datu kopu.",
+    "other": "Rekursīva iznīcināšana noņems arī {count} pakārtotās datu kopas."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "zero": "Rekursīvā iznīcināšana noņems arī {count} momentuzņēmumus.",
+    "one": "Rekursīva iznīcināšana noņems arī {count} momentuzņēmumu.",
+    "other": "Rekursīvā iznīcināšana noņems arī {count} momentuzņēmumus."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "zero": "Iznīcināt tiks noņemti arī {count} momentuzņēmumi.",
+    "one": "Iznīcināt tiks noņemts arī {count} momentuzņēmums.",
+    "other": "Iznīcināt tiks noņemti arī {count} momentuzņēmumi."
+  },
+  "{count} folders were moved to quarantine.": {
+    "zero": "{count} mapes tika pārvietotas uz karantīnu.",
+    "one": "{count} mape tika pārvietota uz karantīnu.",
+    "other": "{count} mapes tika pārvietotas uz karantīnu."
+  },
+  "{count} folders were deleted.": {
+    "zero": "Tika izdzēstas {count} mapes.",
+    "one": "{count} mape tika izdzēsta.",
+    "other": "Tika izdzēstas {count} mapes."
+  },
+  "{count} folders were restored.": {
+    "zero": "Tika atjaunotas {count} mapes.",
+    "one": "{count} mape tika atjaunota.",
+    "other": "Tika atjaunotas {count} mapes."
+  },
+  "{count} folders were permanently purged.": {
+    "zero": "{count} mapes tika neatgriezeniski iztīrītas.",
+    "one": "{count} mape tika neatgriezeniski iztīrīta.",
+    "other": "{count} mapes tika neatgriezeniski iztīrītas."
+  },
+  "{count} items were skipped.": {
+    "zero": "{count} vienumu tika izlaisti.",
+    "one": "{count} vienums tika izlaists.",
+    "other": "{count} vienumi tika izlaisti."
+  },
+  "{count} items were already missing.": {
+    "zero": "{count} vienumu jau trūka.",
+    "one": "{count} prece jau trūka.",
+    "other": "{count} preces jau trūka."
+  },
+  "{count} items were blocked.": {
+    "zero": "{count} vienumu tika bloķēti.",
+    "one": "{count} vienums tika bloķēts.",
+    "other": "{count} vienumi tika bloķēti."
+  },
+  "{count} errors occurred.": {
+    "zero": "Radās {count} kļūdu.",
+    "one": "Radās {count} kļūda.",
+    "other": "Radās {count} kļūdas."
+  }
+}

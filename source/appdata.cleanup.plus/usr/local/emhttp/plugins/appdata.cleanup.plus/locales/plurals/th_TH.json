@@ -1,0 +1,125 @@
+{
+  "{count} folders selected": {
+    "other": "เลือกแล้ว {count} โฟลเดอร์"
+  },
+  "{count} items total": {
+    "other": "ทั้งหมด {count} รายการ"
+  },
+  "{count} quarantined folders tracked": {
+    "other": "ติดตามโฟลเดอร์ที่ถูกกักกัน {count} โฟลเดอร์"
+  },
+  "{count} items submitted": {
+    "other": "ส่งแล้ว {count} รายการ"
+  },
+  "Delete {count} folders": {
+    "other": "ลบ {count} โฟลเดอร์"
+  },
+  "Delete {count} items": {
+    "other": "ลบ {count} รายการ"
+  },
+  "Destroy {count} datasets": {
+    "other": "ทำลายชุดข้อมูล {count} ชุด"
+  },
+  "Quarantine {count} folders": {
+    "other": "กักกัน {count} โฟลเดอร์"
+  },
+  "{count} conflicts found.": {
+    "other": "พบความขัดแย้ง {count} รายการ"
+  },
+  "{count} selected folders can still restore normally.": {
+    "other": "โฟลเดอร์ที่เลือก {count} โฟลเดอร์ยังสามารถกู้คืนได้ตามปกติ"
+  },
+  "Retry after about {count} seconds.": {
+    "other": "ลองอีกครั้งหลังจากผ่านไปประมาณ {count} วินาที"
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "other": "บันทึกการแมป {count} ZFS และการสแกนใหม่"
+  },
+  "Processed {count} folders.": {
+    "other": "ประมวลผลแล้ว {count} โฟลเดอร์"
+  },
+  "{count} folders are visible.": {
+    "other": "มองเห็นได้ {count} โฟลเดอร์"
+  },
+  "{count} more": {
+    "other": "อีก {count} อัน"
+  },
+  "{count} minutes ago": {
+    "other": "{count} นาทีที่แล้ว"
+  },
+  "{count} hours ago": {
+    "other": "{count} ชั่วโมงที่แล้ว"
+  },
+  "{count} days ago": {
+    "other": "{count} วันที่ผ่านมา"
+  },
+  "{count} months ago": {
+    "other": "{count} เดือนที่แล้ว"
+  },
+  "{count} years ago": {
+    "other": "{count} ปีที่ผ่านมา"
+  },
+  "Scheduled to purge in {count} days.": {
+    "other": "กำหนดล้างภายใน {count} วัน"
+  },
+  "Purges in {count} days": {
+    "other": "ล้างออกภายใน {count} วัน"
+  },
+  "Purges in {count} hours": {
+    "other": "ล้างออกภายใน {count} ชั่วโมง"
+  },
+  "Purges in {count} minutes": {
+    "other": "ล้างออกภายใน {count} นาที"
+  },
+  "{count} child datasets": {
+    "other": "ชุดข้อมูลย่อย {count} ชุด"
+  },
+  "{count} snapshots": {
+    "other": "{count} สแนปชอต"
+  },
+  "{count} conflicts": {
+    "other": "{count} ข้อขัดแย้ง"
+  },
+  "{count} errors": {
+    "other": "{count} ข้อผิดพลาด"
+  },
+  "{message} {count} items were submitted.": {
+    "other": "{message} ส่งแล้ว {count} รายการ"
+  },
+  "{count} items were submitted.": {
+    "other": "ส่งแล้ว {count} รายการ"
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "other": "การทำลายแบบเรียกซ้ำจะลบชุดข้อมูลย่อย {count} ชุดด้วย"
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "other": "การทำลายแบบเรียกซ้ำจะลบสแนปชอต {count} รายการด้วย"
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "other": "การทำลายจะลบสแนปชอต {count} อันด้วย"
+  },
+  "{count} folders were moved to quarantine.": {
+    "other": "ย้าย {count} โฟลเดอร์ไปยังเขตกักบริเวณแล้ว"
+  },
+  "{count} folders were deleted.": {
+    "other": "ลบ {count} โฟลเดอร์แล้ว"
+  },
+  "{count} folders were restored.": {
+    "other": "กู้คืน {count} โฟลเดอร์แล้ว"
+  },
+  "{count} folders were permanently purged.": {
+    "other": "{count} โฟลเดอร์ถูกล้างถาวร"
+  },
+  "{count} items were skipped.": {
+    "other": "ข้ามไป {count} รายการ"
+  },
+  "{count} items were already missing.": {
+    "other": "หายไป {count} รายการแล้ว"
+  },
+  "{count} items were blocked.": {
+    "other": "{count} รายการถูกบล็อก"
+  },
+  "{count} errors occurred.": {
+    "other": "เกิดข้อผิดพลาด {count} รายการ"
+  }
+}

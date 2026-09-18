@@ -1283,19 +1283,19 @@ function buildDashboardPayload() {
   $scanWarningMessage = "";
 
   if ( ! empty($filesystemDiscoveryMeta["truncated"]) ) {
-    $scanWarningMessage = "Filesystem discovery reached the safety limit of " . (int)$filesystemDiscoveryMeta["candidateLimit"] . " direct appdata candidates. Partial results are shown; narrow Appdata sources and rescan if expected folders are missing.";
+    $scanWarningMessage = acpMessage("Filesystem discovery reached the safety limit of {count} direct appdata candidates. Partial results are shown; narrow Appdata sources and rescan if expected folders are missing.", array("count" => (int)$filesystemDiscoveryMeta["candidateLimit"]));
   }
 
   if ( ! empty($filesystemDiscoveryMeta["rootMounted"]) ) {
-    $scanWarningMessage = trim("Filesystem discovery was skipped because a live container mounts the configured appdata root. Template-based rows are still shown when safe. " . $scanWarningMessage);
+    $scanWarningMessage = acpJoinMessages(array("Filesystem discovery was skipped because a live container mounts the configured appdata root. Template-based rows are still shown when safe.", $scanWarningMessage));
   }
 
   if ( ! empty($composeMeta["uncertain"]) ) {
-    $scanWarningMessage = trim(appdataCleanupPlusComposeInventoryUncertainMessage() . " " . $scanWarningMessage);
+    $scanWarningMessage = acpJoinMessages(array(appdataCleanupPlusComposeInventoryUncertainMessage(), $scanWarningMessage));
   }
 
   if ( $dockerInventoryUnverified ) {
-    $scanWarningMessage = trim(appdataCleanupPlusDockerInventoryUnverifiedMessage() . " " . $scanWarningMessage);
+    $scanWarningMessage = acpJoinMessages(array(appdataCleanupPlusDockerInventoryUnverifiedMessage(), $scanWarningMessage));
   }
 
   if ( ! $snapshot ) {
@@ -1308,7 +1308,7 @@ function buildDashboardPayload() {
       $rows = appdataCleanupPlusApplyDockerInventorySafetyToRows($rows, appdataCleanupPlusComposeInventoryUncertainMessage());
     }
     $summary = buildSummary($rows);
-    $scanWarningMessage = trim($scanWarningMessage . " Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.");
+    $scanWarningMessage = acpJoinMessages(array($scanWarningMessage, "Scan results loaded, but actions are disabled because a secure snapshot could not be created right now."));
     appdataCleanupPlusMarkScanPhase($scanMetrics, "fallback_heavy_row_build", array(
       "rowCount" => count($rows)
     ));

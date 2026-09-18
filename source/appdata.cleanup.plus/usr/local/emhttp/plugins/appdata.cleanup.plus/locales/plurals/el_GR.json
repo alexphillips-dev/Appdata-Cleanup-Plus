@@ -1,0 +1,166 @@
+{
+  "{count} folders selected": {
+    "one": "Επιλέχθηκε {count} φάκελος",
+    "other": "Επιλέχθηκαν {count} φάκελοι"
+  },
+  "{count} items total": {
+    "one": "{count} τεμάχιο συνολικά",
+    "other": "{count} είδη συνολικά"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "Παρακολούθησε {count} φάκελος σε καραντίνα",
+    "other": "Παρακολούθησαν {count} φάκελοι σε καραντίνα"
+  },
+  "{count} items submitted": {
+    "one": "Υποβλήθηκε {count} στοιχείο",
+    "other": "Υποβλήθηκαν {count} στοιχεία"
+  },
+  "Delete {count} folders": {
+    "one": "Διαγραφή {count} φακέλου",
+    "other": "Διαγραφή {count} φακέλων"
+  },
+  "Delete {count} items": {
+    "one": "Διαγραφή {count} στοιχείου",
+    "other": "Διαγραφή {count} στοιχείων"
+  },
+  "Destroy {count} datasets": {
+    "one": "Καταστρέψτε {count} σύνολο δεδομένων",
+    "other": "Καταστρέψτε {count} σύνολα δεδομένων"
+  },
+  "Quarantine {count} folders": {
+    "one": "Καραντίνα {count} φάκελο",
+    "other": "Σε καραντίνα {count} φακέλους"
+  },
+  "{count} conflicts found.": {
+    "one": "Βρέθηκε {count} διένεξη.",
+    "other": "Βρέθηκαν {count} διενέξεις."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} επιλεγμένος φάκελος μπορεί να επαναφέρει κανονικά.",
+    "other": "{count} επιλεγμένοι φάκελοι μπορούν να επαναφέρουν κανονικά."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Δοκιμάστε ξανά μετά από περίπου {count} δευτερόλεπτο.",
+    "other": "Δοκιμάστε ξανά μετά από περίπου {count} δευτερόλεπτα."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Αποθηκεύτηκε {count} ZFS χαρτογράφηση και εκ νέου σάρωση.",
+    "other": "Αποθηκεύτηκαν {count} ZFS αντιστοιχίσεις και εκ νέου σάρωση."
+  },
+  "Processed {count} folders.": {
+    "one": "Επεξεργάστηκε {count} φάκελος.",
+    "other": "Επεξεργάστηκε {count} φακέλους."
+  },
+  "{count} folders are visible.": {
+    "one": "{count} φάκελος είναι ορατός.",
+    "other": "{count} φάκελοι είναι ορατοί."
+  },
+  "{count} more": {
+    "one": "{count} ακόμη",
+    "other": "{count} ακόμη"
+  },
+  "{count} minutes ago": {
+    "one": "πριν {count} λεπτό",
+    "other": "πριν {count} λεπτά"
+  },
+  "{count} hours ago": {
+    "one": "πριν {count} ώρα",
+    "other": "πριν {count} ώρες"
+  },
+  "{count} days ago": {
+    "one": "{count} ημέρα πριν",
+    "other": "πριν {count} μέρες"
+  },
+  "{count} months ago": {
+    "one": "πριν {count} μήνα",
+    "other": "πριν {count} μήνες"
+  },
+  "{count} years ago": {
+    "one": "πριν {count} χρόνο",
+    "other": "πριν {count} χρόνια"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Έχει προγραμματιστεί για εκκαθάριση σε {count} ημέρα.",
+    "other": "Προγραμματισμένη εκκαθάριση σε {count} ημέρες."
+  },
+  "Purges in {count} days": {
+    "one": "Εκκαθαρίσεις σε {count} ημέρα",
+    "other": "Εκκαθαρίσεις σε {count} ημέρες"
+  },
+  "Purges in {count} hours": {
+    "one": "Καθαρίζει σε {count} ώρα",
+    "other": "Καθαρίζει σε {count} ώρες"
+  },
+  "Purges in {count} minutes": {
+    "one": "Καθαρίζει σε {count} λεπτό",
+    "other": "Καθαρίζει σε {count} λεπτά"
+  },
+  "{count} child datasets": {
+    "one": "{count} θυγατρικό σύνολο δεδομένων",
+    "other": "{count} θυγατρικά σύνολα δεδομένων"
+  },
+  "{count} snapshots": {
+    "one": "{count} στιγμιότυπο",
+    "other": "{count} στιγμιότυπα"
+  },
+  "{count} conflicts": {
+    "one": "{count} σύγκρουση",
+    "other": "{count} συγκρούσεις"
+  },
+  "{count} errors": {
+    "one": "{count} σφάλμα",
+    "other": "{count} λάθη"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} Υποβλήθηκε {count} στοιχείο.",
+    "other": "{message} Υποβλήθηκαν {count} στοιχεία."
+  },
+  "{count} items were submitted.": {
+    "one": "Υποβλήθηκε {count} στοιχείο.",
+    "other": "Υποβλήθηκαν {count} στοιχεία."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Η αναδρομική καταστροφή θα αφαιρέσει επίσης {count} θυγατρικό σύνολο δεδομένων.",
+    "other": "Η αναδρομική καταστροφή θα αφαιρέσει επίσης {count} θυγατρικά σύνολα δεδομένων."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Η αναδρομική καταστροφή θα αφαιρέσει επίσης {count} στιγμιότυπο.",
+    "other": "Η αναδρομική καταστροφή θα αφαιρέσει επίσης {count} στιγμιότυπα."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Το Destroy θα αφαιρέσει επίσης {count} στιγμιότυπο.",
+    "other": "Το Destroy θα αφαιρέσει επίσης {count} στιγμιότυπα."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} φάκελος μετακινήθηκε σε καραντίνα.",
+    "other": "{count} φάκελοι μεταφέρθηκαν σε καραντίνα."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} φάκελος διαγράφηκε.",
+    "other": "{count} φάκελοι διαγράφηκαν."
+  },
+  "{count} folders were restored.": {
+    "one": "Έγινε επαναφορά {count} φακέλου.",
+    "other": "Έγινε επαναφορά {count} φακέλων."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} φάκελος εκκαθαρίστηκε οριστικά.",
+    "other": "{count} φάκελοι εκκαθαρίστηκαν οριστικά."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} στοιχείο παραλείφθηκε.",
+    "other": "{count} στοιχεία παραλείφθηκαν."
+  },
+  "{count} items were already missing.": {
+    "one": "{count} στοιχείο έλειπε ήδη.",
+    "other": "{count} στοιχεία έλειπαν ήδη."
+  },
+  "{count} items were blocked.": {
+    "one": "Αποκλείστηκε {count} στοιχείο.",
+    "other": "Αποκλείστηκαν {count} στοιχεία."
+  },
+  "{count} errors occurred.": {
+    "one": "Παρουσιάστηκε {count} σφάλμα.",
+    "other": "Παρουσιάστηκαν {count} σφάλματα."
+  }
+}

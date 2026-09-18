@@ -1,0 +1,248 @@
+{
+  "{count} folders selected": {
+    "one": "Wybrano {count} folder",
+    "few": "Wybrano {count} foldery",
+    "many": "Wybrano {count} folderów",
+    "other": "Wybrano {count} folderów"
+  },
+  "{count} items total": {
+    "one": "Łącznie {count} pozycja",
+    "few": "Łącznie {count} sztuki",
+    "many": "Łącznie {count} pozycji",
+    "other": "Razem {count} szt"
+  },
+  "{count} quarantined folders tracked": {
+    "one": "Śledzono {count} folder poddany kwarantannie",
+    "few": "Śledzono {count} foldery poddane kwarantannie",
+    "many": "Śledzono {count} folderów poddanych kwarantannie",
+    "other": "{count} śledzone foldery poddane kwarantannie"
+  },
+  "{count} items submitted": {
+    "one": "Przesłano {count} przedmiot",
+    "few": "Zgłoszono {count} pozycje",
+    "many": "Zgłoszono {count} pozycji",
+    "other": "Przesłano {count} pozycji"
+  },
+  "Delete {count} folders": {
+    "one": "Usuń {count} folder",
+    "few": "Usuń {count} foldery",
+    "many": "Usuń {count} folderów",
+    "other": "Usuń {count} folderu"
+  },
+  "Delete {count} items": {
+    "one": "Usuń {count} element",
+    "few": "Usuń {count} elementy",
+    "many": "Usuń {count} elementów",
+    "other": "Usuń {count} elementów"
+  },
+  "Destroy {count} datasets": {
+    "one": "Zniszcz {count} zbiór danych",
+    "few": "Zniszcz {count} zbiory danych",
+    "many": "Zniszcz {count} zbiorów danych",
+    "other": "Zniszcz zestawy danych {count}"
+  },
+  "Quarantine {count} folders": {
+    "one": "Kwarantanna {count} folder",
+    "few": "Kwarantanna {count} foldery",
+    "many": "Kwarantanna {count} folderów",
+    "other": "Foldery kwarantanny {count}"
+  },
+  "{count} conflicts found.": {
+    "one": "Znaleziono {count} konflikt.",
+    "few": "Znaleziono {count} konflikty.",
+    "many": "Znaleziono {count} konfliktów.",
+    "other": "Znaleziono {count} konfliktów."
+  },
+  "{count} selected folders can still restore normally.": {
+    "one": "{count} wybrany folder można nadal normalnie przywracać.",
+    "few": "{count} wybrane foldery można nadal normalnie przywracać.",
+    "many": "{count} wybranych folderów można nadal normalnie przywracać.",
+    "other": "{count} wybrane foldery można nadal normalnie przywracać."
+  },
+  "Retry after about {count} seconds.": {
+    "one": "Spróbuj ponownie po około {count} sekundzie.",
+    "few": "Spróbuj ponownie po około {count} sekundach.",
+    "many": "Spróbuj ponownie po około {count} sekundach.",
+    "other": "Spróbuj ponownie po około {count} sekundy."
+  },
+  "Saved {count} ZFS mappings and rescanning.": {
+    "one": "Zapisano {count} ZFS mapowania i ponownego skanowania.",
+    "few": "Zapisano {count} ZFS mapowania i ponowne skanowanie.",
+    "many": "Zapisano {count} ZFS mapowań i ponownego skanowania.",
+    "other": "Zapisano mapowania i ponowne skanowanie w wersji {count} ZFS."
+  },
+  "Processed {count} folders.": {
+    "one": "Przetworzono {count} folder.",
+    "few": "Przetworzono {count} foldery.",
+    "many": "Przetworzono {count} folderów.",
+    "other": "Przetworzono foldery {count}."
+  },
+  "{count} folders are visible.": {
+    "one": "Widoczny jest {count} folder.",
+    "few": "Widoczne są {count} foldery.",
+    "many": "Widocznych jest {count} folderów.",
+    "other": "Widoczne są foldery {count}."
+  },
+  "{count} more": {
+    "one": "jeszcze {count}",
+    "few": "jeszcze {count}",
+    "many": "jeszcze {count}",
+    "other": "{count} więcej"
+  },
+  "{count} minutes ago": {
+    "one": "{count} minutę temu",
+    "few": "{count} minuty temu",
+    "many": "{count} minut temu",
+    "other": "{count} minuty temu"
+  },
+  "{count} hours ago": {
+    "one": "{count} godzinę temu",
+    "few": "{count} godziny temu",
+    "many": "{count} godzin temu",
+    "other": "{count} godziny temu"
+  },
+  "{count} days ago": {
+    "one": "{count} dzień temu",
+    "few": "{count} dni temu",
+    "many": "{count} dni temu",
+    "other": "{count} dnia temu"
+  },
+  "{count} months ago": {
+    "one": "{count} miesiąc temu",
+    "few": "{count} miesiące temu",
+    "many": "{count} miesięcy temu",
+    "other": "{count} miesiąca temu"
+  },
+  "{count} years ago": {
+    "one": "{count} rok temu",
+    "few": "{count} lata temu",
+    "many": "{count} lat temu",
+    "other": "{count} roku temu"
+  },
+  "Scheduled to purge in {count} days.": {
+    "one": "Zaplanowano oczyszczenie za {count} dzień.",
+    "few": "Planowane oczyszczenie za {count} dni.",
+    "many": "Zaplanowane oczyszczenie za {count} dni.",
+    "other": "Zaplanowano usunięcie za {count} dnia."
+  },
+  "Purges in {count} days": {
+    "one": "Oczyszcza w {count} dzień",
+    "few": "Oczyszcza w ciągu {count} dni",
+    "many": "Oczyszcza w ciągu {count} dni",
+    "other": "Oczyszcza w ciągu {count} dnia"
+  },
+  "Purges in {count} hours": {
+    "one": "Oczyszcza w ciągu {count} godziny",
+    "few": "Oczyszcza w ciągu {count} godzin",
+    "many": "Oczyszcza w ciągu {count} godzin",
+    "other": "Oczyszcza w ciągu {count} godziny"
+  },
+  "Purges in {count} minutes": {
+    "one": "Oczyszcza w ciągu {count} minuty",
+    "few": "Oczyszcza w {count} minuty",
+    "many": "Oczyszcza w {count} minut",
+    "other": "Oczyszcza w {count} minuty"
+  },
+  "{count} child datasets": {
+    "one": "{count} zbiór danych podrzędnych",
+    "few": "{count} podrzędne zbiory danych",
+    "many": "{count} podrzędnych zbiorów danych",
+    "other": "{count} podrzędne zbiory danych"
+  },
+  "{count} snapshots": {
+    "one": "{count} migawka",
+    "few": "{count} migawki",
+    "many": "{count} migawek",
+    "other": "{count} migawki"
+  },
+  "{count} conflicts": {
+    "one": "{count} konflikt",
+    "few": "{count} konflikty",
+    "many": "{count} konfliktów",
+    "other": "{count} konflikty"
+  },
+  "{count} errors": {
+    "one": "{count} błąd",
+    "few": "{count} błędy",
+    "many": "{count} błędów",
+    "other": "Błędy {count}"
+  },
+  "{message} {count} items were submitted.": {
+    "one": "{message} Przesłano {count} przedmiot.",
+    "few": "{message} Przesłano {count} pozycje.",
+    "many": "{message} Przesłano {count} pozycji.",
+    "other": "{message} Przesłano {count} pozycji."
+  },
+  "{count} items were submitted.": {
+    "one": "Zgłoszono {count} przedmiot.",
+    "few": "Zgłoszono {count} pozycje.",
+    "many": "Zgłoszono {count} pozycji.",
+    "other": "Zgłoszono {count} pozycji."
+  },
+  "Recursive destroy will also remove {count} child datasets.": {
+    "one": "Rekursywne niszczenie spowoduje również usunięcie {count} podrzędnego zestawu danych.",
+    "few": "Rekursywne niszczenie spowoduje również usunięcie {count} podrzędnych zestawów danych.",
+    "many": "Rekursywne niszczenie usunie również {count} podrzędnych zestawów danych.",
+    "other": "Rekursywne niszczenie spowoduje również usunięcie podrzędnych zestawów danych {count}."
+  },
+  "Recursive destroy will also remove {count} snapshots.": {
+    "one": "Rekursywne niszczenie spowoduje również usunięcie {count} migawki.",
+    "few": "Rekursywne niszczenie spowoduje również usunięcie {count} migawek.",
+    "many": "Rekursywne niszczenie spowoduje również usunięcie {count} migawek.",
+    "other": "Rekursywne niszczenie spowoduje również usunięcie migawek {count}."
+  },
+  "Destroy will also remove {count} snapshots.": {
+    "one": "Zniszcz spowoduje również usunięcie {count} migawki.",
+    "few": "Opcja Destroy usunie również {count} migawki.",
+    "many": "Opcja Destroy usunie również {count} migawek.",
+    "other": "Destroy usunie także migawki wersji {count}."
+  },
+  "{count} folders were moved to quarantine.": {
+    "one": "{count} folder został przeniesiony do kwarantanny.",
+    "few": "{count} foldery zostały przeniesione do kwarantanny.",
+    "many": "{count} folderów zostało przeniesionych do kwarantanny.",
+    "other": "{count} folderów zostało przeniesionych do kwarantanny."
+  },
+  "{count} folders were deleted.": {
+    "one": "{count} folder został usunięty.",
+    "few": "Usunięto {count} foldery.",
+    "many": "Usunięto {count} folderów.",
+    "other": "Usunięto foldery {count}."
+  },
+  "{count} folders were restored.": {
+    "one": "{count} folder został przywrócony.",
+    "few": "Przywrócono {count} foldery.",
+    "many": "Przywrócono {count} folderów.",
+    "other": "Przywrócono foldery {count}."
+  },
+  "{count} folders were permanently purged.": {
+    "one": "{count} folder został trwale usunięty.",
+    "few": "{count} foldery zostały trwale usunięte.",
+    "many": "Trwale usunięto {count} folderów.",
+    "other": "Foldery {count} zostały trwale usunięte."
+  },
+  "{count} items were skipped.": {
+    "one": "{count} element został pominięty.",
+    "few": "Pominięto {count} pozycje.",
+    "many": "Pominięto {count} elementów.",
+    "other": "Pominięto {count} pozycji."
+  },
+  "{count} items were already missing.": {
+    "one": "Brakowało już {count} elementu.",
+    "few": "Brakowało już {count} elementów.",
+    "many": "Brakowało już {count} elementów.",
+    "other": "Brakowało już {count} pozycji."
+  },
+  "{count} items were blocked.": {
+    "one": "{count} element został zablokowany.",
+    "few": "{count} elementy zostały zablokowane.",
+    "many": "Zablokowano {count} elementów.",
+    "other": "{count} elementów zostało zablokowanych."
+  },
+  "{count} errors occurred.": {
+    "one": "Wystąpił {count} błąd.",
+    "few": "Wystąpiły {count} błędy.",
+    "many": "Wystąpiło {count} błędów.",
+    "other": "Wystąpiły błędy {count}."
+  }
+}

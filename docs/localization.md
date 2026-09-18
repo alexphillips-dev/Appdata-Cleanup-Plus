@@ -14,7 +14,9 @@ The roster and BCP 47 formatting tags live in `source/appdata.cleanup.plus/usr/l
 
 - `acpT` returns plain translated text; `acpH` escapes it for HTML and attributes. The page embeds the catalog with JSON HTML escaping. JavaScript renders translated values with the existing escaping helpers.
 - `ACP.t` resolves the existing named page strings, then uses the English fallback as a catalog key. `ACP.tr` formats complete sentences with named placeholders.
+- `acpP` and `ACP.plural` select complete count messages using bundled Unicode CLDR 48 cardinal rules. The plugin's counts are non-negative integers (folders, items and rounded time units); fractional and compact-number messages are not part of this API. Both runtimes interpret the same rules without `eval` or an intl dependency. Browser `Intl.PluralRules` independently verifies their results in tests.
 - `acpMessage` formats English message templates for unchanged storage and audit semantics. Only allowlisted presentation fields are translated by `acpLocalizeResponse`, after actions, locks, safety validation and persistence have finished.
+- `acpCountMessage` constructs the English singular/plural storage form; presentation selects the viewer's CLDR category. `acpJoinMessages` combines complete sentences and retains their templates for the current response. Legacy English audit templates remain supported. Never assemble a sentence from an action verb, a count and a separately translated noun.
 - Paths, names, IDs, status codes, action names, settings, breadcrumbs and diagnostics stay literal. Only designated nested message parameters may be translated; path/name parameters are inserted unchanged.
 - Browser `Intl` formatters use the selected language and the server's time zone for date labels, relative ages and sizes. PHP uses its optional Intl date formatter when present and a numeric local timestamp otherwise. No extension is required.
 - Diagnostic bundles, system/installer logs and third-party command output remain support evidence in their original language. On-screen diagnostic controls are translated. English is the reference for release notes and repository documentation.
@@ -26,18 +28,22 @@ The roster and BCP 47 formatting tags live in `source/appdata.cleanup.plus/usr/l
 1. Wrap page text with `acpT` or `acpH`, and browser text with `ACP.t` or `ACP.tr`. Use a complete sentence with named parameters when inserting a count, path or name.
 2. For backend messages that are persisted, use `acpMessage`. Preserve all machine data and ensure the response field is in the presentation allowlist. Avoid translating state before validation or persistence.
 3. Add irregular legacy presentation templates to `scripts/i18n_messages.json`. The extractor tokenizes PHP strings and reads browser translation calls; do not assume it discovers arbitrary new DOM text automatically.
-4. Run `node scripts/build_i18n.mjs --translate` to update the English master and missing locale entries. This is an explicit maintainer-only operation that sends public source phrases to Google Translate. It saves each completed batch and resumes existing entries after a network failure. Existing translations are retained so community corrections survive regeneration. Manual catalog corrections should preserve every `{placeholder}` exactly.
-5. Run the offline checks:
+4. Declare count messages in `scripts/i18n_plural_messages.json` with complete English singular and plural forms. Use `ACP.plural` in the browser and `acpCountMessage` for persisted backend text. Keep ordinary corrections in `scripts/i18n_overrides.json` and plural corrections in `scripts/i18n_plural_overrides.json`.
+5. Run `node scripts/build_i18n.mjs --translate` to update both catalog types. This maintainer-only operation sends public source phrases to Google Translate. Plural authoring uses a real sample count for each category to give the translator grammatical context, then restores the numeric placeholder. It rejects damaged placeholders and untranslated short prose as well as long sentences. Existing corrections survive regeneration. Every non-count placeholder must be retained. The count may be implicit only when the pinned rule proves the category represents exactly one or two, such as Arabic dual forms. Rules are refreshed separately with `node scripts/build_plural_rules.mjs` from the pinned Unicode source and must be reviewed before changing the CLDR version.
+6. Run the offline checks:
 
    ```text
    node scripts/build_i18n.mjs --check
    php tests/i18n_smoke.php
    node tests/i18n_client.js
    node tests/i18n_page.js
+   node tests/i18n_flows.js
    ```
 
 CI checks catalog coverage, placeholder integrity, locale aliases and fallback, path/ID preservation, backend dynamic results, history, escaping, dates and numbers. Runtime safety, privacy and confirmation tests still apply. Package changes with the normal dev builder so Unraid detects the updated catalogs.
 
-For local layout verification, `node tests/i18n_layout.cjs` uses Playwright with Chromium and jQuery from the maintainer's tooling environment. `ACP_BROWSER_MODULES` can point to an existing tooling `node_modules` directory. This optional check renders every locale at desktop/mobile widths, exercises a Details modal fixture, and verifies RTL path isolation and light-theme direction. It uses a synthetic host, not a live Unraid server; these tools are not plugin dependencies.
+The flow regression suite loads the shipped JavaScript functions and pure PHP fixtures for all 42 locales. It covers confirmation buttons, zero/singular/dual/few/many counts, restore conflicts, quarantine summaries, the immediate ignored badge, Tools notes, compound scan warnings, persisted ZFS impact text and audit summaries. Tests compare PHP and JavaScript categories with `Intl.PluralRules` across 0–250 and larger boundary values, and include explicit Polish, Russian, Japanese and Arabic wording assertions. This verifies behavior and selected wording; it does not establish native-speaker review of every sentence in the machine-translated catalogs.
+
+For local layout verification, `node tests/i18n_layout.cjs` uses Playwright with Chromium and jQuery from the maintainer's tooling environment. `ACP_BROWSER_MODULES` can point to an existing tooling `node_modules` directory. This optional check renders every locale at desktop/mobile widths, exercises Details, quarantine, restore-conflict, confirmation and history fixtures, and verifies RTL path isolation and light-theme direction. It uses a synthetic host, not a live Unraid server; these tools are not plugin dependencies.
 
 On Unraid, select a language in Display Settings and reload the plugin. Check scan results, sources, details, help, history, quarantine, restore conflicts, purge timing, permanent-delete confirmation and Tools. Switch back to English and reopen dialogs. Check Arabic RTL and long German labels at desktop and mobile widths. Real-server and native-speaker validation are separate from isolated fixture tests.
