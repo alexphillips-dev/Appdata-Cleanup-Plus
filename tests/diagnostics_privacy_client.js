@@ -9,7 +9,7 @@ const repoRoot = path.resolve(__dirname, "..");
 const sourcePath = path.join(repoRoot, "source", "appdata.cleanup.plus", "usr", "local", "emhttp", "plugins", "appdata.cleanup.plus", "scripts", "appdata.cleanup.plus.js");
 const source = fs.readFileSync(sourcePath, "utf8");
 const startMarker = "  function buildDiagnosticsRedactor()";
-const endMarker = "  function sanitizeDiagnosticsRow(";
+const endMarker = "  function sanitizeDiagnosticsAuditHistory(";
 const start = source.indexOf(startMarker);
 const end = source.indexOf(endMarker, start);
 
@@ -35,14 +35,15 @@ const jquery = {
   map(collection, callback) {
     return (Array.isArray(collection) ? collection : []).map((value, index) => callback(value, index));
   },
-  extend(target, sourceValue) {
+  extend(target, sourceValue, deepSource) {
+    if (target === true) return JSON.parse(JSON.stringify(deepSource || {}));
     return Object.assign(target || {}, sourceValue || {});
   }
 };
 
 const context = { $: jquery };
 vm.runInNewContext(
-  source.slice(start, end) + "\nthis.privacy = { buildDiagnosticsRedactor, sanitizeDiagnosticsFreeText, diagnosticsKeyLooksLikePath, sanitizeDiagnosticsValue, sanitizeDiagnosticsPath, sanitizeDiagnosticsTemplateRefs };",
+  source.slice(start, end) + "\nthis.privacy = { buildDiagnosticsRedactor, sanitizeDiagnosticsFreeText, diagnosticsKeyLooksLikePath, sanitizeDiagnosticsValue, sanitizeDiagnosticsPath, sanitizeDiagnosticsTemplateRefs, sanitizeDiagnosticsRow };",
   context,
   { filename: sourcePath }
 );
@@ -70,4 +71,9 @@ assert.ok(!url.includes("2001:db8::1234"), "bracketed IPv6 addresses should not 
 const scrubbed = privacy.sanitizeDiagnosticsValue({ target: "/data/TaxRecords/customer-a" }, privacy.buildDiagnosticsRedactor(), "");
 assert.ok(!JSON.stringify(scrubbed).includes("TaxRecords"), "recursive target fields should be path-sanitized");
 
+const privateMountRow = {name:'PrivateApp',path:'/mnt/user/appdata/PrivateApp',mountEvidence:[{name:'PrivateContainer',paths:['/mnt/user/customer-records']}]};
+const privateMountExport = privacy.sanitizeDiagnosticsRow(privateMountRow, privacy.buildDiagnosticsRedactor());
+assert.ok(!Object.hasOwn(privateMountExport, 'mountEvidence'), 'Mount evidence is UI-only');
+assert.ok(!JSON.stringify(privateMountExport).includes('PrivateContainer'));
+assert.equal(privateMountRow.mountEvidence.length, 1, 'Export must not mutate UI evidence');
 console.log("diagnostics_privacy_client: executable client redaction checks passed.");

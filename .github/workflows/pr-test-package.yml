@@ -1,0 +1,61 @@
+name: PR test package
+
+on:
+  pull_request:
+    types: [labeled]
+
+# PR code runs with a read-only token, no secrets, and no persistent credentials.
+# Artifacts are manual test downloads; this workflow never publishes a release.
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-test-package-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    if: github.event.label.name == 'test-build'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Validate and build test package
+        env:
+          APPDATA_CLEANUP_PLUS_CHANGE_NOTES: 'Preview package for an explicitly selected pull request. Review its changes before installing.'
+          APPDATA_CLEANUP_PLUS_EXPECT_PLUGIN_BRANCH: dev
+        run: |
+          php scripts/check_php_functions.php
+          php tests/ownership_templates.php
+          node scripts/build_i18n.mjs --check
+          bash pkg_build.sh --branch dev
+          bash scripts/test_package_source_parity.sh
+          php tests/pr_artifact.php
+          mkdir -p pr-test-artifact
+          php scripts/build_pr_artifact.php pr-test-artifact
+      - name: Write install instructions
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          {
+            printf 'Appdata Cleanup Plus test package for PR #%s at %s\n\n' "$PR_NUMBER" "$HEAD_SHA"
+            printf '%s\n' 'Review the PR and its CI results before installing. This artifact is a preview, not a stable release.'
+            printf '%s\n' 'Extract the artifact, create /boot/acp-pr-test on Unraid, and copy appdata.cleanup.plus.plg into that directory.'
+            printf '%s\n' 'Run: plugin install /boot/acp-pr-test/appdata.cleanup.plus.plg'
+            printf '%s\n' 'Hard-refresh the webGUI after installation. Test only on data you can recover.'
+            printf '%s\n' 'Return to the published dev build with: plugin install https://raw.githubusercontent.com/alexphillips-dev/Appdata-Cleanup-Plus/dev/plugins/appdata.cleanup.plus.plg'
+          } > pr-test-artifact/INSTALL.txt
+          cat pr-test-artifact/INSTALL.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: appdata-cleanup-plus-pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          path: pr-test-artifact/
+          if-no-files-found: error
+          retention-days: 14

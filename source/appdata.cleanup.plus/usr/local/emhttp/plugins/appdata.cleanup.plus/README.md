@@ -161,6 +161,10 @@ Recommended workflow:
 
 ## Advanced Tools
 
+**Saved template cleanup** in Tools lists saved Docker configurations whose containers are no longer installed. Review each template and choose **Archive template** to retain a verified backup before removing the saved configuration. Appdata, images, and containers are unaffected. **Restore template** recreates the original file only when its filename is free; it never overwrites another template. Backups remain after restore and are not automatically purged. They contain the original private configuration and stay outside diagnostic exports under `/boot/config/plugins/appdata.cleanup.plus/template-backups/`. Removing the plugin also removes its configuration directory, including these backups.
+
+Rows covered by a container mount stay locked. Expand **In use by container mounts** to see the container names and host paths, including stopped containers. The disclosure works with keyboard, mouse, and touch; Escape closes it.
+
 | Tool | What it is for |
 |---|---|
 | Appdata Sources | Review detected appdata roots, browse filesystem paths, and add manual sources for non-standard layouts. |
@@ -173,6 +177,7 @@ Recommended workflow:
 ## Documentation
 
 - [CA Store Readiness](docs/ca-store-readiness.md)
+- [Validation status and test packages](docs/validation.md)
 - [Bug report](https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues/new?template=bug_report.yml)
 - [Feature request](https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues/new?template=feature_request.yml)
 - [Release / update problem](https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues/new?template=release_update_problem.yml)

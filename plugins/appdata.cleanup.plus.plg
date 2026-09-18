@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.18.02">
-<!ENTITY md5 "791f697de5ec899d939ec9ea4288a0bf">
+<!ENTITY version "2026.09.18.03">
+<!ENTITY md5 "c32f3dbad1e5cf46d999ed51e64759f7">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.18.03
+- Recheck current Docker and Compose ownership before cleanup, including stopped containers and overlapping parent or child mounts. Unverified ownership blocks cleanup.
+- Protect more Compose layouts, including exported environment variables, normalized paths, indirect projects, and overrides; use exact /config target matching.
+- Review and archive unused saved Docker templates from Tools with verified private backups and collision-safe restore.
+- Expand container mount details to understand why a folder is protected, with keyboard and touch support.
+- Translate the new flows in all supported languages and improve template history wording and backup dates.
+
 ###2026.09.18.02
 - Language accuracy: Use complete translated messages and native plural rules for selection counts, confirmations, restore conflicts, quarantine schedules, ZFS impact previews, and history across all 42 supported languages.
 - Translation coverage: Translate remaining scan warnings, empty-folder explanations, Tools notes, immediate ignored badges, and short labels that previously stayed in English.

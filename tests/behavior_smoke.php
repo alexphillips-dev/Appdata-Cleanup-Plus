@@ -1017,7 +1017,25 @@ $composeProtectedProjectDir = $composeProjectsFixtureDir . "/compose-protected";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($composeProtectedProjectDir), "Compose protected project fixture should be created.");
 file_put_contents($composeProtectedProjectDir . "/.env", "APPDATA_ROOT=" . $appdataShareRoot . "\n");
 file_put_contents($composeProtectedProjectDir . "/compose.yaml", "services:\n  protected:\n    volumes:\n      - \${APPDATA_ROOT}/compose-owned:/config\n");
-file_put_contents($dockerClientFixture, "<?php\ntrigger_error('docker client fixture include warning', E_USER_WARNING);\nclass DockerClient {\n  public function getDockerContainers() {\n    trigger_error('docker client fixture query warning', E_USER_WARNING);\n    echo \"docker-fixture-noise\";\n    return array((object)array(\n      'Volumes' => array(\n        (object)array('Source' => '" . addslashes($liveAppPath) . "', 'Destination' => '/config'),\n        (object)array('Source' => '" . addslashes($slashLivePath) . "', 'Destination' => '/opt/adguardhome/work'),\n        (object)array('Source' => '" . addslashes($manualAliasLivePath) . "', 'Destination' => '/opt/alias')\n      )\n    ));\n  }\n}\n");
+$GLOBALS["acpTestDockerRecords"] = array(array("Id" => "fixture-container", "Names" => array("/fixture-app"), "Mounts" => array(
+  array("Type" => "bind", "Source" => $liveAppPath, "Destination" => "/config"),
+  array("Type" => "bind", "Source" => $slashLivePath, "Destination" => "/opt/adguardhome/work"),
+  array("Type" => "bind", "Source" => $manualAliasLivePath, "Destination" => "/opt/alias")
+)));
+file_put_contents($dockerClientFixture, <<<'PHP'
+<?php
+trigger_error('docker client fixture include warning', E_USER_WARNING);
+class DockerClient {
+  public function getDockerJSON($path, $method='GET', &$success=null) {
+    trigger_error('docker client fixture query warning', E_USER_WARNING);
+    echo "docker-fixture-noise";
+    $success = $GLOBALS['acpTestDockerSuccess'] ?? true;
+    if ($path !== '/containers/json?all=1') throw new Exception('Unexpected inventory endpoint');
+    return $GLOBALS['acpTestDockerRecords'];
+  }
+}
+PHP
+);
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_RUNTIME_PATH=" . str_replace("\\", "/", $dockerRuntimeFixture));
 putenv("APPDATA_CLEANUP_PLUS_DOCKER_CLIENT_PATH=" . str_replace("\\", "/", $dockerClientFixture));
 $containers = getDockerContainersSafe();
@@ -1151,7 +1169,7 @@ $unverifiedRows = appdataCleanupPlusApplyDockerInventorySafetyToRows(array($file
 behaviorSmokeAssertSame(true, appdataCleanupPlusDockerInventoryUnverified(true, array(), array("template" => array("HostDir" => $templatedOrphanPath))), "Docker inventory should be treated as unverified when Docker is running, no containers are returned, and templates exist.");
 behaviorSmokeAssertSame(false, ! empty($unverifiedRows[0]["canDelete"]), "Unverified Docker inventory scans should disable filesystem cleanup actions.");
 behaviorSmokeAssertSame(true, ! empty($unverifiedRows[0]["scanVerificationLocked"]), "Unverified Docker inventory scans should mark rows with a scan verification lock.");
-behaviorSmokeAssertContains("could not verify any installed containers", $unverifiedRows[0]["policyReason"], "Unverified Docker inventory locks should explain the inventory problem.");
+behaviorSmokeAssertContains("ownership could not be verified", $unverifiedRows[0]["policyReason"], "Unverified Docker inventory locks should explain the inventory problem.");
 $indexedStaleParentPath = $manualCustomSourceRoot . "/indexed-stale-parent";
 $indexedLiveParentPath = $manualCustomSourceRoot . "/indexed-live-parent";
 $indexedExactParentPath = $manualCustomSourceRoot . "/indexed-exact-parent";

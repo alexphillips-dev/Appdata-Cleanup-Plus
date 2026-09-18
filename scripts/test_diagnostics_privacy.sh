@@ -21,6 +21,10 @@ fi
 grep -Fq 'schemaVersion: 3' <<<"${payload_flow}" || fail "Client diagnostics schema version is missing."
 grep -Fq 'sanitizeDiagnosticsRowId' <<<"${payload_flow}" || fail "Client diagnostics row IDs must use export-scoped aliases."
 grep -Fq 'sanitizeDiagnosticsValue(payload' <<<"${payload_flow}" || fail "Client diagnostics payload needs a final recursive privacy scrub."
+grep -Fq 'delete nextRow.mountEvidence;' "${JS_FILE}" || fail "Container mount evidence must remain UI-only."
+if grep -Eq 'templateManager|template-backups|TemplateBackup' <<<"${payload_flow}${server_bundle}"; then
+    fail "Private template backups and manager state must not enter diagnostics exports."
+fi
 grep -Fq 'sanitizeDiagnosticsPath(path, redactor)' <<<"${support_flow}" || fail "Copied support summaries must sanitize scan roots."
 grep -Fq '"schemaVersion" => 3' <<<"${server_bundle}" || fail "Server diagnostics schema version is missing."
 grep -Fq 'appdataCleanupPlusDiagnosticsTroubleshootingSummary($logs)' <<<"${server_bundle}" || fail "Server diagnostics structured health summary is missing."

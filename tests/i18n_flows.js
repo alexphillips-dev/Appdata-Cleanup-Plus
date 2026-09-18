@@ -72,6 +72,13 @@ for (const [locale, definition] of Object.entries(locales)) {
   assert.ok(!payload.candidate.reason.includes('tracked container paths') && !payload.candidate.reason.includes('+2 more'));
   const tools = ACP.buildToolsModalHtml({state:{fixtureTools:{status:{zfsNote:payload.zfsNote}}},strings:{}});
   assert.ok(tools.includes(ACP.escapeHtml(payload.zfsNote)));
+  const templateHtml = ACP.buildTemplateManagerHtml({status:{templates:[{id:'one',name:'<img src=x>',filename:'private.xml'}],backups:[{id:'backup',name:'Saved',filename:'saved.xml',canRestore:false}]}});
+  assert.ok(templateHtml.includes(ACP.escapeHtml(ACP.tr('Archive template'))) && !templateHtml.includes('<img src=x>'));
+  assert.ok(templateHtml.includes('data-action="restore-template"') && templateHtml.includes(' disabled'));
+  assert.ok(templateHtml.includes(ACP.escapeHtml(ACP.tr('Template already exists'))));
+  const mountHtml = ACP.buildMountEvidenceHtml([{name:'<b>PrivateApp</b>',paths:['/mnt/user/My App']}]);
+  assert.ok(mountHtml.includes('<summary>') && !mountHtml.includes('<b>PrivateApp</b>'));
+  assert.ok(mountHtml.includes('/mnt/user/My App') && mountHtml.includes(ACP.escapeHtml(ACP.tr('In use by container mounts'))));
   if (locale !== 'en_US') {
     for (const key of ['scanWarningMessage','reason','zfsNote','storageLabel']) assert.notEqual(payload[key],fixture.original[key],`${locale}: ${key}`);
     assert.ok(!payload.scanWarningMessage.includes('Filesystem discovery') && !payload.scanWarningMessage.includes('Scan results loaded'));

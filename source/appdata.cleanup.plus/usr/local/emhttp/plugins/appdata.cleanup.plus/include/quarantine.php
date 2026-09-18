@@ -1592,6 +1592,11 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
+  $ownershipReason = appdataCleanupPlusCurrentOwnershipLockReason($candidatePath, $settings);
+  if ( $ownershipReason !== "" ) {
+    return array("ok" => false, "path" => $candidatePath, "displayPath" => $candidateDisplayPath, "status" => "blocked", "message" => $ownershipReason);
+  }
+
   $classification = classifyAppdataCandidate($candidatePath, $settings);
   $displayPath = resolveExistingPath($classification);
   $currentRealPath = @realpath($displayPath);

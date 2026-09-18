@@ -3,7 +3,10 @@
 
   var ACP = window.AppdataCleanupPlus = window.AppdataCleanupPlus || {};
 
-  ACP.formatOperationResultStatus = function(strings, status) {
+  ACP.formatOperationResultStatus = function(strings, status, operation) {
+    if (operation === "template_archive" && status === "quarantined") {
+      return { label: ACP.tr("Template archive"), tone: "is-safe" };
+    }
     switch (status) {
       case "ready":
         return { label: ACP.t(strings, "previewReadyLabel", "Ready"), tone: "is-selected" };
@@ -282,7 +285,7 @@
         if ($.isArray(entry.pathsPreview) && entry.pathsPreview.length) {
           html.push('<div class="acp-audit-path-preview">');
           $.each(entry.pathsPreview, function(_, preview) {
-            var statusMeta = ACP.formatOperationResultStatus(strings, preview.status);
+            var statusMeta = ACP.formatOperationResultStatus(strings, preview.status, entry.operation);
             html.push('<div class="acp-audit-path-preview-row"><span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + '</span><code class="acp-modal-path">' + ACP.escapeHtml(preview.path || "") + "</code></div>");
           });
           if (Number(entry.pathCount || 0) > entry.pathsPreview.length) {
@@ -296,7 +299,7 @@
           if (!count) {
             return;
           }
-          statusMeta = ACP.formatOperationResultStatus(strings, status);
+          statusMeta = ACP.formatOperationResultStatus(strings, status, entry.operation);
           html.push('<span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + ": " + ACP.escapeHtml(String(count)) + "</span>");
         });
         html.push("</div>");
@@ -305,7 +308,7 @@
           html.push('<details class="acp-simple-disclosure acp-simple-list-details"><summary>' + ACP.escapeHtml(ACP.t(strings, "auditHistoryResultsLabel", "Item results")) + "</summary>");
           html.push('<div class="acp-audit-results">');
           $.each(entry.results, function(_, result) {
-            var statusMeta = ACP.formatOperationResultStatus(strings, result.status);
+            var statusMeta = ACP.formatOperationResultStatus(strings, result.status, entry.operation);
             html.push('<div class="acp-audit-result">');
             html.push('<div class="acp-audit-result-head"><span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + "</span></div>");
             html.push('<code class="acp-modal-path">' + ACP.escapeHtml(result.displayPath || result.sourcePath || result.path || result.destination || "") + "</code>");
@@ -612,6 +615,37 @@
     return ACP.t(strings, "rowDetailsNextStepReady", "You can quarantine it now, or permanently delete it if that mode is enabled.");
   }
 
+  ACP.buildTemplateManagerHtml = function(manager) {
+    manager = manager || {};
+    var status = manager.status || {};
+    var html = ['<p>' + ACP.escapeHtml(ACP.tr("Review saved templates whose containers are no longer installed. Archiving keeps a restorable backup and does not change appdata, images, or containers.")) + '</p>'];
+    if (manager.message || status.message) html.push('<p role="status">' + ACP.escapeHtml(manager.message || status.message) + '</p>');
+    if (manager.status) {
+      html.push('<h4>' + ACP.escapeHtml(ACP.tr("Saved templates without installed containers")) + '</h4>');
+      if (!(status.templates || []).length) html.push('<p>' + ACP.escapeHtml(ACP.tr("No stale templates are available.")) + '</p>');
+      $.each(status.templates || [], function(_, row) {
+        html.push('<div class="acp-template-row"><div><strong>' + ACP.escapeHtml(row.name) + '</strong><code class="acp-modal-path">' + ACP.escapeHtml(row.filename) + '</code></div><button type="button" class="acp-button acp-button-secondary" data-action="archive-template" data-template-id="' + ACP.escapeHtml(row.id) + '"' + (manager.loading ? ' disabled' : '') + '>' + ACP.escapeHtml(ACP.tr("Archive template")) + '</button></div>');
+      });
+      html.push('<h4>' + ACP.escapeHtml(ACP.tr("Template backups")) + '</h4>');
+      if (!(status.backups || []).length) html.push('<p>' + ACP.escapeHtml(ACP.tr("No template backups are available.")) + '</p>');
+      $.each(status.backups || [], function(_, row) {
+        html.push('<div class="acp-template-row"><div><strong>' + ACP.escapeHtml(row.name) + '</strong><code class="acp-modal-path">' + ACP.escapeHtml(row.filename) + '</code><small>' + ACP.escapeHtml(row.timestampLabel || row.archivedAt || '') + '</small></div><button type="button" class="acp-button acp-button-secondary" data-action="restore-template" data-template-id="' + ACP.escapeHtml(row.id) + '"' + (manager.loading || !row.canRestore ? ' disabled' : '') + '>' + ACP.escapeHtml(row.canRestore ? ACP.tr("Restore template") : ACP.tr("Template already exists")) + '</button></div>');
+      });
+    }
+    return html.join('');
+  };
+
+  ACP.buildMountEvidenceHtml = function(evidence) {
+    if (!$.isArray(evidence) || !evidence.length) return '';
+    var html = ['<details class="acp-mount-evidence"><summary>' + ACP.escapeHtml(ACP.tr("In use by container mounts")) + '</summary><p>' + ACP.escapeHtml(ACP.tr("These installed containers can access this folder through their mounts, including when the containers are stopped.")) + '</p>'];
+    $.each(evidence, function(_, entry) {
+      html.push('<div><strong>' + ACP.escapeHtml(entry.name || '') + '</strong>');
+      $.each(entry.paths || [], function(_, path) { html.push('<code class="acp-modal-path">' + ACP.escapeHtml(path) + '</code>'); });
+      html.push('</div>');
+    });
+    return html.join('') + '</details>';
+  };
+
   ACP.buildToolsModalHtml = function(context) {
     var state = context.state || {};
     var strings = context.strings || {};
@@ -646,6 +680,12 @@
         '<button type="button" class="acp-button acp-button-secondary" data-action="export-diagnostics">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsExportLabel", "Download diagnostics")) + "</button>" +
         '<button type="button" class="acp-button acp-button-secondary" data-action="copy-diagnostics-text">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsCopyLabel", "Copy text")) + "</button>",
         ""
+      ),
+      buildSimpleModalCard(
+        ACP.tr("Saved template cleanup"),
+        ACP.buildTemplateManagerHtml(state.templateManager),
+        '<button type="button" class="acp-button acp-button-secondary" data-action="review-templates"' + ((state.templateManager || {}).loading ? ' disabled' : '') + '>' + ACP.escapeHtml(ACP.tr("Review templates and backups")) + '</button>',
+        "acp-template-card"
       ),
       buildSimpleModalCard(
         ACP.t(strings, "toolsFixtureTitle", "Test fixtures"),
@@ -695,6 +735,7 @@
     var sourceExplanation = row.sourceKind === "filesystem"
       ? ACP.t(strings, "rowDetailsDiscoverySimple", "This folder was found inside an appdata source, but no installed container or saved Docker template currently points to it.")
       : ACP.t(strings, "rowDetailsTemplateSimple", "A saved Docker template references this folder, but no installed container currently uses it.");
+    if ((row.mountEvidence || []).length) sourceExplanation = ACP.tr("An installed container can access this folder through its mounts. Cleanup is locked.");
     var actionExplanation = "";
     var actionButtons = [];
     var technicalItems = [
@@ -759,6 +800,7 @@
       "</div>"
     );
 
+    html.push(ACP.buildMountEvidenceHtml(row.mountEvidence));
     if (row.storageKind === "zfs") {
       html.push(
         '<section class="acp-row-details-card acp-row-details-card-full">',

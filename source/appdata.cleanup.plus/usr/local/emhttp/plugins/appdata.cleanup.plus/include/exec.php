@@ -9,6 +9,7 @@ require_once(__DIR__ . "/quarantine.php");
 require_once(__DIR__ . "/fixtures.php");
 require_once(__DIR__ . "/http.php");
 require_once(__DIR__ . "/api.php");
+require_once(__DIR__ . "/templates.php");
 
 register_shutdown_function("appdataCleanupPlusRespondToFatalShutdown");
 register_shutdown_function("releaseAllAppdataCleanupPlusRuntimeLocks");
@@ -29,7 +30,8 @@ $actionLocks = array(
   "executeCandidateAction" => "cleanup-operation",
   "fixtureManagerAction" => "cleanup-operation",
   "updateQuarantinePurgeSchedule" => "cleanup-operation",
-  "quarantineManagerAction" => "cleanup-operation"
+  "quarantineManagerAction" => "cleanup-operation",
+  "templateManagerAction" => "cleanup-operation"
 );
 
 function appdataCleanupPlusGenericFailureMessage($action) {
@@ -106,6 +108,9 @@ if ( isset($actionLocks[$action]) ) {
 
 try {
   switch ( $action ) {
+    case "templateManagerAction":
+      handleTemplateManagerAction();
+      break;
     case "getOrphanAppdata":
       handleGetOrphanAppdata();
       break;

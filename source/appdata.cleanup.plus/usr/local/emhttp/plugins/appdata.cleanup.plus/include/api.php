@@ -1214,8 +1214,9 @@ function buildDashboardPayload() {
     "dockerRunning" => $dockerRunning
   ));
 
-  $containers = getDockerContainersSafe();
-  $dockerEngineReachable = $dockerRunning ? appdataCleanupPlusDockerEngineReachable() : false;
+  $dockerInventory = appdataCleanupPlusDockerInventory();
+  $containers = $dockerInventory["containers"];
+  $dockerEngineReachable = $dockerInventory["ok"];
   appdataCleanupPlusMarkScanPhase($scanMetrics, "docker_query", array(
     "containerCount" => is_array($containers) ? count($containers) : 0,
     "engineReachable" => $dockerEngineReachable
@@ -1229,7 +1230,7 @@ function buildDashboardPayload() {
   appdataCleanupPlusMarkScanPhase($scanMetrics, "template_scan", array(
     "templateVolumeCount" => count($templateVolumes)
   ));
-  $dockerInventoryUnverified = $dockerRunning && ! $dockerEngineReachable && count($templateVolumes) > 0;
+  $dockerInventoryUnverified = ! $dockerInventory["ok"];
 
   $composeProtectedPaths = appdataCleanupPlusComposeReferencedPaths($settings, $composeMeta);
   appdataCleanupPlusMarkScanPhase($scanMetrics, "compose_scan", array(
@@ -1262,6 +1263,7 @@ function buildDashboardPayload() {
   ));
 
   $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings, false);
+  $rows = appdataCleanupPlusApplyMountEvidence($rows, $containers, $settings);
   if ( $dockerInventoryUnverified ) {
     $rows = appdataCleanupPlusApplyDockerInventorySafetyToRows($rows);
   }
@@ -1301,6 +1303,7 @@ function buildDashboardPayload() {
   if ( ! $snapshot ) {
     error_log("Appdata Cleanup Plus could not persist a scan snapshot. Returning read-only dashboard payload.");
     $rows = buildCandidateRows($availableVolumes, $dockerRunning, $settings, true);
+    $rows = appdataCleanupPlusApplyMountEvidence($rows, $containers, $settings);
     if ( $dockerInventoryUnverified ) {
       $rows = appdataCleanupPlusApplyDockerInventorySafetyToRows($rows);
     }

@@ -53,12 +53,19 @@ const locales = JSON.parse(fs.readFileSync(path.join(plugin, 'locales/locales.js
         assert.equal(modal.direction, direction);
         assert.equal(modal.codeDirection, 'ltr');
         assert.ok(modal.text.includes('/mnt/user/appdata/Delete'));
-        for (const flow of ['quarantine', 'conflicts', 'confirmation', 'history']) {
+        for (const flow of ['quarantine', 'conflicts', 'confirmation', 'history', 'templates', 'mounts']) {
           await page.evaluate(flow => {
             const ACP = window.AppdataCleanupPlus;
             const context = {strings:window.appdataCleanupPlusConfig.strings,state:{settings:ACP.defaultSafetySettings()}};
             let html, modalClass;
-            if (flow === 'quarantine') {
+            if (flow === 'templates') {
+              context.state.templateManager = {status:{templates:[{id:'example',name:'Example',filename:'my-example.xml'}],backups:[{id:'backup',name:'Saved Example',filename:'my-saved-example.xml',canRestore:false}]}};
+              html = ACP.buildToolsModalHtml(context);
+              modalClass = 'acp-tools-modal';
+            } else if (flow === 'mounts') {
+              html = ACP.buildMountEvidenceHtml([{name:'Container Example',paths:['/mnt/user/appdata/Example-long-mount-path']}]).replace('<details ', '<details open ');
+              modalClass = 'acp-row-details-modal';
+            } else if (flow === 'quarantine') {
               context.state.quarantine = {summary:{count:21,sizeLabel:'0 B'},entries:[{id:'example',sourcePath:'/mnt/user/appdata/Delete',purgeBadgeLabel:ACP.plural('Purges in {count} days',21)}]};
               html = ACP.buildQuarantineManagerModalHtml(context);
               modalClass = 'acp-quarantine-manager-modal';

@@ -24,6 +24,7 @@
       message: "",
       status: null
     },
+    templateManager: { loading: false, status: null, message: "" },
     deferredDataRequestToken: "",
     scanWarningMessage: "",
     scanMetrics: {},
@@ -294,7 +295,7 @@
     });
 
     els.$results.on("click", ".acp-row", function(event) {
-      if ($(event.target).closest(".acp-row-checkbox, .acp-button, a, button, input, select, textarea").length) {
+      if ($(event.target).closest(".acp-row-checkbox, .acp-button, .acp-mount-evidence, a, button, input, select, textarea").length) {
         return;
       }
 
@@ -617,6 +618,31 @@
       if (!state.busy) {
         copyDiagnosticsText();
       }
+    });
+
+    $(document).on("click.acpTemplates", ".sweet-alert [data-action='review-templates'], .sweet-alert [data-action='archive-template'], .sweet-alert [data-action='restore-template']", function(event) {
+      event.preventDefault();
+      if (state.busy || state.templateManager.loading) return;
+      var action = $(this).attr("data-action");
+      var id = $(this).attr("data-template-id") || "";
+      if (action === "review-templates") { runTemplateManagerAction("status", ""); return; }
+      var operation = action === "archive-template" ? "archive" : "restore";
+      swal({
+        title: operation === "archive" ? ACP.tr("Archive this saved template?") : ACP.tr("Restore this saved template?"),
+        text: operation === "archive" ? ACP.tr("The saved container configuration will be backed up before removal. Appdata, images, and containers will not change.") : ACP.tr("The backup will be restored only if no template with the same filename exists."),
+        type: "warning", showCancelButton: true, closeOnConfirm: false,
+        confirmButtonText: operation === "archive" ? ACP.tr("Archive template") : ACP.tr("Restore template"),
+        cancelButtonText: ACP.tr("Cancel")
+      }, function(confirmed) {
+        getActiveSweetAlertModal().removeClass("acp-tools-modal");
+        ensureToolsModal();
+        if (confirmed) runTemplateManagerAction(operation, id);
+        else renderToolsModal();
+      });
+    });
+    $(document).on("click.acpMounts", ".acp-mount-evidence", function(event) { event.stopPropagation(); });
+    $(document).on("keydown.acpMounts", ".acp-mount-evidence", function(event) {
+      if (event.key === "Escape") { $(this).prop("open", false).find("summary").focus(); event.stopPropagation(); }
     });
 
     $(document).on("click.acpTools", ".sweet-alert [data-action='create-test-fixtures']", function(event) {
@@ -2993,6 +3019,7 @@
 
   function sanitizeDiagnosticsRow(row, redactor) {
     var nextRow = $.extend(true, {}, row || {});
+    delete nextRow.mountEvidence;
 
     nextRow.id = sanitizeDiagnosticsRowId(nextRow.id || "", redactor);
     nextRow.name = sanitizeDiagnosticsName(nextRow.name || "", redactor, "app");
@@ -3572,6 +3599,23 @@
       ok: typeof ok === "boolean" ? ok : !!(response && response.ok),
       message: String((response && response.message) || fallbackMessage || ""),
       status: response && response.status ? response.status : ((state.fixtureTools || {}).status || null)
+    });
+  }
+
+  function runTemplateManagerAction(managerAction, id) {
+    state.templateManager.loading = true;
+    state.templateManager.message = ACP.tr("Loading saved templates.");
+    renderToolsModal();
+    apiPostForUserAction({action: "templateManagerAction", managerAction: managerAction, templateId: id}).done(function(response) {
+      state.templateManager = {loading: false, status: response.templateManager, message: response.message || ""};
+      if (isToolsModalVisible()) renderToolsModal();
+      if (managerAction !== "status") loadScan();
+    }).fail(function(xhr) {
+      var response = (xhr && xhr.responseJSON) || {};
+      state.templateManager.loading = false;
+      if (response.templateManager) state.templateManager.status = response.templateManager;
+      state.templateManager.message = ACP.extractErrorMessage(xhr, ACP.tr("The template action could not be completed. Refresh the list and try again."));
+      if (isToolsModalVisible()) renderToolsModal();
     });
   }
 
@@ -4436,7 +4480,7 @@
             "</div>" +
             '<div class="acp-row-size">' + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || ACP.tr("Unknown"))) + "</div>" +
             '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
-            '<div class="acp-row-badges">' + badgeHtml + "</div>" +
+            '<div class="acp-row-badges">' + badgeHtml + ACP.buildMountEvidenceHtml(row.mountEvidence) + "</div>" +
             '<div class="acp-row-side">' +
               rowActionHtml +
             "</div>" +

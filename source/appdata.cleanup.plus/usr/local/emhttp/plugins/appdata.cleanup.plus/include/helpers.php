@@ -799,6 +799,12 @@ function classifyAppdataCandidate($path, $settings=null) {
   return $classification;
 }
 
+function appdataCleanupPlusIsConfigTarget($target) {
+  $target = (string)$target;
+  if ( preg_match('/[\x00-\x1f\x7f]/', $target) || preg_match('#(^|/)\.\.?(/|$)#', $target) ) return false;
+  return preg_match('#^/config(?:/|$)#', $target) === 1;
+}
+
 function findAppdata($volumes, $settings=null) {
   $path = false;
   $configuredRoots = getAppdataCleanupPlusConfiguredSourceRoots($settings);
@@ -807,9 +813,9 @@ function findAppdata($volumes, $settings=null) {
     foreach ($volumes as $volume) {
       $temp = explode(":",$volume, 3);
       $hostPath = isset($temp[0]) ? trim((string)$temp[0]) : "";
-      $testPath = isset($temp[1]) ? strtolower(trim((string)$temp[1])) : "";
+      $testPath = isset($temp[1]) ? (string)$temp[1] : "";
 
-      if ( startsWith($testPath,"/config") ) {
+      if ( appdataCleanupPlusIsConfigTarget($testPath) ) {
         $path = $hostPath;
         break;
       }

@@ -162,48 +162,91 @@ function appdataCleanupPlusExtractDockerVolumeHostPaths($containers) {
 }
 
 function getDockerContainersSafe() {
+  $inventory = appdataCleanupPlusDockerInventory();
+  return $inventory["containers"];
+}
+
+// Query the list itself, including stopped containers. DockerClient's UI cache
+// can silently omit containers after a failed inspect; it is not a safety inventory.
+function appdataCleanupPlusDockerInventory() {
+  $failed = array("ok" => false, "containers" => array(), "message" => "Docker container ownership could not be verified. Start Docker and rescan before continuing.");
   if ( ! is_dir(appdataCleanupPlusDockerRuntimePath()) || ! ensureAppdataCleanupPlusDockerClientLoaded() ) {
-    return array();
+    return $failed;
   }
 
   try {
-    $containers = appdataCleanupPlusRunQuietly(function() {
-      $DockerClient = new DockerClient();
-      return $DockerClient->getDockerContainers();
-    }, "DockerClient query");
-
-    return is_array($containers) ? $containers : array();
+    return appdataCleanupPlusRunQuietly(function() use ($failed) {
+      $client = new DockerClient();
+      if ( ! method_exists($client, "getDockerJSON") ) return $failed;
+      $success = null;
+      $records = $client->getDockerJSON("/containers/json?all=1", "GET", $success);
+      if ( $success !== true || ! is_array($records) || ! array_is_list($records) ) return $failed;
+      $containers = array();
+      foreach ( $records as $record ) {
+        if ( ! is_array($record) || empty($record["Id"]) || ! isset($record["Names"], $record["Mounts"]) || ! is_array($record["Names"]) || ! is_array($record["Mounts"]) ) return $failed;
+        if ( ! array_is_list($record["Names"]) || ! array_is_list($record["Mounts"]) || empty($record["Names"]) ) return $failed;
+        foreach ( $record["Names"] as $name ) {
+          if ( ! is_string($name) || ltrim($name, "/") === "" || preg_match('/[\x00-\x1f\x7f]/', $name) ) return $failed;
+        }
+        foreach ( $record["Mounts"] as $mount ) {
+          if ( ! is_array($mount) || ! in_array($mount["Type"] ?? "", array("bind", "volume", "tmpfs"), true) ) return $failed;
+          if ( in_array($mount["Type"], array("bind", "volume"), true) && (empty($mount["Source"]) || ! is_string($mount["Source"]) || $mount["Source"][0] !== "/" || preg_match('/[\x00-\x1f\x7f]/', $mount["Source"])) ) return $failed;
+        }
+        $containers[] = array("Name" => ltrim((string)($record["Names"][0] ?? $record["Id"]), "/"), "Mounts" => $record["Mounts"]);
+      }
+      return array("ok" => true, "containers" => $containers, "message" => "");
+    }, "Docker inventory query");
   } catch ( Throwable $throwable ) {
-    error_log("Appdata Cleanup Plus Docker query failed: " . $throwable->getMessage());
-    return array();
+    error_log("Appdata Cleanup Plus Docker inventory query failed.");
+    return $failed;
   }
 }
 
 function appdataCleanupPlusDockerEngineReachable() {
-  if ( ! is_dir(appdataCleanupPlusDockerRuntimePath()) || ! ensureAppdataCleanupPlusDockerClientLoaded() ) {
-    return false;
+  $inventory = appdataCleanupPlusDockerInventory();
+  return $inventory["ok"];
+}
+
+function appdataCleanupPlusPathsOverlap($left, $right) {
+  return appdataCleanupPlusPathMatchesOrIsDescendantByVariants($left, $right) || appdataCleanupPlusPathMatchesOrIsDescendantByVariants($right, $left);
+}
+
+function appdataCleanupPlusMountEvidence($path, $containers) {
+  $evidence = array();
+  foreach ( $containers as $container ) {
+    $record = appdataCleanupPlusNormalizeDockerRecord($container);
+    $mounts = array();
+    foreach ( appdataCleanupPlusExtractDockerVolumeHostPaths(array($record)) as $hostPath ) {
+      if ( appdataCleanupPlusPathsOverlap($path, $hostPath) ) $mounts[] = $hostPath;
+    }
+    if ( $mounts ) $evidence[] = array("name" => (string)($record["Name"] ?? ""), "paths" => array_values(array_unique($mounts)));
   }
+  return $evidence;
+}
 
-  try {
-    $response = appdataCleanupPlusRunQuietly(function() {
-      $DockerClient = new DockerClient();
-
-      if ( method_exists($DockerClient, "getDockerJSON") ) {
-        return $DockerClient->getDockerJSON("/version");
-      }
-
-      if ( method_exists($DockerClient, "getDockerInfo") ) {
-        return $DockerClient->getDockerInfo();
-      }
-
-      return array("legacyDockerClient" => true);
-    }, "Docker engine health query");
-
-    return is_array($response) || is_object($response);
-  } catch ( Throwable $throwable ) {
-    error_log("Appdata Cleanup Plus Docker engine health query failed: " . $throwable->getMessage());
-    return false;
+function appdataCleanupPlusApplyMountEvidence($rows, $containers, $settings) {
+  foreach ( $rows as &$row ) {
+    $row["mountEvidence"] = appdataCleanupPlusMountEvidence($row["path"], $containers);
+    if ( $row["mountEvidence"] ) {
+      $row["securityLockReason"] = "An installed container mounts this folder, a parent folder, or a child folder. Review the container mounts before cleanup.";
+      $row = applySafetyPolicyToRow($row, $settings);
+    }
   }
+  unset($row);
+  return $rows;
+}
+
+function appdataCleanupPlusCurrentOwnershipLockReason($path, $settings) {
+  $inventory = appdataCleanupPlusDockerInventory();
+  if ( ! $inventory["ok"] ) return $inventory["message"];
+  if ( appdataCleanupPlusMountEvidence($path, $inventory["containers"]) ) return "An installed container now mounts this folder, a parent folder, or a child folder. Rescan before continuing.";
+  $meta = array();
+  $paths = appdataCleanupPlusComposeReferencedPaths($settings, $meta);
+  if ( ! empty($meta["uncertain"]) ) return appdataCleanupPlusComposeInventoryUncertainMessage();
+  foreach ( $paths as $composePath ) {
+    if ( appdataCleanupPlusPathsOverlap($path, $composePath) ) return "A Docker Compose stack now references this folder. Rescan before continuing.";
+  }
+  return "";
 }
 
 function appdataCleanupPlusComposeProjectsDir() {
@@ -212,9 +255,8 @@ function appdataCleanupPlusComposeProjectsDir() {
 }
 
 function appdataCleanupPlusParseEnvFileIntoMap($path, &$env) {
-  if ( ! is_file($path) || ! is_readable($path) ) {
-    return true;
-  }
+  if ( ! file_exists($path) ) return true;
+  if ( ! is_file($path) || ! is_readable($path) ) return false;
 
   $lines = @file($path, FILE_IGNORE_NEW_LINES);
   if ( ! is_array($lines) ) {
@@ -227,6 +269,7 @@ function appdataCleanupPlusParseEnvFileIntoMap($path, &$env) {
       continue;
     }
 
+    $line = preg_replace('/^export[ \t]+/', "", $line);
     $equals = strpos($line, "=");
     if ( $equals === false ) {
       continue;
@@ -239,7 +282,7 @@ function appdataCleanupPlusParseEnvFileIntoMap($path, &$env) {
       $value = substr($value, 1, -1);
     }
 
-    if ( $key !== "" && ! isset($env[$key]) ) {
+    if ( preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $key) && ! isset($env[$key]) ) {
       $env[$key] = $value;
     }
   }
@@ -252,11 +295,12 @@ function appdataCleanupPlusExpandComposeEnv($text, $env) {
     $text = preg_replace_callback('/\$\{([A-Za-z_][A-Za-z0-9_]*)(?::?-([^}]*))?\}|\$([A-Za-z_][A-Za-z0-9_]*)/', function($matches) use ($env) {
       $name = isset($matches[1]) && $matches[1] !== "" ? $matches[1] : (isset($matches[3]) ? $matches[3] : "");
 
-      if ( $name !== "" && isset($env[$name]) && $env[$name] !== "" ) {
+      $requiresNonempty = strpos($matches[0], ":-") !== false;
+      if ( $name !== "" && isset($env[$name]) && (! $requiresNonempty || $env[$name] !== "") ) {
         return $env[$name];
       }
 
-      if ( isset($matches[2]) && $matches[2] !== "" ) {
+      if ( strpos($matches[0], "-") !== false && isset($matches[2]) ) {
         return $matches[2];
       }
 
@@ -269,16 +313,19 @@ function appdataCleanupPlusExpandComposeEnv($text, $env) {
 
 function appdataCleanupPlusComposeFileListForProject($projectDir) {
   $baseDir = $projectDir;
+  $uncertain = false;
 
   if ( is_file($projectDir . "/indirect") ) {
     $indirect = trim((string)@file_get_contents($projectDir . "/indirect"));
     if ( $indirect !== "" ) {
       $baseDir = rtrim($indirect, "/");
     }
+    $uncertain = $indirect === "" || ! is_dir($baseDir) || ! is_readable($baseDir);
   }
 
   return array(
     "baseDir" => $baseDir,
+    "uncertain" => $uncertain,
     "files" => array_values(array_unique(array(
       $baseDir . "/compose.yaml",
       $baseDir . "/compose.yml",
@@ -298,12 +345,13 @@ function appdataCleanupPlusComposeFileListForProject($projectDir) {
 
 function appdataCleanupPlusBuildComposeRootPattern($sourceRoots) {
   $escapedRoots = array();
+  $separator = "/+(?:\\./+)*";
 
   foreach ( $sourceRoots as $sourceRoot ) {
     foreach ( appdataCleanupPlusPathComparisonVariants($sourceRoot) as $variant ) {
       $variant = rtrim(appdataCleanupPlusCanonicalizePath($variant), "/");
       if ( $variant !== "" ) {
-        $escapedRoots[$variant] = preg_quote($variant, "#");
+        $escapedRoots[$variant] = $separator . implode($separator, array_map(function($segment) { return preg_quote($segment, "#"); }, explode("/", trim($variant, "/"))));
       }
     }
   }
@@ -312,7 +360,33 @@ function appdataCleanupPlusBuildComposeRootPattern($sourceRoots) {
     return "";
   }
 
-  return "#(" . implode("|", array_values($escapedRoots)) . ")/([^\\s:'\"\\\\]+)#";
+  return "#(" . implode("|", array_values($escapedRoots)) . ")" . $separator . "([^\\s:'\"\\\\]+)#";
+}
+
+// Conservatively inspect supported bind syntax before matching source roots.
+// This is not a YAML parser: unsupported bind layouts must never silently mean
+// that a stopped stack owns no data.
+function appdataCleanupPlusComposeBindHosts($contents, &$uncertain) {
+  $hosts = array();
+  foreach ( preg_split('/\r?\n/', $contents) as $line ) {
+    $value = null;
+    if ( preg_match('/^\s*source\s*:\s*(.+)$/', $line, $match) ) {
+      $value = trim($match[1]);
+      if ( preg_match('/^(["\'])(.*?)\1\s*(?:#.*)?$/', $value, $quoted) ) $value = $quoted[2];
+      else $value = preg_replace('/\s+#.*$/', '', $value);
+    } elseif ( preg_match('/^\s*-\s*["\']?([\/.$][^\r\n]*?):\//', $line, $match) ) {
+      $value = $match[1];
+    }
+    if ( preg_match('/^\s*(?:include|extends)\s*:|^\s*volumes\s*:\s*[\[{]\s*[^\s\]}]/', $line) ) $uncertain = true;
+    if ( $value === null ) continue;
+    if ( preg_match('/[\x00-\x1f\x7f$]/', $value) || preg_match('#(^|/)\.\.(/|$)#', $value) || strpos($value, './') === 0 ) {
+      $uncertain = true;
+      continue;
+    }
+    if ( strpos($value, '/') !== 0 ) continue; // named volumes do not name an appdata bind
+    $hosts[] = preg_replace('#/+(?:\./+)*#', '/', rtrim($value, '/'));
+  }
+  return array_values(array_unique($hosts));
 }
 
 function appdataCleanupPlusComposeReferencedPaths($settings=null, &$meta=null) {
@@ -335,10 +409,15 @@ function appdataCleanupPlusComposeReferencedPaths($settings=null, &$meta=null) {
   if ( ! is_dir($projectsDir) || $pattern === "" ) {
     return array();
   }
+  if ( ! is_readable($projectsDir) ) {
+    $meta["uncertain"] = true;
+    return array();
+  }
 
   foreach ( (array)glob($projectsDir . "/*", GLOB_ONLYDIR) as $projectDir ) {
     $projectCount++;
     $fileInfo = appdataCleanupPlusComposeFileListForProject($projectDir);
+    if ( ! empty($fileInfo["uncertain"]) ) $uncertain = true;
     $baseDir = isset($fileInfo["baseDir"]) ? (string)$fileInfo["baseDir"] : $projectDir;
     $env = array();
 
@@ -363,6 +442,13 @@ function appdataCleanupPlusComposeReferencedPaths($settings=null, &$meta=null) {
 
       $fileCount++;
       $contents = appdataCleanupPlusExpandComposeEnv($contents, $env);
+      foreach ( appdataCleanupPlusComposeBindHosts($contents, $uncertain) as $host ) {
+        foreach ( $sourceRoots as $sourceRoot ) {
+          if ( ! appdataCleanupPlusPathsOverlap($sourceRoot, $host) ) continue;
+          // Retain whole-root references and the complete path, including spaces.
+          foreach ( appdataCleanupPlusPathComparisonVariants($host) as $variant ) $protected[$variant] = true;
+        }
+      }
 
       if (
         preg_match('#^[ \t]*-[ \t]*["\']?[^\n:=]*\$\{?[A-Za-z_][^\n:]*:/#m', $contents) ||
@@ -380,7 +466,11 @@ function appdataCleanupPlusComposeReferencedPaths($settings=null, &$meta=null) {
             continue;
           }
 
-          $fullPath = appdataCleanupPlusCanonicalizePath($match[1] . "/" . $firstSegment);
+          if ( preg_match('#(^|/)\.\.(/|$)#', $match[2]) ) {
+            $uncertain = true;
+            continue;
+          }
+          $fullPath = appdataCleanupPlusCanonicalizePath(preg_replace('#/+(?:\./+)*#', '/', $match[1] . "/" . $firstSegment));
           foreach ( appdataCleanupPlusPathComparisonVariants($fullPath) as $variant ) {
             $variant = appdataCleanupPlusCanonicalizePath($variant);
             if ( $variant !== "" ) {
@@ -436,8 +526,11 @@ function removeComposeReferencedCandidates($availableVolumes, $composeProtectedP
       continue;
     }
 
-    if ( isset($protectedKeys[appdataCleanupPlusPathComparisonKey($hostDir)]) ) {
-      unset($filtered[$candidateKey]);
+    foreach ( $composeProtectedPaths as $protectedPath ) {
+      if ( appdataCleanupPlusPathsOverlap($hostDir, $protectedPath) ) {
+        unset($filtered[$candidateKey]);
+        break;
+      }
     }
   }
 
@@ -679,11 +772,11 @@ function appdataCleanupPlusDockerInventoryUnverified($dockerRunning, $containers
 }
 
 function appdataCleanupPlusDockerInventoryUnverifiedMessage() {
-  return "Docker appears to be running, but Appdata Cleanup Plus could not verify any installed containers while saved Docker templates are present. Cleanup actions are disabled for this scan; refresh Docker state and rescan before quarantining or deleting folders.";
+  return "Docker container ownership could not be verified. Start Docker and rescan before continuing.";
 }
 
 function appdataCleanupPlusComposeInventoryUncertainMessage() {
-  return "Docker Compose Manager projects include unreadable files or unresolved bind-mount variables. Cleanup actions are disabled for this scan because compose-owned appdata could not be verified safely.";
+  return "Docker Compose Manager projects include unreadable files, unresolved variables, or unsupported bind paths. Cleanup actions are disabled because compose-owned appdata could not be verified safely.";
 }
 
 function appdataCleanupPlusApplyDockerInventorySafetyToRows($rows, $message="") {
@@ -717,6 +810,10 @@ function buildAuditOperationLabel($operation) {
   $normalized = strtolower(trim((string)$operation));
 
   switch ( $normalized ) {
+    case "template_archive":
+      return "Template archive";
+    case "template_restore":
+      return "Template restore";
     case "quarantine":
       return "Quarantine";
     case "restore":
@@ -763,6 +860,12 @@ function buildLatestAuditMessage($entry) {
   $summary = normalizeAuditSummary($entry["summary"] ?? array());
   $operation = (string)($entry["operation"] ?? "cleanup");
   $parts = array(acpMessage("Last action: {operation}. Time: {date}.", array("operation" => buildAuditOperationLabel($operation), "date" => $timestamp ? formatDateTimeLabel($timestamp) : "recently")));
+  if ( $operation === "template_archive" || $operation === "template_restore" ) {
+    $parts[] = $operation === "template_archive"
+      ? "The saved template was archived. Its backup is available for restore. Appdata, images, and containers were not changed."
+      : "The saved template was restored. The backup has been retained.";
+    return acpJoinMessages($parts);
+  }
   $messages = array(
     "quarantined" => "{count} folders were moved to quarantine.",
     "deleted" => "{count} folders were deleted.",
@@ -1569,6 +1672,7 @@ function buildSnapshotCandidateMap($rows) {
       "targetPaths" => isset($row["targetPaths"]) ? $row["targetPaths"] : array(),
       "targetSummary" => $row["targetSummary"],
       "templateRefs" => isset($row["templateRefs"]) ? $row["templateRefs"] : array(),
+      "mountEvidence" => isset($row["mountEvidence"]) ? $row["mountEvidence"] : array(),
       "scanVerificationLocked" => ! empty($row["scanVerificationLocked"]),
       "storageKind" => isset($row["storageKind"]) ? $row["storageKind"] : "filesystem",
       "storageLabel" => isset($row["storageLabel"]) ? $row["storageLabel"] : "Filesystem",
@@ -1640,6 +1744,13 @@ function appdataCleanupPlusBuildCandidateDetailPayload($candidate, $settings=nul
     "zfsChildDatasetCount" => 0,
     "zfsSnapshotCount" => 0
   );
+  $inventory = appdataCleanupPlusDockerInventory();
+  $payload["mountEvidence"] = $inventory["ok"] ? appdataCleanupPlusMountEvidence($resolvedPath, $inventory["containers"]) : (array)($candidate["mountEvidence"] ?? array());
+  if ( $payload["mountEvidence"] ) {
+    $payload["canDelete"] = false;
+    $payload["policyLocked"] = true;
+    $payload["securityLockReason"] = "An installed container mounts this folder, a parent folder, or a child folder. Review the container mounts before cleanup.";
+  }
 
   if ( $payload["storageKind"] === "zfs" && $payload["datasetName"] !== "" ) {
     $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($payload["datasetName"]);
