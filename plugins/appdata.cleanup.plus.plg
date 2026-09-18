@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.18.09">
-<!ENTITY md5 "83ea381326839e719c61e02f657be172">
+<!ENTITY version "2026.09.18.10">
+<!ENTITY md5 "9aa17e2e730fc23f9f254dacb77ade69">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.18.10
+- Enlarge the visible-folder counts and status badges on every results section header for easier reading.
+
 ###2026.09.18.09
 - Hide the protected-path notice while Safe Mode is enabled.
 - Remove the redundant ZFS dataset candidates notice; detected datasets remain listed in the ZFS section.

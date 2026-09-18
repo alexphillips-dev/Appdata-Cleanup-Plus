@@ -3761,7 +3761,8 @@
   text-shadow: none;
 }
 
-#acp-app .acp-row-badges .acp-badge {
+#acp-app .acp-row-badges .acp-badge,
+#acp-app .acp-results-section-badges .acp-badge {
   font-size: 11px;
   min-height: 26px;
   padding: 5px 9px;
