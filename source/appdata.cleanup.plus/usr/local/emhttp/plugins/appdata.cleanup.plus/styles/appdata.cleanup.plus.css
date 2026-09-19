@@ -1432,6 +1432,7 @@
 .sweet-alert.acp-audit-history-modal .sa-icon,
 .sweet-alert.acp-appdata-sources-modal .sa-icon,
 .sweet-alert.acp-zfs-path-mappings-modal .sa-icon,
+.sweet-alert.acp-template-manager-modal .sa-icon,
 .sweet-alert.acp-tools-modal .sa-icon,
 .sweet-alert.acp-help-modal .sa-icon,
 .sweet-alert.acp-row-details-modal .sa-icon {
@@ -1442,6 +1443,7 @@
 .sweet-alert.acp-audit-history-modal,
 .sweet-alert.acp-appdata-sources-modal,
 .sweet-alert.acp-zfs-path-mappings-modal,
+.sweet-alert.acp-template-manager-modal,
 .sweet-alert.acp-tools-modal,
 .sweet-alert.acp-help-modal,
 .sweet-alert.acp-row-details-modal {
@@ -1467,6 +1469,7 @@
 .sweet-alert.acp-audit-history-modal h2,
 .sweet-alert.acp-appdata-sources-modal h2,
 .sweet-alert.acp-zfs-path-mappings-modal h2,
+.sweet-alert.acp-template-manager-modal h2,
 .sweet-alert.acp-tools-modal h2,
 .sweet-alert.acp-help-modal h2,
 .sweet-alert.acp-row-details-modal h2 {
@@ -1482,6 +1485,7 @@
   max-width: 860px !important;
 }
 
+.sweet-alert.acp-template-manager-modal,
 .sweet-alert.acp-tools-modal {
   max-width: 760px !important;
 }
@@ -1887,6 +1891,7 @@
   max-height: none !important;
 }
 
+.sweet-alert.acp-template-manager-modal .acp-modal-host,
 .sweet-alert.acp-tools-modal .acp-modal-host,
 .sweet-alert.acp-help-modal .acp-modal-host,
 .sweet-alert.acp-row-details-modal .acp-modal-host {
@@ -1909,6 +1914,7 @@
   padding: 10px 12px;
 }
 
+.sweet-alert.acp-template-manager-modal .acp-modal-panel,
 .sweet-alert.acp-tools-modal .acp-modal-panel,
 .sweet-alert.acp-help-modal .acp-modal-panel,
 .sweet-alert.acp-row-details-modal .acp-modal-panel {

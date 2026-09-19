@@ -36,12 +36,21 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     const hook = 'window.maintenance={state,openToolsModal,renderToolsModal,buildRowHtml,renderSummaryCards,renderResults,applyLocalSafetyStateToRow}; cacheElements(); bindEvents(); loadScan=function(){window.scanRefreshes=(window.scanRefreshes||0)+1;}; state.fixtureTools.status={};';
     await page.addScriptTag({content:main.replace('$(init);',hook)});
     await page.evaluate(()=>maintenance.openToolsModal());
-    await page.locator('[data-action="review-templates"]').click();
+    assert.equal(await page.locator('[data-action="copy-diagnostics-text"], [data-action="copy-support-summary"], .sweet-alert [data-action="review-templates"]').count(),0);
+    assert.equal(await page.locator('[data-action="export-diagnostics"]').count(),1);
+    await page.evaluate(()=>{
+      document.querySelector('.sweet-alert').style.display='none';
+      document.querySelector('.sweet-alert').classList.remove('showSweetAlert');
+      AppdataCleanupPlus.releaseModalScrollLock(false);
+    });
+    await page.locator('[data-action="open-template-manager"]').click();
+    assert.match(await page.locator('.sweet-alert h2').textContent(),/Saved template cleanup/);
     assert.equal(await page.evaluate(()=>requests.at(-1).options.data.managerAction),'status');
     await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,templateManager:{templates:[{id:'server-template-id',name:'Saved app',filename:'saved.xml'}],backups:[]}}));
     await page.locator('[data-action="archive-template"]').click();
     assert.match(await page.locator('.sweet-alert h2').textContent(),/Archive/);
     await page.evaluate(()=>confirmCallback(false));
+    assert.equal(await page.locator('.sweet-alert.acp-template-manager-modal').count(),1,'Cancel returns to the dedicated template manager');
     assert.equal(await page.evaluate(()=>requests.length),1,'Cancel must not submit an action');
     await page.locator('[data-action="archive-template"]').click();
     await page.evaluate(()=>confirmCallback(true));
@@ -53,6 +62,32 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     await page.evaluate(()=>{ requests.at(-1).deferred.reject({status:409,responseJSON:{message:'Collision prevented',templateManager:{templates:[],backups:[{id:'server-backup-id',name:'Saved app',filename:'saved.xml',canRestore:false}]}}}); });
     assert.ok(await page.locator('[data-action="restore-template"]').isDisabled());
     assert.match(await page.locator('.sweet-alert').textContent(),/Collision prevented/);
+    // Reopening loads fresh status; a late response must not replace Tools.
+    const closeModal=async()=>page.evaluate(()=>{
+      document.querySelector('.sweet-alert').style.display='none';
+      document.querySelector('.sweet-alert').classList.remove('showSweetAlert');
+      AppdataCleanupPlus.releaseModalScrollLock(false);
+    });
+    await closeModal();
+    await page.locator('[data-action="open-template-manager"]').click();
+    assert.equal(await page.evaluate(()=>requests.at(-1).options.data.managerAction),'status');
+    await closeModal();
+    await page.locator('[data-action="open-tools"]').click();
+    await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,templateManager:{templates:[],backups:[]}}));
+    assert.equal(await page.locator('.sweet-alert.acp-tools-modal').count(),1,'Late template responses must not replace Tools');
+    // Exercise the remaining diagnostics action through the actual download code.
+    await page.evaluate(()=>{
+      URL.createObjectURL=blob=>{window.downloadedBlob=blob;return 'blob:diagnostics-fixture';};
+      URL.revokeObjectURL=()=>{};
+      document.addEventListener('click',event=>{
+        if(event.target.tagName==='A' && event.target.download){window.downloadedFilename=event.target.download;event.preventDefault();}
+      },true);
+    });
+    await page.locator('[data-action="export-diagnostics"]').click();
+    assert.equal(await page.evaluate(()=>requests.at(-1).options.data.action),'getDiagnosticsBundle');
+    await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,bundle:{schemaVersion:4}}));
+    assert.match(await page.evaluate(()=>downloadedFilename),/^appdata-cleanup-plus-diagnostics-.*\.json$/);
+    assert.equal(await page.evaluate(async()=>JSON.parse(await downloadedBlob.text()).schemaVersion),4);
     // Broad access belongs in Details, while the candidate stays selectable.
     await page.evaluate(()=>{
       const row = {id:'mount',name:'Example',path:'/mnt/user/appdata/example',displayPath:'/mnt/user/appdata/example',canDelete:true,mountEvidence:[],broadMountEvidence:[{name:'Viewer',paths:['/mnt/user']}]};

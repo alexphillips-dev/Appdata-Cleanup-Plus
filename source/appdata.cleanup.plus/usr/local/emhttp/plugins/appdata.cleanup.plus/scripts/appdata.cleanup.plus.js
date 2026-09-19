@@ -396,6 +396,14 @@
       }
     });
 
+    els.$app.on("click", "[data-action='open-template-manager']", function() {
+      if (!state.busy) {
+        ensureTemplateManagerModal();
+        renderTemplateManagerModal();
+        if (!state.templateManager.loading) runTemplateManagerAction("status", "");
+      }
+    });
+
     els.$app.on("click", "[data-action='open-tools']", function() {
       if (!state.busy) {
         openToolsModal();
@@ -603,23 +611,6 @@
       }
     });
 
-    $(document).on("click.acpTools", ".sweet-alert [data-action='copy-support-summary']", function(event) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (!state.busy) {
-        copySupportSummary();
-      }
-    });
-
-    $(document).on("click.acpTools", ".sweet-alert [data-action='copy-diagnostics-text']", function(event) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (!state.busy) {
-        copyDiagnosticsText();
-      }
-    });
 
     $(document).on("click.acpTemplates", ".sweet-alert [data-action='review-templates'], .sweet-alert [data-action='archive-template'], .sweet-alert [data-action='restore-template']", function(event) {
       event.preventDefault();
@@ -635,10 +626,10 @@
         confirmButtonText: operation === "archive" ? ACP.tr("Archive template") : ACP.tr("Restore template"),
         cancelButtonText: ACP.tr("Cancel")
       }, function(confirmed) {
-        getActiveSweetAlertModal().removeClass("acp-tools-modal");
-        ensureToolsModal();
+        getActiveSweetAlertModal().removeClass("acp-template-manager-modal");
+        ensureTemplateManagerModal();
         if (confirmed) runTemplateManagerAction(operation, id);
-        else renderToolsModal();
+        else renderTemplateManagerModal();
       });
     });
     $(document).on("click.acpMounts", ".acp-mount-evidence", function(event) { event.stopPropagation(); });
@@ -1264,6 +1255,31 @@
       "acp-delete-modal acp-delete-results-modal acp-tools-modal",
       ACP.buildToolsModalHtml(buildContext())
     );
+  }
+
+  function renderTemplateManagerModal() {
+    ACP.applyDeleteModalClass(
+      "acp-delete-modal acp-delete-results-modal acp-template-manager-modal",
+      ACP.buildTemplateManagerModalHtml(buildContext())
+    );
+  }
+
+  function isTemplateManagerModalVisible() {
+    return getActiveSweetAlertModal().hasClass("acp-template-manager-modal");
+  }
+
+  function ensureTemplateManagerModal() {
+    if (isTemplateManagerModalVisible()) return;
+    swal({
+      title: ACP.tr("Saved template cleanup"),
+      text: "", type: "info", html: true, showCancelButton: false,
+      confirmButtonText: ACP.t(strings, "doneLabel", "Done"), closeOnConfirm: true
+    }, function() {
+      window.setTimeout(function() {
+        ACP.releaseModalScrollLock(false);
+        renderPanels();
+      }, 180);
+    });
   }
 
   function renderAppdataSourcesModal() {
@@ -2911,6 +2927,7 @@
     return value;
   }
 
+
   function diagnosticsSchemaKey(key) {
     if (["mountEvidence", "broadMountEvidence", "paths"].indexOf(String(key)) !== -1) return true;
     // Fixed schema keys are metadata, not user values. Unknown/path-based keys
@@ -3325,192 +3342,6 @@
     };
   }
 
-  function buildSupportSummaryText() {
-    var insights = buildScanInsights();
-    var summary = state.summary || {};
-    var selectedRows = getSelectedRows();
-    var scanRoots = $.isArray(insights.scanRoots) ? insights.scanRoots : [];
-    var redactor = buildDiagnosticsRedactor();
-    var notices;
-    var lines = [
-      "Appdata Cleanup Plus support summary",
-      "Version: " + String(config.pluginVersion || "unknown"),
-      "Docker: " + (state.dockerRunning ? "running" : "offline"),
-      "Ownership: " + sanitizeDiagnosticsDockerInventory(state.scanMetrics.dockerInventory).reasonCode +
-        " accepted=" + sanitizeDiagnosticsDockerInventory(state.scanMetrics.dockerInventory).acceptedCount +
-        " rejected=" + sanitizeDiagnosticsDockerInventory(state.scanMetrics.dockerInventory).rejectedCount,
-      "Rows: detected=" + String(Number(summary.total || 0)) +
-        " ready=" + String(Number(summary.deletable || 0)) +
-        " locked=" + String(Number(summary.blocked || 0)) +
-        " ignored=" + String(Number(summary.ignored || 0)),
-      "Selection: " + String(selectedRows.length) + " selected",
-      "Safety: permanent-delete=" + (state.settings.enablePermanentDelete ? "on" : "off") +
-        " zfs-delete=" + (state.settings.enableZfsDatasetDelete ? "on" : "off"),
-      "Sources: roots=" + String(scanRoots.length) +
-        " mappings=" + String($.isArray((state.appdataSources || {}).zfsPathMappings) ? state.appdataSources.zfsPathMappings.length : 0),
-      "ZFS: backed=" + String(Number(insights.zfsBackedCount || 0)) +
-        " mapped-share=" + String(Number(insights.mappedShareCount || 0)),
-      "Quarantine: count=" + String(Number(((state.quarantine || {}).summary || {}).count || 0)) +
-        " size=" + String((((state.quarantine || {}).summary || {}).sizeLabel || "0 B"))
-    ];
-
-    $.each(state.rows || [], function(_, row) {
-      sanitizeDiagnosticsRow(row, redactor);
-    });
-    scanRoots = $.map(scanRoots, function(path) {
-      return sanitizeDiagnosticsPath(path, redactor);
-    });
-    notices = $.map(buildLocalNotices(), function(notice) {
-      return sanitizeDiagnosticsFreeText($.trim(String((notice && notice.title) || "")), redactor);
-    });
-
-    if (scanRoots.length) {
-      lines.push("Scan roots:");
-      $.each(scanRoots, function(_, rootPath) {
-        lines.push("- " + String(rootPath || ""));
-      });
-    }
-
-    if (notices.length) {
-      lines.push("Notices:");
-      $.each(notices, function(_, title) {
-        lines.push("- " + title);
-      });
-    }
-
-    return sanitizeDiagnosticsFreeText(lines.join("\n"), redactor);
-  }
-
-  function summarizeScanMetrics(metrics) {
-    var summary = [];
-
-    if (!metrics || !$.isArray(metrics.phases) || !metrics.phases.length) {
-      return summary;
-    }
-
-    summary.push("Scan timing: totalMs=" + String(Number(metrics.totalMs || 0)));
-    $.each(metrics.phases, function(_, phase) {
-      var parts = [
-        "- " + String((phase && phase.name) || "phase") +
-          ": durationMs=" + String(Number((phase && phase.durationMs) || 0)) +
-          " elapsedMs=" + String(Number((phase && phase.elapsedMs) || 0))
-      ];
-
-      $.each(["templateFileCount", "containerCount", "templateVolumeCount", "filesystemVolumeCount", "directChildDirectoryCount", "beforeCount", "afterCount", "rowCount"], function(__, key) {
-        if (phase && phase[key] !== undefined && phase[key] !== null) {
-          parts.push(key + "=" + String(phase[key]));
-        }
-      });
-
-      $.each(["dockerRunning", "snapshotWritten"], function(__, key) {
-        if (phase && phase[key] !== undefined && phase[key] !== null) {
-          parts.push(key + "=" + (phase[key] ? "true" : "false"));
-        }
-      });
-
-      if (phase && phase.truncated !== undefined) {
-        parts.push("truncated=" + (phase.truncated ? "true" : "false"));
-      }
-
-      summary.push(parts.join(" "));
-    });
-
-    return summary;
-  }
-
-  function buildDiagnosticsTextPayload(serverBundle, exportErrorMessage) {
-    var payload = buildDiagnosticsPayload();
-    var serverMetrics = extractServerLatestScanMetrics(serverBundle || {});
-    var diagnostics = [];
-    var runtime = (serverBundle && serverBundle.runtime) || {};
-    var locks = serverBundle && serverBundle.state && serverBundle.state.runtimeLocks;
-    var logs = $.isArray(serverBundle && serverBundle.logs) ? serverBundle.logs : [];
-    var troubleshooting = (serverBundle && serverBundle.troubleshooting) || {};
-    var healthOverview = troubleshooting.overview || {};
-    var healthChecks = $.isArray(troubleshooting.checks) ? troubleshooting.checks : [];
-    var collector = (serverBundle && serverBundle.collector) || {};
-    var includedLogLineCount = 0;
-
-    if ((!payload.scan.metrics || !$.isArray(payload.scan.metrics.phases) || !payload.scan.metrics.phases.length) && !$.isEmptyObject(serverMetrics)) {
-      payload.scan.metrics = serverMetrics;
-    }
-
-    diagnostics.push(buildSupportSummaryText());
-    diagnostics.push("");
-    diagnostics.push("Diagnostics text");
-    diagnostics.push("Generated: " + String(payload.generatedAt || ""));
-    diagnostics.push("Diagnostics export: " + (exportErrorMessage ? "failed - " + sanitizeDiagnosticsFreeText(String(exportErrorMessage || ""), buildDiagnosticsRedactor()) : "server bundle included"));
-
-    if (runtime.pluginVersion || runtime.phpVersion || runtime.unraidVersion) {
-      diagnostics.push("Server: plugin=" + String(runtime.pluginVersion || "unknown") +
-        " php=" + String(runtime.phpVersion || "unknown") +
-        " sapi=" + String(runtime.phpSapi || "unknown") +
-        " unraid=" + String(runtime.unraidVersion || "unknown") +
-        " dockerRuntime=" + (runtime.dockerRuntimeExists === false ? "missing" : "present"));
-    }
-
-    if (healthOverview.status) {
-      diagnostics.push("Health: status=" + String(healthOverview.status || "unknown") +
-        " checks=" + String(Number(healthOverview.checkCount || 0)) +
-        " errors=" + String(Number(((healthOverview.statusCounts || {}).error) || 0)) +
-        " warnings=" + String(Number(((healthOverview.statusCounts || {}).warning) || 0)) +
-        " info=" + String(Number(((healthOverview.statusCounts || {}).info) || 0)));
-      diagnostics.push("Health summary: " + String(healthOverview.headline || ""));
-      $.each(healthChecks, function(_, check) {
-        if (check && check.status !== "ok") {
-          diagnostics.push("- [" + String(check.status || "info") + "] " + String(check.id || "check") + ": " + String(check.summary || ""));
-        }
-      });
-    }
-
-    if (locks && $.isArray(locks.locks)) {
-      var activeLockCount = $.grep(locks.locks, function(lock) {
-        return !!(lock && lock.held);
-      }).length;
-
-      diagnostics.push("Runtime lock metadata: count=" + String(Number(locks.count || 0)) + " active=" + String(activeLockCount) + " staleSeconds=" + String(Number(locks.staleSeconds || 0)));
-      $.each(locks.locks, function(_, lock) {
-        diagnostics.push("- " + (lock && lock.held ? "active" : "inactive") +
-          " " + String((lock && lock.name) || "lock") +
-          " action=" + String((lock && lock.action) || "") +
-          " held=" + String(lock && lock.held) +
-          " pidRunning=" + String(lock && lock.pidRunning) +
-          " ageSeconds=" + String((lock && lock.ageSeconds) || 0) +
-          " stale=" + String(!!(lock && lock.stale)));
-      });
-    }
-
-    diagnostics = diagnostics.concat(summarizeScanMetrics(payload.scan.metrics));
-
-    if (logs.length) {
-      diagnostics.push("Support logs:");
-      $.each(logs, function(_, log) {
-        diagnostics.push("- path=" + String((log && log.path) || "") +
-          " available=" + String(!!(log && log.available)) +
-          " matched=" + String(Number((log && log.matchedLineCount) || 0)) +
-          " scannedLimit=" + String(Number((log && log.scannedLineLimit) || 0)));
-        $.each(($.isArray(log && log.lines) ? log.lines.slice(-5) : []), function(__, line) {
-          if (includedLogLineCount >= 15) {
-            return false;
-          }
-
-          diagnostics.push("  " + String(line || ""));
-          includedLogLineCount += 1;
-          return undefined;
-        });
-      });
-    }
-
-    diagnostics.push("Collector: durationMs=" + String(Number(collector.durationMs || 0)) +
-      " logMatchLimit=" + String(Number(collector.logMatchLimitPerSource || 0)) +
-      " logScanLimit=" + String(Number(collector.logScanLimitPerSource || 0)));
-
-    diagnostics.push("Rows exported: total=" + String((payload.rows || []).length) +
-      " visible=" + String((payload.visibleRowIds || []).length) +
-      " selected=" + String((payload.selectedRowIds || []).length));
-
-    return sanitizeDiagnosticsFreeText(diagnostics.join("\n"), buildDiagnosticsRedactor());
-  }
 
   function copyTextToClipboard(text) {
     var deferred = $.Deferred();
@@ -3605,57 +3436,6 @@
     });
   }
 
-  function copySupportSummary() {
-    copyTextToClipboard(buildSupportSummaryText()).done(function() {
-      swal(
-        ACP.t(strings, "toolsSupportSummaryDoneTitle", "Support summary copied"),
-        ACP.t(strings, "toolsSupportSummaryDoneMessage", "The support summary has been copied to the clipboard."),
-        "success"
-      );
-    }).fail(function() {
-      swal(
-        ACP.t(strings, "toolsSupportSummaryFailedTitle", "Support summary failed"),
-        ACP.t(strings, "toolsSupportSummaryFailedMessage", "The support summary could not be copied right now."),
-        "error"
-      );
-    });
-  }
-
-  function copyDiagnosticsText() {
-    apiPostForUserAction({
-      action: "getDiagnosticsBundle"
-    }).done(function(response) {
-      copyTextToClipboard(buildDiagnosticsTextPayload(response && response.bundle ? response.bundle : {}, "")).done(function() {
-        swal(
-          ACP.t(strings, "toolsDiagnosticsCopyDoneTitle", "Diagnostics text copied"),
-          ACP.t(strings, "toolsDiagnosticsCopyDoneMessage", "The diagnostics text has been copied to the clipboard."),
-          "success"
-        );
-      }).fail(function() {
-        swal(
-          ACP.t(strings, "toolsDiagnosticsCopyFailedTitle", "Diagnostics text failed"),
-          ACP.t(strings, "toolsDiagnosticsCopyFailedMessage", "The diagnostics text could not be copied right now."),
-          "error"
-        );
-      });
-    }).fail(function(xhr) {
-      var errorMessage = ACP.extractErrorMessage(xhr, ACP.t(strings, "toolsDiagnosticsFailedMessage", "The diagnostics file could not be created right now."));
-
-      copyTextToClipboard(buildDiagnosticsTextPayload({}, errorMessage)).done(function() {
-        swal(
-          ACP.t(strings, "toolsDiagnosticsCopyDoneTitle", "Diagnostics text copied"),
-          ACP.t(strings, "toolsDiagnosticsCopyDoneMessage", "The diagnostics text has been copied to the clipboard."),
-          "success"
-        );
-      }).fail(function() {
-        swal(
-          ACP.t(strings, "toolsDiagnosticsCopyFailedTitle", "Diagnostics text failed"),
-          ACP.t(strings, "toolsDiagnosticsCopyFailedMessage", "The diagnostics text could not be copied right now."),
-          "error"
-        );
-      });
-    });
-  }
 
   function updateFixtureToolsFromResponse(response, fallbackMessage, ok) {
     state.fixtureTools = $.extend({}, state.fixtureTools || {}, {
@@ -3669,17 +3449,17 @@
   function runTemplateManagerAction(managerAction, id) {
     state.templateManager.loading = true;
     state.templateManager.message = ACP.tr("Loading saved templates.");
-    renderToolsModal();
+    renderTemplateManagerModal();
     apiPostForUserAction({action: "templateManagerAction", managerAction: managerAction, templateId: id}).done(function(response) {
       state.templateManager = {loading: false, status: response.templateManager, message: response.message || ""};
-      if (isToolsModalVisible()) renderToolsModal();
+      if (isTemplateManagerModalVisible()) renderTemplateManagerModal();
       if (managerAction !== "status") loadScan();
     }).fail(function(xhr) {
       var response = (xhr && xhr.responseJSON) || {};
       state.templateManager.loading = false;
       if (response.templateManager) state.templateManager.status = response.templateManager;
       state.templateManager.message = ACP.extractErrorMessage(xhr, ACP.tr("The template action could not be completed. Refresh the list and try again."));
-      if (isToolsModalVisible()) renderToolsModal();
+      if (isTemplateManagerModalVisible()) renderTemplateManagerModal();
     });
   }
 
@@ -3695,14 +3475,14 @@
       managerAction: managerAction
     }).done(function(response) {
       updateFixtureToolsFromResponse(response, ACP.t(strings, "toolsFixtureDoneMessage", "Test fixture action completed."), true);
-      renderToolsModal();
+      if (isToolsModalVisible()) renderToolsModal();
 
       if (managerAction === "create" || managerAction === "remove") {
         loadScan();
       }
     }).fail(function(xhr) {
       updateFixtureToolsFromResponse(null, ACP.extractErrorMessage(xhr, ACP.t(strings, "toolsFixtureFailedMessage", "The test fixture action could not be completed right now.")), false);
-      renderToolsModal();
+      if (isToolsModalVisible()) renderToolsModal();
     });
   }
 

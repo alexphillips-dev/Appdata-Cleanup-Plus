@@ -234,7 +234,7 @@
     $baseText = $modal.children("p").first();
     $existingHost = $modal.children(".acp-modal-host");
 
-    $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-delete-progress-running acp-delete-progress-ready acp-quarantine-manager-modal acp-audit-history-modal acp-appdata-sources-modal acp-zfs-path-mappings-modal acp-tools-modal acp-help-modal acp-row-details-modal");
+    $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-delete-progress-running acp-delete-progress-ready acp-quarantine-manager-modal acp-audit-history-modal acp-appdata-sources-modal acp-zfs-path-mappings-modal acp-tools-modal acp-template-manager-modal acp-help-modal acp-row-details-modal");
     if (className) {
       $modal.addClass(className);
     }

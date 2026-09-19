@@ -276,19 +276,6 @@ $config = array(
     "toolsDiagnosticsDoneMessage" => acpT("The sanitized troubleshooting JSON has been downloaded."),
     "toolsDiagnosticsFailedTitle" => acpT("Diagnostics export failed"),
     "toolsDiagnosticsFailedMessage" => acpT("The diagnostics file could not be created right now."),
-    "toolsSupportSummaryTitle" => acpT("Copy support summary"),
-    "toolsSupportSummaryMessage" => acpT("Copies a concise support summary with version, scan counts, safety toggles, scan roots, ZFS state, and quarantine totals for forum posts or issue reports."),
-    "toolsSupportSummaryCopyLabel" => acpT("Copy support summary"),
-    "toolsDiagnosticsCopyLabel" => acpT("Copy diagnostics text"),
-    "toolsDiagnosticsCopyMessage" => acpT("Copies a redacted plain-text report with health findings, scan timing, runtime locks, collector limits, and up to 15 relevant log lines. Use it for forum posts or when JSON download is unavailable."),
-    "toolsDiagnosticsCopyDoneTitle" => acpT("Diagnostics text copied"),
-    "toolsDiagnosticsCopyDoneMessage" => acpT("The diagnostics text has been copied to the clipboard."),
-    "toolsDiagnosticsCopyFailedTitle" => acpT("Diagnostics text failed"),
-    "toolsDiagnosticsCopyFailedMessage" => acpT("The diagnostics text could not be copied right now."),
-    "toolsSupportSummaryDoneTitle" => acpT("Support summary copied"),
-    "toolsSupportSummaryDoneMessage" => acpT("The support summary has been copied to the clipboard."),
-    "toolsSupportSummaryFailedTitle" => acpT("Support summary failed"),
-    "toolsSupportSummaryFailedMessage" => acpT("The support summary could not be copied right now."),
     "toolsFixtureTitle" => acpT("Test fixtures"),
     "toolsFixtureSimpleMessage" => acpT("Create safe, namespaced appdata test folders so scan, selection, dry run, quarantine, and delete can be validated."),
     "toolsFixtureRootLabel" => acpT("Fixture root"),
@@ -636,6 +623,15 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
           </svg>
         </span>
         <span><?php echo acpH("History"); ?></span>
+      </button>
+      <button type="button" class="acp-button acp-button-secondary acp-button-with-icon" data-action="open-template-manager">
+        <span class="acp-button-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M6 3h8l4 4v14H6Z"></path>
+            <path d="M14 3v5h4M9 12h6M9 16h6"></path>
+          </svg>
+        </span>
+        <span><?php echo acpH("Saved template cleanup"); ?></span>
       </button>
       <button type="button" class="acp-button acp-button-secondary acp-button-with-icon" data-action="open-tools">
         <span class="acp-button-icon" aria-hidden="true">

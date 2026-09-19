@@ -648,6 +648,16 @@
     return html.join('') + '</details>';
   };
 
+  ACP.buildTemplateManagerModalHtml = function(context) {
+    var manager = (context.state || {}).templateManager || {};
+    return '<div class="acp-simple-modal-shell">' + buildSimpleModalCard(
+      ACP.tr("Review templates and backups"),
+      ACP.buildTemplateManagerHtml(manager),
+      '<button type="button" class="acp-button acp-button-secondary" data-action="review-templates"' + (manager.loading ? ' disabled' : '') + '>' + ACP.escapeHtml(ACP.tr("Refresh")) + '</button>',
+      "acp-template-card"
+    ) + '</div>';
+  };
+
   ACP.buildToolsModalHtml = function(context) {
     var state = context.state || {};
     var strings = context.strings || {};
@@ -679,15 +689,8 @@
         '<details class="acp-simple-disclosure"><summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>" +
         '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsPrivacyNote", "App-specific names, template filenames, full filesystem paths, IPs, emails, tokens, and hostnames are redacted or aliased before export. Review before sharing.")) + "</p>" +
         "</details>",
-        '<button type="button" class="acp-button acp-button-secondary" data-action="export-diagnostics">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsExportLabel", "Download diagnostics")) + "</button>" +
-        '<button type="button" class="acp-button acp-button-secondary" data-action="copy-diagnostics-text">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsCopyLabel", "Copy text")) + "</button>",
+        '<button type="button" class="acp-button acp-button-secondary" data-action="export-diagnostics">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsExportLabel", "Download diagnostics")) + "</button>",
         ""
-      ),
-      buildSimpleModalCard(
-        ACP.tr("Saved template cleanup"),
-        ACP.buildTemplateManagerHtml(state.templateManager),
-        '<button type="button" class="acp-button acp-button-secondary" data-action="review-templates"' + ((state.templateManager || {}).loading ? ' disabled' : '') + '>' + ACP.escapeHtml(ACP.tr("Review templates and backups")) + '</button>',
-        "acp-template-card"
       ),
       buildSimpleModalCard(
         ACP.t(strings, "toolsFixtureTitle", "Test fixtures"),
@@ -702,12 +705,6 @@
         '<button type="button" class="acp-button acp-button-secondary" data-action="remove-test-fixtures"' + (fixtureTools.loading ? " disabled" : "") + ">" + ACP.escapeHtml(ACP.t(strings, "toolsFixtureRemoveLabel", "Remove fixtures")) + "</button>" +
         '<button type="button" class="acp-button acp-button-secondary" data-action="refresh-test-fixtures"' + (fixtureTools.loading ? " disabled" : "") + ">" + ACP.escapeHtml(ACP.t(strings, "refreshLabel", "Refresh")) + "</button>",
         "acp-fixture-card"
-      ),
-      buildSimpleModalCard(
-        ACP.t(strings, "toolsSupportSummaryTitle", "Support summary"),
-        '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsSupportSummarySimpleMessage", "Copy a short summary for forum posts or issue reports.")) + "</p>",
-        '<button type="button" class="acp-button acp-button-secondary" data-action="copy-support-summary">' + ACP.escapeHtml(ACP.t(strings, "toolsSupportSummaryCopyLabel", "Copy summary")) + "</button>",
-        ""
       ),
       "</div>"
     ].join("");

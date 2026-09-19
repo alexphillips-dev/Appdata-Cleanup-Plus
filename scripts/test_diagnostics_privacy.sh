@@ -11,7 +11,6 @@ fail() {
 }
 
 payload_flow="$(sed -n '/function buildDiagnosticsPayload/,/function buildDiagnosticsFilename/p' "${JS_FILE}")"
-support_flow="$(sed -n '/function buildSupportSummaryText/,/function summarizeScanMetrics/p' "${JS_FILE}")"
 server_bundle="$(sed -n '/function buildAppdataCleanupPlusDiagnosticsBundle/,/function resolveSnapshotCandidates/p' "${API_FILE}")"
 
 if grep -Fq 'searchTerm:' <<<"${payload_flow}"; then
@@ -26,7 +25,10 @@ grep -Fq 'nextRow.broadMountEvidence = sanitizeDiagnosticsMountEvidence' "${JS_F
 if grep -Eq 'templateManager|template-backups|TemplateBackup' <<<"${payload_flow}${server_bundle}"; then
     fail "Private template backups and manager state must not enter diagnostics exports."
 fi
-grep -Fq 'sanitizeDiagnosticsPath(path, redactor)' <<<"${support_flow}" || fail "Copied support summaries must sanitize scan roots."
+grep -Fq 'downloadJsonFile(buildDiagnosticsFilename(), payload)' "${JS_FILE}" || fail "Diagnostics must retain the sanitized JSON download."
+if grep -Eq 'copyDiagnosticsText|copySupportSummary|buildDiagnosticsTextPayload|buildSupportSummaryText' "${JS_FILE}"; then
+    fail "Removed diagnostics and support-summary clipboard flows must not return."
+fi
 grep -Fq '"schemaVersion" => 4' <<<"${server_bundle}" || fail "Server diagnostics schema version is missing."
 grep -Fq 'appdataCleanupPlusSanitizeScanMetrics' <<<"${server_bundle}" || fail "Persisted scan telemetry must use its schema allowlist."
 grep -Fq 'appdataCleanupPlusDiagnosticsTroubleshootingSummary($logs)' <<<"${server_bundle}" || fail "Server diagnostics structured health summary is missing."

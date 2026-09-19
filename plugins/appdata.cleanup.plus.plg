@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.18.10">
-<!ENTITY md5 "9aa17e2e730fc23f9f254dacb77ade69">
+<!ENTITY version "2026.09.19.01">
+<!ENTITY md5 "cecdb46a082925f914f85f0b0b3cebca">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.19.01
+- Make Tools diagnostics download-only and remove the Copy diagnostics text and Copy support summary controls.
+- Move saved-template cleanup and backups to their own action-bar button, with automatic list loading and refresh.
+- Keep archive and restore confirmations within the template manager, and prevent delayed Tools or template responses from replacing another open dialog.
+
 ###2026.09.18.10
 - Enlarge the visible-folder counts and status badges on every results section header for easier reading.
 

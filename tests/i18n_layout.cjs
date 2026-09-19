@@ -64,8 +64,8 @@ const locales = JSON.parse(fs.readFileSync(path.join(plugin, 'locales/locales.js
               modalClass = 'acp-row-details-modal';
             } else if (flow === 'templates') {
               context.state.templateManager = {status:{templates:[{id:'example',name:'Example',filename:'my-example.xml'}],backups:[{id:'backup',name:'Saved Example',filename:'my-saved-example.xml',canRestore:false}]}};
-              html = ACP.buildToolsModalHtml(context);
-              modalClass = 'acp-tools-modal';
+              html = ACP.buildTemplateManagerModalHtml(context);
+              modalClass = 'acp-template-manager-modal';
             } else if (flow === 'mounts') {
               html = ACP.buildMountEvidenceHtml([{name:'Container Example',paths:['/mnt/user/appdata/Example-long-mount-path']}]).replace('<details ', '<details open ') + ACP.buildMountEvidenceHtml([{name:'Broad viewer',paths:['/mnt/user']}],true).replace('<details ', '<details open ');
               modalClass = 'acp-row-details-modal';

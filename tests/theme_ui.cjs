@@ -115,12 +115,12 @@ async function nativeCss(version, theme) {
       }
       await page.mouse.move(0,0);
       await page.evaluate(()=>document.querySelector('.sweet-alert').style.display='block');
-      for (const flow of ['help','details','sources','mappings','tools','quarantine','history','confirmation','progress','results','conflicts']) {
+      for (const flow of ['help','details','sources','mappings','tools','templates','quarantine','history','confirmation','progress','results','conflicts']) {
         await page.evaluate(flow=>{
           const T=themeFlows, ACP=AppdataCleanupPlus, row=T.state.rows[0], context={strings:appdataCleanupPlusConfig.strings,state:T.state};
           const operation=T.buildOperationContext('delete',[row]);
-          const builders={help:()=>T.buildHelpModalHtml(),details:()=>ACP.buildRowDetailsModalHtml(context,row),sources:()=>ACP.buildAppdataSourcesModalHtml(context),mappings:()=>ACP.buildZfsPathMappingsModalHtml(context),tools:()=>ACP.buildToolsModalHtml(context),quarantine:()=>ACP.buildQuarantineManagerModalHtml(context),history:()=>ACP.buildAuditHistoryModalHtml(context),confirmation:()=>T.buildOperationPreviewHtml([row],operation,{}),progress:()=>T.buildOperationProgressHtml({processed:0,total:1},operation,false),results:()=>T.buildOperationResultsHtml({deleted:1},[{path:row.path,status:'deleted',message:'Deleted'}],operation),conflicts:()=>T.buildRestoreConflictDialogHtml({summary:{conflicts:1,ready:0},conflicts:[{id:'example',sourcePath:row.path,parentPath:'/mnt/user/appdata',suggestedName:'Example-restored'}]})};
-          const classes={help:'acp-help-modal',details:'acp-row-details-modal',sources:'acp-appdata-sources-modal',mappings:'acp-zfs-path-mappings-modal',tools:'acp-tools-modal',quarantine:'acp-quarantine-manager-modal',history:'acp-audit-history-modal'};
+          const builders={help:()=>T.buildHelpModalHtml(),details:()=>ACP.buildRowDetailsModalHtml(context,row),sources:()=>ACP.buildAppdataSourcesModalHtml(context),mappings:()=>ACP.buildZfsPathMappingsModalHtml(context),tools:()=>ACP.buildToolsModalHtml(context),templates:()=>ACP.buildTemplateManagerModalHtml(context),quarantine:()=>ACP.buildQuarantineManagerModalHtml(context),history:()=>ACP.buildAuditHistoryModalHtml(context),confirmation:()=>T.buildOperationPreviewHtml([row],operation,{}),progress:()=>T.buildOperationProgressHtml({processed:0,total:1},operation,false),results:()=>T.buildOperationResultsHtml({deleted:1},[{path:row.path,status:'deleted',message:'Deleted'}],operation),conflicts:()=>T.buildRestoreConflictDialogHtml({summary:{conflicts:1,ready:0},conflicts:[{id:'example',sourcePath:row.path,parentPath:'/mnt/user/appdata',suggestedName:'Example-restored'}]})};
+          const classes={help:'acp-help-modal',details:'acp-row-details-modal',sources:'acp-appdata-sources-modal',mappings:'acp-zfs-path-mappings-modal',tools:'acp-tools-modal',templates:'acp-template-manager-modal',quarantine:'acp-quarantine-manager-modal',history:'acp-audit-history-modal'};
           ACP.applyDeleteModalClass('acp-delete-modal '+(classes[flow]||'acp-delete-modal-review'),builders[flow]());
         },flow);
         const result=await page.evaluate(()=>{
@@ -162,7 +162,7 @@ async function nativeCss(version, theme) {
       }
       assert.deepEqual(errors,[]);
       await page.close();
-      console.log(`theme_ui: Unraid ${version} ${theme} ${width}px page, 11 dialog flows and live switch passed`);
+      console.log(`theme_ui: Unraid ${version} ${theme} ${width}px page, 12 dialog flows and live switch passed`);
     }
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});
