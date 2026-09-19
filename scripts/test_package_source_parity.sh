@@ -32,7 +32,10 @@ find "${EXPECTED_DIR}" "${EXTRACTED_DIR}" -type f \( \
     -name '*.page' -o \
     -name '*.js' -o \
     -name '*.css' -o \
-    -name '*.md' \
+    -name '*.md' -o \
+    -name '*.json' -o \
+    -name '*.txt' -o \
+    -name '*.sh' \
 \) -exec sed -i 's/\r$//' {} +
 
 diff -ru \

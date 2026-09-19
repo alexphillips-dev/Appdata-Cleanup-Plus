@@ -108,16 +108,19 @@ apply_branch_channel_messaging() {
     fi
 }
 
-normalize_packaged_page_line_endings() {
+normalize_packaged_text_line_endings() {
     local package_root="${1:-}"
-    local page_file="${package_root}/usr/local/emhttp/plugins/appdata.cleanup.plus/AppdataCleanupPlus.page"
     if [ -z "$package_root" ]; then
-        echo "ERROR: normalize_packaged_page_line_endings requires a package root." >&2
+        echo "ERROR: normalize_packaged_text_line_endings requires a package root." >&2
         exit 1
     fi
-    if [ -f "$page_file" ]; then
-        perl -0pi -e 's/\r\n/\n/g' "$page_file"
-    fi
+    # Branch checkouts on Windows can convert newly added catalogs to CRLF.
+    # Normalize shipped text, including JSON and licenses, without touching images.
+    find "$package_root" -type f \( \
+        -name '*.php' -o -name '*.page' -o -name '*.js' -o \
+        -name '*.css' -o -name '*.md' -o -name '*.json' -o \
+        -name '*.txt' -o -name '*.sh' \
+    \) -exec perl -0pi -e 's/\r\n/\n/g' {} +
 }
 
 ensure_repo_layout() {
@@ -290,7 +293,7 @@ done
 
 trap cleanup_tmpdir EXIT
 ensure_repo_layout
-require_commands tar sed date awk grep sort head tail mktemp md5sum perl cp mkdir rm
+require_commands tar sed date awk grep sort head tail mktemp md5sum perl cp mkdir rm find
 
 if [ -n "$branch_override" ]; then
     branch="$branch_override"
@@ -353,7 +356,7 @@ package_root="${tmpdir}/package"
 mkdir -p "$package_root"
 cp -R "${source_dir}/." "$package_root/"
 apply_branch_channel_messaging "$package_root" "$branch"
-normalize_packaged_page_line_endings "$package_root"
+normalize_packaged_text_line_endings "$package_root"
 
 tar --sort=name \
     --mtime='UTC 1970-01-01' \

@@ -90,6 +90,7 @@ jobs:
           bash scripts/test_ca_canonical_urls.sh
           bash scripts/test_release_source_ref.sh
           bash scripts/test_package_source_parity.sh
+          bash scripts/test_package_line_endings.sh
 
       - name: Prepare Unraid path fixtures
         run: |

@@ -27,4 +27,30 @@ grep -Fq 'GH_USES_WINDOWS_PATHS=true' "${RELEASE_SCRIPT}" || fail "Release flow 
 grep -Fq 'GH_NOTES_FILE="$(wslpath -w "${NOTES_FILE}")"' "${RELEASE_SCRIPT}" || fail "Release notes must be translated for Windows GitHub CLI paths."
 grep -Fq -- '--notes-file "${GH_NOTES_FILE}"' "${RELEASE_SCRIPT}" || fail "GitHub releases must use the translated notes path."
 
-echo "test_release_source_ref: release promotion and back-sync preserve remote refs, linear history, and cross-platform release notes."
+# Run the actual helpers with synthetic responses; do not contact GitHub or wait.
+(
+    probe_dir="$(mktemp -d)"
+    trap 'rm -rf "$probe_dir"' EXIT
+    # Extract only the tested helpers, not the script's publication commands.
+    # shellcheck disable=SC1090
+    source <(sed -n '/^fetch_url_with_retry() {/,/^}/p' "$RELEASE_SCRIPT")
+    # shellcheck disable=SC1090
+    source <(sed -n '/^extract_release_notes() {/,/^}/p' "$RELEASE_SCRIPT")
+    curl() {
+        if [ ! -f "$probe_dir/requested" ]; then
+            touch "$probe_dir/requested"
+            printf '%s' 'stale manifest'
+        else
+            printf '%s' 'expected manifest'
+        fi
+    }
+    sleep() { :; }
+    [[ "$(fetch_url_with_retry fixture 2 0 'expected manifest')" = 'expected manifest' ]] || fail "Successful stale responses must be retried."
+    if fetch_url_with_retry fixture 2 0 'missing version' >/dev/null; then
+        fail "Verification must fail when the expected content never appears."
+    fi
+    PLG_FILE="$probe_dir/notes.plg"
+    printf '###fixture\r\nFirst paragraph\r\n\r\n**Section**\r\n\r\n- Item\r\n###previous\r\n' > "$PLG_FILE"
+    [[ "$(extract_release_notes fixture)" = $'First paragraph\n\n**Section**\n\n- Item' ]] || fail "Release notes must preserve paragraph spacing on Windows."
+)
+echo "test_release_source_ref: release refs, synchronization, note formatting and stale-response retries passed."

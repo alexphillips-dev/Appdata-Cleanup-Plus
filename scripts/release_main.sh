@@ -113,9 +113,10 @@ extract_release_notes() {
         return 1
     fi
     awk -v marker="###${version}" '
+        { sub(/\r$/, "") }
         $0 == marker { in_block = 1; next }
         in_block && /^###/ { exit }
-        in_block && length($0) > 0 { print }
+        in_block { print }
     ' "${PLG_FILE}"
 }
 
@@ -206,13 +207,16 @@ fetch_url_with_retry() {
     local url="${1:-}"
     local attempts="${2:-10}"
     local delay_seconds="${3:-2}"
+    local expected_text="${4:-}"
     local attempt=1
     local content=""
 
     while [ "${attempt}" -le "${attempts}" ]; do
         if content="$(curl -fsSL "${url}" 2>/dev/null)"; then
-            printf '%s' "${content}"
-            return 0
+            if [ -z "${expected_text}" ] || [[ "${content}" == *"${expected_text}"* ]]; then
+                printf '%s' "${content}"
+                return 0
+            fi
         fi
         sleep "${delay_seconds}"
         attempt=$((attempt + 1))
@@ -232,12 +236,12 @@ verify_remote_release_metadata() {
     local manifest_content=""
     local xml_content=""
 
-    manifest_content="$(fetch_url_with_retry "${manifest_url}")" || {
+    manifest_content="$(fetch_url_with_retry "${manifest_url}" 12 5 "<!ENTITY version \"${version}\">")" || {
         echo "ERROR: Failed to fetch the live manifest: ${manifest_url}" >&2
         exit 1
     }
 
-    xml_content="$(fetch_url_with_retry "${xml_url}")" || {
+    xml_content="$(fetch_url_with_retry "${xml_url}" 12 5 "<PluginURL>https://raw.githubusercontent.com/${remote_slug}/${branch_name}/plugins/appdata.cleanup.plus.plg</PluginURL>")" || {
         echo "ERROR: Failed to fetch the live CA XML: ${xml_url}" >&2
         exit 1
     }
@@ -351,6 +355,7 @@ fi
 git merge --ff-only "${REMOTE_SOURCE_REF}"
 
 bash "${ROOT_DIR}/pkg_build.sh" --branch "${MAIN_BRANCH}"
+bash "${ROOT_DIR}/scripts/test_package_source_parity.sh"
 
 VERSION="$(extract_manifest_version)"
 if [ -z "${VERSION}" ]; then
