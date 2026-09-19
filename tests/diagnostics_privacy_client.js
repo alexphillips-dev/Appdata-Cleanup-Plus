@@ -43,12 +43,23 @@ const jquery = {
 
 const context = { $: jquery };
 vm.runInNewContext(
-  source.slice(start, end) + "\nthis.privacy = { buildDiagnosticsRedactor, sanitizeDiagnosticsFreeText, diagnosticsKeyLooksLikePath, sanitizeDiagnosticsValue, sanitizeDiagnosticsPath, sanitizeDiagnosticsTemplateRefs, sanitizeDiagnosticsRow, sanitizeDiagnosticsScanMetrics };",
+  source.slice(start, end) + "\nthis.privacy = { buildDiagnosticsDecision, buildDiagnosticsRedactor, sanitizeDiagnosticsFreeText, diagnosticsKeyLooksLikePath, sanitizeDiagnosticsValue, sanitizeDiagnosticsPath, sanitizeDiagnosticsTemplateRefs, sanitizeDiagnosticsRow, sanitizeDiagnosticsScanMetrics };",
   context,
   { filename: sourcePath }
 );
 
 const privacy = context.privacy;
+const decision = privacy.buildDiagnosticsDecision({sourceKind:'template',storageKind:'zfs',canDelete:false,scanVerificationLocked:true,mountEvidence:[{name:'private-canary'}],broadMountEvidence:[{paths:['/private-canary']}],securityLockReason:'private-canary',securityReasonCode:'private-canary'});
+assert.equal(decision.primaryBlocker,'ownership_unverified');
+assert.equal(decision.specificMountCount,1);
+assert.equal(decision.broadAccessCount,1);
+assert.equal(decision.storage,'exact_dataset');
+assert.ok(!JSON.stringify(decision).includes('private-canary'),'Decision evidence must use fixed codes, not names or prose');
+assert.equal(privacy.buildDiagnosticsDecision({canDelete:true,broadMountEvidence:[{}]}).primaryBlocker,'none');
+const decisionRedactor = privacy.buildDiagnosticsRedactor();
+privacy.sanitizeDiagnosticsRow({name:'folder',canDelete:true,storageKind:'filesystem'},decisionRedactor);
+const stableDecision = privacy.sanitizeDiagnosticsValue({decision:privacy.buildDiagnosticsDecision({canDelete:true,storageKind:'filesystem'})},decisionRedactor,'');
+assert.equal(stableDecision.decision.storage,'folder','Export-scoped name aliases must not corrupt fixed decision codes');
 const redactor = privacy.buildDiagnosticsRedactor();
 for (const message of [
   "rename(/mnt/user/appdata/My Private App,/mnt/user/appdata/.quarantine/My Private App): Permission denied",

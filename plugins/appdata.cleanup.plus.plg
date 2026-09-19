@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.19.09">
-<!ENTITY md5 "ce620d10ea40c9bfc3ed9608bf390344">
+<!ENTITY version "2026.09.19.10">
+<!ENTITY md5 "896ea2f6d70c96b0e9a321908d29abab">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,14 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.19.10
+Diagnostics now download a partial browser report when the server is unavailable or times out.
+Added browser/server version and scan freshness checks plus read-only scan snapshot validation.
+Added structured detection and blocking evidence, including exact ZFS datasets and broad container access.
+Included the latest 20 classified plugin request and JavaScript failures without retaining private error text or response bodies.
+Included locale, layout direction, viewport, and browser internationalization capabilities.
+Added per-section collection status and available included/omitted counts, with translated partial-export feedback.
+
 ###2026.09.19.09
 - Fixed Ready, Blocked, and Ignored section badges to use complete, count-aware translations.
 - Fixed singular and plural History entry totals and additional-path counts, including filtered results.

@@ -213,6 +213,7 @@
   }
 
   function init() {
+    installDiagnosticsErrorCapture();
     cacheElements();
     ACP.applyThemeState(els.$app);
     ACP.watchThemeChanges(function() {
@@ -873,19 +874,28 @@
 
   function apiPost(data) {
     var requestHeaders = {};
+    var requestStarted = Date.now();
 
     if (config.csrfToken) {
       requestHeaders["X-Appdata-Cleanup-Plus-CSRF"] = String(config.csrfToken);
     }
 
-    return $.ajax({
+    var request = $.ajax({
       url: config.apiUrl,
       method: "POST",
       dataType: "json",
+      timeout: data && data.action === "getDiagnosticsBundle" ? 30000 : 0,
       converters: {"text json": function(text) { return ACP.localizePresentation(JSON.parse(text)); }},
       headers: requestHeaders,
       data: ACP.buildApiRequestData(config, data)
     });
+    request.fail(function(xhr, status) {
+      recordDiagnosticsFailure(data && data.action, xhr && xhr.status, status, Date.now() - requestStarted);
+    });
+    request.done(function(response) {
+      if (response && response.ok === false) recordDiagnosticsFailure(data && data.action, 200, "application", Date.now() - requestStarted);
+    });
+    return request;
   }
 
   function apiPostWithPluginBusyRetry(data, options) {
@@ -2757,6 +2767,37 @@
     reconcileQuarantineSelection();
   }
 
+  var diagnosticsFailures = [];
+  var diagnosticsCaptureStartedAt = new Date().toISOString();
+  var diagnosticsFailureTotal = 0;
+  var diagnosticsCaptureInstalled = false;
+
+  function recordDiagnosticsFailure(action, httpStatus, category, durationMs) {
+    var actions = "getOrphanAppdata getAuditHistory getQuarantineSummary hydrateCandidateStats getCandidateDetails saveSafetySettings browseAppdataSourcePath updateCandidateState executeCandidateAction fixtureManagerAction getOperationProgress getQuarantineEntries updateQuarantinePurgeSchedule inspectQuarantineRestore quarantineManagerAction templateManagerAction getDiagnosticsBundle javascript".split(" ");
+    var categories = "timeout abort parsererror error application TypeError ReferenceError RangeError SyntaxError URIError EvalError rejection".split(" ");
+    diagnosticsFailureTotal++;
+    diagnosticsFailures.push({
+      occurredAt: new Date().toISOString(),
+      action: actions.indexOf(action) !== -1 ? action : "unknown",
+      httpStatus: Math.max(0, Math.min(599, Math.floor(Number(httpStatus) || 0))),
+      category: categories.indexOf(category) !== -1 ? category : "unknown",
+      durationMs: Math.max(0, Math.min(86400000, Math.floor(Number(durationMs) || 0)))
+    });
+    if (diagnosticsFailures.length > 20) diagnosticsFailures.shift();
+  }
+
+  function installDiagnosticsErrorCapture() {
+    if (diagnosticsCaptureInstalled) return;
+    diagnosticsCaptureInstalled = true;
+    var ownedScript = /\/plugins\/appdata\.cleanup\.plus\/scripts\/appdata\.cleanup\.plus(?:\.(?:shared|panels))?\.js(?:[?:\s]|$)/;
+    window.addEventListener("error", function(event) {
+      if (ownedScript.test(String(event.filename || ""))) recordDiagnosticsFailure("javascript", 0, event.error && event.error.name, 0);
+    });
+    window.addEventListener("unhandledrejection", function(event) {
+      if (event.reason && ownedScript.test(String(event.reason.stack || ""))) recordDiagnosticsFailure("javascript", 0, "rejection", 0);
+    });
+  }
+
   function buildDiagnosticsRedactor() {
     return {
       aliases: {
@@ -2899,6 +2940,12 @@
     var sanitized = {};
 
     if (keyName === "dockerInventory" || keyName === "ownershipDiagnostics") return sanitizeDiagnosticsDockerInventory(value);
+    if (keyName === "decision") {
+      var codes = "discovery template unknown exact_dataset folder mapping_without_exact_dataset specific_mount broad_access ownership_unverified symlink mount_point root_path unsafe_path protected_path permanent_delete zfs_disabled policy_lock not_actionable none".split(" ");
+      var safeCode = function(code) { return codes.indexOf(code) !== -1 ? code : "unknown"; };
+      var safeDecision = value || {};
+      return {source:safeCode(safeDecision.source),storage:safeCode(safeDecision.storage),evidence:$.map((safeDecision.evidence || []).slice(0,10),safeCode),blockers:$.map((safeDecision.blockers || []).slice(0,10),safeCode),primaryBlocker:safeCode(safeDecision.primaryBlocker),specificMountCount:Math.max(0,Number(safeDecision.specificMountCount)||0),broadAccessCount:Math.max(0,Number(safeDecision.broadAccessCount)||0),ignored:!!safeDecision.ignored};
+    }
 
     if (diagnosticsKeyIsSensitive(keyName)) {
       if (/(?:present|count|enabled|exists)$/i.test(String(keyName || "")) && (typeof value === "boolean" || typeof value === "number")) {
@@ -2933,6 +2980,7 @@
 
 
   function diagnosticsSchemaKey(key) {
+    if ("collection sections status includedCount omittedCount omissionReason freshness browserVersion serverVersion versionMatch scanMatch currentSnapshot collectedAt issuedAt expiresAt candidateCount localization locale languageTag direction viewport width height capabilities numberFormat pluralRules relativeTimeFormat dateTimeFormat recentFailures occurredAt action httpStatus category totalCount decision evidence blockers primaryBlocker source storage specificMountCount broadAccessCount ignored captureStartedAt".split(" ").indexOf(String(key)) !== -1) return true;
     if (["mountEvidence", "broadMountEvidence", "paths"].indexOf(String(key)) !== -1) return true;
     // Fixed schema keys are metadata, not user values. Unknown/path-based keys
     // still go through the full scrub. A folder named "data" must not rename
@@ -3095,6 +3143,24 @@
     });
   }
 
+  function buildDiagnosticsDecision(row) {
+    var evidence = [];
+    var blockers = [];
+    var specific = $.isArray(row.mountEvidence) ? row.mountEvidence.length : 0;
+    var broad = $.isArray(row.broadMountEvidence) ? row.broadMountEvidence.length : 0;
+    var source = row.sourceKind === "filesystem" ? "discovery" : (row.sourceKind === "template" ? "template" : "unknown");
+    var storage = row.storageKind === "zfs" ? "exact_dataset" : "folder";
+    evidence.push(source, storage);
+    if (row.zfsMappingMatched && storage === "folder") evidence.push("mapping_without_exact_dataset");
+    if (specific) { evidence.push("specific_mount"); blockers.push("specific_mount"); }
+    if (broad) evidence.push("broad_access");
+    if (row.scanVerificationLocked) blockers.unshift("ownership_unverified");
+    if (row.securityLockReason) blockers.push(["symlink", "mount_point", "root_path", "unsafe_path"].indexOf(row.securityReasonCode) !== -1 ? row.securityReasonCode : "protected_path");
+    if (row.policyLocked) blockers.push(["permanent_delete", "zfs_disabled"].indexOf(row.policyReasonCode) !== -1 ? row.policyReasonCode : "policy_lock");
+    if (!row.canDelete && !blockers.length) blockers.push("not_actionable");
+    return {source:source, storage:storage, evidence:evidence, blockers:blockers, primaryBlocker:blockers[0] || "none", specificMountCount:specific, broadAccessCount:broad, ignored:!!row.ignored};
+  }
+
   function sanitizeDiagnosticsRow(row, redactor) {
     var nextRow = $.extend(true, {}, row || {});
     nextRow.mountEvidence = sanitizeDiagnosticsMountEvidence(nextRow.mountEvidence, redactor);
@@ -3118,6 +3184,7 @@
     nextRow.targetSummary = sanitizeDiagnosticsFreeText(nextRow.targetSummary || "", redactor);
     nextRow.datasetName = sanitizeDiagnosticsName(nextRow.datasetName || "", redactor, "dataset");
     nextRow.datasetMountpoint = sanitizeDiagnosticsPath(nextRow.datasetMountpoint || "", redactor);
+    nextRow.decision = buildDiagnosticsDecision(row || {});
     nextRow.storageDetail = sanitizeDiagnosticsFreeText(nextRow.storageDetail || "", redactor);
     nextRow.zfsResolutionMessage = sanitizeDiagnosticsFreeText(nextRow.zfsResolutionMessage || "", redactor);
     nextRow.zfsResolutionDetail = sanitizeDiagnosticsFreeText(nextRow.zfsResolutionDetail || "", redactor);
@@ -3237,7 +3304,7 @@
     });
 
     var payload = {
-      schemaVersion: 4,
+      schemaVersion: 5,
       generatedAt: generatedAt.toISOString(),
       pluginVersion: String(config.pluginVersion || ""),
       redaction: {
@@ -3249,6 +3316,15 @@
         name: ACP.resolveHostThemeName ? ACP.resolveHostThemeName() : "",
         themeClass: ACP.inferThemeClass ? ACP.inferThemeClass(ACP.resolveHostThemeName ? ACP.resolveHostThemeName() : "") : ""
       },
+      localization: {
+        locale: /^[a-z]{2}_[A-Z]{2}$/.test(config.locale || "") ? config.locale : "unknown",
+        languageTag: /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,2}$/.test(config.languageTag || "") ? config.languageTag : "unknown",
+        direction: config.direction === "rtl" ? "rtl" : "ltr",
+        viewport: {width:Math.max(0, Math.min(20000, window.innerWidth || 0)), height:Math.max(0, Math.min(20000, window.innerHeight || 0))},
+        capabilities: {numberFormat:!!(window.Intl && window.Intl.NumberFormat), pluralRules:!!(window.Intl && window.Intl.PluralRules), relativeTimeFormat:!!(window.Intl && window.Intl.RelativeTimeFormat), dateTimeFormat:!!(window.Intl && window.Intl.DateTimeFormat)}
+      },
+      recentFailures: {status:diagnosticsFailureTotal > diagnosticsFailures.length ? "partial" : "complete", totalCount:diagnosticsFailureTotal, includedCount:diagnosticsFailures.length, omittedCount:diagnosticsFailureTotal - diagnosticsFailures.length, data:diagnosticsFailures.slice()},
+      collection: {status:"complete", sections:{browser:{status:"complete"}, rows:{status:"complete",includedCount:sanitizedRows.length,omittedCount:0}, auditHistory:{status:(state.auditHistory || []).length > 25 ? "partial" : "complete",includedCount:sanitizedAuditHistory.length,omittedCount:Math.max(0,(state.auditHistory || []).length - sanitizedAuditHistory.length)}}},
       uiState: {
         searchActive: !!$.trim(String(els.$search.val() || "")),
         searchLength: $.trim(String(els.$search.val() || "")).length,
@@ -3295,6 +3371,10 @@
       })
     };
 
+    if (!state.auditHistoryLoaded) payload.collection.sections.auditHistory.status = "unavailable";
+    else if (state.auditHistoryHasMore) { payload.collection.sections.auditHistory.status = "partial"; payload.collection.sections.auditHistory.omittedCount = null; }
+    if (!state.scanToken && !(state.scanMetrics && state.scanMetrics.startedAt)) payload.collection.sections.rows.status = "unavailable";
+    payload.collection.sections.recentFailures = {status:payload.recentFailures.status,includedCount:payload.recentFailures.includedCount,omittedCount:payload.recentFailures.omittedCount};
     return sanitizeDiagnosticsValue(payload, redactor, "");
   }
 
@@ -3307,7 +3387,7 @@
     var metricsFile = bundle && bundle.state && bundle.state.latestScanMetrics;
     var metrics = metricsFile && metricsFile.data;
 
-    if (metrics && $.isArray(metrics.phases) && metrics.phases.length) {
+    if (metrics && typeof metrics.startedAt === "string") {
       return sanitizeDiagnosticsScanMetrics(metrics);
     }
 
@@ -3412,31 +3492,69 @@
     }, 0);
   }
 
-  function exportDiagnostics() {
-    apiPostForUserAction({
-      action: "getDiagnosticsBundle"
-    }).done(function(response) {
-      var payload = buildDiagnosticsPayload();
-      var serverMetrics;
+  function diagnosticsVersion(value) {
+    return /^\d{4}\.\d{2}\.\d{2}\.\d{2}$/.test(String(value || "")) ? String(value) : "unknown";
+  }
 
-      payload.serverDiagnostics = sanitizeDiagnosticsValue(response && response.bundle ? response.bundle : {}, buildDiagnosticsRedactor(), "");
-      payload.troubleshooting = buildDiagnosticsTroubleshootingOverview(payload, payload.serverDiagnostics);
-      serverMetrics = extractServerLatestScanMetrics(payload.serverDiagnostics);
-      if ((!payload.scan.metrics || !$.isArray(payload.scan.metrics.phases) || !payload.scan.metrics.phases.length) && !$.isEmptyObject(serverMetrics)) {
-        payload.scan.metrics = serverMetrics;
-      }
-      swal(
-        ACP.t(strings, "toolsDiagnosticsDoneTitle", "Diagnostics exported"),
-        ACP.t(strings, "toolsDiagnosticsDoneMessage", "The diagnostics JSON has been downloaded."),
-        "success"
-      );
+  function completeDiagnosticsExport(payload, serverBundle, failure) {
+    var serverAvailable = !!(serverBundle && typeof serverBundle === "object" && [4,5].indexOf(serverBundle.schemaVersion) !== -1);
+    payload.serverDiagnostics = serverAvailable ? sanitizeDiagnosticsValue(serverBundle, buildDiagnosticsRedactor(), "") : {};
+    payload.collection.sections.server = {status:serverAvailable ? ((serverBundle.collection || {}).status || "partial") : "failed", category:serverAvailable ? "none" : (failure === "invalid_response" ? "invalid_response" : "request_failed")};
+    var browserVersion = diagnosticsVersion(payload.pluginVersion);
+    var serverVersion = diagnosticsVersion(serverBundle && serverBundle.runtime && serverBundle.runtime.pluginVersion);
+    var serverMetrics = extractServerLatestScanMetrics(serverBundle);
+    var browserScan = payload.scan && payload.scan.metrics && payload.scan.metrics.startedAt;
+    var serverScan = serverMetrics.startedAt;
+    payload.freshness = {
+      browserVersion:browserVersion, serverVersion:serverVersion,
+      versionMatch:browserVersion === "unknown" || serverVersion === "unknown" ? "unknown" : (browserVersion === serverVersion ? "match" : "mismatch"),
+      scanMatch:!isFinite(Date.parse(browserScan)) || !isFinite(Date.parse(serverScan)) ? "unknown" : (Date.parse(browserScan) === Date.parse(serverScan) ? "match" : "mismatch"),
+      currentSnapshot:serverAvailable && serverBundle.currentSnapshot ? serverBundle.currentSnapshot : {status:"unavailable"}
+    };
+    payload.troubleshooting = buildDiagnosticsTroubleshootingOverview(payload, payload.serverDiagnostics);
+    var serverFindingCount = payload.troubleshooting.findings.length;
+    ["versionMatch", "scanMatch"].forEach(function(key) {
+      if (payload.freshness[key] === "mismatch") payload.troubleshooting.findings.push({id:key,status:"warning",summary:key === "versionMatch" ? "Browser and server plugin versions differ; reload the page." : "Browser and server scan times differ; rescan before acting."});
+    });
+    if (["expired", "invalid", "missing", "unreadable"].indexOf(payload.freshness.currentSnapshot.status) !== -1) payload.troubleshooting.findings.push({id:"current-snapshot",status:"warning",summary:"The current browser scan snapshot cannot be used; rescan before acting."});
+    payload.recentFailures = {status:diagnosticsFailureTotal > diagnosticsFailures.length ? "partial" : "complete",totalCount:diagnosticsFailureTotal,includedCount:diagnosticsFailures.length,omittedCount:diagnosticsFailureTotal-diagnosticsFailures.length,data:diagnosticsFailures.slice()};
+    payload.recentFailures.captureStartedAt = diagnosticsCaptureStartedAt;
+    payload.collection.sections.recentFailures = {status:payload.recentFailures.status,includedCount:payload.recentFailures.includedCount,omittedCount:payload.recentFailures.omittedCount};
+    var partial = Object.keys(payload.collection.sections).some(function(key) { return payload.collection.sections[key].status !== "complete"; });
+    payload.collection.status = partial ? "partial" : "complete";
+    if (partial) payload.troubleshooting.findings.push({id:"collection",status:"warning",summary:"Some diagnostics sections are missing or limited; inspect collection status before drawing conclusions."});
+    payload.troubleshooting.statusCounts.warning += payload.troubleshooting.findings.length - serverFindingCount;
+    if ((partial || payload.troubleshooting.findings.length) && payload.troubleshooting.status !== "error") {
+      payload.troubleshooting.status = "warning";
+      payload.troubleshooting.headline = "Diagnostics contain incomplete evidence or conditions worth reviewing.";
+    }
+    payload = sanitizeDiagnosticsValue(payload, buildDiagnosticsRedactor(), "");
+    try {
       downloadJsonFile(buildDiagnosticsFilename(), payload);
+      swal(partial ? ACP.tr("Partial diagnostics exported") : ACP.t(strings, "toolsDiagnosticsDoneTitle", "Diagnostics exported"),
+        partial ? ACP.tr("A partial diagnostics file has been downloaded. Check collection status for missing or limited sections.") : ACP.t(strings, "toolsDiagnosticsDoneMessage", "The diagnostics JSON has been downloaded."), partial ? "warning" : "success");
+    } catch (_error) {
+      swal(ACP.t(strings, "toolsDiagnosticsFailedTitle", "Diagnostics export failed"), ACP.t(strings, "toolsDiagnosticsFailedMessage", "The diagnostics file could not be created right now."), "error");
+    }
+  }
+
+  function exportDiagnostics() {
+    var payload;
+    try { payload = buildDiagnosticsPayload(); }
+    catch (_error) { payload = {schemaVersion:5,generatedAt:new Date().toISOString(),pluginVersion:diagnosticsVersion(config.pluginVersion),redaction:{sanitized:true,version:2},collection:{status:"partial",sections:{browser:{status:"failed",category:"collection_failed"}}},scan:{},rows:[]}; }
+    var request;
+    try { request = apiPostForUserAction({
+      action: "getDiagnosticsBundle",
+      scanToken: state.scanToken || ""
+    }); } catch (_error) {
+      recordDiagnosticsFailure("getDiagnosticsBundle",0,"error",0);
+      completeDiagnosticsExport(payload,null,"request_failed");
+      return;
+    }
+    request.done(function(response) {
+      completeDiagnosticsExport(payload, response && response.ok && response.bundle, "invalid_response");
     }).fail(function(xhr) {
-      swal(
-        ACP.t(strings, "toolsDiagnosticsFailedTitle", "Diagnostics export failed"),
-        ACP.extractErrorMessage(xhr, ACP.t(strings, "toolsDiagnosticsFailedMessage", "The diagnostics file could not be created right now.")),
-        "error"
-      );
+      completeDiagnosticsExport(payload, null, "request_failed");
     });
   }
 

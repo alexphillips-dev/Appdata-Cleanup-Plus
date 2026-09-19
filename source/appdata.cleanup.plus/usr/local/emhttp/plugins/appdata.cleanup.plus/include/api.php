@@ -458,7 +458,11 @@ function appdataCleanupPlusDiagnosticsRedactValue($value, $keyName="") {
 }
 
 function appdataCleanupPlusDiagnosticsStateFileEnvelope($path, $data, $count, $limit=0) {
+  $health = appdataCleanupPlusDiagnosticsJsonFileHealth("state", $path);
   return array(
+    "status" => ! is_file($path) ? "unavailable" : ($health["validation"] === "skipped-large-file" ? "partial" : (empty($health["readable"]) || $health["validation"] !== "valid" ? "failed" : ($limit > 0 && $count > $limit ? "partial" : "complete"))),
+    "includedCount" => $limit > 0 ? min($count, $limit) : $count,
+    "omittedCount" => $limit > 0 ? max(0, $count - $limit) : 0,
     "path" => appdataCleanupPlusDiagnosticsRedactPath($path),
     "exists" => is_file($path),
     "readable" => is_file($path) ? is_readable($path) : null,
@@ -1136,25 +1140,62 @@ function appdataCleanupPlusDiagnosticsTroubleshootingSummary($logs) {
   );
 }
 
-function buildAppdataCleanupPlusDiagnosticsBundle() {
+function appdataCleanupPlusDiagnosticsCurrentSnapshot($token) {
+  if (!is_string($token) || $token === "") return array("status" => "unavailable");
+  // Do not call the normal validator: it prunes expired snapshots.
+  $file = appdataCleanupPlusSnapshotFile($token);
+  if (!$file) return array("status" => "invalid");
+  if (!is_file($file)) return array("status" => "missing");
+  if (!is_readable($file)) return array("status" => "unreadable");
+  if (filesize($file) > 5242880) return array("status" => "unavailable", "omissionReason" => "size_limit");
+  $snapshot = getAppdataCleanupPlusSnapshot($token);
+  if (empty($snapshot["token"]) || !hash_equals((string)$snapshot["token"], $token) || empty($snapshot["scope"]) || !hash_equals((string)$snapshot["scope"], (string)appdataCleanupPlusSnapshotScopeKey())) return array("status" => "invalid");
+  $expires = isset($snapshot["expiresAt"]) ? strtotime((string)$snapshot["expiresAt"]) : false;
+  if (!$expires || !isset($snapshot["candidates"]) || !is_array($snapshot["candidates"])) return array("status" => "invalid");
+  return array("status" => $expires < time() ? "expired" : (empty($snapshot["candidates"]) ? "empty" : "valid"), "issuedAt" => (string)($snapshot["issuedAt"] ?? ""), "expiresAt" => date("c", $expires), "candidateCount" => count($snapshot["candidates"]));
+}
+
+function appdataCleanupPlusDiagnosticsCollect($callback, &$metadata) {
+  $started = microtime(true);
+  try {
+    $data = $callback();
+    $status = is_array($data) && isset($data["status"]) && in_array($data["status"], array("complete", "partial", "unavailable", "failed"), true) ? $data["status"] : "complete";
+    if (is_array($data) && array_key_exists("available", $data) && !$data["available"]) $status = "unavailable";
+    if (is_array($data) && !empty($data["truncated"]) && $status === "complete") $status = "partial";
+    $metadata = array("status" => $status, "durationMs" => (int)round((microtime(true)-$started)*1000));
+    if (isset($data["lines"])) { $metadata["includedCount"] = count($data["lines"]); $metadata["omittedCount"] = !empty($data["truncated"]) ? null : 0; }
+    foreach (array("includedCount", "omittedCount") as $key) if (is_array($data) && array_key_exists($key, $data)) $metadata[$key] = $data[$key];
+    return $data;
+  } catch (Throwable $error) {
+    $metadata = array("status" => "failed", "category" => "collection_failed", "durationMs" => (int)round((microtime(true)-$started)*1000));
+    return array(); // Never export exception messages, arguments, paths or traces.
+  }
+}
+
+function buildAppdataCleanupPlusDiagnosticsBundle($token="") {
   $startedAt = microtime(true);
   $logs = array();
   $bundle = array();
+  $sections = array();
+  $collect = function($id, $callback) use (&$sections) {
+    return appdataCleanupPlusDiagnosticsCollect($callback, $sections[$id]);
+  };
 
   foreach ( appdataCleanupPlusDiagnosticsLogPaths() as $path ) {
-    $logs[] = appdataCleanupPlusDiagnosticsReadMatchingLogTail($path, 100, 5000);
+    $logs[] = $collect("log-" . (count($logs) + 1), function() use ($path) { return appdataCleanupPlusDiagnosticsReadMatchingLogTail($path, 100, 5000); });
   }
 
   $bundle = array(
     "ok" => true,
-    "schemaVersion" => 4,
+    "schemaVersion" => 5,
+    "currentSnapshot" => $collect("currentSnapshot", function() use ($token) { return appdataCleanupPlusDiagnosticsCurrentSnapshot($token); }),
     "generatedAt" => date("c"),
     "redaction" => array(
       "enabled" => true,
       "version" => 2,
       "strategy" => "Server diagnostics use schema allowlists for sensitive state, alias record IDs, and redact paths, hosts, network addresses, emails, credentials, tokens, UUIDs, and opaque identifiers. Review before sharing."
     ),
-    "runtime" => array(
+    "runtime" => $collect("runtime", function() { return array(
       "pluginVersion" => appdataCleanupPlusDiagnosticsPluginVersion(),
       "phpVersion" => PHP_VERSION,
       "phpSapi" => PHP_SAPI,
@@ -1162,21 +1203,21 @@ function buildAppdataCleanupPlusDiagnosticsBundle() {
       "configDir" => appdataCleanupPlusDiagnosticsRedactPath(appdataCleanupPlusConfigDir()),
       "runtimeDir" => appdataCleanupPlusDiagnosticsRedactPath(appdataCleanupPlusRuntimeDir()),
       "dockerRuntimeExists" => is_dir(appdataCleanupPlusDockerRuntimePath())
-    ),
-    "troubleshooting" => appdataCleanupPlusDiagnosticsTroubleshootingSummary($logs),
+    ); }),
+    "troubleshooting" => $collect("troubleshooting", function() use ($logs) { return appdataCleanupPlusDiagnosticsTroubleshootingSummary($logs); }),
     "state" => array(
-      "safetySettings" => appdataCleanupPlusDiagnosticsSafetySettingsSummary(),
-      "quarantineRegistry" => appdataCleanupPlusDiagnosticsQuarantineRegistrySummary(50),
-      "ignoredCandidates" => appdataCleanupPlusDiagnosticsIgnoredCandidatesSummary(50),
-      "auditHistory" => appdataCleanupPlusDiagnosticsRedactAuditHistory(getAppdataCleanupPlusAuditHistory(50)),
-      "runtimeLocks" => appdataCleanupPlusDiagnosticsRuntimeLockSummary(),
-      "statsCache" => array(
+      "safetySettings" => $collect("safetySettings", function() { return appdataCleanupPlusDiagnosticsSafetySettingsSummary(); }),
+      "quarantineRegistry" => $collect("quarantineRegistry", function() { return appdataCleanupPlusDiagnosticsQuarantineRegistrySummary(50); }),
+      "ignoredCandidates" => $collect("ignoredCandidates", function() { return appdataCleanupPlusDiagnosticsIgnoredCandidatesSummary(50); }),
+      "auditHistory" => $collect("auditHistory", function() { return appdataCleanupPlusDiagnosticsRedactAuditHistory(getAppdataCleanupPlusAuditHistory(50)); }),
+      "runtimeLocks" => $collect("runtimeLocks", function() { return appdataCleanupPlusDiagnosticsRuntimeLockSummary(); }),
+      "statsCache" => $collect("statsCache", function() { return array(
         "path" => appdataCleanupPlusDiagnosticsRedactPath(appdataCleanupPlusStatsCacheFile()),
         "exists" => is_file(appdataCleanupPlusStatsCacheFile()),
         "entryCount" => count(readAppdataCleanupPlusJsonFile(appdataCleanupPlusStatsCacheFile(), array()))
-      ),
-      "latestScanMetrics" => appdataCleanupPlusDiagnosticsStateFileEnvelope(appdataCleanupPlusLatestScanMetricsFile(), appdataCleanupPlusSanitizeScanMetrics(readAppdataCleanupPlusJsonFile(appdataCleanupPlusLatestScanMetricsFile(), array())), 1),
-      "snapshots" => appdataCleanupPlusDiagnosticsSnapshotSummary()
+      ); }),
+      "latestScanMetrics" => $collect("latestScanMetrics", function() { return appdataCleanupPlusDiagnosticsStateFileEnvelope(appdataCleanupPlusLatestScanMetricsFile(), appdataCleanupPlusSanitizeScanMetrics(readAppdataCleanupPlusJsonFile(appdataCleanupPlusLatestScanMetricsFile(), array())), 1); }),
+      "snapshots" => $collect("snapshots", function() { return appdataCleanupPlusDiagnosticsSnapshotSummary(); })
     ),
     "logs" => $logs,
     "collector" => array(
@@ -1201,6 +1242,26 @@ function buildAppdataCleanupPlusDiagnosticsBundle() {
     return ! empty($log["truncated"]);
   }));
 
+  $sections["auditHistory"]["includedCount"] = count($bundle["state"]["auditHistory"]);
+  $sections["auditHistory"]["omittedCount"] = count($bundle["state"]["auditHistory"]) >= 50 ? null : 0;
+  if ($sections["auditHistory"]["status"] === "complete" && $sections["auditHistory"]["omittedCount"] === null) $sections["auditHistory"]["status"] = "partial";
+  if ($sections["snapshots"]["status"] === "complete") {
+    $sections["snapshots"]["includedCount"] = count($bundle["state"]["snapshots"]["recent"] ?? array());
+    $sections["snapshots"]["omittedCount"] = max(0, ($bundle["state"]["snapshots"]["count"] ?? 0) - $sections["snapshots"]["includedCount"]);
+    if ($sections["snapshots"]["omittedCount"] > 0) $sections["snapshots"]["status"] = "partial";
+  }
+  foreach (array("auditHistory" => array(appdataCleanupPlusAuditLogFile(), "jsonl"), "statsCache" => array(appdataCleanupPlusStatsCacheFile(), "json")) as $id => $file) {
+    $health = appdataCleanupPlusDiagnosticsJsonFileHealth($id, $file[0], false, $file[1]);
+    if ($sections[$id]["status"] === "failed") continue;
+    if (!$health["exists"]) $sections[$id]["status"] = "unavailable";
+    elseif (!$health["readable"] || $health["validation"] === "invalid") $sections[$id]["status"] = "failed";
+    elseif ($health["validation"] !== "valid") $sections[$id]["status"] = "partial";
+  }
+  foreach ($sections as &$section) {
+    if ($section["status"] !== "complete") $section["omissionReason"] = $section["status"] === "partial" ? "bounded_collection" : ($section["status"] === "unavailable" ? "source_unavailable" : "collection_failed");
+  }
+  unset($section);
+  $bundle["collection"] = array("status" => count(array_filter($sections, function($section) { return $section["status"] !== "complete"; })) ? "partial" : "complete", "sections" => $sections);
   return appdataCleanupPlusDiagnosticsRedactValue($bundle);
 }
 
@@ -1453,7 +1514,7 @@ function handleGetQuarantineSummary() {
 function handleGetDiagnosticsBundle() {
   jsonResponse(array(
     "ok" => true,
-    "bundle" => buildAppdataCleanupPlusDiagnosticsBundle()
+    "bundle" => buildAppdataCleanupPlusDiagnosticsBundle(getPostedString("scanToken"))
   ));
 }
 

@@ -167,6 +167,8 @@ Expand **Specific container mounts** to see mappings that block cleanup, includi
 
 If Docker or Compose ownership cannot be verified, remaining candidates are labeled **Unverified**, and cleanup stays blocked even with Safe Mode disabled. Rescan, then export diagnostics from Tools if the warning remains. The export distinguishes failed requests from rejected inventory records and reports recovery attempts and filter counts without exposing raw container configuration.
 
+Diagnostics downloads include browser/server version and scan freshness checks, read-only snapshot validity, structured candidate decision evidence, and locale/layout capabilities. Each collection section reports missing or limited evidence, with included/omitted counts where available. If the server request fails or times out, a partial browser-only export is still downloaded. The browser keeps the most recent 20 classified plugin request/JavaScript failures since page load; response bodies, error messages, URLs, and stack traces are not retained in that buffer. Exports remain sanitized, and collecting diagnostics does not clean up expired snapshots.
+
 | Tool | What it is for |
 |---|---|
 | Appdata Sources | Review detected appdata roots, browse filesystem paths, and add manual sources for non-standard layouts. |
