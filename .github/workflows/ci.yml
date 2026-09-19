@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -61,6 +61,7 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/acp-browser" --no-save --ignore-scripts playwright@1.63.0 jquery@3.7.1
           "$RUNNER_TEMP/acp-browser/node_modules/.bin/playwright" install --with-deps chromium
+          ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/browser_fixture_test.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/theme_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/maintenance_ui.cjs
 

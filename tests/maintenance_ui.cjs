@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const {execFileSync} = require('node:child_process');
+const {setFixtureContent} = require('./browser_fixture.cjs');
 const modules = process.env.ACP_BROWSER_MODULES;
 const dependency = name => modules ? path.join(modules, name) : name;
 const {chromium} = require(dependency('playwright'));
@@ -13,8 +14,8 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     const page = await browser.newPage({viewport:{width:1440,height:1000}});
     const errors = [];
     page.on('pageerror', e=>errors.push(e.message));
-    const html = execFileSync('php', [path.join(__dirname,'render_i18n_page.php'),'en_US'], {encoding:'utf8',maxBuffer:4e6}).replace(/<script src="[^"]*"><\/script>/g,'').replace(/<link[^>]+>/g,'');
-    await page.setContent(html);
+    const html = execFileSync('php', [path.join(__dirname,'render_i18n_page.php'),'en_US'], {encoding:'utf8',maxBuffer:4e6});
+    await setFixtureContent(page, html);
     await page.addStyleTag({path:path.join(plugin,'styles/appdata.cleanup.plus.css')});
     await page.addScriptTag({path:require.resolve(dependency('jquery/dist/jquery.js'))});
     await page.evaluate(() => {

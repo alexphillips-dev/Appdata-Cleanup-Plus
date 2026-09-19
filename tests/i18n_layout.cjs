@@ -3,6 +3,7 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const {execFileSync} = require('node:child_process');
+const {setFixtureContent} = require('./browser_fixture.cjs');
 const assert = require('node:assert/strict');
 const modules = process.env.ACP_BROWSER_MODULES;
 const dependency = name => modules ? path.join(modules, name) : name;
@@ -15,13 +16,12 @@ const locales = JSON.parse(fs.readFileSync(path.join(plugin, 'locales/locales.js
   const browser = await chromium.launch({headless:true});
   try {
     for (const [locale, definition] of Object.entries(locales)) {
-      const html = execFileSync('php', [path.join(__dirname, 'render_i18n_page.php'), locale], {encoding:'utf8', maxBuffer:4e6})
-        .replace(/<script src="[^"]*"><\/script>/g, '').replace(/<link[^>]+>/g, '');
+      const html = execFileSync('php', [path.join(__dirname, 'render_i18n_page.php'), locale], {encoding:'utf8', maxBuffer:4e6});
       for (const width of [1280, 390]) {
         const page = await browser.newPage({viewport:{width, height:900}});
         const errors = [];
         page.on('pageerror', error => errors.push(error.message));
-        await page.setContent(html);
+        await setFixtureContent(page, html);
         await page.addStyleTag({path:path.join(plugin, 'styles/appdata.cleanup.plus.css')});
         await page.addScriptTag({path:jquery});
         for (const name of ['appdata.cleanup.plus.shared.js', 'appdata.cleanup.plus.panels.js']) {

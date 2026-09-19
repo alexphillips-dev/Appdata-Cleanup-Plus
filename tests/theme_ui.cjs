@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const {execFileSync} = require('node:child_process');
+const {setFixtureContent} = require('./browser_fixture.cjs');
 const dependency = name => process.env.ACP_BROWSER_MODULES ? path.join(process.env.ACP_BROWSER_MODULES, name) : name;
 const {chromium} = require(dependency('playwright'));
 const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus');
@@ -32,8 +33,8 @@ async function nativeCss(version, theme) {
       const page = await browser.newPage({viewport:{width,height:1000}});
       const errors = [];
       page.on('pageerror',error=>errors.push(error.message));
-      const html = execFileSync('php',[path.join(__dirname,'render_i18n_page.php'),'en_US',theme],{encoding:'utf8',maxBuffer:4e6}).replace(/<script src="[^"]*"><\/script>/g,'').replace(/<link[^>]+>/g,'');
-      await page.setContent(html);
+      const html = execFileSync('php',[path.join(__dirname,'render_i18n_page.php'),'en_US',theme],{encoding:'utf8',maxBuffer:4e6});
+      await setFixtureContent(page, html);
       const hostStyle = await page.addStyleTag({content:await nativeCss(version,theme)});
       await hostStyle.evaluate(el=>el.id='native-theme');
       await page.addStyleTag({path:path.join(plugin,'styles/appdata.cleanup.plus.css')});
