@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.19.10">
-<!ENTITY md5 "896ea2f6d70c96b0e9a321908d29abab">
+<!ENTITY version "2026.09.19.11">
+<!ENTITY md5 "1dfb78ca37a13db36a276801ed206c76">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.19.11
+- Fixed diagnostics losing browser scan metrics after background size loading finishes or is interrupted, restoring scan freshness comparisons.
+- Fixed installation log URLs leaking through path redaction. Browser and server exports now remove complete URLs and previously redacted URL fragments.
+
 ###2026.09.19.10
 Diagnostics now download a partial browser report when the server is unavailable or times out.
 Added browser/server version and scan freshness checks plus read-only scan snapshot validation.

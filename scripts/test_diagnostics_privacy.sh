@@ -38,6 +38,8 @@ grep -Fq 'appdataCleanupPlusDiagnosticsIgnoredCandidatesSummary(50)' <<<"${serve
 grep -Fq 'appdataCleanupPlusDiagnosticsRedactValue($bundle)' <<<"${server_bundle}" || fail "Server diagnostics bundle needs a final recursive privacy scrub."
 
 node "${ROOT_DIR}/tests/diagnostics_privacy_client.js"
+grep -Fq 'Installer URLs and previously scrubbed scheme fragments must not survive' "${ROOT_DIR}/tests/behavior_smoke.php" || fail "Server installer URL privacy coverage is missing."
+grep -Fq 'Stopping size hydration must preserve browser scan metrics' "${ROOT_DIR}/tests/maintenance_ui.cjs" || fail "Scan freshness hydration coverage is missing."
 grep -Fq 'Partial exports must omit response bodies' "${ROOT_DIR}/tests/maintenance_ui.cjs" || fail "Partial diagnostics privacy coverage is missing."
 grep -Fq 'Diagnostics must not prune expired snapshots' "${ROOT_DIR}/tests/behavior_smoke.php" || fail "Read-only snapshot diagnostics coverage is missing."
 grep -Fq 'Final export scrub must remove the complete path' "${ROOT_DIR}/tests/diagnostics_privacy_client.js" || fail "Spaced-path export regression coverage must be retained."

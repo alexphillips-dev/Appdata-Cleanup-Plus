@@ -2496,7 +2496,6 @@
     state.scanHydration.active = false;
     state.scanHydration.queue = [];
     state.scanHydration.requestToken = "";
-    state.scanMetrics = {};
   }
 
   function pauseScanStatHydrationForUserRequest() {
@@ -2873,6 +2872,9 @@
 
   function sanitizeDiagnosticsFreeText(value, redactor) {
     var text = String(value || "");
+    // Redact URLs before path/name replacement can consume their scheme.
+    // Also handle scheme fragments from older server-side diagnostic scrubs.
+    text = text.replace(/(?:\b(?:https?|wss?):|<path(?:-\d+)?>:)\/\/[^\s<>"']+/gi, "<url>");
     var replacements = (redactor && $.isArray(redactor.replacements) ? redactor.replacements.slice(0) : []).sort(function(left, right) {
       return String(right.raw || "").length - String(left.raw || "").length;
     });

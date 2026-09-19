@@ -86,8 +86,16 @@ assert.ok(!refsJson.includes("private-target"), "template target paths should be
 assert.ok(!refsJson.includes("customer-a"), "template target path segments should be aliased");
 
 const url = privacy.sanitizeDiagnosticsFreeText("request https://[2001:db8::1234]:8443/private?q=1", redactor);
-assert.ok(url.includes("https://<host>/private?q=1"), "bracketed IPv6 URL authorities should be replaced as a unit");
+assert.ok(url.includes("<url>"), "Complete URLs should be removed before path redaction");
 assert.ok(!url.includes("2001:db8::1234"), "bracketed IPv6 addresses should not remain in URLs");
+for (const message of [
+  'creating: /boot/config/plugins/sample/package.txz https://private.example/PrivateRepo/archive.txz?key=secret',
+  'creating: /boot/config/plugins/<path>/<path>://private.example/PrivateRepo/archive.txz',
+  'request wss://user:secret@[2001:db8::1234]:8443/PrivateRepo'
+]) {
+  const result = JSON.stringify(privacy.sanitizeDiagnosticsValue({logs:[{lines:[message]}]}, privacy.buildDiagnosticsRedactor(), ''));
+  assert.ok(!/private\.example|PrivateRepo|secret|2001:db8/.test(result), 'Installer URLs and previously scrubbed scheme fragments must not survive');
+}
 
 const scrubbed = privacy.sanitizeDiagnosticsValue({ target: "/data/TaxRecords/customer-a" }, privacy.buildDiagnosticsRedactor(), "");
 assert.ok(!JSON.stringify(scrubbed).includes("TaxRecords"), "recursive target fields should be path-sanitized");

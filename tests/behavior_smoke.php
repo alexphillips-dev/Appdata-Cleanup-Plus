@@ -700,6 +700,14 @@ $diagnosticsPrivacyProbe = appdataCleanupPlusJsonEncode(appdataCleanupPlusDiagno
     "target" => "/data/DiagnosticsPrivateTarget/customer-a"
   )
 )));
+foreach (array(
+  'creating: /boot/config/plugins/sample/package.txz https://private.example/PrivateRepo/archive.txz?key=secret',
+  'creating: /boot/config/plugins/<path>/<path>://private.example/PrivateRepo/archive.txz',
+  'request wss://user:secret@[2001:db8::1234]:8443/PrivateRepo'
+) as $urlMessage) {
+  $urlScrub = json_encode(appdataCleanupPlusDiagnosticsRedactValue(array("logs"=>array(array("lines"=>array($urlMessage))))));
+  foreach (array('private.example', 'PrivateRepo', 'secret', '2001:db8') as $fragment) behaviorSmokeAssertNotContains($fragment, $urlScrub, "Installer URLs and previously scrubbed scheme fragments must not survive.");
+}
 behaviorSmokeAssertNotContains("DiagnosticsProbeShare", $diagnosticsPrivacyProbe, "Diagnostics redaction should sanitize associative path keys.");
 behaviorSmokeAssertNotContains("DiagnosticsProbeApp", $diagnosticsPrivacyProbe, "Diagnostics redaction should sanitize path values.");
 behaviorSmokeAssertNotContains("eyJhbGciOiJIUzI1NiJ9", $diagnosticsPrivacyProbe, "Diagnostics redaction should remove bearer and JWT values.");

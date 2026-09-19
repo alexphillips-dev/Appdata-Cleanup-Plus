@@ -34,7 +34,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     });
     for (const file of ['appdata.cleanup.plus.shared.js','appdata.cleanup.plus.panels.js']) await page.addScriptTag({path:path.join(plugin,'scripts',file)});
     const main = fs.readFileSync(path.join(plugin,'scripts/appdata.cleanup.plus.js'),'utf8');
-    const hook = 'window.maintenance={exportDiagnostics,recordDiagnosticsFailure,installDiagnosticsErrorCapture,state,openToolsModal,renderToolsModal,buildRowHtml,renderSummaryCards,renderResults,applyLocalSafetyStateToRow}; cacheElements(); bindEvents(); loadScan=function(){window.scanRefreshes=(window.scanRefreshes||0)+1;}; state.fixtureTools.status={};';
+    const hook = 'window.maintenance={startScanStatHydration,stopScanStatHydration,requestNextScanStatBatch,pauseScanStatHydrationForUserRequest,exportDiagnostics,recordDiagnosticsFailure,installDiagnosticsErrorCapture,state,openToolsModal,renderToolsModal,buildRowHtml,renderSummaryCards,renderResults,applyLocalSafetyStateToRow}; cacheElements(); bindEvents(); loadScan=function(){window.scanRefreshes=(window.scanRefreshes||0)+1;}; state.fixtureTools.status={};';
     await page.addScriptTag({content:main.replace('$(init);',hook)});
     await page.evaluate(()=>maintenance.openToolsModal());
     assert.equal(await page.locator('[data-action="copy-diagnostics-text"], [data-action="copy-support-summary"], .sweet-alert [data-action="review-templates"]').count(),0);
@@ -110,6 +110,18 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     assert.equal(mismatch.localization.locale,'en_US');
     assert.equal(mismatch.localization.viewport.width,1440);
     assert.ok(!JSON.stringify(mismatch).includes('private-scan-token'));
+    await page.evaluate(() => {
+      maintenance.startScanStatHydration(); // No pending sizes must retain scan evidence.
+      maintenance.state.scanHydration={active:true,queue:[],requestToken:'finished'};
+      maintenance.requestNextScanStatBatch('finished'); // Normal completion.
+      maintenance.state.scanHydration.active=true;
+      maintenance.pauseScanStatHydrationForUserRequest(); // User-request cancellation.
+      maintenance.exportDiagnostics();
+      requests.at(-1).deferred.resolve({ok:true,bundle:{schemaVersion:5,runtime:{pluginVersion:'2026.09.19.09'},collection:{status:'complete'},currentSnapshot:{status:'valid'},state:{latestScanMetrics:{data:{startedAt:'2026-09-19T06:00:00-04:00',phases:[]}}}}});
+    });
+    const hydrated = await page.evaluate(async()=>JSON.parse(await downloadedBlob.text()));
+    assert.equal(hydrated.scan.metrics.startedAt,'2026-09-19T10:00:00Z','Stopping size hydration must preserve browser scan metrics');
+    assert.equal(hydrated.freshness.scanMatch,'match','Freshness must compare retained scan evidence after hydration');
     await page.evaluate(() => {
       maintenance.installDiagnosticsErrorCapture();
       maintenance.installDiagnosticsErrorCapture();

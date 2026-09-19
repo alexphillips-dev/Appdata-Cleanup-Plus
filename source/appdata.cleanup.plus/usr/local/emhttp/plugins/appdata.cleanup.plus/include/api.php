@@ -386,6 +386,10 @@ function appdataCleanupPlusDiagnosticsRedactText($value) {
     return "";
   }
 
+  // Strip complete URLs before path redaction can consume their scheme.
+  // Accept previously redacted scheme fragments as well.
+  $text = preg_replace('#(?:\b(?:https?|wss?):|<path(?:-\d+)?>:)//[^\s<>"\']+#i', '<url>', $text);
+
   // Quoted paths may contain spaces and punctuation. For unquoted error
   // arguments, keep consuming spaces up to the next argument/line delimiter.
   $text = preg_replace_callback('#([\'"])(/(?:mnt|boot|var|tmp|etc|usr|config|data|downloads|media|cache|temp|transcode|movies|tv|music|backup|backups)/[^\\r\\n]*?)\\1#', function($matches) {
