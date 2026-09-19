@@ -386,7 +386,12 @@ function appdataCleanupPlusDiagnosticsRedactText($value) {
     return "";
   }
 
-  $text = preg_replace_callback('#/(?:mnt|boot|var|tmp|etc|usr|config|data|downloads|media|cache|temp|transcode|movies|tv|music|backup|backups)(?:/[^\\s\'"<>\\[\\](),;]+)+#', function($matches) {
+  // Quoted paths may contain spaces and punctuation. For unquoted error
+  // arguments, keep consuming spaces up to the next argument/line delimiter.
+  $text = preg_replace_callback('#([\'"])(/(?:mnt|boot|var|tmp|etc|usr|config|data|downloads|media|cache|temp|transcode|movies|tv|music|backup|backups)/[^\\r\\n]*?)\\1#', function($matches) {
+    return $matches[1] . appdataCleanupPlusDiagnosticsRedactPath($matches[2]) . $matches[1];
+  }, $text);
+  $text = preg_replace_callback('#/(?:mnt|boot|var|tmp|etc|usr|config|data|downloads|media|cache|temp|transcode|movies|tv|music|backup|backups)(?:/[^\\r\\n\'"<>\\[\\](),;:]+)+#', function($matches) {
     return appdataCleanupPlusDiagnosticsRedactPath($matches[0]);
   }, $text);
   $text = preg_replace('/(\\b(?:authorization|proxy-authorization)\\s*[:=]\\s*)(?:bearer\\s+)?[^\\s,;]+/i', '$1<redacted>', $text);

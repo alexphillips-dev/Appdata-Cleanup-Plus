@@ -517,7 +517,48 @@ function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
   return $cache[$cacheKey];
 }
 
-function appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName) {
+// Dataset ancestry is independent of filesystem ancestry. Never use the
+// abbreviated UI impact list or the cached mount map to authorize recursion.
+function appdataCleanupPlusRecursiveZfsLockReason($datasetName, $settings=null) {
+  $failure = "The ZFS dataset could not be destroyed safely.";
+  if ($settings === null) $settings = getAppdataCleanupPlusSafetySettings();
+  $result = appdataCleanupPlusRunZfsCommand(array("list", "-H", "-o", "name,type,mountpoint", "-t", "filesystem,volume", "-r", $datasetName));
+  if (!$result["ok"] || !$result["output"] || count($result["output"]) > 10000) return $failure;
+  $paths = array();
+  $seen = array();
+  foreach ($result["output"] as $line) {
+    $fields = explode("\t", $line);
+    if (count($fields) !== 3) return $failure;
+    list($name, $type, $mountpoint) = $fields;
+    if (isset($seen[$name]) || ($name !== $datasetName && strpos($name, $datasetName . "/") !== 0)) return $failure;
+    $seen[$name] = true;
+    // Volumes, legacy and unresolvable mountpoints cannot be checked using
+    // folder ownership rules. Refuse them rather than infer that they are idle.
+    if ($type !== "filesystem" || !appdataCleanupPlusIsAbsoluteZfsPath($mountpoint) || appdataCleanupPlusPathContainsUnsafeSegments($mountpoint)) return $failure;
+    $classification = classifyAppdataCandidate($mountpoint, $settings);
+    if (empty($classification["canDelete"])) return $classification["riskReason"];
+    $reason = buildPathSecurityLockReason($mountpoint, $settings, array("kind" => "zfs"));
+    if ($reason !== "") return $reason;
+    $quarantineRoot = buildCandidateQuarantineRoot($mountpoint, $settings);
+    if (appdataCleanupPlusPathsOverlap($quarantineRoot, $mountpoint)) return "Quarantine folders cannot be acted on here.";
+    $paths[] = $mountpoint;
+  }
+  if (!isset($seen[$datasetName])) return $failure;
+  $inventory = appdataCleanupPlusDockerInventory();
+  if (!$inventory["ok"]) return $inventory["message"];
+  $meta = array();
+  $composePaths = appdataCleanupPlusComposeReferencedPaths($settings, $meta);
+  if (!empty($meta["uncertain"])) return appdataCleanupPlusComposeInventoryUncertainMessage();
+  foreach ($paths as $path) {
+    if (appdataCleanupPlusMountEvidence($path, $inventory["containers"], $settings)) return "An installed container now mounts this folder, a parent folder, or a child folder. Rescan before continuing.";
+    foreach ($composePaths as $composePath) {
+      if (appdataCleanupPlusPathsOverlap($path, $composePath) && !appdataCleanupPlusIsBroadMountAccess($path, $composePath, $settings)) return "A Docker Compose stack now references this folder. Rescan before continuing.";
+    }
+  }
+  return "";
+}
+
+function appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName, $settings=null) {
   $normalizedDatasetName = trim((string)$datasetName);
   $basePreview = array();
   $recursivePreview = array();
@@ -564,6 +605,8 @@ function appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName) {
 
   $recursivePreview = appdataCleanupPlusRunZfsCommand(array("destroy", "-nrvp", $normalizedDatasetName));
   if ( $recursivePreview["ok"] ) {
+    $lockReason = appdataCleanupPlusRecursiveZfsLockReason($normalizedDatasetName, $settings);
+    if ($lockReason !== "") return array("ok" => false, "recursive" => true, "message" => $lockReason);
     $impact = appdataCleanupPlusDescribeZfsDatasetDestroyImpact($normalizedDatasetName, true);
     return array(
       "ok" => true,
@@ -677,7 +720,7 @@ function appdataCleanupPlusDescribeZfsDatasetDestroyImpact($datasetName, $recurs
   );
 }
 
-function appdataCleanupPlusDestroyZfsDataset($datasetName, $recursive=false) {
+function appdataCleanupPlusDestroyZfsDataset($datasetName, $recursive=false, $settings=null) {
   $normalizedDatasetName = trim((string)$datasetName);
   $arguments = array("destroy");
   $result = array();
@@ -690,6 +733,8 @@ function appdataCleanupPlusDestroyZfsDataset($datasetName, $recursive=false) {
   }
 
   if ( $recursive ) {
+    $lockReason = appdataCleanupPlusRecursiveZfsLockReason($normalizedDatasetName, $settings);
+    if ($lockReason !== "") return array("ok" => false, "message" => $lockReason);
     $arguments[] = "-r";
   }
 

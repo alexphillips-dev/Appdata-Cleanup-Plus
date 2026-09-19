@@ -1888,7 +1888,7 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
       } elseif ( ! empty($resolved["storage"]["kind"]) && $resolved["storage"]["kind"] === "zfs" ) {
         $previewResult["datasetName"] = (string)$resolved["storage"]["datasetName"];
         $previewResult["datasetMountpoint"] = (string)$resolved["storage"]["datasetMountpoint"];
-        $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($previewResult["datasetName"]);
+        $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($previewResult["datasetName"], $settings);
         $previewResult["message"] = $zfsPreview["message"];
         $previewResult["recursive"] = ! empty($zfsPreview["recursive"]);
         $previewResult["zfsImpactSummary"] = isset($zfsPreview["impactSummary"]) ? (string)$zfsPreview["impactSummary"] : "";
@@ -1924,7 +1924,7 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
 
     if ( ! empty($resolved["storage"]["kind"]) && $resolved["storage"]["kind"] === "zfs" ) {
       $datasetName = (string)$resolved["storage"]["datasetName"];
-      $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName);
+      $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($datasetName, $settings);
       if ( $progressId !== "" && function_exists("appdataCleanupPlusUpdateOperationProgress") ) {
         appdataCleanupPlusUpdateOperationProgress($progressId, array(
           "currentPath" => $datasetName,
@@ -1932,7 +1932,7 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
         ), true);
       }
       $deleteResult = $zfsPreview["ok"]
-        ? appdataCleanupPlusDestroyZfsDataset($datasetName, ! empty($zfsPreview["recursive"]))
+        ? appdataCleanupPlusDestroyZfsDataset($datasetName, ! empty($zfsPreview["recursive"]), $settings)
         : $zfsPreview;
 
       if ( ! empty($deleteResult["ok"]) ) {

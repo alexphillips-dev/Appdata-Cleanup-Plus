@@ -38,5 +38,7 @@ grep -Fq 'appdataCleanupPlusDiagnosticsIgnoredCandidatesSummary(50)' <<<"${serve
 grep -Fq 'appdataCleanupPlusDiagnosticsRedactValue($bundle)' <<<"${server_bundle}" || fail "Server diagnostics bundle needs a final recursive privacy scrub."
 
 node "${ROOT_DIR}/tests/diagnostics_privacy_client.js"
+grep -Fq 'Final export scrub must remove the complete path' "${ROOT_DIR}/tests/diagnostics_privacy_client.js" || fail "Spaced-path export regression coverage must be retained."
+grep -Fq 'The complete server bundle must remove private path fragments' "${ROOT_DIR}/tests/behavior_smoke.php" || fail "Server log-bundle path privacy coverage must be retained."
 
 echo "test_diagnostics_privacy: diagnostics exports use schema allowlists, aliases, and final recursive scrubs."

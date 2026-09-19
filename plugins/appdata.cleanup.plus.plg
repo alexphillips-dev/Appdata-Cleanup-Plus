@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.19.02">
-<!ENTITY md5 "ddb7150617661ad965c6016e4cefef35">
+<!ENTITY version "2026.09.19.03">
+<!ENTITY md5 "8f0d9bf370fe1fa209a0e2213daa9b1b">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.19.03
+- Protect every descendant mountpoint before recursive ZFS deletion, including datasets mounted outside the selected folder.
+- Block cleanup when Docker Compose ownership uses unresolved YAML anchors or aliases.
+- Redact complete private paths containing spaces from diagnostics logs and downloaded support bundles.
+
 ###2026.09.19.02
 - Shorten the saved-template cleanup dialog and move long template and backup lists into their own scrollable panel.
 - Keep the dialog title, Refresh control, guidance, and Done button visible while browsing the list.

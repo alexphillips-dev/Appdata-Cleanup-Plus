@@ -50,6 +50,16 @@ vm.runInNewContext(
 
 const privacy = context.privacy;
 const redactor = privacy.buildDiagnosticsRedactor();
+for (const message of [
+  "rename(/mnt/user/appdata/My Private App,/mnt/user/appdata/.quarantine/My Private App): Permission denied",
+  "cannot open '/mnt/user/appdata/Private, Financial Records': Permission denied",
+  'cannot open "/mnt/user/appdata/Private (Financial) Records": Permission denied'
+]) {
+  const result = privacy.sanitizeDiagnosticsValue({logs:[{lines:[message]}]}, privacy.buildDiagnosticsRedactor(), "");
+  assert.ok(!JSON.stringify(result).includes("Private"), "Final export scrub must remove the complete path, not only its first word");
+  assert.ok(!JSON.stringify(result).includes("Records"), "Quoted path punctuation must not leave a private suffix");
+  assert.ok(JSON.stringify(result).includes("Permission denied"), "Diagnostic failure context should remain useful");
+}
 const target = privacy.sanitizeDiagnosticsPath("/data/TaxRecords/customer-a", redactor);
 
 assert.ok(target.startsWith("/data/"), "container target root should remain useful");

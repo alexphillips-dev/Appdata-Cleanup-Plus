@@ -140,6 +140,26 @@ try {
     check($meta['uncertain'], 'Ambiguous binds must not silently produce an empty protected set.');
   }
   // Indirect stacks and project-side overrides remain protective when down.
+  foreach (array(
+    "x-data: &data /mnt/user/appdata\nservices:\n  app:\n    image: example\n    volumes:\n      - type: bind\n        source: *data\n        target: /config\n",
+    "x-mounts: &mounts\n  - /mnt/user/appdata:/config\nservices:\n  app:\n    volumes: *mounts\n",
+    "services:\n  app:\n    volumes:\n      - *saved-bind\n",
+    "x-data: &app.data /mnt/user/appdata\nservices:\n  app:\n    volumes:\n      - type: bind\n        source: *app.data\n        target: /config\n",
+    "services:\n  app:\n    <<: *saved-service\n"
+  ) as $yaml) {
+    file_put_contents($root . '/projects/demo/compose.yaml', $yaml);
+    $meta = array(); appdataCleanupPlusComposeReferencedPaths($settings, $meta);
+    check($meta['uncertain'], 'YAML references must fail closed instead of appearing unowned.');
+    check(appdataCleanupPlusCurrentOwnershipLockReason('/mnt/user/appdata/demo', $settings) !== '', 'Action-time verification must block unresolved YAML ownership.');
+    foreach (array('preview_delete', 'delete', 'quarantine') as $operation) {
+      $result = executeCandidateOperation(array(array('path'=>$root . '/candidate')), $settings, $operation);
+      check($result['results'][0]['status'] === 'blocked', 'Unresolved Compose aliases must block every cleanup flow.');
+      check(file_get_contents($root . '/candidate/keep.txt') === 'untouched', 'Uncertain Compose ownership must preserve appdata.');
+    }
+  }
+  $uncertain = false;
+  appdataCleanupPlusComposeBindHosts("# source: *comment\nservices:\n  app:\n    environment:\n      EXAMPLE: '*literal'\n", $uncertain);
+  check(!$uncertain, 'Comments and quoted literal stars must not be treated as YAML references.');
   mkdir($root . '/indirect');
   file_put_contents($root . '/projects/demo/indirect', $root . '/indirect');
   file_put_contents($root . '/indirect/compose.yml', "services:\n  app:\n    volumes:\n      - /mnt/user/appdata/indirect:/config\n");

@@ -54,6 +54,20 @@ if ( empty($args) ) {
 }
 
 if ( $args[0] === "list" ) {
+  if (in_array("name,type,mountpoint", $args, true)) {
+    $inventoryFile = getenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_INVENTORY_FILE");
+    if ($inventoryFile) {
+      $inventory = json_decode(file_get_contents($inventoryFile), true);
+      if (!is_array($inventory)) exit(1);
+      foreach ($inventory as $line) echo $line . PHP_EOL;
+      exit(0);
+    }
+    $name = $args[count($args) - 1];
+    $mount = zfsFixtureDeletePath($datasetRoot, basename($name));
+    echo $name . "\tfilesystem\t" . $mount . PHP_EOL;
+    if (basename($name) === "Sonarr") echo $name . "/library\tfilesystem\t" . $mount . "/library" . PHP_EOL;
+    exit(0);
+  }
   if ( in_array("-r", $args, true) && in_array("filesystem,snapshot", $args, true) ) {
     $datasetName = trim((string)$args[count($args) - 1]);
     $childName = basename($datasetName);
@@ -113,6 +127,8 @@ if ( $mode === "recursive" && ! $recursive ) {
   fwrite(STDERR, "cannot destroy '" . $datasetName . "': filesystem has children or snapshots\n");
   exit(1);
 }
+
+if (getenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_DESTROY_LOG")) file_put_contents(getenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_DESTROY_LOG"), $datasetName . PHP_EOL, FILE_APPEND);
 
 if ( $mode === "busy" ) {
   fwrite(STDERR, "cannot destroy '" . $datasetName . "': dataset is busy\n");

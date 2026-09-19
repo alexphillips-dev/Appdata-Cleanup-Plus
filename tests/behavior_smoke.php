@@ -623,7 +623,11 @@ setIgnoredAppdataCleanupPlusCandidates(array(
     "targetSummary" => "/private-target"
   )
 ));
+file_put_contents($syslogFixture, "\nAppdata Cleanup Plus: rename(/mnt/user/appdata/My Private App,/mnt/user/appdata/.quarantine/My Private App): Permission denied\nAppdata Cleanup Plus: cannot open '/mnt/user/appdata/Private, Financial Records': Permission denied\n", FILE_APPEND);
 $diagnosticsBundle = buildAppdataCleanupPlusDiagnosticsBundle();
+foreach (array("Private App", "Financial Records") as $privateFragment) {
+  behaviorSmokeAssertNotContains($privateFragment, json_encode($diagnosticsBundle), "The complete server bundle must remove private path fragments containing spaces and punctuation.");
+}
 $diagnosticsJson = appdataCleanupPlusJsonEncode($diagnosticsBundle);
 setAppdataCleanupPlusQuarantineRegistry($diagnosticsRegistryBefore);
 setIgnoredAppdataCleanupPlusCandidates($diagnosticsIgnoredBefore);
@@ -918,6 +922,7 @@ behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualAliasLivePath),
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($manualCustomOrphanPath), "Manual source filesystem orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsDatasetRoot . "/templated-orphan"), "ZFS dataset templated orphan fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsDatasetRoot . "/Sonarr"), "ZFS dataset case-sensitive fixture should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsDatasetRoot . "/Sonarr/library"), "Recursive child mountpoint fixture should exist.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($zfsDatasetRoot . "/Busy"), "Busy ZFS dataset fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmDomainTemplatePath), "VM domains fixture should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($vmIsosPath), "VM ISO fixture should be created.");
@@ -1386,6 +1391,51 @@ $zfsDeleteExecution = executeCandidateOperation(array(array(
 behaviorSmokeAssertSame("deleted", $zfsDeleteExecution["results"][0]["status"], "ZFS-backed deletes should report deleted when the dataset destroy succeeds.");
 behaviorSmokeAssertSame(false, is_dir($templatedOrphanPath), "Successful ZFS-backed deletes should remove the mapped share path.");
 array_pop($GLOBALS["acpTestDockerRecords"]);
+// An independently mounted fifth child must not escape the four-row UI preview.
+$recursiveDataset = "docker_vm_nvme/" . $appdataShareName . "/Sonarr";
+$recursiveCandidate = array("path" => $zfsCaseSensitivePath, "datasetName" => $recursiveDataset);
+$inventoryFile = $stateRoot . "/zfs-inventory.json";
+$destroyLog = $stateRoot . "/zfs-destroy.log";
+$parentInventory = array($recursiveDataset . "\tfilesystem\t" . $zfsDatasetRoot . "/Sonarr");
+for ($child = 1; $child <= 4; $child++) {
+  $childPath = $zfsDatasetRoot . "/Sonarr/child-" . $child;
+  ensureAppdataCleanupPlusDirectory($childPath);
+  $parentInventory[] = $recursiveDataset . "/child-" . $child . "\tfilesystem\t" . $childPath;
+}
+putenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_INVENTORY_FILE=" . $inventoryFile);
+putenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_DESTROY_LOG=" . $destroyLog);
+$unsafeInventories = array(
+  array_merge($parentInventory, array($recursiveDataset . "/external\tfilesystem\t" . $manualAliasLivePath)),
+  array_merge($parentInventory, array($recursiveDataset . "/compose\tfilesystem\t" . $appdataShareRoot . "/compose-owned")),
+  array_merge($parentInventory, array($recursiveDataset . "/vm\tfilesystem\t" . $vmDomainTemplatePath)),
+  array_merge($parentInventory, array($recursiveDataset . "/root\tfilesystem\t" . $appdataShareRoot)),
+  array_merge($parentInventory, array($recursiveDataset . "/volume\tvolume\t-")),
+  array_merge($parentInventory, array($recursiveDataset . "/unmounted\tfilesystem\tnone")),
+  array_merge($parentInventory, array($recursiveDataset . "/legacy\tfilesystem\tlegacy")),
+  array_merge($parentInventory, array("malformed")),
+  array($recursiveDataset . "/child\tfilesystem\t" . $zfsDatasetRoot . "/Sonarr/library"),
+  array(),
+  null
+);
+foreach ($unsafeInventories as $inventory) {
+  file_put_contents($inventoryFile, json_encode($inventory));
+  foreach (array("preview_delete", "delete") as $operation) {
+    $attempt = executeCandidateOperation(array($recursiveCandidate), getAppdataCleanupPlusSafetySettings(), $operation);
+    behaviorSmokeAssertSame("error", $attempt["results"][0]["status"], "Unsafe or unverifiable recursive children must block preview and deletion.");
+  }
+  behaviorSmokeAssertSame(false, appdataCleanupPlusDestroyZfsDataset($recursiveDataset, true)["ok"], "The final destroy boundary must independently revalidate descendants.");
+  behaviorSmokeAssertSame(false, is_file($destroyLog), "Blocked recursion must never invoke the destructive ZFS command.");
+  behaviorSmokeAssertTrue(is_dir($zfsCaseSensitivePath), "Blocked recursion must preserve the selected dataset.");
+}
+// A previously safe preview must not authorize a child newly owned at confirmation.
+file_put_contents($inventoryFile, json_encode($parentInventory));
+behaviorSmokeAssertSame(true, appdataCleanupPlusPreviewZfsDatasetDestroy($recursiveDataset)["ok"], "Verified unowned children remain previewable.");
+$GLOBALS["acpTestDockerRecords"][] = array("Id" => "late-owner", "Names" => array("/late-owner"), "Mounts" => array(array("Type" => "bind", "Source" => $zfsDatasetRoot . "/Sonarr/child-4", "Destination" => "/config")));
+behaviorSmokeAssertSame(false, appdataCleanupPlusDestroyZfsDataset($recursiveDataset, true)["ok"], "A new owner after preview must block the actual destroy.");
+behaviorSmokeAssertSame(false, is_file($destroyLog), "Late ownership must prevent the destructive command.");
+array_pop($GLOBALS["acpTestDockerRecords"]);
+putenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_INVENTORY_FILE");
+putenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_DESTROY_LOG");
 $zfsRecursiveDeleteExecution = executeCandidateOperation(array(array(
   "id" => "sonarr-zfs",
   "name" => "Sonarr",

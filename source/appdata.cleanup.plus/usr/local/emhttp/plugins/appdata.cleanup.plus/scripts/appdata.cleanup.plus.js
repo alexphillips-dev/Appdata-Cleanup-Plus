@@ -2852,7 +2852,10 @@
       }).join("");
     });
 
-    text = text.replace(/\/(?:mnt|boot|var|tmp|etc|usr|config|data|downloads|media|cache|temp|transcode|movies|tv|music|backup|backups)(?:\/[^\s'"<>\[\](),;]+)+/g, function(path) {
+    text = text.replace(/(['"])(\/(?:mnt|boot|var|tmp|etc|usr|config|data|downloads|media|cache|temp|transcode|movies|tv|music|backup|backups)\/[^\r\n]*?)\1/g, function(_, quote, path) {
+      return quote + sanitizeDiagnosticsPath(path, redactor) + quote;
+    });
+    text = text.replace(/\/(?:mnt|boot|var|tmp|etc|usr|config|data|downloads|media|cache|temp|transcode|movies|tv|music|backup|backups)(?:\/[^\r\n'"<>\[\](),;:]+)+/g, function(path) {
       return sanitizeDiagnosticsPath(path, redactor);
     });
     text = text.replace(/(\b(?:authorization|proxy-authorization)\s*[:=]\s*)(?:bearer\s+)?[^\s,;]+/gi, "$1<redacted>");

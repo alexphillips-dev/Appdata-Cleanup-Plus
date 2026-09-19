@@ -487,6 +487,10 @@ function appdataCleanupPlusComposeBindHosts($contents, &$uncertain) {
   $hosts = array();
   foreach ( preg_split('/\r?\n/', $contents) as $line ) {
     $value = null;
+    // We do not resolve YAML references. An alias can conceal an entire bind
+    // source (including the appdata root), so it must not mean "no owner".
+    $structure = preg_replace('/"(?:\\\\.|[^"\\\\])*"|\x27[^\x27]*\x27|(?:^|\s+)#.*$/', '', $line);
+    if (preg_match('/(?:^|[\s\[{,:-])[&*][^\s\[\]{},]+/', $structure)) $uncertain = true;
     if ( preg_match('/^\s*source\s*:\s*(.+)$/', $line, $match) ) {
       $value = trim($match[1]);
       if ( preg_match('/^(["\'])(.*?)\1\s*(?:#.*)?$/', $value, $quoted) ) $value = $quoted[2];
@@ -1878,7 +1882,7 @@ function appdataCleanupPlusBuildCandidateDetailPayload($candidate, $settings=nul
   }
 
   if ( $payload["storageKind"] === "zfs" && $payload["datasetName"] !== "" ) {
-    $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($payload["datasetName"]);
+    $zfsPreview = appdataCleanupPlusPreviewZfsDatasetDestroy($payload["datasetName"], $settings);
 
     if ( ! empty($zfsPreview["ok"]) ) {
       $payload["zfsPreviewLoaded"] = true;

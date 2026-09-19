@@ -85,9 +85,12 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     });
     await page.locator('[data-action="export-diagnostics"]').click();
     assert.equal(await page.evaluate(()=>requests.at(-1).options.data.action),'getDiagnosticsBundle');
-    await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,bundle:{schemaVersion:4}}));
+    await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,bundle:{schemaVersion:4,logs:[{lines:["Appdata Cleanup Plus: rename(/mnt/user/appdata/My Private App,/mnt/user/appdata/.quarantine/My Private App): Permission denied"]}]}}));
     assert.match(await page.evaluate(()=>downloadedFilename),/^appdata-cleanup-plus-diagnostics-.*\.json$/);
     assert.equal(await page.evaluate(async()=>JSON.parse(await downloadedBlob.text()).schemaVersion),4);
+    const diagnosticsText = await page.evaluate(async()=>downloadedBlob.text());
+    assert.ok(!diagnosticsText.includes('Private App'), 'Downloaded diagnostics must not retain spaced path fragments');
+    assert.ok(diagnosticsText.includes('Permission denied'), 'Download must preserve the useful error context');
     // Broad access belongs in Details, while the candidate stays selectable.
     await page.evaluate(()=>{
       const row = {id:'mount',name:'Example',path:'/mnt/user/appdata/example',displayPath:'/mnt/user/appdata/example',canDelete:true,mountEvidence:[],broadMountEvidence:[{name:'Viewer',paths:['/mnt/user']}]};
