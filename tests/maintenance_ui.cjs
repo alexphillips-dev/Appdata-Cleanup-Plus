@@ -92,6 +92,32 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     const diagnosticsText = await page.evaluate(async()=>downloadedBlob.text());
     assert.ok(!diagnosticsText.includes('Private App'), 'Downloaded diagnostics must not retain spaced path fragments');
     assert.ok(diagnosticsText.includes('Permission denied'), 'Download must preserve the useful error context');
+    // Detection reasons use the scan evidence, with the same wording in Details.
+    await page.evaluate(() => {
+      const ACP = AppdataCleanupPlus;
+      const rows = [
+        {id:'discovery', sourceKind:'filesystem', canDelete:true},
+        {id:'template', sourceKind:'template', canDelete:true},
+        {id:'zfs', sourceKind:'filesystem', storageKind:'zfs', canDelete:true},
+        {id:'incomplete', sourceKind:'filesystem', scanVerificationLocked:true, canDelete:false},
+        {id:'ignored', sourceKind:'template', ignored:true, canDelete:true}
+      ];
+      maintenance.state.rows = rows;
+      maintenance.renderResults();
+      window.reasonCases = rows.map(row => ({
+        reason: ACP.getRowDetectionReason(row),
+        details: ACP.buildRowDetailsModalHtml({strings:appdataCleanupPlusConfig.strings,state:maintenance.state}, row)
+      }));
+    });
+    const reasons = await page.evaluate(() => reasonCases);
+    assert.match(reasons[0].reason, /no installed container or saved Docker template/);
+    assert.match(reasons[1].reason, /saved Docker template references/);
+    assert.equal(reasons[2].reason, reasons[0].reason, 'ZFS storage must not change discovery evidence');
+    assert.match(reasons[3].reason, /has not been confirmed as orphaned/);
+    assert.equal(reasons[4].reason, reasons[1].reason, 'Ignoring a row must not change detection evidence');
+    for (const entry of reasons) assert.ok(entry.details.includes(entry.reason), 'Details and column must share wording');
+    for (const headings of await page.locator('.acp-results-table-head').allTextContents()) assert.match(headings, /SourceDetection reasonActions/);
+    assert.ok(await page.locator('.acp-row-badges + .acp-row-detection-reason + .acp-row-side').count());
     // Broad access belongs in Details, while the candidate stays selectable.
     await page.evaluate(()=>{
       const row = {id:'mount',name:'Example',path:'/mnt/user/appdata/example',displayPath:'/mnt/user/appdata/example',canDelete:true,mountEvidence:[],broadMountEvidence:[{name:'Viewer',paths:['/mnt/user']}]};
@@ -102,6 +128,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
       AppdataCleanupPlus.releaseModalScrollLock(false);
     });
     assert.equal(await page.locator('#acp-results .acp-mount-evidence').count(),0,'Broad access must not clutter the Source column');
+    assert.match(await page.locator('.acp-row-detection-reason').textContent(), /Broad container access does not establish ownership or block cleanup/);
     const details=await page.evaluate(()=>AppdataCleanupPlus.buildRowDetailsModalHtml({strings:appdataCleanupPlusConfig.strings,state:maintenance.state},maintenance.state.rows[0]));
     assert.match(details,/Broad container access/);
     assert.match(details,/does not block cleanup/);
@@ -116,6 +143,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
       document.querySelector('#acp-results').innerHTML=maintenance.buildRowHtml(row);
     });
     await page.locator('.acp-mount-evidence summary').click();
+    assert.match(await page.locator('.acp-row-detection-reason').textContent(), /Cleanup is blocked, including when the containers are stopped/);
     assert.match(await page.locator('.acp-mount-evidence').textContent(),/Specific container mounts/);
     assert.equal(await page.locator('.acp-row-checkbox').isChecked(),false);
     assert.equal(await page.locator('.acp-row-checkbox').isDisabled(),true);

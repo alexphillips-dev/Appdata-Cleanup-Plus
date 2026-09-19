@@ -60,6 +60,18 @@ async function nativeCss(version, theme) {
         return Promise.all(document.getAnimations().filter(animation=>animation.effect.getTiming().iterations!==Infinity).map(animation=>animation.finished.catch(()=>{})));
       });
       const expectedClass=['white','azure'].includes(theme)?'light':'dark';
+      const reasonLayout = await page.evaluate(() => {
+        const reason = document.querySelector('.acp-row-detection-reason');
+        const source = document.querySelector('.acp-row-badges');
+        const heading = document.querySelector('.acp-results-table-head').children[6];
+        return {reason:reason.getBoundingClientRect().toJSON(), source:source.getBoundingClientRect().toJSON(), heading:heading.getBoundingClientRect().toJSON(), label:getComputedStyle(reason.firstElementChild).display};
+      });
+      if (width > 1320) {
+        assert.ok(reasonLayout.reason.left >= reasonLayout.source.right - 1, 'Detection reason must follow Source');
+        assert.ok(Math.abs(reasonLayout.reason.left - reasonLayout.heading.left) < 2, 'Detection reason must align with its header');
+      } else {
+        assert.notEqual(reasonLayout.label, 'none', 'Stacked rows must label their detection reason');
+      }
       const baseline=await page.evaluate(()=>{
         const app=document.querySelector('#acp-app'), css=getComputedStyle(app), body=getComputedStyle(document.body);
         return {page:css.backgroundColor,host:body.backgroundColor,text:css.color,hostText:body.color,kind:app.dataset.acpThemeClass,card:getComputedStyle(document.querySelector('.acp-summary-card')).backgroundColor};

@@ -637,6 +637,16 @@
     return html.join('');
   };
 
+  ACP.getRowDetectionReason = function(row) {
+    if (row.scanVerificationLocked) return ACP.tr("Ownership verification is incomplete. This folder has not been confirmed as orphaned.");
+    if ((row.mountEvidence || []).length) return ACP.tr("These containers mount this folder or a related path within an appdata source. Cleanup is blocked, including when the containers are stopped.");
+    var reason = row.sourceKind === "filesystem"
+      ? ACP.tr("This folder was found inside an appdata source, but no installed container or saved Docker template currently points to it.")
+      : ACP.tr("A saved Docker template references this folder, but no installed container currently uses it.");
+    if ((row.broadMountEvidence || []).length) reason += " " + ACP.tr("Broad container access does not establish ownership or block cleanup.");
+    return reason;
+  };
+
   ACP.buildMountEvidenceHtml = function(evidence, broadAccess) {
     if (!$.isArray(evidence) || !evidence.length) return '';
     var title = broadAccess ? ACP.tr("Broad container access") : ACP.tr("Specific container mounts");
@@ -733,11 +743,7 @@
       : ((row.policyLocked || row.risk === "blocked" || !row.canDelete)
         ? ACP.t(strings, "cardBlocked", "Blocked")
         : ACP.t(strings, "cardDeletable", "Ready"));
-    var sourceExplanation = row.sourceKind === "filesystem"
-      ? ACP.t(strings, "rowDetailsDiscoverySimple", "This folder was found inside an appdata source, but no installed container or saved Docker template currently points to it.")
-      : ACP.t(strings, "rowDetailsTemplateSimple", "A saved Docker template references this folder, but no installed container currently uses it.");
-    if ((row.mountEvidence || []).length) sourceExplanation = ACP.tr("An installed container can access this folder through its mounts. Cleanup is locked.");
-    if (row.scanVerificationLocked) sourceExplanation = ACP.tr("Ownership verification is incomplete. This folder has not been confirmed as orphaned.");
+    var sourceExplanation = ACP.getRowDetectionReason(row);
     var actionExplanation = "";
     var actionButtons = [];
     var technicalItems = [

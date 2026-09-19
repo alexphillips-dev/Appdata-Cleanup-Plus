@@ -2705,6 +2705,7 @@
               '<div class="acp-row-loading-size"><span></span></div>' +
               '<div class="acp-row-loading-path"><span></span></div>' +
               '<div class="acp-row-loading-badge"><span></span></div>' +
+              '<div class="acp-row-loading-path"><span></span></div>' +
               '<div class="acp-row-loading-actions"><span></span><span></span></div>' +
             "</div>" +
           "</div>" +
@@ -2726,7 +2727,7 @@
           "</div>" +
         "</header>" +
         '<div class="acp-results-table-head">' +
-          '<span></span><span>' + ACP.escapeHtml(ACP.t(strings, "nameLabel", "Name")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "lastUsedLabel", "Last used")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "pathLabel", "Path")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sourceLabel", "Source")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "actionsLabel", "Actions")) + '</span>' +
+          '<span></span><span>' + ACP.escapeHtml(ACP.t(strings, "nameLabel", "Name")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "lastUsedLabel", "Last used")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "pathLabel", "Path")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sourceLabel", "Source")) + '</span><span>' + ACP.escapeHtml(ACP.tr("Detection reason")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "actionsLabel", "Actions")) + '</span>' +
         "</div>" +
         '<div class="acp-results-section-body">' + rowHtml.join("") + "</div>" +
       "</section>"
@@ -4328,6 +4329,7 @@
             '<div class="acp-row-size">' + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || ACP.tr("Unknown"))) + "</div>" +
             '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
             '<div class="acp-row-badges">' + badgeHtml + ACP.buildMountEvidenceHtml(row.mountEvidence) + "</div>" +
+            '<div class="acp-row-detection-reason"><span class="acp-row-detection-label">' + ACP.escapeHtml(ACP.tr("Detection reason")) + '</span>' + ACP.escapeHtml(ACP.getRowDetectionReason(row)) + "</div>" +
             '<div class="acp-row-side">' +
               rowActionHtml +
             "</div>" +
@@ -4391,7 +4393,7 @@
             '<div class="acp-results-section-meta">' + buildSectionMetaHtml(section.rows || []) + "</div>" +
           "</header>" +
           '<div class="acp-results-table-head">' +
-            '<span></span><span>' + ACP.escapeHtml(ACP.t(strings, "nameLabel", "Name")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "lastUsedLabel", "Last used")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "pathLabel", "Path")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sourceLabel", "Source")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "actionsLabel", "Actions")) + '</span>' +
+            '<span></span><span>' + ACP.escapeHtml(ACP.t(strings, "nameLabel", "Name")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "lastUsedLabel", "Last used")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "pathLabel", "Path")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sourceLabel", "Source")) + '</span><span>' + ACP.escapeHtml(ACP.tr("Detection reason")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "actionsLabel", "Actions")) + '</span>' +
           "</div>" +
           '<div class="acp-results-section-body">' + rowHtml.join("") + "</div>" +
         "</section>"
