@@ -119,6 +119,7 @@ async function nativeCss(version, theme) {
         await page.evaluate(flow=>{
           const T=themeFlows, ACP=AppdataCleanupPlus, row=T.state.rows[0], context={strings:appdataCleanupPlusConfig.strings,state:T.state};
           const operation=T.buildOperationContext('delete',[row]);
+          if (flow==='templates') context.state.templateManager={status:{templates:Array.from({length:30},(_,i)=>({id:`template-${i}`,name:`Saved app ${i}`,filename:`my-saved-app-${i}.xml`})),backups:[{id:'backup',name:'Saved backup',filename:'my-backup.xml',canRestore:true}]}};
           const builders={help:()=>T.buildHelpModalHtml(),details:()=>ACP.buildRowDetailsModalHtml(context,row),sources:()=>ACP.buildAppdataSourcesModalHtml(context),mappings:()=>ACP.buildZfsPathMappingsModalHtml(context),tools:()=>ACP.buildToolsModalHtml(context),templates:()=>ACP.buildTemplateManagerModalHtml(context),quarantine:()=>ACP.buildQuarantineManagerModalHtml(context),history:()=>ACP.buildAuditHistoryModalHtml(context),confirmation:()=>T.buildOperationPreviewHtml([row],operation,{}),progress:()=>T.buildOperationProgressHtml({processed:0,total:1},operation,false),results:()=>T.buildOperationResultsHtml({deleted:1},[{path:row.path,status:'deleted',message:'Deleted'}],operation),conflicts:()=>T.buildRestoreConflictDialogHtml({summary:{conflicts:1,ready:0},conflicts:[{id:'example',sourcePath:row.path,parentPath:'/mnt/user/appdata',suggestedName:'Example-restored'}]})};
           const classes={help:'acp-help-modal',details:'acp-row-details-modal',sources:'acp-appdata-sources-modal',mappings:'acp-zfs-path-mappings-modal',tools:'acp-tools-modal',templates:'acp-template-manager-modal',quarantine:'acp-quarantine-manager-modal',history:'acp-audit-history-modal'};
           ACP.applyDeleteModalClass('acp-delete-modal '+(classes[flow]||'acp-delete-modal-review'),builders[flow]());
@@ -130,6 +131,19 @@ async function nativeCss(version, theme) {
         assert.equal(result.bg,baseline.page,`${version} ${theme} ${flow}: modal surface`);
         assert.equal(result.text,baseline.text,`${version} ${theme} ${flow}: modal text`);
         assert.equal(result.kind,expectedClass);
+        if (flow==='templates') {
+          await page.setViewportSize({width,height:650});
+          const geometry=await page.evaluate(()=>{
+            const modal=document.querySelector('.sweet-alert'),list=modal.querySelector('.acp-template-list'),done=modal.querySelector('button.confirm');
+            return {height:modal.getBoundingClientRect().height,outerOverflow:modal.scrollHeight-modal.clientHeight,listOverflow:list.scrollHeight-list.clientHeight,doneBottom:done.getBoundingClientRect().bottom};
+          });
+          assert.ok(geometry.height<=570 && geometry.outerOverflow<=2,`${version} ${theme}: template dialog must stay compact without outer scrolling ${JSON.stringify(geometry)}`);
+          assert.ok(geometry.listOverflow>0,'Long template lists scroll internally');
+          assert.ok(geometry.doneBottom<=650,'Done remains visible');
+          await page.locator('.acp-template-list').evaluate(el=>el.scrollTop=el.scrollHeight);
+          assert.ok(await page.locator('[data-action="restore-template"]').isVisible(),'Backups remain reachable in the scrolling list');
+          await page.setViewportSize({width,height:1000});
+        }
         const gradientButtons=await page.evaluate(()=>Array.from(document.querySelectorAll('#acp-app .acp-button, .sweet-alert button')).filter(el=>getComputedStyle(el).backgroundImage!=='none').map(el=>el.className));
         assert.deepEqual(gradientButtons,[],`${version} ${theme} ${flow}: page and dialog buttons stay flat`);
         const confirm=page.locator('.sweet-alert button.confirm');

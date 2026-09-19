@@ -621,6 +621,7 @@
     var html = ['<p>' + ACP.escapeHtml(ACP.tr("Review saved templates whose containers are no longer installed. Archiving keeps a restorable backup and does not change appdata, images, or containers.")) + '</p>'];
     if (manager.message || status.message) html.push('<p role="status">' + ACP.escapeHtml(manager.message || status.message) + '</p>');
     if (manager.status) {
+      html.push('<div class="acp-template-list" tabindex="0" role="region" aria-label="' + ACP.escapeHtml(ACP.tr("Review templates and backups")) + '">');
       html.push('<h4>' + ACP.escapeHtml(ACP.tr("Saved templates without installed containers")) + '</h4>');
       if (!(status.templates || []).length) html.push('<p>' + ACP.escapeHtml(ACP.tr("No stale templates are available.")) + '</p>');
       $.each(status.templates || [], function(_, row) {
@@ -631,6 +632,7 @@
       $.each(status.backups || [], function(_, row) {
         html.push('<div class="acp-template-row"><div><strong>' + ACP.escapeHtml(row.name) + '</strong><code class="acp-modal-path">' + ACP.escapeHtml(row.filename) + '</code><small>' + ACP.escapeHtml(row.timestampLabel || row.archivedAt || '') + '</small></div><button type="button" class="acp-button acp-button-secondary" data-action="restore-template" data-template-id="' + ACP.escapeHtml(row.id) + '"' + (manager.loading || !row.canRestore ? ' disabled' : '') + '>' + ACP.escapeHtml(row.canRestore ? ACP.tr("Restore template") : ACP.tr("Template already exists")) + '</button></div>');
       });
+      html.push('</div>');
     }
     return html.join('');
   };
