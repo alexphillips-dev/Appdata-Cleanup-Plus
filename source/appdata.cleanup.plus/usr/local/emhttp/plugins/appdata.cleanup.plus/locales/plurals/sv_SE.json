@@ -1,4 +1,24 @@
 {
+  "{count} items ready": {
+    "one": "{count} vara klar",
+    "other": "{count} saker klara"
+  },
+  "{count} items blocked": {
+    "one": "{count} objekt blockerat",
+    "other": "{count} objekt blockerade"
+  },
+  "{count} items ignored": {
+    "one": "{count} objekt ignoreras",
+    "other": "{count} objekt ignorerade"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Visar {shown} av {count} historikpost.",
+    "other": "Visar {shown} av {count} historikposter."
+  },
+  "{count} more paths": {
+    "one": "{count} väg till",
+    "other": "{count} fler vägar"
+  },
   "{count} folders selected": {
     "one": "{count} mapp har valts",
     "other": "{count} mappar valda"

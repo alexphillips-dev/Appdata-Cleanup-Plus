@@ -1,4 +1,19 @@
 {
+  "{count} items ready": {
+    "other": "{count} 個のアイテムが準備できました"
+  },
+  "{count} items blocked": {
+    "other": "{count} 個のアイテムがブロックされました"
+  },
+  "{count} items ignored": {
+    "other": "{count} 項目が無視されました"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "other": "{count} 件の履歴エントリのうち {shown} を表示しています。"
+  },
+  "{count} more paths": {
+    "other": "もう {count} つのパス"
+  },
   "{count} folders selected": {
     "other": "{count} 個のフォルダーを選択中"
   },

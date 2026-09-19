@@ -1,4 +1,24 @@
 {
+  "{count} items ready": {
+    "one": "{count} τεμάχιο έτοιμο",
+    "other": "{count} τεμάχια έτοιμα"
+  },
+  "{count} items blocked": {
+    "one": "Αποκλείστηκε {count} στοιχείο",
+    "other": "Αποκλείστηκαν {count} στοιχεία"
+  },
+  "{count} items ignored": {
+    "one": "{count} στοιχείο αγνοήθηκε",
+    "other": "{count} στοιχεία αγνοήθηκαν"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Εμφάνιση {shown} από {count} καταχώριση ιστορικού.",
+    "other": "Εμφάνιση {shown} από {count} καταχωρήσεις ιστορικού."
+  },
+  "{count} more paths": {
+    "one": "{count} ακόμη μονοπάτι",
+    "other": "{count} ακόμη μονοπάτια"
+  },
   "{count} folders selected": {
     "one": "Επιλέχθηκε {count} φάκελος",
     "other": "Επιλέχθηκαν {count} φάκελοι"

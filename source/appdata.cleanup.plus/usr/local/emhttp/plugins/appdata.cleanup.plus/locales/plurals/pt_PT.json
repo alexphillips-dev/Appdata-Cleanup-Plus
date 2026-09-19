@@ -1,4 +1,29 @@
 {
+  "{count} items ready": {
+    "one": "{count} artigo pronto",
+    "many": "{count} artigos prontos",
+    "other": "{count} artigos prontos"
+  },
+  "{count} items blocked": {
+    "one": "{count} item bloqueado",
+    "many": "{count} artigos bloqueados",
+    "other": "{count} itens bloqueados"
+  },
+  "{count} items ignored": {
+    "one": "{count} item ignorado",
+    "many": "{count} artigos ignorados",
+    "other": "{count} itens ignorados"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "A mostrar {shown} de {count} entrada do histórico.",
+    "many": "A mostrar {shown} de {count} entradas no histórico.",
+    "other": "A mostrar {shown} de {count} entradas do histórico."
+  },
+  "{count} more paths": {
+    "one": "mais {count} caminho",
+    "many": "Mais {count} de caminhos",
+    "other": "Mais {count} caminhos"
+  },
   "{count} folders selected": {
     "one": "{count} pasta selecionada",
     "many": "{count} de pastas selecionadas",

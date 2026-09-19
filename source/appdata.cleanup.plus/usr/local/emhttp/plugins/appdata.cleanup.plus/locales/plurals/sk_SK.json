@@ -1,4 +1,34 @@
 {
+  "{count} items ready": {
+    "one": "{count} položka pripravená",
+    "few": "{count} položky pripravené",
+    "many": "{count} položiek pripravených",
+    "other": "{count} položiek pripravených"
+  },
+  "{count} items blocked": {
+    "one": "{count} položka je zablokovaná",
+    "few": "{count} položky sú zablokované",
+    "many": "{count} položiek je zablokovaných",
+    "other": "{count} položiek je zablokovaných"
+  },
+  "{count} items ignored": {
+    "one": "{count} položka bola ignorovaná",
+    "few": "{count} položky boli ignorované",
+    "many": "Ignorované položky {count}",
+    "other": "{count} položiek bolo ignorovaných"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Zobrazuje sa {shown} z {count} záznamu histórie.",
+    "few": "Zobrazuje sa {shown} z {count} záznamov histórie.",
+    "many": "Zobrazuje sa {shown} z {count} záznamov histórie.",
+    "other": "Zobrazuje sa {shown} z {count} záznamov histórie."
+  },
+  "{count} more paths": {
+    "one": "{count} ďalšia cesta",
+    "few": "{count} ďalšie cesty",
+    "many": "{count} ďalšie cesty",
+    "other": "{count} ďalších ciest"
+  },
   "{count} folders selected": {
     "one": "{count} vybratý priečinok",
     "few": "{count} vybraté priečinky",

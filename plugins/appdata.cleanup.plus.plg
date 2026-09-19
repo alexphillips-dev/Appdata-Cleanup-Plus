@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.19.08">
-<!ENTITY md5 "f85b2236fb38efe9accc56b4b7e14149">
+<!ENTITY version "2026.09.19.09">
+<!ENTITY md5 "ce620d10ea40c9bfc3ed9608bf390344">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.19.09
+- Fixed Ready, Blocked, and Ignored section badges to use complete, count-aware translations.
+- Fixed singular and plural History entry totals and additional-path counts, including filtered results.
+- Made dashboard, History, result, and server-generated counts follow the selected language number format without requiring the optional PHP intl extension.
+- Added regression coverage across all 42 languages for the corrected UI flows and matching PHP/browser number formatting.
+
 ###2026.09.19.08
 - Made Detection reason concise and specific to ordinary folders or confirmed ZFS datasets, while preserving template, container-mount, and incomplete-ownership evidence.
 - Clarified when a configured ZFS mapping has no exact dataset match and the candidate remains a folder.

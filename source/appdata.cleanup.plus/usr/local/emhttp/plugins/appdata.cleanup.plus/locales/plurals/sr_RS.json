@@ -1,4 +1,29 @@
 {
+  "{count} items ready": {
+    "one": "{count} ставка је спремна",
+    "few": "{count} предмета спремна",
+    "other": "{count} предмета спремно"
+  },
+  "{count} items blocked": {
+    "one": "{count} ставка је блокирана",
+    "few": "{count} ставке су блокиране",
+    "other": "{count} ставки је блокирано"
+  },
+  "{count} items ignored": {
+    "one": "{count} ставка је игнорисана",
+    "few": "{count} ставке су игнорисане",
+    "other": "{count} ставки игнорисано"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Приказује {shown} од {count} уноса историје.",
+    "few": "Приказује се {shown} од {count} уноса историје.",
+    "other": "Приказује {shown} од {count} уноса историје."
+  },
+  "{count} more paths": {
+    "one": "Још {count} пут",
+    "few": "Још {count} путање",
+    "other": "Још {count} стаза"
+  },
   "{count} folders selected": {
     "one": "Изабран је {count} фолдер",
     "few": "Изабрана су {count} фасцикла",

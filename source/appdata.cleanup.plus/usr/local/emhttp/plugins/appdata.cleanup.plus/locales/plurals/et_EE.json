@@ -1,4 +1,24 @@
 {
+  "{count} items ready": {
+    "one": "{count} toode valmis",
+    "other": "{count} eset valmis"
+  },
+  "{count} items blocked": {
+    "one": "{count} üksus on blokeeritud",
+    "other": "{count} üksust on blokeeritud"
+  },
+  "{count} items ignored": {
+    "one": "{count} üksust ignoreeriti",
+    "other": "{count} üksust ignoreeriti"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Kuvatakse {shown} {count} ajalookirjest.",
+    "other": "Kuvatakse {shown} {count} ajalookirjest."
+  },
+  "{count} more paths": {
+    "one": "{count} tee veel",
+    "other": "Veel {count} teed"
+  },
   "{count} folders selected": {
     "one": "Valitud on {count} kaust",
     "other": "Valitud on {count} kausta"

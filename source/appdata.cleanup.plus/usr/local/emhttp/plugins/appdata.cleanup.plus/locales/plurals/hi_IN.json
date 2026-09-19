@@ -1,4 +1,24 @@
 {
+  "{count} items ready": {
+    "one": "{count} आइटम तैयार",
+    "other": "{count} आइटम तैयार"
+  },
+  "{count} items blocked": {
+    "one": "{count} आइटम अवरुद्ध",
+    "other": "{count} आइटम अवरुद्ध"
+  },
+  "{count} items ignored": {
+    "one": "{count} आइटम पर ध्यान नहीं दिया गया",
+    "other": "{count} आइटमों पर ध्यान नहीं दिया गया"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "{count} इतिहास प्रविष्टि में से {shown} दिखा रहा हूँ।",
+    "other": "{count} इतिहास प्रविष्टियों में से {shown} दिखा रहा हूँ।"
+  },
+  "{count} more paths": {
+    "one": "{count} और पथ",
+    "other": "{count} और रास्ते"
+  },
   "{count} folders selected": {
     "one": "{count} फ़ोल्डर चयनित",
     "other": "{count} फ़ोल्डर चयनित"

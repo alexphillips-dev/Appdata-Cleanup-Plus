@@ -1,4 +1,9 @@
 {
+  "{count} items ready": "{count} item ready",
+  "{count} items blocked": "{count} item blocked",
+  "{count} items ignored": "{count} item ignored",
+  "Showing {shown} of {count} history entries.": "Showing {shown} of {count} history entry.",
+  "{count} more paths": "{count} more path",
   "{count} folders selected": "{count} folder selected",
   "{count} items total": "{count} item total",
   "{count} quarantined folders tracked": "{count} quarantined folder tracked",

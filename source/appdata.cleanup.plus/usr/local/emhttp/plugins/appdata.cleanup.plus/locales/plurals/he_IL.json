@@ -1,4 +1,29 @@
 {
+  "{count} items ready": {
+    "one": "פריט {count} מוכן",
+    "two": "{count} פריטים מוכנים",
+    "other": "{count} פריטים מוכנים"
+  },
+  "{count} items blocked": {
+    "one": "פריט אחד נחסם",
+    "two": "{count} פריטים חסומים",
+    "other": "{count} פריטים חסומים"
+  },
+  "{count} items ignored": {
+    "one": "התעלמו מפריט אחד",
+    "two": "התעלמו מ-{count} פריטים",
+    "other": "התעלמו מ-{count} פריטים"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "מציג {shown} מתוך ערך היסטוריה אחד.",
+    "two": "מציג {shown} מתוך {count} ערכי היסטוריה.",
+    "other": "מציג {shown} מתוך {count} ערכים בהיסטוריה."
+  },
+  "{count} more paths": {
+    "one": "עוד נתיב אחד",
+    "two": "עוד {count} שבילים",
+    "other": "עוד {count} שבילים"
+  },
   "{count} folders selected": {
     "one": "נבחרה תיקיה אחת",
     "two": "נבחרו {count} תיקיות",

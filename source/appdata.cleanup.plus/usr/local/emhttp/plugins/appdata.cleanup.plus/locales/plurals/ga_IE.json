@@ -1,4 +1,39 @@
 {
+  "{count} items ready": {
+    "one": "{count} mhír réidh",
+    "two": "{count} mhír réidh",
+    "few": "{count} míreanna réidh",
+    "many": "{count} míreanna réidh",
+    "other": "{count} rud réidh"
+  },
+  "{count} items blocked": {
+    "one": "{count} mhír bactha",
+    "two": "{count} mhír bactha",
+    "few": "{count} mhír bactha",
+    "many": "{count} mír bactha",
+    "other": "{count} mír bactha"
+  },
+  "{count} items ignored": {
+    "one": "{count} mhír neamhaird",
+    "two": "{count} mhír neamhaird",
+    "few": "{count} mhír neamhshuim",
+    "many": "Neamhaird ar {count} mír",
+    "other": "Neamhaird ar {count} mír"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Ag taispeáint {shown} de {count} iontráil staire.",
+    "two": "Ag taispeáint {shown} de {count} iontráil staire.",
+    "few": "Ag taispeáint {shown} de {count} iontráil staire.",
+    "many": "Ag taispeáint {shown} de {count} n-iontráil staire.",
+    "other": "Ag taispeáint {shown} de {count} iontráil staire."
+  },
+  "{count} more paths": {
+    "one": "{count} cosán eile",
+    "two": "{count} cosán eile",
+    "few": "{count} cosán eile",
+    "many": "{count} cosán eile",
+    "other": "{count} cosán níos mó"
+  },
   "{count} folders selected": {
     "one": "{count} fillteán roghnaithe",
     "two": "{count} fhillteán roghnaithe",

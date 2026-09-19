@@ -1,4 +1,24 @@
 {
+  "{count} items ready": {
+    "one": "{count} elem készen áll",
+    "other": "{count} elem készen áll"
+  },
+  "{count} items blocked": {
+    "one": "{count} elem blokkolva",
+    "other": "{count} elem blokkolva"
+  },
+  "{count} items ignored": {
+    "one": "{count} elem figyelmen kívül hagyva",
+    "other": "{count} elem figyelmen kívül hagyva"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Megjelenítve: {shown} / {count} előzménybejegyzés.",
+    "other": "Megjelenítve: {shown} / {count} előzménybejegyzés."
+  },
+  "{count} more paths": {
+    "one": "Még {count} út",
+    "other": "{count} további út"
+  },
   "{count} folders selected": {
     "one": "{count} mappa kiválasztva",
     "other": "{count} mappa kiválasztva"

@@ -1,4 +1,24 @@
 {
+  "{count} items ready": {
+    "one": "{count} مورد آماده است",
+    "other": "{count} مورد آماده است"
+  },
+  "{count} items blocked": {
+    "one": "{count} مورد مسدود شده است",
+    "other": "{count} مورد مسدود شده است"
+  },
+  "{count} items ignored": {
+    "one": "{count} مورد نادیده گرفته شد",
+    "other": "{count} مورد نادیده گرفته شد"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "نمایش {shown} از {count} ورودی سابقه.",
+    "other": "نمایش {shown} از {count} ورودی تاریخ."
+  },
+  "{count} more paths": {
+    "one": "{count} مسیر دیگر",
+    "other": "{count} مسیر دیگر"
+  },
   "{count} folders selected": {
     "one": "{count} پوشه انتخاب شد",
     "other": "{count} پوشه انتخاب شد"

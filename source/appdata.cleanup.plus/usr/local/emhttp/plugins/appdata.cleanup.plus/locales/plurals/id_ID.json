@@ -1,4 +1,19 @@
 {
+  "{count} items ready": {
+    "other": "{count} barang siap"
+  },
+  "{count} items blocked": {
+    "other": "{count} item diblokir"
+  },
+  "{count} items ignored": {
+    "other": "{count} item diabaikan"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "other": "Menampilkan {shown} dari {count} entri riwayat."
+  },
+  "{count} more paths": {
+    "other": "{count} jalur lagi"
+  },
   "{count} folders selected": {
     "other": "{count} folder dipilih"
   },

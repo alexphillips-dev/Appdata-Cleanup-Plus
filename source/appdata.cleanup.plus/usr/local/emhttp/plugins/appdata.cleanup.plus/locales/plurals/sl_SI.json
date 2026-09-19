@@ -1,4 +1,34 @@
 {
+  "{count} items ready": {
+    "one": "{count} predmet pripravljen",
+    "two": "{count} artikla pripravljena",
+    "few": "{count} predmeti pripravljeni",
+    "other": "{count} predmetov pripravljenih"
+  },
+  "{count} items blocked": {
+    "one": "{count} element blokiran",
+    "two": "{count} elementa blokirana",
+    "few": "{count} elementi blokirani",
+    "other": "{count} blokiranih elementov"
+  },
+  "{count} items ignored": {
+    "one": "{count} element je prezrt",
+    "two": "{count} predmeta sta prezrta",
+    "few": "{count} elementi so prezrti",
+    "other": "{count} elementov prezrtih"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Prikaz {shown} od {count} vnosa v zgodovino.",
+    "two": "Prikaz {shown} od {count} vnosov v zgodovino.",
+    "few": "Prikaz {shown} od {count} vnosov v zgodovino.",
+    "other": "Prikaz {shown} od {count} vnosov v zgodovino."
+  },
+  "{count} more paths": {
+    "one": "še {count} pot",
+    "two": "Še {count} poti",
+    "few": "še {count} poti",
+    "other": "Še {count} poti"
+  },
   "{count} folders selected": {
     "one": "Izbrana je {count} mapa",
     "two": "{count} izbrani mapi",

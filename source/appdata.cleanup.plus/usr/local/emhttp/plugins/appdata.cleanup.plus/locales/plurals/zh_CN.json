@@ -1,4 +1,19 @@
 {
+  "{count} items ready": {
+    "other": "{count} 件已准备好"
+  },
+  "{count} items blocked": {
+    "other": "{count} 项被屏蔽"
+  },
+  "{count} items ignored": {
+    "other": "{count} 项被忽略"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "other": "显示 {shown} 的 {count} 个历史记录条目。"
+  },
+  "{count} more paths": {
+    "other": "还有 {count} 条路径"
+  },
   "{count} folders selected": {
     "other": "已选择 {count} 个文件夹"
   },

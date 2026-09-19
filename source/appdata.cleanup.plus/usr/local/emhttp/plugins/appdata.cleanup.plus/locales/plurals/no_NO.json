@@ -1,4 +1,24 @@
 {
+  "{count} items ready": {
+    "one": "{count} vare klar",
+    "other": "{count} varer klare"
+  },
+  "{count} items blocked": {
+    "one": "{count} element blokkert",
+    "other": "{count} elementer blokkert"
+  },
+  "{count} items ignored": {
+    "one": "{count} element ignorert",
+    "other": "{count} elementer ignorert"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Viser {shown} av {count} historieoppføring.",
+    "other": "Viser {shown} av {count} historieoppføringer."
+  },
+  "{count} more paths": {
+    "one": "{count} sti til",
+    "other": "{count} flere stier"
+  },
   "{count} folders selected": {
     "one": "{count} mappe er valgt",
     "other": "{count} mapper valgt"

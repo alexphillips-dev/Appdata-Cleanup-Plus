@@ -44,6 +44,22 @@ const sharedTerms = new Set(['Appdata Cleanup Plus', 'appdata cleanup plus', 'ga
 const untranslated = (key, value) => key === value && !sharedTerms.has(key) && /[a-z]{2} [a-z]{2}/i.test(key);
 const missingTechnicalTerms = (key, value) => ['Appdata Cleanup Plus', 'Unraid', 'Docker', 'ZFS', 'appdata'].some(term => key.split(term).length - 1 > value.toLowerCase().split(term.toLowerCase()).length - 1);
 const check = process.argv.includes('--check');
+// Bundle integer formatting for PHP without requiring Unraid's optional intl extension.
+const numberFormats = Object.fromEntries(Object.entries(locales).map(([locale, definition]) => {
+  const formatter = new Intl.NumberFormat(definition.tag);
+  const parts = formatter.formatToParts(1234567890);
+  const groups = parts.filter(part => part.type === 'integer').map(part => Array.from(part.value).length);
+  return [locale, {
+    group: parts.find(part => part.type === 'group')?.value || '',
+    primary: groups.at(-1), secondary: groups.at(-2) || groups.at(-1),
+    minimum: [4,5,6,7].find(length => formatter.formatToParts(10 ** (length - 1)).some(part => part.type === 'group')) || 99,
+    digits: Array.from({length:10}, (_, n) => formatter.format(n))
+  }];
+}));
+const numberFormatFile = path.join(dir, 'number-formats.json');
+if (check) {
+  if (JSON.stringify(read(numberFormatFile)) !== JSON.stringify(numberFormats)) throw Error('Integer number formats are stale');
+} else write(numberFormatFile, numberFormats);
 const pluralMaster = path.join(dir, 'plural-messages.json');
 if (check) {
   if (JSON.stringify(read(pluralMaster)) !== JSON.stringify(pluralMessages)) throw Error('Plural message master is stale');

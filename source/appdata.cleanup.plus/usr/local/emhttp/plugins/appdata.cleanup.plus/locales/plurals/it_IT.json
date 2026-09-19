@@ -1,4 +1,29 @@
 {
+  "{count} items ready": {
+    "one": "{count} articolo pronto",
+    "many": "{count} articoli pronti",
+    "other": "{count} articoli pronti"
+  },
+  "{count} items blocked": {
+    "one": "{count} elemento bloccato",
+    "many": "{count} articoli bloccati",
+    "other": "{count} articoli bloccati"
+  },
+  "{count} items ignored": {
+    "one": "{count} elemento ignorato",
+    "many": "{count} elementi ignorati",
+    "other": "{count} elementi ignorati"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Visualizzazione di {shown} di {count} voce della cronologia.",
+    "many": "Visualizzazione di {shown} su {count} voci della cronologia.",
+    "other": "Visualizzazione di {shown} su {count} voci della cronologia."
+  },
+  "{count} more paths": {
+    "one": "{count} ulteriore percorso",
+    "many": "{count} percorsi in più",
+    "other": "Altri {count} percorsi"
+  },
   "{count} folders selected": {
     "one": "{count} cartella selezionata",
     "many": "{count} cartelle selezionate",

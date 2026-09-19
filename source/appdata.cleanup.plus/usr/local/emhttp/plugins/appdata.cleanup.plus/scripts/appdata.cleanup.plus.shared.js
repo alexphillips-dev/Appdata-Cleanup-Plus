@@ -36,6 +36,14 @@
     })[0] || "other";
   };
 
+  ACP.formatCount = function(count) {
+    count = Math.max(0, Math.floor(Number(count) || 0));
+    var config = window.appdataCleanupPlusConfig || {};
+    return typeof Intl !== "undefined" && Intl.NumberFormat
+      ? new Intl.NumberFormat(config.languageTag || "en-US").format(count)
+      : String(count);
+  };
+
   ACP.plural = function(text, count, parameters) {
     var config = window.appdataCleanupPlusConfig || {};
     var data = config.plurals || {};
@@ -43,7 +51,7 @@
     count = Math.max(0, Math.floor(Number(count) || 0));
     var template = forms[ACP.pluralCategory(count)] || forms.other || (count === 1 ? (data.messages || {})[text] || text : text);
     var values = $.extend({}, parameters || {}, {count: count});
-    if (typeof Intl !== "undefined" && Intl.NumberFormat) values.count = new Intl.NumberFormat(config.languageTag || "en-US").format(count);
+    values.count = ACP.formatCount(count);
     return template.replace(/\{(\w+)\}/g, function(token, key) { return Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : token; });
   };
 

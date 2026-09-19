@@ -2641,7 +2641,7 @@
           '<span class="acp-summary-icon" aria-hidden="true">' + (card.iconHtml || "") + "</span>" +
           '<span class="acp-summary-copy">' +
             '<span class="acp-summary-label">' + ACP.escapeHtml(card.label) + "</span>" +
-            '<span class="acp-summary-value">' + ACP.escapeHtml(String(card.value)) + "</span>" +
+            '<span class="acp-summary-value">' + ACP.escapeHtml(ACP.formatCount(card.value)) + "</span>" +
             '<span class="acp-summary-subtitle">' + ACP.escapeHtml(card.subtitle || "") + "</span>" +
           "</span>" +
         "</article>"
@@ -3512,7 +3512,7 @@
 
       $.each(summary, function(status, count) {
         if (Number(count || 0) > 0) {
-          counts.push(ACP.formatOperationResultStatus(strings, status === "conflicts" ? "conflict" : (status === "errors" ? "error" : status)).label + "=" + String(count));
+          counts.push(ACP.formatOperationResultStatus(strings, status === "conflicts" ? "conflict" : (status === "errors" ? "error" : status)).label + "=" + ACP.formatCount(count));
         }
       });
 
@@ -4273,7 +4273,8 @@
       badges.push(buildBadgeHtml({
         kind: "actionability",
         value: actionability,
-        label: String(count) + " " + getActionabilityLabel(actionability),
+        label: actionability === "locked" ? ACP.plural("{count} items blocked", count)
+          : (actionability === "ignored" ? ACP.plural("{count} items ignored", count) : ACP.plural("{count} items ready", count)),
         tone: actionability,
         kindClass: "count"
       }));
@@ -5030,7 +5031,7 @@
       "</div>",
       '<div class="acp-delete-simple-pills">',
       '<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(selectedLabel) + "</span>",
-      '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "deleteSafeLabel", "Ready")) + ": " + ACP.escapeHtml(String(safeCount)) + "</span>",
+      '<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "deleteSafeLabel", "Ready")) + ": " + ACP.escapeHtml(ACP.formatCount(safeCount)) + "</span>",
       "</div>",
       "</div>",
       '<section class="acp-delete-simple-card">',
@@ -5115,7 +5116,7 @@
         return;
       }
 
-      stats.push('<span class="acp-modal-stat ' + ACP.escapeHtml(tone || "") + '">' + ACP.escapeHtml(label) + ": " + ACP.escapeHtml(String(numericCount)) + "</span>");
+      stats.push('<span class="acp-modal-stat ' + ACP.escapeHtml(tone || "") + '">' + ACP.escapeHtml(label) + ": " + ACP.escapeHtml(ACP.formatCount(numericCount)) + "</span>");
     }
 
     if (context.preview) {
@@ -5127,7 +5128,7 @@
     }
 
     if (!context.preview && successfulCount > 0) {
-      stats.push('<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "operationResultsCompletedLabel", "Completed")) + ": " + ACP.escapeHtml(String(successfulCount)) + "</span>");
+      stats.push('<span class="acp-modal-stat is-safe">' + ACP.escapeHtml(ACP.t(strings, "operationResultsCompletedLabel", "Completed")) + ": " + ACP.escapeHtml(ACP.formatCount(successfulCount)) + "</span>");
     }
     pushStat(summary.skipped, ACP.t(strings, "resultSkippedLabel", "Skipped"), "is-review");
     pushStat(summary.blocked, ACP.t(strings, "resultBlockedLabel", "Blocked"), "is-blocked");
@@ -5913,7 +5914,7 @@
         return;
       }
       statusMeta = ACP.formatOperationResultStatus(strings, status);
-      html.push('<span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + ": " + ACP.escapeHtml(String(count)) + "</span>");
+      html.push('<span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + ": " + ACP.escapeHtml(ACP.formatCount(count)) + "</span>");
     });
     html.push("</div>");
     html.push('<div class="acp-modal-panel">');

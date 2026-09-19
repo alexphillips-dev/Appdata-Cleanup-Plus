@@ -1,4 +1,29 @@
 {
+  "{count} items ready": {
+    "one": "{count} stavka spreman",
+    "few": "{count} predmeta spremna",
+    "other": "Spremno {count} artikala"
+  },
+  "{count} items blocked": {
+    "one": "{count} stavka blokirana",
+    "few": "{count} stavke blokirane",
+    "other": "{count} stavki blokirano"
+  },
+  "{count} items ignored": {
+    "one": "{count} stavka je zanemarena",
+    "few": "{count} stavke zanemarene",
+    "other": "{count} stavki zanemareno"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Prikaz {shown} od {count} unosa u historiji.",
+    "few": "Prikaz {shown} od {count} unosa u historiju.",
+    "other": "Prikaz {shown} od {count} unosa u historiju."
+  },
+  "{count} more paths": {
+    "one": "Još {count} put",
+    "few": "Još {count} staze",
+    "other": "Još {count} staza"
+  },
   "{count} folders selected": {
     "one": "Odabran je {count} folder",
     "few": "{count} foldera odabrana",

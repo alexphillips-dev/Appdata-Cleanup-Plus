@@ -1,4 +1,29 @@
 {
+  "{count} items ready": {
+    "zero": "{count} vienumu gatavs",
+    "one": "{count} prece ir gatava",
+    "other": "{count} preces gatavas"
+  },
+  "{count} items blocked": {
+    "zero": "Bloķēti {count} vienumi",
+    "one": "{count} vienums ir bloķēts",
+    "other": "{count} vienumi ir bloķēti"
+  },
+  "{count} items ignored": {
+    "zero": "{count} vienumu ignorēti",
+    "one": "{count} vienums ignorēts",
+    "other": "{count} vienumi ignorēti"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "zero": "Tiek rādīti {shown} no {count} vēstures ierakstiem.",
+    "one": "Rāda {shown} no {count} vēstures ieraksta.",
+    "other": "Tiek rādīti {shown} no {count} vēstures ierakstiem."
+  },
+  "{count} more paths": {
+    "zero": "Vēl {count} ceļu",
+    "one": "Vēl {count} ceļš",
+    "other": "Vēl {count} ceļi"
+  },
   "{count} folders selected": {
     "zero": "Atlasītas {count} mapes",
     "one": "Atlasīta {count} mape",

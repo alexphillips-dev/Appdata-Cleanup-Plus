@@ -1,4 +1,44 @@
 {
+  "{count} items ready": {
+    "zero": "{count} عناصر جاهزة",
+    "one": "{count} عنصر جاهز",
+    "two": "{count} عناصر جاهزة",
+    "few": "{count} عناصر جاهزة",
+    "many": "{count} قطعة جاهزة",
+    "other": "{count} عنصر جاهز"
+  },
+  "{count} items blocked": {
+    "zero": "{count} العناصر المحظورة",
+    "one": "تم حظر عنصر واحد",
+    "two": "تم حظر عنصرين",
+    "few": "تم حظر {count} عناصر",
+    "many": "تم حظر {count} عنصرًا",
+    "other": "تم حظر {count} عنصر"
+  },
+  "{count} items ignored": {
+    "zero": "{count} العناصر التي تم تجاهلها",
+    "one": "تم تجاهل عنصر واحد",
+    "two": "تم تجاهل عنصرين",
+    "few": "تم تجاهل {count} عناصر",
+    "many": "تم تجاهل {count} عنصرًا",
+    "other": "تم تجاهل {count} عنصر"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "zero": "عرض {shown} من {count} إدخالات التاريخ.",
+    "one": "عرض {shown} من إدخال سجل واحد.",
+    "two": "عرض {shown} من {count} إدخالات التاريخ.",
+    "few": "عرض {shown} من {count} إدخالات التاريخ.",
+    "many": "عرض {shown} من {count} إدخالات التاريخ.",
+    "other": "عرض {shown} من أصل {count} إدخال تاريخي."
+  },
+  "{count} more paths": {
+    "zero": "{count} مسارات أخرى",
+    "one": "{count} مسار آخر",
+    "two": "{count} مسارات أخرى",
+    "few": "{count} مسارات أخرى",
+    "many": "{count} مسارات أخرى",
+    "other": "{count} مسار آخر"
+  },
   "{count} folders selected": {
     "zero": "تم تحديد {count} مجلدات",
     "one": "تم اختيار مجلد واحد",

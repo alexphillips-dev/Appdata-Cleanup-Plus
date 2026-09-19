@@ -1,4 +1,24 @@
 {
+  "{count} items ready": {
+    "one": "{count} öğe hazır",
+    "other": "{count} ürün hazır"
+  },
+  "{count} items blocked": {
+    "one": "{count} öğe engellendi",
+    "other": "{count} öğe engellendi"
+  },
+  "{count} items ignored": {
+    "one": "{count} öğe göz ardı edildi",
+    "other": "{count} öğe göz ardı edildi"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "{count} geçmiş girişinin {shown} tanesi gösteriliyor.",
+    "other": "{count} geçmiş girişinden {shown} tanesi gösteriliyor."
+  },
+  "{count} more paths": {
+    "one": "{count} yol daha",
+    "other": "{count} yol daha"
+  },
   "{count} folders selected": {
     "one": "{count} klasör seçildi",
     "other": "{count} klasör seçildi"

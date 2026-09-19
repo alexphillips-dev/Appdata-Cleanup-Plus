@@ -1,4 +1,19 @@
 {
+  "{count} items ready": {
+    "other": "พร้อมแล้ว {count} รายการ"
+  },
+  "{count} items blocked": {
+    "other": "บล็อก {count} รายการ"
+  },
+  "{count} items ignored": {
+    "other": "ละเว้น {count} รายการ"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "other": "กำลังแสดง {shown} จาก {count} รายการประวัติ"
+  },
+  "{count} more paths": {
+    "other": "อีก {count} เส้นทาง"
+  },
   "{count} folders selected": {
     "other": "เลือกแล้ว {count} โฟลเดอร์"
   },

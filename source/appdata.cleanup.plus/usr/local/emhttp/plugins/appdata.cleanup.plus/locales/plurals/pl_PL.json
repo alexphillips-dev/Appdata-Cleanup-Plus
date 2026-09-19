@@ -1,4 +1,34 @@
 {
+  "{count} items ready": {
+    "one": "{count} element gotowy",
+    "few": "{count} sztuki gotowe",
+    "many": "Gotowych jest {count} elementów",
+    "other": "Gotowe {count} elementów"
+  },
+  "{count} items blocked": {
+    "one": "{count} element został zablokowany",
+    "few": "{count} elementy zablokowane",
+    "many": "{count} elementów zablokowanych",
+    "other": "{count} elementów zablokowanych"
+  },
+  "{count} items ignored": {
+    "one": "{count} element został zignorowany",
+    "few": "{count} elementy zignorowane",
+    "many": "{count} elementów zignorowanych",
+    "other": "{count} elementów zignorowanych"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Wyświetlam {shown} z {count} wpisu historii.",
+    "few": "Wyświetlanie {shown} z {count} wpisów historii.",
+    "many": "Wyświetlanie {shown} z {count} wpisów historii.",
+    "other": "Wyświetlanie {shown} z {count} wpisów historii."
+  },
+  "{count} more paths": {
+    "one": "Jeszcze {count} ścieżka",
+    "few": "Jeszcze {count} ścieżki",
+    "many": "Jeszcze {count} ścieżek",
+    "other": "{count} więcej ścieżek"
+  },
   "{count} folders selected": {
     "one": "Wybrano {count} folder",
     "few": "Wybrano {count} foldery",

@@ -5,7 +5,7 @@ $root = dirname(__DIR__) . '/source/appdata.cleanup.plus/usr/local/emhttp/plugin
 require_once $root . '/include/helpers.php';
 require_once $root . '/include/dashboard.php';
 require_once $root . '/include/quarantine.php';
-$counts = array_merge(range(0, 250), array(1000, 1001, 1002, 1000000, 2000000, 1000001));
+$counts = array_merge(range(0, 250), array(1000, 1001, 1002, 10000, 1000000, 2000000, 1000001, 1234567890));
 $result = array();
 foreach (acpLocales() as $locale => $definition) {
   $_SESSION['locale'] = $locale;
@@ -37,6 +37,8 @@ foreach (acpLocales() as $locale => $definition) {
   $categories = array();
   foreach ($counts as $count) $categories[] = acpPluralCategory($count);
   $result[$locale] = array('counts'=>$counts, 'categories'=>$categories, 'payload'=>$localized, 'original'=>$payload,
+    'formattedCounts'=>array_map('acpFormatCount', $counts),
+    'countMessages'=>array_map(function($n) { return acpLocalizeText(acpCountMessage('{count} items were submitted.', $n)); }, $counts),
     'legacyImpact'=>acpLocalizeText($impact), 'oldImpact'=>acpLocalizeText('Recursive destroy will also remove 2 child datasets and 21 snapshots.'),
     'purgeTimers'=>array_map(function($seconds) { return acpLocalizeText(formatAppdataCleanupPlusFutureIntervalLabel($seconds)); }, array(30,60,120,3600,7200,86400,1814400)),
     'snapshots'=>array_map(function($n) { return acpP('{count} snapshots', $n); }, array(1,2,5,21)),

@@ -1,4 +1,10 @@
 {
+  "hu_HU": {
+    "Showing {shown} of {count} history entries.": {
+      "one": "Megjelenítve: {shown} / {count} előzménybejegyzés.",
+      "other": "Megjelenítve: {shown} / {count} előzménybejegyzés."
+    }
+  },
   "lv_LV": {
     "{count} selected folders can still restore normally.": {"one":"Joprojām var atjaunot {count} atlasīto mapi."}
   },

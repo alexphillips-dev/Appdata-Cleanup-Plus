@@ -1,4 +1,19 @@
 {
+  "{count} items ready": {
+    "other": "항목 {count}개 준비됨"
+  },
+  "{count} items blocked": {
+    "other": "항목 {count}개 차단됨"
+  },
+  "{count} items ignored": {
+    "other": "항목 {count}개 무시됨"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "other": "기록 항목 {count}개 중 {shown}을(를) 표시 중입니다."
+  },
+  "{count} more paths": {
+    "other": "경로 {count}개 더"
+  },
   "{count} folders selected": {
     "other": "폴더 {count}개 선택됨"
   },

@@ -1,4 +1,24 @@
 {
+  "{count} items ready": {
+    "one": "{count} item gereed",
+    "other": "{count} items gereed"
+  },
+  "{count} items blocked": {
+    "one": "{count} item geblokkeer",
+    "other": "{count} items geblokkeer"
+  },
+  "{count} items ignored": {
+    "one": "{count} item geïgnoreer",
+    "other": "{count} items geïgnoreer"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Wys tans {shown} van {count} geskiedenisinskrywing.",
+    "other": "Wys tans {shown} van {count} geskiedenisinskrywings."
+  },
+  "{count} more paths": {
+    "one": "Nog {count} pad",
+    "other": "Nog {count} paadjies"
+  },
   "{count} folders selected": {
     "one": "{count} vouer gekies",
     "other": "{count} dopgehou gekies"

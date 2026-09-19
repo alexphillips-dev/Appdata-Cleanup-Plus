@@ -10,7 +10,7 @@ const cases = JSON.parse(execFileSync('php', [path.join(__dirname, 'i18n_cases.p
 const source = name => fs.readFileSync(path.join(root, 'scripts', name), 'utf8');
 const main = source('appdata.cleanup.plus.js');
 assert.equal(main.split('$(init);').length, 2, 'Test harness must intercept only page initialization');
-const hook = 'window.flow = {state:state, buildOperationContext:buildOperationContext, buildActionConfirmButtonText:buildActionConfirmButtonText, buildRestoreConflictDialogHtml:buildRestoreConflictDialogHtml, buildQuarantineSelectionSummaryText:buildQuarantineSelectionSummaryText, applyLocalCandidateState:applyLocalCandidateState, getRowStateDescriptor:getRowStateDescriptor, buildOperationPreviewHtml:buildOperationPreviewHtml, buildOperationProgressHtml:buildOperationProgressHtml, buildTemplateActionLockReason:buildTemplateActionLockReason};';
+const hook = 'window.flow = {state:state, buildSectionMetaHtml:buildSectionMetaHtml, buildOperationContext:buildOperationContext, buildActionConfirmButtonText:buildActionConfirmButtonText, buildRestoreConflictDialogHtml:buildRestoreConflictDialogHtml, buildQuarantineSelectionSummaryText:buildQuarantineSelectionSummaryText, applyLocalCandidateState:applyLocalCandidateState, getRowStateDescriptor:getRowStateDescriptor, buildOperationPreviewHtml:buildOperationPreviewHtml, buildOperationProgressHtml:buildOperationProgressHtml, buildTemplateActionLockReason:buildTemplateActionLockReason};';
 for (const [locale, definition] of Object.entries(locales)) {
   const fixture = cases[locale];
   const catalog = JSON.parse(fs.readFileSync(path.join(root, 'locales', locale + '.json'), 'utf8'));
@@ -37,6 +37,10 @@ for (const [locale, definition] of Object.entries(locales)) {
   fixture.counts.forEach((n,i)=>{
     assert.equal(fixture.categories[i], selector.select(n), `${locale}: PHP category ${n}`);
     assert.equal(ACP.pluralCategory(n), selector.select(n), `${locale}: JS category ${n}`);
+    const formatted = new Intl.NumberFormat(definition.tag).format(n);
+    assert.equal(ACP.formatCount(n), formatted, `${locale}: JS count ${n}`);
+    assert.equal(fixture.formattedCounts[i], formatted, `${locale}: PHP count ${n}`);
+    assert.equal(fixture.countMessages[i], ACP.plural('{count} items were submitted.', n), `${locale}: PHP/JS rendered count ${n}`);
   });
   // Complete rendered flows cover zero, singular, dual, few, many and teen boundaries.
   for (const n of [0,1,2,3,5,11,21,22,101]) {
@@ -64,7 +68,25 @@ for (const [locale, definition] of Object.entries(locales)) {
     }
   }
   const history = ACP.buildAuditHistoryModalHtml({strings:{},state:{auditHistory:[{requestedCount:1}]}});
+  for (const n of [1,2,5,21,1000]) {
+    for (const [key, row] of [['{count} items ready',{canDelete:true}],['{count} items blocked',{risk:'blocked'}],['{count} items ignored',{ignored:true}]]) {
+      const badges = flow.buildSectionMetaHtml(Array.from({length:n}, () => row));
+      assert.ok(badges.includes(ACP.escapeHtml(ACP.plural(key,n))), `${locale}: section badge ${key} ${n}`);
+    }
+    const entries = [{requestedCount:1000,pathCount:n+1,pathsPreview:[{path:'/literal/1000',status:'deleted'}],summary:{deleted:1000}}];
+    const html = ACP.buildAuditHistoryModalHtml({strings:{},state:{auditHistory:entries}});
+    assert.ok(html.includes(ACP.escapeHtml(ACP.plural('{count} more paths',n))));
+    assert.ok(html.includes(ACP.escapeHtml(ACP.plural('Showing {shown} of {count} history entries.',1,{shown:ACP.formatCount(1)}))));
+    assert.ok(html.includes(': '+ACP.escapeHtml(ACP.formatCount(1000))+'</span>'));
+    assert.ok(html.includes('/literal/1000'), 'Path digits must remain literal');
+    if (locale === 'en_US' && n === 1) {
+      assert.ok(html.includes('1 more path</div>') && !html.includes('1 more paths'));
+      assert.ok(html.includes('Showing 1 of 1 history entry.'));
+    }
+  }
   assert.ok(history.includes(ACP.escapeHtml(ACP.plural('{count} items submitted',1))));
+  const filteredHistory = ACP.buildAuditHistoryModalHtml({strings:{},state:{auditQuery:'match-only',auditHistory:[{message:'match-only'},{message:'different'}]}});
+  assert.ok(filteredHistory.includes(ACP.escapeHtml(ACP.plural('Showing {shown} of {count} history entries.',2,{shown:ACP.formatCount(1)}))), `${locale}: filtered History counts`);
   flow.state.rows = [{id:'example',sourceKind:'filesystem',canDelete:true,risk:'deletable'}];
   assert.equal(flow.applyLocalCandidateState(['example'],'ignore'),true);
   assert.equal(flow.getRowStateDescriptor(flow.state.rows[0]).label,catalog.Ignored);

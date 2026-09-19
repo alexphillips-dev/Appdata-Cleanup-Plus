@@ -1,4 +1,29 @@
 {
+  "{count} items ready": {
+    "one": "{count} article a punt",
+    "many": "{count} articles preparats",
+    "other": "{count} articles preparats"
+  },
+  "{count} items blocked": {
+    "one": "{count} element bloquejat",
+    "many": "{count} articles bloquejats",
+    "other": "{count} articles bloquejats"
+  },
+  "{count} items ignored": {
+    "one": "S'ha ignorat {count} element",
+    "many": "{count} elements ignorats",
+    "other": "{count} elements ignorats"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "S'està mostrant {shown} d'{count} entrada de l'historial.",
+    "many": "Es mostren {shown} de {count} entrades de l'historial.",
+    "other": "Es mostren {shown} de {count} entrades de l'historial."
+  },
+  "{count} more paths": {
+    "one": "{count} camí més",
+    "many": "{count} camins més",
+    "other": "{count} camins més"
+  },
   "{count} folders selected": {
     "one": "{count} carpeta seleccionada",
     "many": "{count} carpetes seleccionades",

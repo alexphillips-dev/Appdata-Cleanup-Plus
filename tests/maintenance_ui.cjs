@@ -92,6 +92,11 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     const diagnosticsText = await page.evaluate(async()=>downloadedBlob.text());
     assert.ok(!diagnosticsText.includes('Private App'), 'Downloaded diagnostics must not retain spaced path fragments');
     assert.ok(diagnosticsText.includes('Permission denied'), 'Download must preserve the useful error context');
+    await page.evaluate(() => {
+      maintenance.state.summary = {total:1234, safe:1234, blocked:0, deletable:1234};
+      maintenance.renderSummaryCards();
+    });
+    assert.ok((await page.locator('.acp-summary-value').allTextContents()).includes('1,234'), 'Dashboard counts must use locale grouping');
     // Detection reasons use the scan evidence, with the same wording in Details.
     await page.evaluate(() => {
       const ACP = AppdataCleanupPlus;

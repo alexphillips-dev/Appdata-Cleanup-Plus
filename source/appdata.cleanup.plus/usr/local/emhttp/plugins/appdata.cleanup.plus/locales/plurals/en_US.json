@@ -1,4 +1,24 @@
 {
+  "{count} items ready": {
+    "one": "{count} item ready",
+    "other": "{count} items ready"
+  },
+  "{count} items blocked": {
+    "one": "{count} item blocked",
+    "other": "{count} items blocked"
+  },
+  "{count} items ignored": {
+    "one": "{count} item ignored",
+    "other": "{count} items ignored"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Showing {shown} of {count} history entry.",
+    "other": "Showing {shown} of {count} history entries."
+  },
+  "{count} more paths": {
+    "one": "{count} more path",
+    "other": "{count} more paths"
+  },
   "{count} folders selected": {
     "one": "{count} folder selected",
     "other": "{count} folders selected"

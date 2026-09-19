@@ -1,4 +1,34 @@
 {
+  "{count} items ready": {
+    "one": "Готова {count} шт",
+    "few": "Готові {count} шт",
+    "many": "Готово {count} шт",
+    "other": "{count} п. готові"
+  },
+  "{count} items blocked": {
+    "one": "{count} елемент заблоковано",
+    "few": "{count} елементи заблоковано",
+    "many": "{count} елементів заблоковано",
+    "other": "Заблоковано {count} елементів"
+  },
+  "{count} items ignored": {
+    "one": "{count} елемент проігноровано",
+    "few": "{count} елементи проігноровано",
+    "many": "{count} елементів проігноровано",
+    "other": "{count} пунктів проігноровано"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Показано {shown} з {count} запису історії.",
+    "few": "Показано {shown} з {count} записів історії.",
+    "many": "Показано {shown} з {count} записів історії.",
+    "other": "Показано {shown} із записів історії {count}."
+  },
+  "{count} more paths": {
+    "one": "Ще {count} шлях",
+    "few": "ще {count} шляхи",
+    "many": "Ще {count} шляхів",
+    "other": "Ще {count} шляху"
+  },
   "{count} folders selected": {
     "one": "Вибрано {count} папку",
     "few": "Вибрано {count} папки",

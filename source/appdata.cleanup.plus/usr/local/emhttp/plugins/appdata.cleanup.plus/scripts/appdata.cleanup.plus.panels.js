@@ -235,7 +235,7 @@
     var subtitle = state.auditHistoryLoading
       ? ACP.t(strings, "auditHistoryLoadingMessage", "Loading cleanup history.")
       : (allAuditHistory.length
-      ? (auditHistory.length + " / " + allAuditHistory.length + " " + ACP.t(strings, "auditHistoryEntriesLabel", "entries available"))
+      ? ACP.plural("Showing {shown} of {count} history entries.", allAuditHistory.length, {shown: ACP.formatCount(auditHistory.length)})
       : ACP.t(strings, "auditHistoryEmptySummary", "No cleanup history has been recorded yet."));
     var html = [
       '<div class="acp-simple-modal-shell acp-simple-modal-history">',
@@ -243,7 +243,7 @@
         "H",
         ACP.t(strings, "auditHistoryTitle", "History"),
         subtitle,
-        allAuditHistory.length ? ('<span class="acp-simple-pill">' + ACP.escapeHtml(String(allAuditHistory.length)) + "</span>") : ""
+        allAuditHistory.length ? ('<span class="acp-simple-pill">' + ACP.escapeHtml(ACP.formatCount(allAuditHistory.length)) + "</span>") : ""
       ),
       '<section class="acp-simple-modal-card acp-simple-modal-list-card acp-modal-panel-scroll">',
       '<div class="acp-simple-modal-card-head"><div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryTitle", "Audit history")) + '</div><div class="acp-simple-modal-card-actions"><button type="button" class="acp-button acp-button-secondary" data-action="copy-audit-summary">' + ACP.escapeHtml(ACP.t(strings, "auditHistoryCopySummaryLabel", "Copy summary")) + "</button></div></div>",
@@ -289,7 +289,7 @@
             html.push('<div class="acp-audit-path-preview-row"><span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + '</span><code class="acp-modal-path">' + ACP.escapeHtml(preview.path || "") + "</code></div>");
           });
           if (Number(entry.pathCount || 0) > entry.pathsPreview.length) {
-            html.push('<div class="acp-modal-list-more">' + ACP.escapeHtml(String(Number(entry.pathCount || 0) - entry.pathsPreview.length)) + " " + ACP.escapeHtml(ACP.t(strings, "auditHistoryMorePathsLabel", "more paths")) + "</div>");
+            html.push('<div class="acp-modal-list-more">' + ACP.escapeHtml(ACP.plural("{count} more paths", Number(entry.pathCount || 0) - entry.pathsPreview.length)) + "</div>");
           }
           html.push("</div>");
         }
@@ -300,7 +300,7 @@
             return;
           }
           statusMeta = ACP.formatOperationResultStatus(strings, status, entry.operation);
-          html.push('<span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + ": " + ACP.escapeHtml(String(count)) + "</span>");
+          html.push('<span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + ": " + ACP.escapeHtml(ACP.formatCount(count)) + "</span>");
         });
         html.push("</div>");
 

@@ -1,4 +1,19 @@
 {
+  "{count} items ready": {
+    "other": "{count} món đã sẵn sàng"
+  },
+  "{count} items blocked": {
+    "other": "{count} mục bị chặn"
+  },
+  "{count} items ignored": {
+    "other": "{count} mục bị bỏ qua"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "other": "Đang hiển thị {shown} trong số {count} mục lịch sử."
+  },
+  "{count} more paths": {
+    "other": "{count} con đường nữa"
+  },
   "{count} folders selected": {
     "other": "Đã chọn {count} thư mục"
   },

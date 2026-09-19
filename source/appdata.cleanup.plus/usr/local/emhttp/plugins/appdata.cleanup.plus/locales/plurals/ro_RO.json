@@ -1,4 +1,29 @@
 {
+  "{count} items ready": {
+    "one": "{count} articol gata",
+    "few": "{count} articole gata",
+    "other": "{count} de articole gata"
+  },
+  "{count} items blocked": {
+    "one": "{count} articol blocat",
+    "few": "{count} articole blocate",
+    "other": "{count} de articole blocate"
+  },
+  "{count} items ignored": {
+    "one": "{count} articol ignorat",
+    "few": "{count} articole ignorate",
+    "other": "{count} de articole ignorate"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Se afișează {shown} din {count} intrare din istoric.",
+    "few": "Se afișează {shown} din {count} intrări din istoric.",
+    "other": "Se afișează {shown} din {count} de intrări din istoric."
+  },
+  "{count} more paths": {
+    "one": "Încă {count} cale",
+    "few": "Încă {count} căi",
+    "other": "Încă {count} de căi"
+  },
   "{count} folders selected": {
     "one": "{count} folder selectat",
     "few": "{count} foldere selectate",

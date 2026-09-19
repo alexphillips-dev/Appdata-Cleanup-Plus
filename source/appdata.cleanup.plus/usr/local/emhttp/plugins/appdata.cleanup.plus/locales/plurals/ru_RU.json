@@ -1,4 +1,34 @@
 {
+  "{count} items ready": {
+    "one": "{count} предмет готов",
+    "few": "{count} предмета готовы",
+    "many": "{count} предметов готовы",
+    "other": "{count} шт. готово"
+  },
+  "{count} items blocked": {
+    "one": "{count} объект заблокирован",
+    "few": "{count} объекта заблокированы",
+    "many": "{count} предметов заблокировано",
+    "other": "{count} элементы заблокированы"
+  },
+  "{count} items ignored": {
+    "one": "{count} элемент проигнорирован",
+    "few": "{count} пункта проигнорированы",
+    "many": "{count} пунктов проигнорированы",
+    "other": "{count} элементы игнорируются"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Показаны {shown} из {count} записи истории.",
+    "few": "Показаны {shown} из {count} записей истории.",
+    "many": "Показаны {shown} из {count} записей истории.",
+    "other": "Показаны {shown} из {count} записей истории."
+  },
+  "{count} more paths": {
+    "one": "еще {count} путь",
+    "few": "еще {count} пути",
+    "many": "еще {count} путей",
+    "other": "еще {count} пути"
+  },
   "{count} folders selected": {
     "one": "выбрана {count} папка",
     "few": "выбрано {count} папки",

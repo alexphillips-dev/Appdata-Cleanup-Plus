@@ -1,4 +1,24 @@
 {
+  "{count} items ready": {
+    "one": "{count} tuote valmiina",
+    "other": "{count} tuotetta valmiina"
+  },
+  "{count} items blocked": {
+    "one": "{count} kohde estetty",
+    "other": "{count} kohdetta estetty"
+  },
+  "{count} items ignored": {
+    "one": "{count} kohde ohitettu",
+    "other": "{count} kohdetta ohitettu"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "Näytetään {shown}/{count} historiamerkintä.",
+    "other": "Näytetään {shown} {count} historiamerkinnästä."
+  },
+  "{count} more paths": {
+    "one": "{count} polku lisää",
+    "other": "{count} polkua lisää"
+  },
   "{count} folders selected": {
     "one": "{count} kansio valittu",
     "other": "{count} kansiota valittu"

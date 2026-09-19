@@ -36,6 +36,7 @@ function acpT($text, $parameters=array()) {
   if (isset($parameters['count']) && acpPluralKey($text) !== null) return acpP($text, $parameters['count'], $parameters);
   $catalog = acpCatalog();
   $translated = isset($catalog[$text]) && is_string($catalog[$text]) && $catalog[$text] !== '' ? $catalog[$text] : $text;
+  if (isset($parameters['count'])) $parameters['count'] = acpFormatCount($parameters['count']);
   $replace = array();
   foreach ($parameters as $key => $value) $replace['{' . $key . '}'] = (string)$value;
   return strtr($translated, $replace);
@@ -83,13 +84,31 @@ function acpPluralCategory($count) {
   return 'other';
 }
 
+function acpFormatCount($count) {
+  static $formats;
+  if ($formats === null) $formats = json_decode(file_get_contents(__DIR__ . '/../locales/number-formats.json'), true);
+  $format = $formats[acpLocale()];
+  $digits = (string)max(0, (int)$count);
+  $groups = array();
+  if (strlen($digits) >= $format['minimum']) {
+    $width = $format['primary'];
+    while (strlen($digits) > $width) {
+      array_unshift($groups, substr($digits, -$width));
+      $digits = substr($digits, 0, -$width);
+      $width = $format['secondary'];
+    }
+  }
+  array_unshift($groups, $digits);
+  return strtr(implode($format['group'], $groups), array_combine(range(0, 9), $format['digits']));
+}
+
 function acpP($text, $count, $parameters=array()) {
   $count = max(0, (int)$count);
   $data = acpPluralData();
   $key = acpPluralKey($text) ?? $text;
   $forms = $data['forms'][$key] ?? array();
   $template = $forms[acpPluralCategory($count)] ?? $forms['other'] ?? ($count === 1 ? ($data['messages'][$key] ?? $key) : $key);
-  $parameters['count'] = $count;
+  $parameters['count'] = acpFormatCount($count);
   $replace = array();
   foreach ($parameters as $name => $value) $replace['{' . $name . '}'] = (string)$value;
   return strtr($template, $replace);
@@ -132,7 +151,7 @@ function acpLocalizeParameters($parameters, $depth) {
 }
 
 function acpLocalizeText($text, $depth=0) {
-  if (!is_string($text) || $text === '' || acpLocale() === 'en_US' || $depth > 8) return $text;
+  if (!is_string($text) || $text === '' || $depth > 8) return $text;
   // Upgrade legacy stored impact/countdown text into complete plural messages.
   if (preg_match('/^(Recursive destroy|Destroy) will also remove (?:(\d+) child datasets?(?: and )?)?(?:(\d+) snapshots?)?\.$/D', $text, $legacy)) {
     $parts = array();

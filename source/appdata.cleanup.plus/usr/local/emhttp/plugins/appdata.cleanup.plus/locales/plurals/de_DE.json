@@ -1,4 +1,24 @@
 {
+  "{count} items ready": {
+    "one": "{count} Artikel fertig",
+    "other": "{count} Artikel fertig"
+  },
+  "{count} items blocked": {
+    "one": "{count} Artikel gesperrt",
+    "other": "{count} Artikel gesperrt"
+  },
+  "{count} items ignored": {
+    "one": "{count} Element ignoriert",
+    "other": "{count} Elemente ignoriert"
+  },
+  "Showing {shown} of {count} history entries.": {
+    "one": "{shown} von {count} Verlaufseintrag werden angezeigt.",
+    "other": "Es werden {shown} von {count} Verlaufseinträgen angezeigt."
+  },
+  "{count} more paths": {
+    "one": "{count} weiterer Weg",
+    "other": "{count} weitere Wege"
+  },
   "{count} folders selected": {
     "one": "{count} Ordner ausgewählt",
     "other": "{count} Ordner ausgewählt"
