@@ -2,17 +2,69 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.19.05">
-<!ENTITY md5 "df93fca8ea527f5924ceca6e33b64d94">
+<!ENTITY version "2026.09.19.06">
+<!ENTITY md5 "0c84679bb3995165e358e1f911f60fd4">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.19.06
+This release supersedes 2026.09.19.04 with corrected cross-platform packaging and includes all changes since stable 2026.08.20.19.
+
+**Language support and accessibility**
+- Bundle all 42 languages registered by Unraid or available as official language packs. The plugin follows the selected webGUI language, supports the English switch, and falls back to English when needed without contacting an online translation service.
+- Translate the dashboard, Help, settings, scan explanations, safety warnings, confirmations, action results, quarantine, restore conflicts, schedules, history, template maintenance, and Tools.
+- Use complete translated sentences and locale-aware plural selection for folder counts, selection summaries, confirmations, restore conflicts, schedules, and ZFS impact previews. Correct remaining English-only labels and identified catalog wording errors.
+- Add right-to-left layouts, localized dates, ages, numbers and sizes, and better wrapping for long translated labels on desktop and mobile. Preserve literal paths, container and dataset names, saved data, and diagnostic evidence.
+- Translation catalogs are machine translated. Automated coverage, plural and layout checks do not establish native-speaker review of every sentence.
+
+**Detection and cleanup safety**
+- Fix inflated orphan detections and unnecessary cleanup blocks caused by valid nameless or dead Docker records. Keep known mappings protective, normalize empty mount collections, and attempt bounded recovery of incomplete records.
+- Distinguish broad host access from appdata ownership. File browsers, backup tools, and monitors mounting paths such as /mnt or /mnt/user no longer block cleanup solely because they can see appdata. Exact appdata source, folder, parent and child mappings remain protective, including for stopped containers.
+- Apply the same ownership rules during scanning, Details, previews, and cleanup, and recheck ownership before changing data so newly acquired mappings block stale selections.
+- Label incomplete ownership scans Unverified instead of presenting them as clean or actionable. Disabling Safe Mode does not bypass ownership verification.
+- Expand Compose protection for short and long bind syntax, exported environment variables, normalized paths, paths with spaces, indirect projects, and overrides. Match /config targets exactly rather than accepting similarly named targets.
+- Block cleanup when unsupported Compose syntax, including unresolved YAML anchors or aliases, prevents reliable ownership verification. Comments and quoted literal text are not treated as YAML references.
+- Validate every affected dataset mountpoint before recursive ZFS deletion, including children mounted elsewhere and descendants beyond the abbreviated preview list. Recheck immediately before destruction and refuse container-owned, Compose-owned, protected, or unverifiable descendants, including unsupported volume and mountpoint cases.
+
+**Saved Docker template maintenance**
+- Add Saved template cleanup as its own action-bar entry for reviewing saved configurations whose containers are no longer installed.
+- Archive templates only after verifying a private backup and rechecking current container ownership and template contents. Archiving does not change appdata, images, or containers.
+- Restore templates only when their original filename is available; never overwrite an existing template. Retain backups after restore and exclude private template contents from diagnostics.
+- Load and refresh the template list within its dedicated dialog. Keep archive and restore confirmations in the same workflow, with corrected history wording and localized backup dates.
+- Shorten the dialog and scroll the template and backup list independently, keeping its title, guidance, Refresh control, and Done button visible.
+
+**Themes and UI improvements**
+- Follow native Unraid Black, White, Azure, and Gray colors throughout the dashboard and every dialog, including repeated dialog use and theme changes.
+- Preserve the plugin's flat, rounded buttons, subtle borders, and neutral text instead of adopting native gradient buttons. Keep keyboard focus, status badges, and cleanup actions readable across themes.
+- Prevent summary cards from overflowing narrow mobile screens and improve responsive dialog layouts.
+- Enlarge Source badges and each results section's visible-folder and status badges.
+- Remove redundant Broad container access disclosures from the Source column while retaining the evidence in Details. Mount disclosures support keyboard, mouse, and touch.
+- Hide the protected-path notice while Safe Mode is enabled and remove the redundant ZFS candidates banner; the dataset section remains available when datasets are detected.
+- Make Tools diagnostics download-only by removing Copy diagnostics text and Copy support summary. Move template maintenance out of Tools and prevent delayed Tools or template responses from replacing another open dialog.
+
+**Diagnostics and troubleshooting**
+- Report ownership failure codes, request and inventory status, accepted and rejected records, dead entries, inspect recovery counts, per-filter scan counts, and blocked-action evidence without exporting raw Docker configuration.
+- Include separate sanitized evidence for specific container mappings and broad access, using export-scoped aliases and field allowlists.
+- Preserve diagnostic field names and aliases when private names overlap ordinary words. Redact complete private paths containing spaces, including quoted paths with punctuation, in server logs and downloaded JSON.
+- Keep diagnostic collection read-only: report recorded scan telemetry without triggering a Docker rescan or cleanup.
+
+**Validation and test builds**
+- Correct Windows/Linux package differences by normalizing all shipped text files, including language catalogs and licenses. Verify that LF and CRLF checkouts produce identical archives and check package/source parity before publication.
+- Retry live release verification when GitHub temporarily serves a stale manifest, and preserve paragraph spacing in published release notes.
+- Expand regression coverage for ownership changes, Docker inventory recovery, Compose layouts and aliases, recursive ZFS descendants, template archive and collision-safe restore, diagnostics downloads, and real UI flows.
+- Validate all 42 language catalogs, complete-message formatting, PHP/browser plural parity, and desktop/mobile layouts. Check all four themes against pinned Unraid 7.0 and 7.3 stylesheets.
+- Add maintainer-requested PR test packages with standalone checksum-verified installers, exact revision identification, and instructions for returning to the published dev channel.
+- Strengthen workflow validation and pin automation dependencies while retaining package/source parity checks, canonical Community Applications URLs, and the Unraid 7.0.0 minimum requirement.
+
+After updating, hard-refresh the Unraid webGUI. Safe Mode remains quarantine-first for movable folders; permanent deletion remains an explicit opt-in. Template backups stay on flash, are not automatically purged, and are removed with the plugin configuration when the plugin is uninstalled.
+
+
 ###2026.09.19.05
 - Normalize shipped text and language catalogs consistently across Windows and Linux so release packages match their source.
 - Verify LF/CRLF archive reproducibility before publication and retry stale release metadata.
@@ -1302,7 +1354,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
