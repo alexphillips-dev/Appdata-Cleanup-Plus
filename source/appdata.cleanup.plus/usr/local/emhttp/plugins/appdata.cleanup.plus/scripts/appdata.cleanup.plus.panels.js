@@ -638,12 +638,24 @@
   };
 
   ACP.getRowDetectionReason = function(row) {
-    if (row.scanVerificationLocked) return ACP.tr("Ownership verification is incomplete. This folder has not been confirmed as orphaned.");
-    if ((row.mountEvidence || []).length) return ACP.tr("These containers mount this folder or a related path within an appdata source. Cleanup is blocked, including when the containers are stopped.");
-    var reason = row.sourceKind === "filesystem"
-      ? ACP.tr("This folder was found inside an appdata source, but no installed container or saved Docker template currently points to it.")
-      : ACP.tr("A saved Docker template references this folder, but no installed container currently uses it.");
-    if ((row.broadMountEvidence || []).length) reason += " " + ACP.tr("Broad container access does not establish ownership or block cleanup.");
+    var isDataset = row.storageKind === "zfs";
+    if (row.scanVerificationLocked) return isDataset
+      ? ACP.tr("ZFS dataset ownership is unverified; cleanup is blocked until checks complete.")
+      : ACP.tr("Folder ownership is unverified; cleanup is blocked until checks complete.");
+    if ((row.mountEvidence || []).length) return isDataset
+      ? ACP.tr("An installed container mounts this ZFS dataset or a related path; cleanup is blocked even if stopped.")
+      : ACP.tr("An installed container mounts this folder or a related path; cleanup is blocked even if stopped.");
+    var reason;
+    if (row.sourceKind === "filesystem") {
+      reason = isDataset
+        ? ACP.tr("Exact ZFS dataset with no installed container mount or saved template reference.")
+        : ACP.tr("Appdata folder with no installed container mount or saved template reference.");
+    } else {
+      reason = isDataset
+        ? ACP.tr("A saved template references this ZFS dataset; no installed container mounts it.")
+        : ACP.tr("A saved template references this folder; no installed container mounts it.");
+    }
+    if (!isDataset && row.zfsMappingMatched) reason += " " + ACP.tr("ZFS mapping has no exact dataset match; treated as a folder.");
     return reason;
   };
 

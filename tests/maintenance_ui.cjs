@@ -100,7 +100,11 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
         {id:'template', sourceKind:'template', canDelete:true},
         {id:'zfs', sourceKind:'filesystem', storageKind:'zfs', canDelete:true},
         {id:'incomplete', sourceKind:'filesystem', scanVerificationLocked:true, canDelete:false},
-        {id:'ignored', sourceKind:'template', ignored:true, canDelete:true}
+        {id:'ignored', sourceKind:'template', ignored:true, canDelete:true},
+        {id:'zfs-template', sourceKind:'template', storageKind:'zfs', canDelete:true},
+        {id:'zfs-incomplete', sourceKind:'filesystem', storageKind:'zfs', scanVerificationLocked:true, canDelete:false},
+        {id:'zfs-mounted', sourceKind:'filesystem', storageKind:'zfs', mountEvidence:[{name:'Owner',paths:['/mnt/pool/appdata/example']}], canDelete:false},
+        {id:'mapping-only', sourceKind:'filesystem', storageKind:'filesystem', zfsMappingMatched:true, canDelete:true}
       ];
       maintenance.state.rows = rows;
       maintenance.renderResults();
@@ -110,11 +114,16 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
       }));
     });
     const reasons = await page.evaluate(() => reasonCases);
-    assert.match(reasons[0].reason, /no installed container or saved Docker template/);
-    assert.match(reasons[1].reason, /saved Docker template references/);
-    assert.equal(reasons[2].reason, reasons[0].reason, 'ZFS storage must not change discovery evidence');
-    assert.match(reasons[3].reason, /has not been confirmed as orphaned/);
+    assert.equal(reasons[0].reason, 'Appdata folder with no installed container mount or saved template reference.');
+    assert.equal(reasons[1].reason, 'A saved template references this folder; no installed container mounts it.');
+    assert.equal(reasons[2].reason, 'Exact ZFS dataset with no installed container mount or saved template reference.');
+    assert.match(reasons[3].reason, /Folder ownership is unverified/);
     assert.equal(reasons[4].reason, reasons[1].reason, 'Ignoring a row must not change detection evidence');
+    assert.equal(reasons[5].reason, 'A saved template references this ZFS dataset; no installed container mounts it.');
+    assert.match(reasons[6].reason, /ZFS dataset ownership is unverified/);
+    assert.match(reasons[7].reason, /mounts this ZFS dataset or a related path/);
+    assert.match(reasons[8].reason, /ZFS mapping has no exact dataset match; treated as a folder/);
+    assert.ok(!reasons[8].reason.includes('Exact ZFS dataset'), 'A mapping alone must not establish dataset identity');
     for (const entry of reasons) assert.ok(entry.details.includes(entry.reason), 'Details and column must share wording');
     for (const headings of await page.locator('.acp-results-table-head').allTextContents()) assert.match(headings, /SourceDetection reasonActions/);
     assert.ok(await page.locator('.acp-row-badges + .acp-row-detection-reason + .acp-row-side').count());
@@ -128,7 +137,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
       AppdataCleanupPlus.releaseModalScrollLock(false);
     });
     assert.equal(await page.locator('#acp-results .acp-mount-evidence').count(),0,'Broad access must not clutter the Source column');
-    assert.match(await page.locator('.acp-row-detection-reason').textContent(), /Broad container access does not establish ownership or block cleanup/);
+    assert.ok(!(await page.locator('.acp-row-detection-reason').textContent()).includes('Broad container access'), 'Broad access explanation stays in Details');
     const details=await page.evaluate(()=>AppdataCleanupPlus.buildRowDetailsModalHtml({strings:appdataCleanupPlusConfig.strings,state:maintenance.state},maintenance.state.rows[0]));
     assert.match(details,/Broad container access/);
     assert.match(details,/does not block cleanup/);
@@ -143,7 +152,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
       document.querySelector('#acp-results').innerHTML=maintenance.buildRowHtml(row);
     });
     await page.locator('.acp-mount-evidence summary').click();
-    assert.match(await page.locator('.acp-row-detection-reason').textContent(), /Cleanup is blocked, including when the containers are stopped/);
+    assert.match(await page.locator('.acp-row-detection-reason').textContent(), /cleanup is blocked even if stopped/);
     assert.match(await page.locator('.acp-mount-evidence').textContent(),/Specific container mounts/);
     assert.equal(await page.locator('.acp-row-checkbox').isChecked(),false);
     assert.equal(await page.locator('.acp-row-checkbox').isDisabled(),true);

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.19.07">
-<!ENTITY md5 "d7172324578695d7031df5f37f7e9dd7">
+<!ENTITY version "2026.09.19.08">
+<!ENTITY md5 "f85b2236fb38efe9accc56b4b7e14149">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.19.08
+- Made Detection reason concise and specific to ordinary folders or confirmed ZFS datasets, while preserving template, container-mount, and incomplete-ownership evidence.
+- Clarified when a configured ZFS mapping has no exact dataset match and the candidate remains a folder.
+- Kept broad container access explanations in Details to reduce repeated text in results, with updated translations across all supported languages.
+
 ###2026.09.19.07
 - Added a Detection reason column immediately after Source, explaining saved-template references, discovered folders, specific container mounts, and incomplete ownership checks.
 - Kept detection explanations consistent with Details and clarified that broad container access does not establish ownership.
