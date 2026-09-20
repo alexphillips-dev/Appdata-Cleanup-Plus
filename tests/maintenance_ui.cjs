@@ -34,7 +34,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     });
     for (const file of ['appdata.cleanup.plus.shared.js','appdata.cleanup.plus.panels.js']) await page.addScriptTag({path:path.join(plugin,'scripts',file)});
     const main = fs.readFileSync(path.join(plugin,'scripts/appdata.cleanup.plus.js'),'utf8');
-    const hook = 'window.maintenance={startScanStatHydration,stopScanStatHydration,requestNextScanStatBatch,pauseScanStatHydrationForUserRequest,exportDiagnostics,recordDiagnosticsFailure,installDiagnosticsErrorCapture,state,openToolsModal,renderToolsModal,buildRowHtml,renderSummaryCards,renderResults,applyLocalSafetyStateToRow}; cacheElements(); bindEvents(); loadScan=function(){window.scanRefreshes=(window.scanRefreshes||0)+1;}; state.fixtureTools.status={};';
+    const hook = 'window.maintenance={buildOperationContext,buildOperationPreviewHtml,buildOperationResultsHtml,buildQuarantineManagerResultsHtml,showOperationResultsFromResponse,selectAllQuarantineEntries,getSelectedQuarantineEntryIds,startScanStatHydration,stopScanStatHydration,requestNextScanStatBatch,pauseScanStatHydrationForUserRequest,exportDiagnostics,recordDiagnosticsFailure,installDiagnosticsErrorCapture,state,openToolsModal,renderToolsModal,buildRowHtml,renderSummaryCards,renderResults,applyLocalSafetyStateToRow}; cacheElements(); bindEvents(); loadScan=function(){window.scanRefreshes=(window.scanRefreshes||0)+1;}; state.fixtureTools.status={};';
     await page.addScriptTag({content:main.replace('$(init);',hook)});
     await page.evaluate(()=>maintenance.openToolsModal());
     assert.equal(await page.locator('[data-action="copy-diagnostics-text"], [data-action="copy-support-summary"], .sweet-alert [data-action="review-templates"]').count(),0);
@@ -146,6 +146,53 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     const malformed = await page.evaluate(async()=>JSON.parse(await downloadedBlob.text()));
     assert.equal(malformed.collection.sections.server.category,'invalid_response');
     assert.ok(!JSON.stringify(malformed).includes('private-error'));
+    await page.evaluate(() => {
+      maintenance.state.auditHistoryLoaded=true;
+      maintenance.state.auditHistoryHasMore=true;
+      maintenance.exportDiagnostics();
+      requests.at(-1).deferred.resolve({ok:true,bundle:{schemaVersion:5,runtime:{pluginVersion:'2026.09.19.09'},collection:{status:'partial',sections:{'log-1':{status:'partial'},'log-3':{status:'unavailable'},auditHistory:{status:'partial'}}},currentSnapshot:{status:'valid'},state:{latestScanMetrics:{data:{startedAt:'2026-09-19T10:00:00Z',phases:[]}}}}});
+    });
+    const limited = await page.evaluate(async()=>JSON.parse(await downloadedBlob.text()));
+    assert.equal(limited.collection.status,'partial');
+    assert.ok(!limited.troubleshooting.findings.some(f=>f.id==='collection'),'Normal history/log limits must not create a collection warning');
+    await page.evaluate(() => {
+      maintenance.exportDiagnostics();
+      requests.at(-1).deferred.resolve({ok:true,bundle:{schemaVersion:5,collection:{status:'partial',sections:{runtime:{status:'failed'}}}}});
+    });
+    const failedCollector = await page.evaluate(async()=>JSON.parse(await downloadedBlob.text()));
+    assert.ok(failedCollector.troubleshooting.findings.some(f=>f.id==='collection'),'Failed collectors still require attention');
+    const refined = await page.evaluate(() => {
+      const rows=[{id:'ok',path:'/fixture/ok',displayPath:'/fixture/ok',canDelete:true},{id:'retry',path:'/fixture/retry',displayPath:'/fixture/retry',canDelete:true}];
+      const context=maintenance.buildOperationContext('delete',rows);
+      const results=[{path:'/fixture/ok',status:'deleted'},{path:'/fixture/retry',status:'error',message:'Fixture error'}];
+      const previewContext=maintenance.buildOperationContext('preview_delete',rows);
+      const preview=maintenance.buildOperationResultsHtml({ready:2,blocked:1},[{status:'ready',path:'/fixture/folder'},{status:'ready',datasetName:'pool/fixture',path:'/fixture/zfs'},{status:'blocked',message:'Fixture protected',path:'/fixture/blocked'}],previewContext);
+      const quarantinePreview=maintenance.buildOperationPreviewHtml(rows,maintenance.buildOperationContext('quarantine',rows),{});
+      maintenance.state.rows=rows;
+      maintenance.state.selected={ok:true,retry:true};
+      maintenance.showOperationResultsFromResponse({summary:{deleted:1,errors:1},results,quarantineSummary:{count:0}},context);
+      const selection=Object.keys(maintenance.state.selected);
+      const resultHtml=document.querySelector('.sweet-alert').innerHTML;
+      maintenance.state.quarantine.entries=[{id:'missing',restoreStatus:'missing'},{id:'conflict',restoreStatus:'conflict'}];
+      maintenance.state.quarantine.selected={};
+      maintenance.selectAllQuarantineEntries();
+      const selectedQuarantine=maintenance.getSelectedQuarantineEntryIds();
+      const quarantine=AppdataCleanupPlus.buildQuarantineManagerModalHtml({state:{quarantine:{entries:[{id:'missing',restoreStatus:'missing'},{id:'conflict',restoreStatus:'conflict'},{id:'ready',restoreStatus:'ready',recoveryOrigin:'marker'}],selected:{},summary:{count:3}},settings:{}},strings:{}});
+      return {preview,quarantinePreview,selection,resultHtml,selectedQuarantine,quarantine};
+    });
+    assert.deepEqual(refined.selection,['retry'],'Partial cleanup must keep failed items selected and remove completed items');
+    assert.deepEqual(refined.selectedQuarantine,['conflict'],'Missing quarantine records cannot be selected');
+    assert.match(refined.preview,/Folders to permanently delete.*1/);
+    assert.match(refined.preview,/Selected datasets to destroy.*1/);
+    assert.match(refined.preview,/Items that will not be changed.*1/);
+    assert.match(refined.preview,/Fixture protected/);
+    assert.match(refined.quarantinePreview,/normally does not free space/);
+    assert.match(refined.resultHtml,/data-result-group="failed"/);
+    assert.match(refined.resultHtml,/data-result-group="completed"/);
+    assert.match(refined.resultHtml,/Safety checks run again/);
+    assert.match(refined.quarantine,/Missing from storage/);
+    assert.match(refined.quarantine,/Restore destination conflict/);
+    assert.match(refined.quarantine,/Recovered from an on-disk quarantine marker/);
     await page.evaluate(() => {
       maintenance.state.summary = {total:1234, safe:1234, blocked:0, deletable:1234};
       maintenance.renderSummaryCards();

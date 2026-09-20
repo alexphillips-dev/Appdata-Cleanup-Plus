@@ -33,7 +33,7 @@ The plugin is intentionally conservative around filesystem operations. Actions u
 
 | Orphaned appdata review | Safe cleanup workflow |
 |---|---|
-| Scan configured appdata sources, Docker template references, and live Docker mappings to surface folders that appear unused. Results show name, source, size, last used age, path, and simple badges. | Keep Safe Mode on for quarantine-first cleanup, run dry runs before changing files, disable Safe Mode only when you intentionally want permanent deletion, and confirm destructive deletes with a checkbox. |
+| Scan configured appdata sources, Docker template references, and live Docker mappings to surface folders that appear unused. Results show name, source, size, last modified age, path, and simple badges. | Keep Safe Mode on for quarantine-first cleanup, run dry runs before changing files, disable Safe Mode only when you intentionally want permanent deletion, and confirm destructive deletes with a checkbox. |
 
 | Quarantine manager | Audit history |
 |---|---|
@@ -81,7 +81,7 @@ Buttons, help, dialogs, scan explanations, safety errors, action results, schedu
 1. Open `Settings -> Appdata Cleanup Plus`.
 2. Use `Appdata Sources` to confirm the appdata roots the plugin should scan.
 3. Click `Rescan`.
-4. Review the ready-to-clean table, folder sizes, last-used ages, paths, and source badges.
+4. Review the ready-to-clean table, folder sizes, last-modified ages, paths, and source badges. Modification time describes the folder itself, not the last time a container used its contents.
 5. Select the rows you want to act on.
 6. Use `Dry Run` to preview the action without changing files.
 7. Keep Safe Mode on to quarantine selected folders first, then restore or purge from `Show Quarantine`.
@@ -168,6 +168,12 @@ Expand **Specific container mounts** to see mappings that block cleanup, includi
 If Docker or Compose ownership cannot be verified, remaining candidates are labeled **Unverified**, and cleanup stays blocked even with Safe Mode disabled. Rescan, then export diagnostics from Tools if the warning remains. The export distinguishes failed requests from rejected inventory records and reports recovery attempts and filter counts without exposing raw container configuration.
 
 Diagnostics downloads include browser/server version and scan freshness checks, read-only snapshot validity, structured candidate decision evidence, and locale/layout capabilities. Each collection section reports missing or limited evidence, with included/omitted counts where available. If the server request fails or times out, a partial browser-only export is still downloaded. The browser keeps the most recent 20 classified plugin request/JavaScript failures since page load; response bodies, error messages, URLs, and stack traces are not retained in that buffer. Exports remain sanitized, and collecting diagnostics does not clean up expired snapshots.
+
+Normal log/history limits and unavailable optional logs remain visible in diagnostics completeness metadata without creating a health warning. Failed collectors or missing required evidence still need attention.
+
+Dry runs distinguish folders to quarantine, folders to delete, selected dataset roots to destroy, and items that will remain unchanged. Quarantine normally does not reclaim space; folder sizes and ZFS usage are not promises of space reclaimed by deletion. Action results group completed, skipped/blocked, and failed items, with next steps. Failed cleanup items remain selected for review; every retry still runs the existing safety checks.
+
+The quarantine manager shows restore readiness, destination conflicts, protected restore paths, missing storage, and recovery from markers or folder layout. Missing records remain available for review when storage is offline and cannot be selected for actions. Restore checks run again before changing files, and existing destinations are never silently overwritten.
 
 | Tool | What it is for |
 |---|---|

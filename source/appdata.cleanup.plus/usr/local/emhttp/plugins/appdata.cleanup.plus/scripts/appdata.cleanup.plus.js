@@ -2736,7 +2736,7 @@
           "</div>" +
         "</header>" +
         '<div class="acp-results-table-head">' +
-          '<span></span><span>' + ACP.escapeHtml(ACP.t(strings, "nameLabel", "Name")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "lastUsedLabel", "Last used")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "pathLabel", "Path")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sourceLabel", "Source")) + '</span><span>' + ACP.escapeHtml(ACP.tr("Detection reason")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "actionsLabel", "Actions")) + '</span>' +
+          '<span></span><span>' + ACP.escapeHtml(ACP.t(strings, "nameLabel", "Name")) + '</span><span>' + ACP.escapeHtml(ACP.tr("Last modified")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "pathLabel", "Path")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sourceLabel", "Source")) + '</span><span>' + ACP.escapeHtml(ACP.tr("Detection reason")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "actionsLabel", "Actions")) + '</span>' +
         "</div>" +
         '<div class="acp-results-section-body">' + rowHtml.join("") + "</div>" +
       "</section>"
@@ -3524,17 +3524,26 @@
     payload.collection.sections.recentFailures = {status:payload.recentFailures.status,includedCount:payload.recentFailures.includedCount,omittedCount:payload.recentFailures.omittedCount};
     var partial = Object.keys(payload.collection.sections).some(function(key) { return payload.collection.sections[key].status !== "complete"; });
     payload.collection.status = partial ? "partial" : "complete";
-    if (partial) payload.troubleshooting.findings.push({id:"collection",status:"warning",summary:"Some diagnostics sections are missing or limited; inspect collection status before drawing conclusions."});
+    var collectionProblem = Object.keys(payload.collection.sections).some(function(key) {
+      var section = payload.collection.sections[key];
+      return section.status === "failed" || (key === "rows" && section.status === "unavailable");
+    });
+    var serverSections = (payload.serverDiagnostics.collection || {}).sections || {};
+    collectionProblem = collectionProblem || Object.keys(serverSections).some(function(key) {
+      return serverSections[key].status === "failed" || (["runtime", "currentSnapshot", "latestScanMetrics", "troubleshooting"].indexOf(key) !== -1 && ["partial", "unavailable"].indexOf(serverSections[key].status) !== -1);
+    });
+    if (collectionProblem) payload.troubleshooting.findings.push({id:"collection",status:"warning",summary:"Required diagnostics evidence is missing or a collector failed; inspect collection status."});
     payload.troubleshooting.statusCounts.warning += payload.troubleshooting.findings.length - serverFindingCount;
-    if ((partial || payload.troubleshooting.findings.length) && payload.troubleshooting.status !== "error") {
+    if (payload.troubleshooting.statusCounts.warning > 0 && payload.troubleshooting.status !== "error") {
       payload.troubleshooting.status = "warning";
       payload.troubleshooting.headline = "Diagnostics contain incomplete evidence or conditions worth reviewing.";
     }
     payload = sanitizeDiagnosticsValue(payload, buildDiagnosticsRedactor(), "");
     try {
       downloadJsonFile(buildDiagnosticsFilename(), payload);
-      swal(partial ? ACP.tr("Partial diagnostics exported") : ACP.t(strings, "toolsDiagnosticsDoneTitle", "Diagnostics exported"),
-        partial ? ACP.tr("A partial diagnostics file has been downloaded. Check collection status for missing or limited sections.") : ACP.t(strings, "toolsDiagnosticsDoneMessage", "The diagnostics JSON has been downloaded."), partial ? "warning" : "success");
+      var needsReview = collectionProblem || payload.troubleshooting.status === "warning" || payload.troubleshooting.status === "error";
+      swal(collectionProblem ? ACP.tr("Partial diagnostics exported") : ACP.t(strings, "toolsDiagnosticsDoneTitle", "Diagnostics exported"),
+        collectionProblem ? ACP.tr("A partial diagnostics file has been downloaded. Check collection status for missing or limited sections.") : (partial ? ACP.tr("Diagnostics downloaded; some history and logs were limited or unavailable.") : ACP.t(strings, "toolsDiagnosticsDoneMessage", "The diagnostics JSON has been downloaded.")), needsReview ? "warning" : "success");
     } catch (_error) {
       swal(ACP.t(strings, "toolsDiagnosticsFailedTitle", "Diagnostics export failed"), ACP.t(strings, "toolsDiagnosticsFailedMessage", "The diagnostics file could not be created right now."), "error");
     }
@@ -3676,7 +3685,7 @@
     $.each(state.quarantine.entries || [], function(_, entry) {
       var entryId = String(entry.id || "");
 
-      if (entryId) {
+      if (entryId && entry.restoreStatus !== "missing") {
         allowed[entryId] = true;
       }
     });
@@ -3694,7 +3703,7 @@
     $.each(state.quarantine.entries || [], function(_, entry) {
       var entryId = String(entry.id || "");
 
-      if (entryId && state.quarantine.selected[entryId]) {
+      if (entryId && entry.restoreStatus !== "missing" && state.quarantine.selected[entryId]) {
         selectedIds.push(entryId);
       }
     });
@@ -3706,7 +3715,7 @@
     $.each(state.quarantine.entries || [], function(_, entry) {
       var entryId = String(entry.id || "");
 
-      if (entryId) {
+      if (entryId && entry.restoreStatus !== "missing") {
         state.quarantine.selected[entryId] = true;
       }
     });
@@ -3809,8 +3818,11 @@
       .prop("disabled", state.busy || state.quarantine.loading || totalEntries === 0 || selectedIds.length >= totalEntries);
     $modal.find("[data-action='restore-selected-quarantine'], [data-action='purge-selected-quarantine'], [data-action='clear-quarantine-selection'], [data-action='set-quarantine-purge-schedule'], [data-action='clear-quarantine-purge-schedule']")
       .prop("disabled", state.busy || state.quarantine.loading || selectedIds.length === 0);
-    $modal.find("[data-entry-action]")
-      .prop("disabled", state.busy || state.quarantine.loading);
+    $modal.find("[data-entry-action]").each(function() {
+      var $button = $(this);
+      var entry = findQuarantineEntries([String($button.data("entry-id") || "")])[0] || {};
+      $button.prop("disabled", state.busy || state.quarantine.loading || entry.restoreStatus === "missing" || ($button.data("entry-action") === "restore" && entry.restoreStatus === "blocked"));
+    });
     $modal.find("[data-action='refresh-quarantine']")
       .prop("disabled", state.busy || state.quarantine.loading);
 
@@ -4514,7 +4526,7 @@
             '<div class="acp-results-section-meta">' + buildSectionMetaHtml(section.rows || []) + "</div>" +
           "</header>" +
           '<div class="acp-results-table-head">' +
-            '<span></span><span>' + ACP.escapeHtml(ACP.t(strings, "nameLabel", "Name")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "lastUsedLabel", "Last used")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "pathLabel", "Path")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sourceLabel", "Source")) + '</span><span>' + ACP.escapeHtml(ACP.tr("Detection reason")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "actionsLabel", "Actions")) + '</span>' +
+            '<span></span><span>' + ACP.escapeHtml(ACP.t(strings, "nameLabel", "Name")) + '</span><span>' + ACP.escapeHtml(ACP.tr("Last modified")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "pathLabel", "Path")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "sourceLabel", "Source")) + '</span><span>' + ACP.escapeHtml(ACP.tr("Detection reason")) + '</span><span>' + ACP.escapeHtml(ACP.t(strings, "actionsLabel", "Actions")) + '</span>' +
           "</div>" +
           '<div class="acp-results-section-body">' + rowHtml.join("") + "</div>" +
         "</section>"
@@ -5189,6 +5201,7 @@
     }
 
     html.push("</ul></section>");
+    html.push(buildActionOutcomeSummary(rows, context, false));
 
     if (settings.showConfirmationCheckbox) {
       var confirmationLabel = ACP.t(strings, "deleteCheckboxConfirmLabel", "I confirm I want to permanently delete the selected folders. This action cannot be undone by this plugin.");
@@ -5204,6 +5217,42 @@
 
     html.push("</div>");
     return html.join("");
+  }
+
+  function resultGroup(result) {
+    if (["quarantined", "deleted", "restored", "purged", "ready"].indexOf(result.status) !== -1) return "completed";
+    return result.status === "error" ? "failed" : "skipped";
+  }
+
+  function orderedActionResults(results) {
+    return (results || []).slice().sort(function(a, b) {
+      return ["failed", "skipped", "completed"].indexOf(resultGroup(a)) - ["failed", "skipped", "completed"].indexOf(resultGroup(b));
+    });
+  }
+
+  function resultNextStep(result) {
+    if (result.status === "conflict") return ACP.tr("Resolve the destination conflict, then restore again.");
+    if (result.status === "blocked" || result.status === "missing") return ACP.tr("Rescan or refresh the list, review the reason, and select the item again if it becomes available.");
+    if (result.status === "error") return ACP.tr("Review the error and check storage access, then retry. Safety checks run again before any changes.");
+    if (result.status === "skipped") return ACP.tr("Review why this item was skipped before trying again.");
+    return "";
+  }
+
+  function buildActionOutcomeSummary(items, context, fromResults) {
+    var folders = 0, datasets = 0, skipped = 0;
+    $.each(items || [], function(_, item) {
+      if (fromResults && item.status !== "ready") { skipped++; return; }
+      if (item.datasetName || item.storageKind === "zfs") datasets++; else folders++;
+    });
+    var counts = [
+      [ACP.tr("Folders to quarantine"), context.baseOperation === "quarantine" ? folders : 0],
+      [ACP.tr("Folders to permanently delete"), context.baseOperation === "delete" ? folders : 0],
+      [ACP.tr("Selected datasets to destroy"), context.baseOperation === "delete" ? datasets : 0],
+      [ACP.tr("Items that will not be changed"), skipped]
+    ];
+    return '<section class="acp-delete-simple-card acp-action-outcome-summary"><div class="acp-delete-simple-card-title">' + ACP.escapeHtml(ACP.tr("Expected outcome")) + '</div>' + counts.map(function(pair) {
+      return '<div class="acp-modal-result-message">' + ACP.escapeHtml(pair[0]) + ': ' + ACP.escapeHtml(ACP.formatCount(pair[1])) + '</div>';
+    }).join('') + '<p>' + ACP.escapeHtml(context.baseOperation === "quarantine" ? ACP.tr("Quarantine moves folders and normally does not free space. Space is released only when data is permanently purged.") : ACP.tr("Folder size is not a guarantee of reclaimed space. ZFS snapshots and shared blocks can affect how much space is released.")) + '</p>' + (datasets ? '<p>' + ACP.escapeHtml(ACP.tr("Dataset counts refer to selected roots. Review each dataset for affected children and snapshots.")) + '</p>' : '') + '</section>';
   }
 
   function buildOperationResultsHtml(summary, results, context) {
@@ -5260,14 +5309,22 @@
 
     html.push('<div class="acp-delete-simple-pills">' + stats.join("") + "</div>");
     html.push("</div>");
+    if (context.preview) html.push(buildActionOutcomeSummary(results, context, true));
     html.push('<section class="acp-delete-simple-card">');
     html.push('<div class="acp-delete-simple-card-title">' + ACP.escapeHtml(warningCount > 0 ? ACP.t(strings, "operationResultNeedsAttentionTitle", "Needs attention") : context.listTitle) + "</div>");
     html.push('<ul class="acp-delete-simple-list acp-delete-result-list">');
 
-    $.each(results || [], function(_, result) {
+    var previousGroup = "";
+    $.each(orderedActionResults(results), function(_, result) {
+      var group = resultGroup(result);
+      if (group !== previousGroup) {
+        html.push('<li class="acp-delete-simple-card-title" data-result-group="' + group + '">' + ACP.escapeHtml(group === "failed" ? ACP.tr("Failed") : (group === "skipped" ? ACP.tr("Skipped or blocked") : (context.preview ? ACP.tr("Ready") : ACP.tr("Completed")))) + '</li>');
+        previousGroup = group;
+      }
       var statusMeta = ACP.formatOperationResultStatus(strings, result.status);
       var destinationHtml = "";
       var messageHtml = result.message ? '<div class="acp-modal-result-message">' + ACP.escapeHtml(result.message) + "</div>" : "";
+      if (resultNextStep(result)) messageHtml += '<div class="acp-modal-result-message acp-result-next-step">' + ACP.escapeHtml(resultNextStep(result)) + '</div>';
 
       if (result.destination) {
         destinationHtml =
@@ -5550,12 +5607,11 @@
   function showOperationResultsFromResponse(response, context) {
     var summary = response.summary || { ready: 0, quarantined: 0, deleted: 0, missing: 0, blocked: 0, errors: 0 };
     var results = $.isArray(response.results) ? response.results : [];
-    var hasWarnings = Number(summary.blocked || 0) > 0 || Number(summary.missing || 0) > 0 || Number(summary.errors || 0) > 0;
+    var hasWarnings = Number(summary.skipped || 0) > 0 || Number(summary.blocked || 0) > 0 || Number(summary.missing || 0) > 0 || Number(summary.errors || 0) > 0;
     var modalTitle = hasWarnings ? context.resultTitleWarning : context.resultTitleSuccess;
     var modalType = hasWarnings ? "warning" : "success";
 
     if (!context.preview) {
-      state.selected = {};
       applyLocalOperationResults(results);
       loadAuditHistory(state.deferredDataRequestToken, true, 25);
     }
@@ -6041,7 +6097,13 @@
     html.push('<div class="acp-modal-panel-title">' + ACP.escapeHtml(ACP.t(strings, "quarantineManagerTitle", "Quarantine manager")) + "</div>");
     html.push('<ul class="acp-modal-list acp-modal-result-list">');
 
-    $.each(results || [], function(_, result) {
+    var previousGroup = "";
+    $.each(orderedActionResults(results), function(_, result) {
+      var group = resultGroup(result);
+      if (group !== previousGroup) {
+        html.push('<li class="acp-modal-panel-title" data-result-group="' + group + '">' + ACP.escapeHtml(group === "failed" ? ACP.tr("Failed") : (group === "skipped" ? ACP.tr("Skipped or blocked") : ACP.tr("Completed"))) + '</li>');
+        previousGroup = group;
+      }
       var statusMeta = ACP.formatOperationResultStatus(strings, result.status);
       var showPrimaryDestination = !!result.destination && !(result.quarantinePath && (result.status === "conflict" || result.status === "skipped"));
       html.push('<li class="acp-modal-result">');
@@ -6061,6 +6123,7 @@
       if (result.message) {
         html.push('<div class="acp-modal-result-message">' + ACP.escapeHtml(result.message) + "</div>");
       }
+      if (resultNextStep(result)) html.push('<div class="acp-modal-result-message acp-result-next-step">' + ACP.escapeHtml(resultNextStep(result)) + '</div>');
       html.push("</li>");
     });
 

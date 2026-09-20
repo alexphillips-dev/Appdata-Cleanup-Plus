@@ -1546,6 +1546,23 @@ foreach ( $recoveredMarkerPayload["entries"] as $entry ) {
   }
 }
 behaviorSmokeAssertTrue(is_array($recoveredMarkerEntry), "The quarantine manager should recover marker-backed entries from disk when plugin state is reset.");
+behaviorSmokeAssertSame("marker", $recoveredMarkerEntry["recoveryOrigin"], "Marker recovery provenance should remain visible.");
+behaviorSmokeAssertSame("ready", $recoveredMarkerEntry["restoreStatus"], "An available restore path should be labeled ready.");
+ensureAppdataCleanupPlusDirectory($recoveredMarkerSourcePath);
+$conflictStatusPayload = buildQuarantineManagerPayload(true);
+behaviorSmokeAssertSame("conflict", $conflictStatusPayload["entries"][0]["restoreStatus"], "An existing original location should show a restore conflict.");
+rmdir($recoveredMarkerSourcePath);
+$missingReviewRecord = $recoveredMarkerEntry;
+$missingReviewRecord["id"] = "missing-review-fixture";
+$missingReviewRecord["destination"] .= "-unavailable";
+registerAppdataCleanupPlusQuarantineRecord($missingReviewRecord);
+buildQuarantineManagerPayload(false);
+$missingReviewPayload = buildQuarantineManagerPayload(true);
+$missingReviewEntries = array_values(array_filter($missingReviewPayload["entries"], function($entry) { return $entry["id"] === "missing-review-fixture"; }));
+behaviorSmokeAssertSame("missing", $missingReviewEntries[0]["restoreStatus"], "Missing quarantine storage must remain visible after summary loading.");
+behaviorSmokeAssertTrue(isset(getAppdataCleanupPlusQuarantineRegistry()["missing-review-fixture"]), "Reviewing unavailable quarantine storage must retain its tracking record.");
+behaviorSmokeAssertSame(false, resolveTrackedQuarantineEntries(array("missing-review-fixture"))["ok"], "Missing review records must not become actionable.");
+removeAppdataCleanupPlusQuarantineRecord("missing-review-fixture");
 behaviorSmokeAssertSame($recoveredMarkerSourcePath, $recoveredMarkerEntry["sourcePath"], "Marker-backed recovery should preserve the exact original source path.");
 behaviorSmokeAssertSame(1, (int)$recoveredMarkerPayload["summary"]["count"], "Recovered marker-backed entries should repopulate the quarantine summary.");
 $recoveredMarkerPayloadAgain = buildQuarantineManagerPayload(true);

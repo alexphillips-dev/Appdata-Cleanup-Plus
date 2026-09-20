@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.19.12">
-<!ENTITY md5 "1dfb78ca37a13db36a276801ed206c76">
+<!ENTITY version "2026.09.19.13">
+<!ENTITY md5 "c5c5f444a73e8d0de8686fe29f27e5b9">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,14 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.19.13
+- Keep normal history/log limits and unavailable optional logs informational in diagnostics; retain warnings for failed collectors, missing required evidence, and detected health problems.
+- Rename Last used to Last modified and show the exact filesystem timestamp with an explanation that it does not establish container usage.
+- Add expected-outcome counts to cleanup reviews and dry runs for folders to quarantine, folders to delete, selected dataset roots to destroy, and unchanged items. Clarify quarantine and ZFS space-reclamation limits.
+- Show quarantine restore readiness, conflicts, protected paths, missing storage, and recovery provenance. Retain missing records for review while excluding them from actions.
+- Group completed, skipped/blocked, and failed action results with next-step guidance. Keep unsuccessful cleanup items selected for review and preserve all action-time safety checks.
+- Translate the new UI text across all 42 supported languages and add diagnostics, partial-result, quarantine recovery, and missing-storage regression coverage.
+
 ###2026.09.19.12
 Includes all changes since stable 2026.09.19.06.
 

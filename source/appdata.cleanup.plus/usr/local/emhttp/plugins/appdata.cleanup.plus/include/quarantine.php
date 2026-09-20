@@ -66,7 +66,7 @@ function normalizeAppdataCleanupPlusQuarantinePurgeScheduleSource($source, $purg
 }
 
 function syncTrackedQuarantineEntriesToDefaultPurgeSchedule($settings, $previousSettings=null) {
-  $registry = pruneMissingAppdataCleanupPlusQuarantineRecords(getAppdataCleanupPlusQuarantineRegistry());
+  $registry = getAppdataCleanupPlusQuarantineRegistry();
   $updatedCount = 0;
   $registryDirty = false;
 
@@ -200,6 +200,7 @@ function normalizeAppdataCleanupPlusQuarantineRecord($record) {
     ),
     "purgeErrorAt" => isset($record["purgeErrorAt"]) ? trim((string)$record["purgeErrorAt"]) : "",
     "purgeErrorMessage" => isset($record["purgeErrorMessage"]) ? trim((string)$record["purgeErrorMessage"]) : "",
+    "recoveryOrigin" => isset($record["recoveryOrigin"]) && in_array($record["recoveryOrigin"], array("marker", "layout"), true) ? $record["recoveryOrigin"] : "",
     "sourceKind" => isset($record["sourceKind"]) ? trim((string)$record["sourceKind"]) : "template",
     "sourceLabel" => isset($record["sourceLabel"]) ? trim((string)$record["sourceLabel"]) : "",
     "sourceDisplay" => isset($record["sourceDisplay"]) ? trim((string)$record["sourceDisplay"]) : "",
@@ -389,6 +390,7 @@ function appdataCleanupPlusBuildRecoveredQuarantineRecord($sourcePath, $destinat
     $record["quarantinedAt"] = $quarantinedAt !== "" ? $quarantinedAt : (isset($record["quarantinedAt"]) ? (string)$record["quarantinedAt"] : "");
   }
 
+  $record["recoveryOrigin"] = !empty($markerRecord) ? "marker" : "layout";
   return normalizeAppdataCleanupPlusQuarantineRecord($record);
 }
 
@@ -502,7 +504,7 @@ function appdataCleanupPlusRecoverQuarantineRecordsFromRoot($quarantineRoot, $kn
 }
 
 function recoverMissingAppdataCleanupPlusQuarantineRecords() {
-  $registry = pruneMissingAppdataCleanupPlusQuarantineRecords(getAppdataCleanupPlusQuarantineRegistry());
+  $registry = getAppdataCleanupPlusQuarantineRegistry();
   $nextRegistry = $registry;
   $knownDestinations = array();
   $registryDirty = false;
@@ -557,22 +559,19 @@ function removeAppdataCleanupPlusQuarantineRecord($recordId) {
 
 function pruneMissingAppdataCleanupPlusQuarantineRecords($registry) {
   $nextRegistry = array();
-  $removed = false;
 
   foreach ( $registry as $recordId => $record ) {
     $normalized = normalizeAppdataCleanupPlusQuarantineRecord($record);
 
     if ( ! $normalized["destination"] || ! is_dir($normalized["destination"]) ) {
-      $removed = true;
       continue;
     }
 
     $nextRegistry[$recordId] = $normalized;
   }
 
-  if ( $removed ) {
-    setAppdataCleanupPlusQuarantineRegistry($nextRegistry);
-  }
+  // Filter action lists without discarding missing records: storage may be offline.
+  // The manager retains these records for review and later recovery.
 
   return $nextRegistry;
 }
@@ -608,9 +607,10 @@ function buildQuarantineSummaryFromRegistry($registry) {
   return buildQuarantineSummary($entries);
 }
 
-function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false) {
-  $registry = pruneMissingAppdataCleanupPlusQuarantineRecords(recoverMissingAppdataCleanupPlusQuarantineRecords());
+function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false, $includeMissing=false) {
+  $registry = recoverMissingAppdataCleanupPlusQuarantineRecords();
   $nextRegistry = $registry;
+  if (!$includeMissing) $registry = pruneMissingAppdataCleanupPlusQuarantineRecords($registry);
   $registryDirty = false;
   $entries = array();
 
@@ -618,7 +618,12 @@ function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false) {
     $normalized = normalizeAppdataCleanupPlusQuarantineRecord($record);
     $timestamp = strtotime($normalized["quarantinedAt"]);
     $scheduledPurge = buildAppdataCleanupPlusScheduledPurgeMeta(isset($normalized["purgeAt"]) ? $normalized["purgeAt"] : "");
+    $stored = is_dir($normalized["destination"]);
+    $restoreLock = buildRestorePathSecurityReason($normalized["sourcePath"]);
+    $restoreStatus = !$stored ? "missing" : ($restoreLock ? "blocked" : ((file_exists($normalized["sourcePath"]) || is_link($normalized["sourcePath"])) ? "conflict" : "ready"));
     $row = array(
+      "restoreStatus" => $restoreStatus,
+      "recoveryOrigin" => $normalized["recoveryOrigin"],
       "id" => $normalized["id"],
       "name" => $normalized["name"],
       "sourcePath" => $normalized["sourcePath"],
@@ -645,11 +650,11 @@ function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false) {
       "targetPaths" => $normalized["targetPaths"],
       "templateRefs" => $normalized["templateRefs"],
       "reason" => $normalized["reason"],
-      "sizeBytes" => $normalized["sizeBytes"],
-      "sizeLabel" => $normalized["sizeBytes"] !== null ? formatBytesLabel($normalized["sizeBytes"]) : "Unknown"
+      "sizeBytes" => $stored ? $normalized["sizeBytes"] : null,
+      "sizeLabel" => $stored && $normalized["sizeBytes"] !== null ? formatBytesLabel($normalized["sizeBytes"]) : "Unknown"
     );
 
-    if ( $includeStats || $normalized["sizeBytes"] === null ) {
+    if ( $stored && ($includeStats || $normalized["sizeBytes"] === null) ) {
       $stats = collectPathStats($normalized["destination"]);
       $row["sizeBytes"] = $stats["sizeBytes"];
       $row["sizeLabel"] = $stats["sizeLabel"];
@@ -786,7 +791,7 @@ function buildQuarantineManagerPayload($includeEntries=true) {
   );
 
   if ( $includeEntries ) {
-    $entries = getActiveAppdataCleanupPlusQuarantineEntries(true);
+    $entries = getActiveAppdataCleanupPlusQuarantineEntries(true, true);
     $summary = buildQuarantineSummary($entries);
   } else {
     $registry = pruneMissingAppdataCleanupPlusQuarantineRecords(recoverMissingAppdataCleanupPlusQuarantineRecords());

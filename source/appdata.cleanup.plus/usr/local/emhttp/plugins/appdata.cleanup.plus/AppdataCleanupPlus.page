@@ -579,7 +579,7 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
         <select id="acp-sort" class="acp-select">
           <option value="name" selected><?php echo acpH("Name"); ?></option>
           <option value="path"><?php echo acpH("Path"); ?></option>
-          <option value="last-used"><?php echo acpH("Last used"); ?></option>
+          <option value="last-used"><?php echo acpH("Last modified"); ?></option>
           <option value="size"><?php echo acpH("Size: Largest"); ?></option>
           <option value="source"><?php echo acpH("Source"); ?></option>
           <option value="type"><?php echo acpH("Type"); ?></option>

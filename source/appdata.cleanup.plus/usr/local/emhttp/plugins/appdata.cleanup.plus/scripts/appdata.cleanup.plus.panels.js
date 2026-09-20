@@ -190,13 +190,20 @@
       $.each(entries, function(_, entry) {
         var entryId = String(entry.id || "");
         var isSelected = !!selected[entryId];
+        var missing = entry.restoreStatus === "missing";
+        var restoreBlocked = missing || entry.restoreStatus === "blocked";
+        var restoreLabel = missing ? ACP.tr("Missing from storage") : (entry.restoreStatus === "conflict" ? ACP.tr("Restore destination conflict") : (restoreBlocked ? ACP.tr("Restore blocked") : ACP.tr("Ready to restore")));
+        var restoreHelp = missing ? ACP.tr("Check that quarantine storage is mounted and available, then refresh. The tracking record is retained.") : (entry.restoreStatus === "conflict" ? ACP.tr("The original location exists. Restore lets you skip it or choose another name without overwriting it.") : (restoreBlocked ? ACP.tr("The restore path is protected. Review the original location before restoring.") : ACP.tr("The original location is available. Safety checks run again when you restore.")));
         html.push('<li class="acp-simple-list-item acp-quarantine-entry' + (isSelected ? ' is-selected' : "") + '" data-entry-id="' + ACP.escapeHtml(entryId) + '">');
         html.push('<div class="acp-simple-list-main">');
         html.push('<label class="acp-quarantine-entry-check acp-simple-list-check">');
-        html.push('<input type="checkbox" class="acp-quarantine-checkbox" data-entry-id="' + ACP.escapeHtml(entryId) + '"' + (isSelected ? ' checked="checked"' : "") + ">");
+        html.push('<input type="checkbox" class="acp-quarantine-checkbox" data-entry-id="' + ACP.escapeHtml(entryId) + '"' + (isSelected ? ' checked="checked"' : "") + (missing ? ' disabled="disabled"' : '') + ">");
         html.push("</label>");
         html.push('<div class="acp-simple-list-copy">');
         html.push('<div class="acp-simple-list-title">' + ACP.escapeHtml(entry.name || entry.sourcePath || "") + "</div>");
+        html.push('<div class="acp-simple-badge-row"><span class="acp-modal-stat ' + (entry.restoreStatus === "ready" ? 'is-safe' : 'is-review') + '">' + ACP.escapeHtml(restoreLabel) + '</span></div>');
+        html.push('<div class="acp-simple-list-subtitle">' + ACP.escapeHtml(restoreHelp) + '</div>');
+        if (entry.recoveryOrigin === "marker" || entry.recoveryOrigin === "layout") html.push('<div class="acp-simple-list-subtitle">' + ACP.escapeHtml(entry.recoveryOrigin === "marker" ? ACP.tr("Recovered from an on-disk quarantine marker.") : ACP.tr("Recovered from the quarantine folder layout.")) + '</div>');
         html.push('<div class="acp-simple-list-subtitle">' + ACP.escapeHtml((entry.quarantinedAtLabel || "") + (entry.quarantinedAgeLabel ? " | " + entry.quarantinedAgeLabel : "") + (entry.sizeLabel ? " | " + entry.sizeLabel : "")) + "</div>");
         if (entry.purgeScheduled && entry.purgeBadgeLabel) {
           html.push('<div class="acp-simple-badge-row">');
@@ -209,8 +216,8 @@
         html.push("</div>");
         html.push("</div>");
         html.push('<div class="acp-simple-list-actions">');
-        html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="restore" data-entry-id="' + ACP.escapeHtml(entryId) + '">' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreActionLabel", "Restore")) + "</button>");
-        html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="purge" data-entry-id="' + ACP.escapeHtml(entryId) + '">' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeActionLabel", "Purge")) + "</button>");
+        html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="restore" data-entry-id="' + ACP.escapeHtml(entryId) + '"' + (restoreBlocked ? ' disabled="disabled"' : '') + '>' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreActionLabel", "Restore")) + "</button>");
+        html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="purge" data-entry-id="' + ACP.escapeHtml(entryId) + '"' + (missing ? ' disabled="disabled"' : '') + '>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeActionLabel", "Purge")) + "</button>");
         html.push("</div>");
         html.push("</div>");
         html.push('<details class="acp-simple-disclosure acp-simple-list-details"><summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>");
@@ -845,7 +852,8 @@
       '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsInfoTitle", "Folder info")) + "</div>",
       buildModalFieldListHtml([
         { label: ACP.t(strings, "sizeLabel", "Size"), value: row.sizeLabel || "" },
-        { label: ACP.t(strings, "updatedLabel", "Updated"), value: row.lastModifiedLabel || row.lastModifiedExact || "" },
+        { label: ACP.tr("Last modified"), value: row.lastModifiedExact || row.lastModifiedLabel || "" },
+        { label: ACP.tr("Timestamp meaning"), value: ACP.tr("Filesystem modification time does not show when a container last used this folder.") },
         { label: ACP.t(strings, "sourceLabel", "Source"), value: row.sourceDisplay || row.sourceSummary || sourceLabel },
         { label: ACP.t(strings, "rowDetailsResolveLabel", "How to resolve"), value: nextStepMessage }
       ]),
