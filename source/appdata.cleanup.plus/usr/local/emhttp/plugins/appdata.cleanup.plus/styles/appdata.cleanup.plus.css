@@ -4405,10 +4405,22 @@
 .acp-mount-evidence code { display: block; overflow-wrap: anywhere; direction: ltr; unicode-bidi: isolate; }
 .acp-template-card .acp-template-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
 
+.sweet-alert.acp-appdata-sources-modal,
 .sweet-alert.acp-template-manager-modal {
   flex-direction: column;
   max-height: min(760px, calc(100vh - 80px)) !important;
   overflow: hidden !important;
+}
+.sweet-alert.acp-appdata-sources-modal > h2,
+.sweet-alert.acp-appdata-sources-modal > .sa-button-container {
+  flex: 0 0 auto;
+}
+.sweet-alert.acp-appdata-sources-modal .acp-modal-host {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
 }
 .sweet-alert.acp-template-manager-modal > h2,
 .sweet-alert.acp-template-manager-modal > .sa-button-container,

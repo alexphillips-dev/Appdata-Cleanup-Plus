@@ -144,6 +144,19 @@ async function nativeCss(version, theme) {
         assert.equal(result.bg,baseline.page,`${version} ${theme} ${flow}: modal surface`);
         assert.equal(result.text,baseline.text,`${version} ${theme} ${flow}: modal text`);
         assert.equal(result.kind,expectedClass);
+        if (flow==='sources') {
+          await page.setViewportSize({width,height:650});
+          const geometry=await page.evaluate(()=>{
+            const modal=document.querySelector('.sweet-alert'),body=modal.querySelector('.acp-modal-host'),done=modal.querySelector('button.confirm');
+            return {height:modal.getBoundingClientRect().height,outerOverflow:modal.scrollHeight-modal.clientHeight,bodyOverflow:body.scrollHeight-body.clientHeight,doneBottom:done.getBoundingClientRect().bottom};
+          });
+          assert.ok(geometry.height<=570 && geometry.outerOverflow<=2,`${version} ${theme}: sources dialog must stay compact ${JSON.stringify(geometry)}`);
+          assert.ok(geometry.bodyOverflow>0,'Sources content scrolls inside the shorter dialog');
+          assert.ok(geometry.doneBottom<=650,'Sources Done remains visible');
+          await page.locator('.acp-modal-host').evaluate(el=>el.scrollTop=el.scrollHeight);
+          assert.ok(await page.locator('[data-action="add-current-appdata-source"]').isVisible(),'Add source remains reachable');
+          await page.setViewportSize({width,height:1000});
+        }
         if (flow==='templates') {
           await page.setViewportSize({width,height:650});
           const geometry=await page.evaluate(()=>{

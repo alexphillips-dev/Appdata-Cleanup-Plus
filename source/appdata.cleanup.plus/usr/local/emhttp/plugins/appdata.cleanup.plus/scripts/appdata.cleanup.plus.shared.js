@@ -242,10 +242,10 @@
     $baseText = $modal.children("p").first();
     $existingHost = $modal.children(".acp-modal-host");
 
-    // Flex sizing keeps the template list scrollable without moving the footer.
+    // Flex sizing keeps compact dialog content scrollable without moving the footer.
     // Preserve SweetAlert's inline display:none when closing or reusing a dialog.
-    if ($modal[0].style.display !== "none" && ($modal.hasClass("acp-template-manager-modal") || String(className).indexOf("acp-template-manager-modal") !== -1)) {
-      $modal.css("display", String(className).indexOf("acp-template-manager-modal") !== -1 ? "flex" : "block");
+    if ($modal[0].style.display !== "none" && /acp-(?:template-manager|appdata-sources)-modal/.test(String($modal.attr("class")) + " " + String(className))) {
+      $modal.css("display", /acp-(?:template-manager|appdata-sources)-modal/.test(String(className)) ? "flex" : "block");
     }
 
     $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-delete-progress-running acp-delete-progress-ready acp-quarantine-manager-modal acp-audit-history-modal acp-appdata-sources-modal acp-zfs-path-mappings-modal acp-tools-modal acp-template-manager-modal acp-help-modal acp-row-details-modal");

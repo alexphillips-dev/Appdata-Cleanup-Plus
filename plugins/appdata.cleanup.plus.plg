@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.19.13">
-<!ENTITY md5 "c5c5f444a73e8d0de8686fe29f27e5b9">
+<!ENTITY version "2026.09.19.14">
+<!ENTITY md5 "029ab6392b357f6417fc8bcea451b30f">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.19.14
+- Shortened the Appdata Sources dialog to match the compact template-cleanup window, keeping the title and Done button visible while source content scrolls inside.
+- Verified the compact layout on desktop and mobile across Black, White, Azure, and Gray, including switching between dialogs.
+
 ###2026.09.19.13
 - Keep normal history/log limits and unavailable optional logs informational in diagnostics; retain warnings for failed collectors, missing required evidence, and detected health problems.
 - Rename Last used to Last modified and show the exact filesystem timestamp with an explanation that it does not establish container usage.
