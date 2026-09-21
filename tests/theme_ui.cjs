@@ -128,10 +128,11 @@ async function nativeCss(version, theme) {
       }
       await page.mouse.move(0,0);
       await page.evaluate(()=>document.querySelector('.sweet-alert').style.display='block');
-      for (const flow of ['help','details','sources','mappings','tools','templates','quarantine','history','confirmation','progress','results','conflicts']) {
+      for (const flow of ['quarantine','help','sources','quarantine','help','details','sources','mappings','tools','templates','history','confirmation','progress','results','conflicts']) {
         await page.evaluate(flow=>{
           const T=themeFlows, ACP=AppdataCleanupPlus, row=T.state.rows[0], context={strings:appdataCleanupPlusConfig.strings,state:T.state};
           const operation=T.buildOperationContext('delete',[row]);
+          if (flow==='quarantine') context.state.quarantine={entries:Array.from({length:24},(_,i)=>({id:`quarantine-${i}`,name:`Synthetic ${i}`,sourcePath:`/mnt/user/appdata/example-${i}`,destination:`/mnt/user/appdata/.appdata-cleanup-plus-quarantine/example-${i}`,restoreStatus:'ready'})),selected:{}};
           if (flow==='templates') context.state.templateManager={status:{templates:Array.from({length:30},(_,i)=>({id:`template-${i}`,name:`Saved app ${i}`,filename:`my-saved-app-${i}.xml`})),backups:[{id:'backup',name:'Saved backup',filename:'my-backup.xml',canRestore:true}]}};
           const builders={help:()=>T.buildHelpModalHtml(),details:()=>ACP.buildRowDetailsModalHtml(context,row),sources:()=>ACP.buildAppdataSourcesModalHtml(context),mappings:()=>ACP.buildZfsPathMappingsModalHtml(context),tools:()=>ACP.buildToolsModalHtml(context),templates:()=>ACP.buildTemplateManagerModalHtml(context),quarantine:()=>ACP.buildQuarantineManagerModalHtml(context),history:()=>ACP.buildAuditHistoryModalHtml(context),confirmation:()=>T.buildOperationPreviewHtml([row],operation,{}),progress:()=>T.buildOperationProgressHtml({processed:0,total:1},operation,false),results:()=>T.buildOperationResultsHtml({deleted:1},[{path:row.path,status:'deleted',message:'Deleted'}],operation),conflicts:()=>T.buildRestoreConflictDialogHtml({summary:{conflicts:1,ready:0},conflicts:[{id:'example',sourcePath:row.path,parentPath:'/mnt/user/appdata',suggestedName:'Example-restored'}]})};
           const classes={help:'acp-help-modal',details:'acp-row-details-modal',sources:'acp-appdata-sources-modal',mappings:'acp-zfs-path-mappings-modal',tools:'acp-tools-modal',templates:'acp-template-manager-modal',quarantine:'acp-quarantine-manager-modal',history:'acp-audit-history-modal'};
@@ -144,6 +145,13 @@ async function nativeCss(version, theme) {
         assert.equal(result.bg,baseline.page,`${version} ${theme} ${flow}: modal surface`);
         assert.equal(result.text,baseline.text,`${version} ${theme} ${flow}: modal text`);
         assert.equal(result.kind,expectedClass);
+        if (flow==='quarantine') {
+          assert.equal(await page.locator('.acp-modal-host .acp-quarantine-entry').count(),24,'Every quarantine entry must remain inside the replaceable modal host');
+          assert.equal(await page.locator('.acp-quarantine-entry > .acp-simple-list-details').count(),24,'Technical details must stay inside their quarantine entry');
+          await page.locator('.acp-quarantine-entry summary').first().click();
+        } else {
+          assert.equal(await page.locator('.acp-quarantine-entry, .acp-simple-list-details').count(),0,'Switching dialogs must remove all quarantine content');
+        }
         if (flow==='sources') {
           await page.setViewportSize({width,height:650});
           const geometry=await page.evaluate(()=>{
@@ -155,6 +163,9 @@ async function nativeCss(version, theme) {
           assert.ok(geometry.doneBottom<=650,'Sources Done remains visible');
           await page.locator('.acp-modal-host').evaluate(el=>el.scrollTop=el.scrollHeight);
           assert.ok(await page.locator('[data-action="add-current-appdata-source"]').isVisible(),'Add source remains reachable');
+          await page.locator('.sweet-alert button.confirm').evaluate(el=>el.onclick=()=>{window.sourcesDoneClicked=true;});
+          await page.locator('.sweet-alert button.confirm').click();
+          assert.equal(await page.evaluate(()=>window.sourcesDoneClicked),true,'Sources Done must receive pointer clicks after quarantine');
           await page.setViewportSize({width,height:1000});
         }
         if (flow==='templates') {

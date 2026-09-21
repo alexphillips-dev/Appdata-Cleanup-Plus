@@ -890,10 +890,10 @@
       data: ACP.buildApiRequestData(config, data)
     });
     request.fail(function(xhr, status) {
-      recordDiagnosticsFailure(data && data.action, xhr && xhr.status, status, Date.now() - requestStarted);
+      recordDiagnosticsFailure(data && data.action, xhr && xhr.status, status, Date.now() - requestStarted, data, xhr && xhr.responseJSON);
     });
     request.done(function(response) {
-      if (response && response.ok === false) recordDiagnosticsFailure(data && data.action, 200, "application", Date.now() - requestStarted);
+      if (response && response.ok === false) recordDiagnosticsFailure(data && data.action, 200, "application", Date.now() - requestStarted, data, response);
     });
     return request;
   }
@@ -2771,7 +2771,7 @@
   var diagnosticsFailureTotal = 0;
   var diagnosticsCaptureInstalled = false;
 
-  function recordDiagnosticsFailure(action, httpStatus, category, durationMs) {
+  function recordDiagnosticsFailure(action, httpStatus, category, durationMs, requestData, response) {
     var actions = "getOrphanAppdata getAuditHistory getQuarantineSummary hydrateCandidateStats getCandidateDetails saveSafetySettings browseAppdataSourcePath updateCandidateState executeCandidateAction fixtureManagerAction getOperationProgress getQuarantineEntries updateQuarantinePurgeSchedule inspectQuarantineRestore quarantineManagerAction templateManagerAction getDiagnosticsBundle javascript".split(" ");
     var categories = "timeout abort parsererror error application TypeError ReferenceError RangeError SyntaxError URIError EvalError rejection".split(" ");
     diagnosticsFailureTotal++;
@@ -2780,9 +2780,16 @@
       action: actions.indexOf(action) !== -1 ? action : "unknown",
       httpStatus: Math.max(0, Math.min(599, Math.floor(Number(httpStatus) || 0))),
       category: categories.indexOf(category) !== -1 ? category : "unknown",
-      durationMs: Math.max(0, Math.min(86400000, Math.floor(Number(durationMs) || 0)))
+      durationMs: Math.max(0, Math.min(86400000, Math.floor(Number(durationMs) || 0))),
+      fixtureAction: action === "fixtureManagerAction" && ["status", "create", "remove"].indexOf((requestData || {}).managerAction) !== -1 ? requestData.managerAction : "none",
+      fixtureRootReason: action === "fixtureManagerAction" ? diagnosticsFixtureRootReason(response && response.status) : "unknown"
     });
     if (diagnosticsFailures.length > 20) diagnosticsFailures.shift();
+  }
+
+  function diagnosticsFixtureRootReason(status) {
+    var code = status && status.rootReasonCode;
+    return ["ready", "missing", "not_writable", "unsafe_symlink", "unsafe_path", "no_sources"].indexOf(code) !== -1 ? code : "unknown";
   }
 
   function installDiagnosticsErrorCapture() {
@@ -3328,6 +3335,13 @@
       recentFailures: {status:diagnosticsFailureTotal > diagnosticsFailures.length ? "partial" : "complete", totalCount:diagnosticsFailureTotal, includedCount:diagnosticsFailures.length, omittedCount:diagnosticsFailureTotal - diagnosticsFailures.length, data:diagnosticsFailures.slice()},
       collection: {status:"complete", sections:{browser:{status:"complete"}, rows:{status:"complete",includedCount:sanitizedRows.length,omittedCount:0}, auditHistory:{status:(state.auditHistory || []).length > 25 ? "partial" : "complete",includedCount:sanitizedAuditHistory.length,omittedCount:Math.max(0,(state.auditHistory || []).length - sanitizedAuditHistory.length)}}},
       uiState: {
+        fixtureTools: {
+          statusLoaded: !!state.fixtureTools.status,
+          loading: !!state.fixtureTools.loading,
+          requestFailed: state.fixtureTools.ok === false,
+          rootAvailable: !!(state.fixtureTools.status && state.fixtureTools.status.root),
+          rootReason: diagnosticsFixtureRootReason(state.fixtureTools.status)
+        },
         searchActive: !!$.trim(String(els.$search.val() || "")),
         searchLength: $.trim(String(els.$search.val() || "")).length,
         sortMode: String(state.sortMode || "name"),
@@ -3614,7 +3628,7 @@
         loadScan();
       }
     }).fail(function(xhr) {
-      updateFixtureToolsFromResponse(null, ACP.extractErrorMessage(xhr, ACP.t(strings, "toolsFixtureFailedMessage", "The test fixture action could not be completed right now.")), false);
+      updateFixtureToolsFromResponse(xhr && xhr.responseJSON, ACP.extractErrorMessage(xhr, ACP.t(strings, "toolsFixtureFailedMessage", "The test fixture action could not be completed right now.")), false);
       if (isToolsModalVisible()) renderToolsModal();
     });
   }

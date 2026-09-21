@@ -235,7 +235,7 @@ function acpLocalizeResponse($payload, $field='') {
   }
   if (in_array($field, array('timestampLabel', 'lastModifiedExact', 'purgeAtLabel', 'ignoredAtLabel', 'createdAtLabel', 'restoredAtLabel', 'quarantinedAtLabel'), true)) return acpLocalizeDate($payload);
   $fields = array('message', 'reason', 'policyReason', 'securityLockReason', 'lockReason', 'ignoredReason', 'label', 'title', 'description', 'warnings', 'notices', 'errors', 'headline', 'recommendation', 'sourceLabel', 'statusLabel', 'storageLabel', 'operationLabel', 'sizeLabel', 'lastModifiedLabel', 'relativeLabel', 'purgeBadgeLabel', 'summary', 'riskLabel', 'riskReason', 'resolutionReason', 'resolutionMessage', 'zfsResolutionReason', 'zfsResolutionDetail', 'zfsResolutionMessage', 'zfsImpactSummary', 'zfsPreviewError');
-  $fields = array_merge($fields, array('quarantinedAgeLabel', 'impactSummary', 'purgeErrorMessage', 'resolutionDetail', 'scanWarningMessage', 'validationMessage', 'zfsNote'));
+  $fields = array_merge($fields, array('quarantinedAgeLabel', 'impactSummary', 'purgeErrorMessage', 'resolutionDetail', 'scanWarningMessage', 'validationMessage', 'zfsNote', 'rootMessage'));
   return in_array($field, $fields, true) ? acpLocalizeText($payload) : $payload;
 }
 

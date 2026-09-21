@@ -219,7 +219,6 @@
         html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="restore" data-entry-id="' + ACP.escapeHtml(entryId) + '"' + (restoreBlocked ? ' disabled="disabled"' : '') + '>' + ACP.escapeHtml(ACP.t(strings, "quarantineRestoreActionLabel", "Restore")) + "</button>");
         html.push('<button type="button" class="acp-button acp-button-secondary" data-entry-action="purge" data-entry-id="' + ACP.escapeHtml(entryId) + '"' + (missing ? ' disabled="disabled"' : '') + '>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeActionLabel", "Purge")) + "</button>");
         html.push("</div>");
-        html.push("</div>");
         html.push('<details class="acp-simple-disclosure acp-simple-list-details"><summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>");
         html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineSourceLabel", "Original")) + '</span><code class="acp-modal-path">' + ACP.escapeHtml(entry.sourcePath || "") + "</code></div>");
         html.push('<div class="acp-modal-result-destination"><span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantineLocationLabel", "Quarantine path")) + '</span><code class="acp-modal-path acp-modal-path-secondary">' + ACP.escapeHtml(entry.destination || "") + "</code></div>");
@@ -694,7 +693,7 @@
     var strings = context.strings || {};
     var fixtureTools = state.fixtureTools || {};
     var fixtureStatus = fixtureTools.status || {};
-    var fixtureRoot = fixtureStatus.root || ACP.t(strings, "toolsFixtureNoRootLabel", "No appdata root detected");
+    var fixtureRoot = fixtureStatus.root || (fixtureTools.loading ? ACP.tr("Loading fixture status.") : (fixtureTools.status ? ACP.tr("No usable fixture root") : ACP.tr("Fixture status unavailable")));
     var fixtureRows = [];
 
     $.each($.isArray(fixtureStatus.fixtures) ? fixtureStatus.fixtures : [], function(_, fixture) {
@@ -728,6 +727,7 @@
         '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsFixtureSimpleMessage", "Create safe, namespaced appdata test folders so scan, selection, dry run, quarantine, and delete can be validated.")) + "</p>" +
         '<div class="acp-fixture-status">' +
           '<div class="acp-fixture-root"><span>' + ACP.escapeHtml(ACP.t(strings, "toolsFixtureRootLabel", "Fixture root")) + '</span><code class="acp-modal-path">' + ACP.escapeHtml(fixtureRoot) + "</code></div>" +
+          (fixtureStatus.rootMessage ? ('<div class="acp-modal-hint">' + ACP.escapeHtml(fixtureStatus.rootMessage) + "</div>") : "") +
           (fixtureRows.length ? ('<div class="acp-fixture-list">' + fixtureRows.join("") + "</div>") : '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "toolsFixtureStatusHint", "Refresh status to check fixture paths.")) + "</div>") +
           (fixtureStatus.zfsNote ? ('<div class="acp-modal-hint">' + ACP.escapeHtml(fixtureStatus.zfsNote) + "</div>") : "") +
           (fixtureTools.message ? ('<div class="acp-modal-feedback ' + (fixtureTools.ok === false ? "is-error" : (fixtureTools.ok === true ? "is-success" : "")) + '">' + ACP.escapeHtml(fixtureTools.message) + "</div>") : "") +

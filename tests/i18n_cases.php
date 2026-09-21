@@ -20,6 +20,8 @@ foreach (acpLocales() as $locale => $definition) {
     'scanWarningMessage'=>$warning,
     'reason'=>appdataCleanupPlusBuildEmptyParentRemnantReason('/mnt/user/Delete'),
     'zfsNote'=>$note,
+    'rootMessage'=>'The appdata source link does not resolve to a safe fixture root. Review Appdata Sources.',
+    'rootReasonCode'=>'unsafe_symlink',
     'storageLabel'=>'ZFS unavailable',
     'candidate'=>array('reason'=>buildCandidateReason('template', $names, $paths, false), 'sourceNames'=>$names, 'targetPaths'=>$paths, 'sourceSummary'=>summarizeCandidateValues($names)),
     'history'=>array('message'=>buildLatestAuditMessage(array('timestamp'=>'2026-09-18T12:00:00Z','operation'=>'delete','summary'=>array('deleted'=>2,'conflicts'=>21),'requestedCount'=>23))),

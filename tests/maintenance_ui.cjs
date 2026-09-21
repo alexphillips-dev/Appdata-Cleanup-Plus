@@ -92,6 +92,27 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     const diagnosticsText = await page.evaluate(async()=>downloadedBlob.text());
     assert.ok(!diagnosticsText.includes('Private App'), 'Downloaded diagnostics must not retain spaced path fragments');
     assert.ok(diagnosticsText.includes('Permission denied'), 'Download must preserve the useful error context');
+    // Preserve fixture failure evidence without exporting request/response content.
+    await page.evaluate(()=>{maintenance.state.fixtureTools.status=null;maintenance.openToolsModal();});
+    assert.equal(await page.evaluate(()=>requests.at(-1).options.data.managerAction),'status');
+    await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,status:{root:'',rootReasonCode:'unsafe_symlink',rootMessage:'Fixture root was rejected.'}}));
+    assert.match(await page.locator('.acp-fixture-root').textContent(),/No usable fixture root/);
+    assert.match(await page.locator('.acp-fixture-status').textContent(),/Fixture root was rejected/);
+    await page.locator('[data-action="create-test-fixtures"]').click();
+    await page.evaluate(()=>{requests.at(-1).deferred.reject({status:500,responseJSON:{ok:false,message:'Fixture creation failed.',status:{root:'',rootReasonCode:'missing',rootMessage:'Storage is unavailable.',privateCanary:'fixture-private-canary'}},responseText:'fixture-private-canary'});});
+    assert.match(await page.locator('.acp-fixture-status').textContent(),/Storage is unavailable/,'Failed fixture responses must refresh root status');
+    await page.evaluate(()=>{
+      maintenance.recordDiagnosticsFailure('fixtureManagerAction',500,'error',10,{managerAction:'fixture-private-canary'},{status:{rootReasonCode:'fixture-private-canary'}});
+      maintenance.exportDiagnostics();
+      requests.at(-1).deferred.resolve({ok:true,bundle:{schemaVersion:5,collection:{status:'complete'}}});
+    });
+    const fixtureDiagnostics=await page.evaluate(async()=>JSON.parse(await downloadedBlob.text()));
+    assert.ok(fixtureDiagnostics.recentFailures.data.some(item=>item.fixtureAction==='create' && item.fixtureRootReason==='missing'));
+    assert.equal(fixtureDiagnostics.recentFailures.data.at(-1).fixtureAction,'none');
+    assert.equal(fixtureDiagnostics.recentFailures.data.at(-1).fixtureRootReason,'unknown');
+    assert.equal(fixtureDiagnostics.uiState.fixtureTools.rootReason,'missing');
+    assert.equal(fixtureDiagnostics.uiState.fixtureTools.requestFailed,true);
+    assert.ok(!JSON.stringify(fixtureDiagnostics).includes('fixture-private-canary'),'Fixture diagnostics must exclude arbitrary status fields and response bodies');
     await page.evaluate(() => {
       appdataCleanupPlusConfig.pluginVersion='2026.09.19.09';
       maintenance.state.scanToken='private-scan-token';

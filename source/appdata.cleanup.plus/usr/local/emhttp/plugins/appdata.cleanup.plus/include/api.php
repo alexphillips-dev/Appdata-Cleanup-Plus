@@ -1176,6 +1176,23 @@ function appdataCleanupPlusDiagnosticsCollect($callback, &$metadata) {
   }
 }
 
+function appdataCleanupPlusDiagnosticsFixtureRootSummary() {
+  $info = appdataCleanupPlusResolveFixtureRootInfo();
+  $counts = array_fill_keys(array("ready", "missing", "not_writable", "unsafe_symlink", "unsafe_path", "no_sources"), 0);
+  $symlinkCount = 0;
+  foreach ($info["checks"] as $check) {
+    if (isset($counts[$check["reasonCode"]])) $counts[$check["reasonCode"]]++;
+    if (!empty($check["symlink"])) $symlinkCount++;
+  }
+  return array(
+    "rootAvailable" => $info["root"] !== "",
+    "reasonCode" => isset($counts[$info["reasonCode"]]) ? $info["reasonCode"] : "unknown",
+    "candidateCount" => count($info["checks"]),
+    "symlinkCount" => $symlinkCount,
+    "reasonCounts" => $counts
+  );
+}
+
 function buildAppdataCleanupPlusDiagnosticsBundle($token="") {
   $startedAt = microtime(true);
   $logs = array();
@@ -1210,6 +1227,7 @@ function buildAppdataCleanupPlusDiagnosticsBundle($token="") {
     ); }),
     "troubleshooting" => $collect("troubleshooting", function() use ($logs) { return appdataCleanupPlusDiagnosticsTroubleshootingSummary($logs); }),
     "state" => array(
+      "fixtureRoot" => $collect("fixtureRoot", function() { return appdataCleanupPlusDiagnosticsFixtureRootSummary(); }),
       "safetySettings" => $collect("safetySettings", function() { return appdataCleanupPlusDiagnosticsSafetySettingsSummary(); }),
       "quarantineRegistry" => $collect("quarantineRegistry", function() { return appdataCleanupPlusDiagnosticsQuarantineRegistrySummary(50); }),
       "ignoredCandidates" => $collect("ignoredCandidates", function() { return appdataCleanupPlusDiagnosticsIgnoredCandidatesSummary(50); }),

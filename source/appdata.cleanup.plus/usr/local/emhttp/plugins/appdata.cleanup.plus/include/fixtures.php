@@ -24,36 +24,65 @@ function appdataCleanupPlusFixtureTemplateXml($fixturePath) {
     "</Container>\n";
 }
 
-function appdataCleanupPlusResolveFixtureRoot($settings=null) {
+function appdataCleanupPlusFixtureRootCheck($candidate, $settings) {
+  $root = appdataCleanupPlusCanonicalizePath($candidate);
+  $check = array("reasonCode" => "unsafe_path", "symlink" => $root !== "" && @is_link($root));
+  if ( strpos($root, "/mnt/") !== 0 || appdataCleanupPlusValidateManualAppdataSource($root) !== "" ) return $check;
+
+  // Only the configured root itself may be a link. Never accept linked ancestors.
+  for ( $parent = appdataCleanupPlusCanonicalizePath(dirname($root)); $parent !== "" && $parent !== "/" && $parent !== "."; $parent = appdataCleanupPlusCanonicalizePath(dirname($parent)) ) {
+    if ( @is_link($parent) ) { $check["reasonCode"] = "unsafe_symlink"; return $check; }
+  }
+  if ( ! is_dir($root) ) { $check["reasonCode"] = "missing"; return $check; }
+  $target = $root;
+  if ( $check["symlink"] ) {
+    $target = appdataCleanupPlusCanonicalizePath((string)@realpath($root));
+    if ( strpos($target, "/mnt/") !== 0 || appdataCleanupPlusValidateManualAppdataSource($target) !== "" ) {
+      $check["reasonCode"] = "unsafe_symlink";
+      return $check;
+    }
+  }
+  foreach (array($root, $target) as $path) {
+    if (in_array(".appdata-cleanup-plus-quarantine", appdataPathSegments($path), true) ||
+        (!empty($settings["quarantineRoot"]) && appdataCleanupPlusPathMatchesOrIsDescendantByVariants($settings["quarantineRoot"], $path, true))) return $check;
+  }
+  $check["reasonCode"] = is_writable($root) ? "ready" : "not_writable";
+  if ($check["reasonCode"] === "ready") $check["root"] = $target;
+  return $check;
+}
+
+function appdataCleanupPlusResolveFixtureRootInfo($settings=null) {
   if ( ! is_array($settings) ) {
     $settings = getAppdataCleanupPlusSafetySettings();
   }
 
-  $sourceInfo = buildAppdataCleanupPlusSourceInfo($settings);
-  $candidates = array();
-
-  foreach ( array("effective", "detected", "manual") as $key ) {
-    if ( isset($sourceInfo[$key]) && is_array($sourceInfo[$key]) ) {
-      $candidates = array_merge($candidates, $sourceInfo[$key]);
+  $info = array("root" => "", "reasonCode" => "no_sources", "checks" => array());
+  foreach ( getAppdataCleanupPlusConfiguredSourceRoots($settings) as $candidate ) {
+    $check = appdataCleanupPlusFixtureRootCheck($candidate, $settings);
+    $info["checks"][] = array("reasonCode" => $check["reasonCode"], "symlink" => $check["symlink"]);
+    if (count($info["checks"]) === 1) $info["reasonCode"] = $check["reasonCode"];
+    if ($info["root"] === "" && $check["reasonCode"] === "ready") {
+      // Operate on the checked backing folder, not on a link that can be retargeted.
+      $info["root"] = $check["root"];
     }
   }
+  if ($info["root"] !== "") $info["reasonCode"] = "ready";
+  return $info;
+}
 
-  foreach ( $candidates as $candidate ) {
-    $root = appdataCleanupPlusCanonicalizePath($candidate);
-    if ( $root === "" || strpos($root, "/mnt/") !== 0 ) {
-      continue;
-    }
+function appdataCleanupPlusResolveFixtureRoot($settings=null) {
+  return appdataCleanupPlusResolveFixtureRootInfo($settings)["root"];
+}
 
-    if ( in_array($root, array("/mnt", "/mnt/user", "/mnt/cache"), true) ) {
-      continue;
-    }
-
-    if ( is_dir($root) && ! @is_link($root) ) {
-      return $root;
-    }
+function appdataCleanupPlusFixtureRootMessage($reasonCode) {
+  switch ($reasonCode) {
+    case "ready": return "Configured appdata source is available for test fixtures.";
+    case "missing": return "The configured appdata source folder is missing or unavailable. Check that its storage is mounted.";
+    case "not_writable": return "The configured appdata source is not writable. Check its permissions and storage status.";
+    case "unsafe_symlink": return "The appdata source link does not resolve to a safe fixture root. Review Appdata Sources.";
+    case "unsafe_path": return "The configured appdata source is protected or is not a dedicated fixture root. Review Appdata Sources.";
+    default: return "No appdata source is configured. Review Appdata Sources before creating test fixtures.";
   }
-
-  return "";
 }
 
 function appdataCleanupPlusFixtureDefinitions($root) {
@@ -93,12 +122,15 @@ function appdataCleanupPlusFixturePathIsSafe($path, $root) {
 
   return $normalizedPath !== "" &&
     $normalizedRoot !== "" &&
-    strpos($normalizedPath, $normalizedRoot . "/") === 0 &&
-    in_array($base, $names, true);
+    dirname($normalizedPath) === $normalizedRoot &&
+    in_array($base, $names, true) &&
+    ! @is_link($normalizedPath) &&
+    ! pathIsMountPoint($normalizedPath);
 }
 
 function appdataCleanupPlusGetTestFixtureStatus($settings=null) {
-  $root = appdataCleanupPlusResolveFixtureRoot($settings);
+  $rootInfo = appdataCleanupPlusResolveFixtureRootInfo($settings);
+  $root = $rootInfo["root"];
   $templatePath = appdataCleanupPlusFixtureTemplatePath();
   $fixtures = array();
   $createdCount = 0;
@@ -117,6 +149,8 @@ function appdataCleanupPlusGetTestFixtureStatus($settings=null) {
 
   return array(
     "root" => $root,
+    "rootReasonCode" => $rootInfo["reasonCode"],
+    "rootMessage" => appdataCleanupPlusFixtureRootMessage($rootInfo["reasonCode"]),
     "fixtures" => $fixtures,
     "createdCount" => $createdCount,
     "templatePath" => $templatePath,
@@ -149,22 +183,24 @@ function appdataCleanupPlusCreateTestFixtures($settings=null) {
       continue;
     }
 
-    if ( $fixture["key"] === "folder" ) {
-      @file_put_contents($fixture["path"] . "/README.txt", "Appdata Cleanup Plus test fixture. This folder can be safely removed from the Tools modal.\n");
-    }
-
-    if ( $fixture["key"] === "template" ) {
-      @file_put_contents($fixture["path"] . "/template-fixture.txt", "Saved-template fixture for Appdata Cleanup Plus.\n");
+    if ( $fixture["key"] !== "empty" ) {
+      $file = $fixture["path"] . ($fixture["key"] === "folder" ? "/README.txt" : "/template-fixture.txt");
+      if (@is_link($file) || (file_exists($file) && !is_file($file)) || @file_put_contents($file, "Appdata Cleanup Plus test fixture.\n") === false) {
+        $errors[] = $fixture["name"] . ": fixture file could not be written safely";
+        continue;
+      }
     }
 
     $created[] = $fixture["name"];
   }
 
-  if ( ! ensureAppdataCleanupPlusDirectory(dirname(appdataCleanupPlusFixtureTemplatePath())) ) {
+  if ( ! in_array(appdataCleanupPlusFixtureNames()["template"], $created, true) ) {
+    $errors[] = "template file: fixture folder is unavailable";
+  } elseif ( ! ensureAppdataCleanupPlusDirectory(dirname(appdataCleanupPlusFixtureTemplatePath())) ) {
     $errors[] = "template file: template directory could not be created";
   } else {
     $templateFixturePath = $root . "/" . appdataCleanupPlusFixtureNames()["template"];
-    if ( @file_put_contents(appdataCleanupPlusFixtureTemplatePath(), appdataCleanupPlusFixtureTemplateXml($templateFixturePath)) === false ) {
+    if ( @is_link(appdataCleanupPlusFixtureTemplatePath()) || @file_put_contents(appdataCleanupPlusFixtureTemplatePath(), appdataCleanupPlusFixtureTemplateXml($templateFixturePath)) === false ) {
       $errors[] = "template file: could not be written";
     }
   }
@@ -185,6 +221,10 @@ function appdataCleanupPlusRemoveTestFixtures($settings=null) {
   $removed = array();
   $errors = array();
 
+  if ($root === "") {
+    return array("ok" => false, "message" => "No writable appdata source root was available for test fixtures.", "status" => appdataCleanupPlusGetTestFixtureStatus($settings));
+  }
+
   if ( $root !== "" ) {
     foreach ( appdataCleanupPlusFixtureDefinitions($root) as $fixture ) {
       if ( ! appdataCleanupPlusFixturePathIsSafe($fixture["path"], $root) ) {
@@ -196,7 +236,7 @@ function appdataCleanupPlusRemoveTestFixtures($settings=null) {
         continue;
       }
 
-      $deleteResult = nativeDeleteDirectory($fixture["path"], array("allowSymlinkEntries" => true));
+      $deleteResult = nativeDeleteDirectory($fixture["path"], array("allowSymlinkEntries" => true, "useExactPath" => true));
       if ( ! $deleteResult["ok"] ) {
         $errors[] = $fixture["name"] . ": " . $deleteResult["message"];
         continue;
@@ -225,4 +265,3 @@ function appdataCleanupPlusRemoveTestFixtures($settings=null) {
     "status" => appdataCleanupPlusGetTestFixtureStatus($settings)
   );
 }
-

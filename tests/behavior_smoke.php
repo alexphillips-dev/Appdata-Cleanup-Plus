@@ -274,6 +274,7 @@ file_put_contents($staleLockFile, appdataCleanupPlusJsonEncode(array(
   "metadata" => array("action" => "stale")
 )) . "\n");
 behaviorSmokeAssertTrue(recoverAppdataCleanupPlusStaleRuntimeLockFile($staleLockFile), "Unheld stale runtime lock metadata should be recoverable.");
+clearstatcache(true, $staleLockFile);
 behaviorSmokeAssertSame(0, is_file($staleLockFile) ? (int)filesize($staleLockFile) : -1, "Recovered stale runtime lock metadata should be cleared without unlinking a newly acquired lock inode.");
 
 $statsPath = "/mnt/user/appdata/cache-target";
@@ -461,7 +462,7 @@ behaviorSmokeAssertTrue(is_dir($restoreCollisionDestination), "Skipped restore c
 $restoreSuffixResult = restoreTrackedQuarantineEntry($restoreCollisionEntry, array(
   "conflictMode" => "suffix"
 ));
-behaviorSmokeAssertSame("restored", $restoreSuffixResult["status"], "Suffix restore mode should restore conflicting entries beside the existing folder.");
+behaviorSmokeAssertSame("restored", $restoreSuffixResult["status"], "Suffix restore mode should restore conflicting entries beside the existing folder: " . ($restoreSuffixResult["message"] ?? ""));
 behaviorSmokeAssertContains("-restored", $restoreSuffixResult["destination"], "Suffix restore mode should report the generated restore path.");
 behaviorSmokeAssertTrue(is_dir($restoreCollisionSource), "Suffix restore mode should leave the original conflicting folder untouched.");
 behaviorSmokeAssertTrue(is_dir($restoreSuffixResult["destination"]), "Suffix restore mode should create the generated restore destination.");
@@ -868,6 +869,7 @@ $workerPayload = json_decode(implode("\n", $workerOutput), true);
 behaviorSmokeAssertSame(0, $workerExitCode, "Scheduled purge worker should complete successfully.");
 behaviorSmokeAssertSame("complete", isset($workerPayload["status"]) ? $workerPayload["status"] : "", "Scheduled purge worker should report completion.");
 behaviorSmokeAssertSame(1, isset($workerPayload["summary"]["purged"]) ? (int)$workerPayload["summary"]["purged"] : 0, "Scheduled purge worker should purge due records through the production entrypoint.");
+clearstatcache(); // The worker changed the filesystem in a separate process.
 behaviorSmokeAssertSame(false, is_dir($workerPurgeDestination), "Scheduled purge worker should remove the due quarantine folder.");
 behaviorSmokeAssertSame(false, is_dir($workerPurgeSource), "Scheduled purge worker must not restore or recreate the original source folder.");
 
@@ -1035,6 +1037,58 @@ behaviorSmokeAssertSame(3, (int)$fixtureStatus["createdCount"], "Test fixture st
 $fixtureRemoveResult = appdataCleanupPlusRemoveTestFixtures(getAppdataCleanupPlusSafetySettings());
 behaviorSmokeAssertSame(true, ! empty($fixtureRemoveResult["ok"]), "Test fixture helper should remove namespaced appdata fixtures.");
 behaviorSmokeAssertSame(false, is_file(appdataCleanupPlusFixtureTemplatePath()), "Test fixture helper should remove its saved-template fixture.");
+$fixtureSettings = getAppdataCleanupPlusSafetySettings();
+behaviorSmokeAssertSame("unsafe_path", appdataCleanupPlusFixtureRootCheck("/mnt/fcache", $fixtureSettings)["reasonCode"], "Fixture roots must reject any pool mount root.");
+behaviorSmokeAssertSame("unsafe_path", appdataCleanupPlusFixtureRootCheck($quarantinePath, $fixtureSettings)["reasonCode"], "Fixture roots must reject quarantine storage.");
+behaviorSmokeAssertSame("missing", appdataCleanupPlusFixtureRootCheck($manualCustomSourceRoot . "/absent", $fixtureSettings)["reasonCode"], "Missing fixture roots need a specific reason.");
+behaviorSmokeAssertSame(false, appdataCleanupPlusFixturePathIsSafe($manualCustomSourceRoot . "/nested/acp-test-folder", $manualCustomSourceRoot), "Fixture actions must only accept direct reserved child folders.");
+$unavailableFixtureSettings = array_merge($fixtureSettings, array("manualAppdataSources" => array()));
+behaviorSmokeAssertSame(false, appdataCleanupPlusCreateTestFixtures($unavailableFixtureSettings)["ok"], "Fixture creation without an eligible root should fail explicitly.");
+behaviorSmokeAssertSame(false, appdataCleanupPlusRemoveTestFixtures($unavailableFixtureSettings)["ok"], "Fixture removal without an eligible root must not claim success.");
+behaviorSmokeAssertSame("unsafe_path", appdataCleanupPlusGetTestFixtureStatus($unavailableFixtureSettings)["rootReasonCode"], "Fixture status should explain protected roots instead of reporting a missing scan root.");
+$fixtureRootSummary = appdataCleanupPlusDiagnosticsFixtureRootSummary();
+behaviorSmokeAssertSame(array("rootAvailable", "reasonCode", "candidateCount", "symlinkCount", "reasonCounts"), array_keys($fixtureRootSummary), "Fixture root diagnostics must contain only fixed codes and counts.");
+behaviorSmokeAssertNotContains($appdataShareName, json_encode($fixtureRootSummary), "Fixture root diagnostics must not expose source names or paths.");
+behaviorSmokeAssertSame($fixtureRootSummary, buildAppdataCleanupPlusDiagnosticsBundle()["state"]["fixtureRoot"], "The full diagnostics bundle should include read-only fixture root evidence.");
+
+// Real Unraid source links resolve within /mnt. Exercise them on Linux, where
+// absolute filesystem paths match the supported runtime (Windows realpath adds a drive).
+if (DIRECTORY_SEPARATOR === "/") {
+  $fixtureLink = $manualCustomSourceRoot . "-link";
+  behaviorSmokeAssertTrue(@symlink($manualCustomSourceRoot, $fixtureLink), "The linked fixture source should be created.");
+  $linkedFixtureSettings = array_merge($fixtureSettings, array("manualAppdataSources" => array($fixtureLink)));
+  behaviorSmokeAssertSame("ready", appdataCleanupPlusFixtureRootCheck($fixtureLink, $linkedFixtureSettings)["reasonCode"], "A configured source link to a dedicated pool folder should support fixtures.");
+  // The default synthetic source also contains protected Docker/VM paths.
+  behaviorSmokeAssertSame("unsafe_path", appdataCleanupPlusFixtureRootCheck($appdataShareRoot, $linkedFixtureSettings)["reasonCode"], "Protected appdata roots must remain blocked for fixture actions.");
+  behaviorSmokeAssertSame($manualCustomSourceRoot, appdataCleanupPlusResolveFixtureRoot($linkedFixtureSettings), "Fixture actions should use the validated backing folder.");
+  $linkedFixtureCreate = appdataCleanupPlusCreateTestFixtures($linkedFixtureSettings);
+  behaviorSmokeAssertTrue($linkedFixtureCreate["ok"], "Fixtures should be created through a validated source link.");
+  behaviorSmokeAssertSame(3, appdataCleanupPlusGetTestFixtureStatus($linkedFixtureSettings)["createdCount"], "Linked source status should find all fixtures.");
+  behaviorSmokeAssertTrue(appdataCleanupPlusRemoveTestFixtures($linkedFixtureSettings)["ok"], "Linked source fixtures should be removable without deleting their source link.");
+  behaviorSmokeAssertTrue(is_link($fixtureLink) && is_dir($manualCustomSourceRoot), "Removing fixtures must preserve the source and its link.");
+  $fixtureCanary = $stateRoot . "/fixture-link-canary";
+  file_put_contents($fixtureCanary, "unchanged");
+  $unsafeFixtureChild = $manualCustomSourceRoot . "/acp-test-folder";
+  behaviorSmokeAssertTrue(@symlink($stateRoot, $unsafeFixtureChild), "Unsafe fixture child link should be created.");
+  behaviorSmokeAssertSame(false, appdataCleanupPlusCreateTestFixtures($linkedFixtureSettings)["ok"], "Fixture creation must reject linked fixture children.");
+  behaviorSmokeAssertSame(false, appdataCleanupPlusRemoveTestFixtures($linkedFixtureSettings)["ok"], "Fixture removal must reject linked fixture children.");
+  behaviorSmokeAssertSame("unchanged", file_get_contents($fixtureCanary), "Fixture operations must preserve external link targets.");
+  unlink($unsafeFixtureChild);
+  behaviorSmokeAssertTrue(appdataCleanupPlusCreateTestFixtures($linkedFixtureSettings)["ok"], "Fixtures should recover after removing the unsafe child link.");
+  $fixtureReadme = $unsafeFixtureChild . "/README.txt";
+  unlink($fixtureReadme);
+  symlink($fixtureCanary, $fixtureReadme);
+  behaviorSmokeAssertSame(false, appdataCleanupPlusCreateTestFixtures($linkedFixtureSettings)["ok"], "Fixture creation must not overwrite linked marker files.");
+  behaviorSmokeAssertSame("unchanged", file_get_contents($fixtureCanary), "Linked marker targets must remain unchanged.");
+  behaviorSmokeAssertTrue(appdataCleanupPlusRemoveTestFixtures($linkedFixtureSettings)["ok"], "Fixture removal may unlink bounded internal links without following them.");
+  unlink($fixtureLink);
+  symlink($stateRoot, $fixtureLink);
+  behaviorSmokeAssertSame("unsafe_symlink", appdataCleanupPlusFixtureRootCheck($fixtureLink, $linkedFixtureSettings)["reasonCode"], "Source links outside /mnt must remain blocked.");
+  unlink($fixtureLink);
+  symlink("/mnt/fcache", $fixtureLink);
+  behaviorSmokeAssertSame("unsafe_symlink", appdataCleanupPlusFixtureRootCheck($fixtureLink, $linkedFixtureSettings)["reasonCode"], "Source links to pool roots must stay blocked.");
+  unlink($fixtureLink);
+}
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/templated-orphan.xml", "templated-orphan", $templatedOrphanPath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/sonarr-zfs.xml", "Sonarr", $zfsCaseSensitivePath, "/config");
 behaviorSmokeWriteTemplateFixture($templateFixtureDir . "/nested-app.xml", "nested-app", $nestedTemplatePath, "/config");

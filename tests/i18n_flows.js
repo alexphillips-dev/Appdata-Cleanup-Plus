@@ -101,8 +101,10 @@ for (const [locale, definition] of Object.entries(locales)) {
   assert.deepEqual(payload.candidate.targetPaths, fixture.original.candidate.targetPaths);
   assert.ok(payload.candidate.reason.includes('<b>ExampleC</b>') && payload.candidate.reason.includes('/mnt/user/Delete'));
   assert.ok(!payload.candidate.reason.includes('tracked container paths') && !payload.candidate.reason.includes('+2 more'));
-  const tools = ACP.buildToolsModalHtml({state:{fixtureTools:{status:{zfsNote:payload.zfsNote}}},strings:{}});
+  const tools = ACP.buildToolsModalHtml({state:{fixtureTools:{status:{zfsNote:payload.zfsNote,rootMessage:payload.rootMessage}}},strings:{}});
   assert.ok(tools.includes(ACP.escapeHtml(payload.zfsNote)));
+  assert.ok(tools.includes(ACP.escapeHtml(payload.rootMessage)));
+  assert.equal(payload.rootReasonCode,'unsafe_symlink','Fixture reason codes must remain stable across languages');
   const templateHtml = ACP.buildTemplateManagerHtml({status:{templates:[{id:'one',name:'<img src=x>',filename:'private.xml'}],backups:[{id:'backup',name:'Saved',filename:'saved.xml',canRestore:false}]}});
   assert.ok(templateHtml.includes(ACP.escapeHtml(ACP.tr('Archive template'))) && !templateHtml.includes('<img src=x>'));
   assert.ok(templateHtml.includes('data-action="restore-template"') && templateHtml.includes(' disabled'));
@@ -114,7 +116,7 @@ for (const [locale, definition] of Object.entries(locales)) {
   assert.ok(broadHtml.includes(ACP.escapeHtml(ACP.tr('Broad container access'))) && !broadHtml.includes('<b>Viewer</b>'));
   assert.ok(broadHtml.includes(ACP.escapeHtml(ACP.tr('These containers can access this folder through a mount above the appdata source. This does not establish ownership and does not block cleanup.'))));
   if (locale !== 'en_US') {
-    for (const key of ['scanWarningMessage','reason','zfsNote','storageLabel']) assert.notEqual(payload[key],fixture.original[key],`${locale}: ${key}`);
+    for (const key of ['scanWarningMessage','reason','zfsNote','storageLabel','rootMessage']) assert.notEqual(payload[key],fixture.original[key],`${locale}: ${key}`);
     assert.ok(!payload.scanWarningMessage.includes('Filesystem discovery') && !payload.scanWarningMessage.includes('Scan results loaded'));
     assert.ok(!payload.history.message.includes('folders were deleted') && !payload.history.message.includes('items were submitted'));
     assert.ok(!fixture.legacyImpact.includes('Recursive destroy'));

@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.19.14">
-<!ENTITY md5 "029ab6392b357f6417fc8bcea451b30f">
+<!ENTITY version "2026.09.21.01">
+<!ENTITY md5 "6956a3429c583739d30416b6c93971f9">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.09.21.01
+- Fix quarantine dialog markup that could leave entries behind in Help and Appdata Sources, prevent scrolling, and hide the Done button after switching dialogs.
+- Support test fixtures on configured appdata source links that resolve to safe dedicated pool folders. Keep unsafe links, protected roots, mounted fixture folders, and linked fixture files blocked.
+- Explain unavailable fixture roots separately from scan detection, and refresh Tools status after failed fixture requests.
+- Improve sanitized diagnostics with fixture request types, root eligibility reasons, and source-link counts without exporting raw response bodies or private paths.
+- Translate the new troubleshooting messages across all 42 supported languages.
+
 ###2026.09.19.14
 - Shortened the Appdata Sources dialog to match the compact template-cleanup window, keeping the title and Done button visible while source content scrolls inside.
 - Verified the compact layout on desktop and mobile across Black, White, Azure, and Gray, including switching between dialogs.
