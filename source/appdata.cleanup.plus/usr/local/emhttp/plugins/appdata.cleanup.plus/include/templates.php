@@ -1,7 +1,8 @@
 <?php
 
 // Backups contain private container configuration. They stay on flash, outside
-// the served plugin tree, and are never included in diagnostics or UI payloads.
+// the served plugin tree. Only an explicitly requested private backup export
+// contains configuration bytes; status and diagnostics never contain them.
 function appdataCleanupPlusTemplateBackupDir() {
   return appdataCleanupPlusStateFile("template-backups");
 }
@@ -125,7 +126,105 @@ function appdataCleanupPlusTemplateManagerAction($operation, $id) {
 function handleTemplateManagerAction() {
   $operation = getPostedString("managerAction");
   if ( $operation === "status" ) jsonResponse(array("ok" => true, "templateManager" => appdataCleanupPlusTemplateManagerPayload()));
-  $result = appdataCleanupPlusTemplateManagerAction($operation, getPostedString("templateId"));
+  if ( $operation === "export" ) {
+    $archive = appdataCleanupPlusExportTemplateBackups(parseCandidateIds(getPostedString("backupIds")));
+    if ( $archive === null ) jsonResponse(array("ok" => false, "message" => "Backup export exceeds the supported limits or contains an invalid record."), 409);
+    jsonResponse(array("ok" => true, "backupArchive" => $archive));
+  }
+  if ( $operation === "import" ) {
+    $result = appdataCleanupPlusImportTemplateBackups(getPostedString("backupJson"));
+  } elseif ( $operation === "remove-backups" ) {
+    if ( getPostedString("backupRemovalConfirmed") !== "yes" ) jsonResponse(array("ok" => false, "message" => "Backup removal requires explicit confirmation."), 400);
+    $result = appdataCleanupPlusRemoveTemplateBackups(parseCandidateIds(getPostedString("backupIds")));
+  } else {
+    $result = appdataCleanupPlusTemplateManagerAction($operation, getPostedString("templateId"));
+  }
   $result["templateManager"] = appdataCleanupPlusTemplateManagerPayload();
   jsonResponse($result, $result["ok"] ? 200 : 409);
+}
+
+function appdataCleanupPlusExportTemplateBackups($ids=array()) {
+  foreach ( $ids as $id ) if ( ! appdataCleanupPlusTemplateBackup($id) ) return null;
+  $files = $ids ? array_map(function($id) { return appdataCleanupPlusTemplateBackupDir() . "/" . $id . ".json"; }, $ids) : (array)glob(appdataCleanupPlusTemplateBackupDir() . "/*.json");
+  if ( count($files) > 50 ) return null;
+  $records = array();
+  foreach ( $files as $file ) {
+    $id = basename($file, ".json");
+    if ( $ids && ! in_array($id, $ids, true) ) return null;
+    $record = appdataCleanupPlusTemplateBackup($id);
+    if ( ! $record ) return null;
+    $records[] = array_intersect_key($record, array_flip(array("filename", "contents", "sha256", "archivedAt")));
+  }
+  $archive = array("format" => "appdata-cleanup-plus-template-backups", "schemaVersion" => 1, "backups" => $records);
+  $archive["sha256"] = hash("sha256", appdataCleanupPlusJsonEncode($records));
+  return strlen(appdataCleanupPlusJsonEncode($archive)) <= 16777216 ? $archive : null;
+}
+
+function appdataCleanupPlusValidateImportedTemplateBackup($record) {
+  if ( ! is_array($record) ) return null;
+  $filename = $record["filename"] ?? null;
+  $contents = $record["contents"] ?? null;
+  $checksum = $record["sha256"] ?? null;
+  $date = $record["archivedAt"] ?? null;
+  if ( ! is_string($filename) || $filename === "" || strlen($filename) > 255 || basename($filename) !== $filename || preg_match('/[\\\\\/:\x00-\x1f\x7f]/', $filename) || substr($filename, -4) !== ".xml" ) return null;
+  if ( ! is_string($contents) || strlen($contents) > 2097152 || ! is_string($checksum) || ! hash_equals(hash("sha256", $contents), $checksum) ) return null;
+  if ( strpos($contents, "\0") !== false || preg_match('//u', $contents) !== 1 ) return null;
+  if ( ! is_string($date) || strlen($date) > 64 || strtotime($date) === false || preg_match('/<!DOCTYPE|<!ENTITY/i', $contents) ) return null;
+  $xml = @simplexml_load_string($contents, "SimpleXMLElement", LIBXML_NONET | LIBXML_NOCDATA);
+  if ( ! $xml || $xml->getName() !== "Container" || trim((string)$xml->Name) === "" ) return null;
+  return array("schemaVersion" => 1, "id" => bin2hex(random_bytes(16)), "name" => trim((string)$xml->Name), "filename" => $filename, "contents" => $contents, "sha256" => $checksum, "archivedAt" => $date);
+}
+
+function appdataCleanupPlusImportTemplateBackups($json) {
+  $failure = array("ok" => false, "message" => "Backup import was refused. Check the file format, integrity, and size limits.");
+  if ( ! is_string($json) || strlen($json) > 16777216 ) return $failure;
+  $archive = json_decode($json, true);
+  if ( ! is_array($archive) || ($archive["format"] ?? "") !== "appdata-cleanup-plus-template-backups" || ($archive["schemaVersion"] ?? 0) !== 1 || ! is_array($archive["backups"] ?? null) || ! array_is_list($archive["backups"]) || count($archive["backups"]) > 50 ) return $failure;
+  $checksum = $archive["sha256"] ?? null;
+  if ( ! is_string($checksum) || ! hash_equals(hash("sha256", appdataCleanupPlusJsonEncode($archive["backups"])), $checksum) ) return $failure;
+  // Validate the whole archive before writing. Imported IDs and extra fields
+  // are never trusted. Import stores backups; it cannot install a template.
+  $records = array();
+  foreach ( $archive["backups"] as $record ) {
+    $validated = appdataCleanupPlusValidateImportedTemplateBackup($record);
+    if ( ! $validated ) return $failure;
+    $records[] = $validated;
+  }
+  $dir = appdataCleanupPlusTemplateBackupDir();
+  if ( is_link($dir) || pathHasSymlinkSegment($dir) || ! ensureAppdataCleanupPlusDirectory($dir) ) return $failure;
+  @chmod($dir, 0700);
+  $existing = array();
+  foreach ( (array)glob($dir . "/*.json") as $file ) {
+    $record = appdataCleanupPlusTemplateBackup(basename($file, ".json"));
+    if ( $record ) $existing[$record["filename"] . "\0" . $record["sha256"]] = true;
+  }
+  $imported = 0;
+  foreach ( $records as $record ) {
+    $key = $record["filename"] . "\0" . $record["sha256"];
+    if ( isset($existing[$key]) ) continue;
+    $file = $dir . "/" . $record["id"] . ".json";
+    if ( file_exists($file) || is_link($file) || ! writeAppdataCleanupPlusJsonFile($file, $record) || ! appdataCleanupPlusTemplateBackup($record["id"]) ) {
+      return array("ok" => false, "message" => "Backup import stopped because storage could not be written. Valid backups already imported have been retained.");
+    }
+    @chmod($file, 0600);
+    @chmod($dir, 0700);
+    $existing[$key] = true;
+    $imported++;
+  }
+  appendAppdataCleanupPlusAuditEntry(array("timestamp" => date("c"), "operation" => "template_import", "requestedCount" => count($records), "message" => "Template backup import finished.", "summary" => array("imported" => $imported), "results" => array()));
+  return array("ok" => true, "message" => "Template backup import finished. Restore a backup separately to recover its saved template.");
+}
+
+function appdataCleanupPlusRemoveTemplateBackups($ids) {
+  $failure = array("ok" => false, "message" => "Backup removal was refused. Refresh the list before continuing.");
+  if ( ! $ids || count($ids) > 50 ) return $failure;
+  foreach ( $ids as $id ) if ( ! appdataCleanupPlusTemplateBackup($id) ) return $failure;
+  $removed = 0;
+  foreach ( $ids as $id ) {
+    $file = appdataCleanupPlusTemplateBackupDir() . "/" . $id . ".json";
+    if ( ! @unlink($file) ) break;
+    $removed++;
+  }
+  appendAppdataCleanupPlusAuditEntry(array("timestamp" => date("c"), "operation" => "template_remove_backups", "requestedCount" => count($ids), "message" => "Template backup removal finished.", "summary" => array("removed" => $removed, "errors" => count($ids) - $removed), "results" => array()));
+  return array("ok" => $removed === count($ids), "message" => $removed === count($ids) ? "The selected template backups were removed. Saved templates and appdata were not changed." : "Some template backups could not be removed. Refresh the list before continuing.");
 }

@@ -1,4 +1,12 @@
 {
+  "{count} template backups were imported.": {
+    "one": "{count} sablon biztonsági másolat importálva.",
+    "other": "{count} sablon biztonsági másolat importálva."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} sablon biztonsági másolata eltávolítva.",
+    "other": "{count} sablon biztonsági másolatot eltávolítottunk."
+  },
   "{count} items ready": {
     "one": "{count} elem készen áll",
     "other": "{count} elem készen áll"

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "glossary": {
+    "quarantine": "Move a folder into recoverable storage. This normally does not reclaim disk space.",
+    "permanent delete": "Irreversible removal of an appdata folder or an exact ZFS dataset after explicit confirmation.",
+    "purge": "Permanently remove a quarantined folder; also applies when its scheduled purge time arrives.",
+    "restore": "Recover a quarantined folder or saved template without silently replacing an existing destination.",
+    "Safe Mode": "Quarantine-first mode for movable folders. It is not a promise that all operations are reversible.",
+    "dry run": "Preview the proposed action without performing filesystem changes.",
+    "template backup": "Private saved container configuration, separate from appdata and sanitized support diagnostics."
+  },
+  "phrases": [
+    {"id":"safe-mode","source":"Safe Mode moves folders to quarantine. Disable it only when you intentionally want permanent delete.","context":"Dashboard mode card; distinguish recoverable quarantine from irreversible removal.","screen":"dashboard"},
+    {"id":"quarantine-space","source":"Quarantine moves folders and normally does not free space. Space is released only when data is permanently purged.","context":"Quarantine confirmation; moving is not deletion or guaranteed space recovery.","screen":"quarantine"},
+    {"id":"quarantine-action","source":"Quarantine selected","context":"Primary action for selected folders while Safe Mode is enabled.","screen":"dashboard"},
+    {"id":"permanent-delete","source":"Permanent delete","context":"Action/confirmation heading; must express irreversible removal.","screen":"delete"},
+    {"id":"delete-confirmation","source":"Confirm the permanent delete before continuing.","context":"Unchecked confirmation error; requires an explicit checkbox acknowledgement.","screen":"delete"},
+    {"id":"purge-action","source":"Purge selected","context":"Quarantine manager action permanently deleting selected quarantined folders.","screen":"purge"},
+    {"id":"purge-question","source":"Purge selected quarantined folders?","context":"Permanent purge confirmation, not a move or restore.","screen":"purge"},
+    {"id":"restore-conflicts","source":"Skip conflicts","context":"Restore available destinations; conflicting entries stay in quarantine.","screen":"restore-conflicts"},
+    {"id":"restore-renamed","source":"Restore edited names","context":"Restore beside existing folders using reviewed names; never overwrite them.","screen":"restore-conflicts"},
+    {"id":"cancel","source":"Cancel","context":"Cancel a confirmation without executing the action.","screen":"delete"},
+    {"id":"recovery-interruption","source":"The operation stopped before its final result was recorded. Review recorded results and audit history, then rescan before taking further action.","context":"Interrupted status is uncertainty, not proof of rollback or successful completion.","screen":"recovery"},
+    {"id":"backup-privacy","source":"Configuration and backups survive uninstall. Private backup exports may contain credentials; keep them secure and do not attach them to support reports.","context":"Template manager; distinguish private backups from sanitized diagnostics.","screen":"backups"},
+    {"id":"backup-removal","source":"I understand these template backups will be permanently removed.","context":"Explicit acknowledgement for removing recovery copies only.","screen":"backups"}
+  ]
+}

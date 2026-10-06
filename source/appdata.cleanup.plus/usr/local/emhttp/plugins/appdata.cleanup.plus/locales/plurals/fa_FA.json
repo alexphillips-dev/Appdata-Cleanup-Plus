@@ -1,4 +1,12 @@
 {
+  "{count} template backups were imported.": {
+    "one": "{count} قالب پشتیبان وارد شد.",
+    "other": "{count} نسخه پشتیبان از الگو وارد شد."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} نسخه پشتیبان از الگو حذف شد.",
+    "other": "{count} نسخه پشتیبان از الگو حذف شد."
+  },
   "{count} items ready": {
     "one": "{count} مورد آماده است",
     "other": "{count} مورد آماده است"

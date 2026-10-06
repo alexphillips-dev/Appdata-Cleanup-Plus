@@ -1,4 +1,12 @@
 {
+  "{count} template backups were imported.": {
+    "one": "{count} şablon yedeği içe aktarıldı.",
+    "other": "{count} şablon yedeği içe aktarıldı."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} şablon yedeği kaldırıldı.",
+    "other": "{count} şablon yedeği kaldırıldı."
+  },
   "{count} items ready": {
     "one": "{count} öğe hazır",
     "other": "{count} ürün hazır"

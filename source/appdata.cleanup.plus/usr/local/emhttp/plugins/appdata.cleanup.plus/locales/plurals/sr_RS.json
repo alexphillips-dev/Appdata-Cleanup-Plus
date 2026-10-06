@@ -1,4 +1,14 @@
 {
+  "{count} template backups were imported.": {
+    "one": "Увезена је {count} резервна копија шаблона.",
+    "few": "Увезене су {count} резервне копије шаблона.",
+    "other": "Увезено је {count} резервних копија шаблона."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} резервна копија шаблона је уклоњена.",
+    "few": "{count} резервне копије шаблона су уклоњене.",
+    "other": "Уклоњено је {count} резервних копија шаблона."
+  },
   "{count} items ready": {
     "one": "{count} ставка је спремна",
     "few": "{count} предмета спремна",

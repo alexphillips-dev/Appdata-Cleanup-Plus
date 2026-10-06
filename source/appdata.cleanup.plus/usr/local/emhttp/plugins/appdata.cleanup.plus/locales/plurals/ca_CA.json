@@ -1,4 +1,14 @@
 {
+  "{count} template backups were imported.": {
+    "one": "S'ha importat {count} còpia de seguretat de la plantilla.",
+    "many": "S'han importat {count} còpies de seguretat de plantilles.",
+    "other": "S'han importat {count} còpies de seguretat de plantilles."
+  },
+  "{count} template backups were removed.": {
+    "one": "S'ha eliminat {count} còpia de seguretat de la plantilla.",
+    "many": "S'han eliminat {count} còpies de seguretat de plantilles.",
+    "other": "S'han eliminat {count} còpies de seguretat de plantilles."
+  },
   "{count} items ready": {
     "one": "{count} article a punt",
     "many": "{count} articles preparats",

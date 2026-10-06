@@ -1,4 +1,16 @@
 {
+  "{count} template backups were imported.": {
+    "one": "Uvožena je bila {count} varnostna kopija predloge.",
+    "two": "Uvoženi sta bili {count} varnostni kopiji predloge.",
+    "few": "Uvožene so bile {count} varnostne kopije predlog.",
+    "other": "Uvoženih je bilo {count} varnostnih kopij predlog."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} varnostna kopija predloge je bila odstranjena.",
+    "two": "{count} varnostni kopiji predloge sta bili odstranjeni.",
+    "few": "{count} varnostne kopije predlog so bile odstranjene.",
+    "other": "{count} varnostnih kopij predlog je bilo odstranjenih."
+  },
   "{count} items ready": {
     "one": "{count} predmet pripravljen",
     "two": "{count} artikla pripravljena",

@@ -1,4 +1,10 @@
 {
+  "{count} template backups were imported.": {
+    "other": "已匯入 {count} 個模板備份。"
+  },
+  "{count} template backups were removed.": {
+    "other": "{count} 個模板備份已刪除。"
+  },
   "{count} items ready": {
     "other": "{count} 件已準備好"
   },

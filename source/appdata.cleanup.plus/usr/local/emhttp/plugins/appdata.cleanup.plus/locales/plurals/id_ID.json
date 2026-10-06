@@ -1,4 +1,10 @@
 {
+  "{count} template backups were imported.": {
+    "other": "{count} cadangan template telah diimpor."
+  },
+  "{count} template backups were removed.": {
+    "other": "{count} cadangan template telah dihapus."
+  },
   "{count} items ready": {
     "other": "{count} barang siap"
   },

@@ -12,6 +12,7 @@ require_once(__DIR__ . "/api.php");
 require_once(__DIR__ . "/templates.php");
 
 register_shutdown_function("appdataCleanupPlusRespondToFatalShutdown");
+register_shutdown_function("appdataCleanupPlusInterruptActiveOperation");
 register_shutdown_function("releaseAllAppdataCleanupPlusRuntimeLocks");
 
 libxml_use_internal_errors(true);
@@ -104,6 +105,9 @@ if ( isset($actionLocks[$action]) ) {
         : "Appdata Cleanup Plus is already running a scan. Wait a few seconds, then try again."
     ), 429);
   }
+  if ( $lockName === "cleanup-operation" && ! appdataCleanupPlusSetActiveOperation("")) {
+    jsonResponse(array("ok" => false, "message" => "Cleanup progress could not be loaded right now."), 500);
+  }
 }
 
 try {
@@ -157,6 +161,14 @@ try {
 
     case "getOperationProgress":
       handleGetOperationProgress();
+      break;
+
+    case "getRecentOperations":
+      handleGetRecentOperations();
+      break;
+
+    case "acknowledgeOperation":
+      handleAcknowledgeOperation();
       break;
 
     case "getQuarantineEntries":

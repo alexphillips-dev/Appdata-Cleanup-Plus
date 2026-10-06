@@ -1,4 +1,12 @@
 {
+  "{count} template backups were imported.": {
+    "one": "{count} mallsäkerhetskopia importerades.",
+    "other": "{count} mallsäkerhetskopior importerades."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} mallsäkerhetskopia togs bort.",
+    "other": "{count} mallsäkerhetskopior togs bort."
+  },
   "{count} items ready": {
     "one": "{count} vara klar",
     "other": "{count} saker klara"

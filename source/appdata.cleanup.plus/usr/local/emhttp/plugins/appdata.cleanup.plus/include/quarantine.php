@@ -1461,6 +1461,8 @@ function executeQuarantineManagerAction($entries, $action, $options=array()) {
   $dockerRunning = is_dir(appdataCleanupPlusDockerRuntimePath());
 
   foreach ( $entries as $entry ) {
+    $progressId = (string)($options["operationProgressId"] ?? "");
+    if ( $progressId ) appdataCleanupPlusUpdateOperationProgress($progressId, array("currentPath" => $entry["destination"], "message" => "Cleanup is still running."));
     $result = array(
       "id" => $entry["id"],
       "name" => $entry["name"],
@@ -1482,11 +1484,19 @@ function executeQuarantineManagerAction($entries, $action, $options=array()) {
         }
       }
       $results[] = array_merge($result, $restoreResult);
+      if ( $progressId ) {
+        appdataCleanupPlusOperationProgressCompleteRoot($progressId, $entry["sourcePath"], $restoreResult["status"]);
+        appdataCleanupPlusOperationProgressRecordResult($progressId, end($results));
+      }
       continue;
     }
 
     $purgeResult = purgeTrackedQuarantineEntry($entry, $options);
     $results[] = array_merge($result, $purgeResult);
+    if ( $progressId ) {
+      appdataCleanupPlusOperationProgressCompleteRoot($progressId, $entry["destination"], $purgeResult["status"]);
+      appdataCleanupPlusOperationProgressRecordResult($progressId, end($results));
+    }
   }
 
   return array(
@@ -1874,8 +1884,9 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
         "message" => $resolved["message"]
       );
       if (isset($resolved["ownershipDiagnostics"])) $results[count($results) - 1]["ownershipDiagnostics"] = appdataCleanupPlusSanitizeDockerDiagnostics($resolved["ownershipDiagnostics"]);
-      if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressCompleteRoot") && ! $preview && $baseOperation === "delete" ) {
+      if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressCompleteRoot") && ! $preview ) {
         appdataCleanupPlusOperationProgressCompleteRoot($progressId, $resolved["displayPath"], "error");
+        appdataCleanupPlusOperationProgressRecordResult($progressId, end($results));
       }
       continue;
     }
@@ -1911,6 +1922,7 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
     }
 
     if ( $baseOperation === "quarantine" ) {
+      if ( $progressId ) appdataCleanupPlusUpdateOperationProgress($progressId, array("currentPath" => $resolved["displayPath"], "message" => "Cleanup is still running."));
       $quarantineResult = quarantineCandidatePath($candidate, $resolved["displayPath"], $settings);
       $result = array(
         "path" => $resolved["path"],
@@ -1924,6 +1936,10 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
       }
 
       $results[] = $result;
+      if ( $progressId ) {
+        appdataCleanupPlusOperationProgressCompleteRoot($progressId, $resolved["displayPath"], $result["status"]);
+        appdataCleanupPlusOperationProgressRecordResult($progressId, $result);
+      }
       continue;
     }
 
@@ -1961,6 +1977,7 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
       );
       if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressCompleteRoot") ) {
         appdataCleanupPlusOperationProgressCompleteRoot($progressId, $resolved["displayPath"], ! empty($deleteResult["ok"]) ? "deleted" : "error");
+        appdataCleanupPlusOperationProgressRecordResult($progressId, end($results));
       }
       continue;
     }
@@ -1976,6 +1993,7 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
     );
     if ( $progressId !== "" && function_exists("appdataCleanupPlusOperationProgressCompleteRoot") ) {
       appdataCleanupPlusOperationProgressCompleteRoot($progressId, $resolved["displayPath"], ! empty($deleteResult["ok"]) ? "deleted" : "error");
+      appdataCleanupPlusOperationProgressRecordResult($progressId, end($results));
     }
   }
 

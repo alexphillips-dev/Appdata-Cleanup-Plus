@@ -1,4 +1,14 @@
 {
+  "{count} template backups were imported.": {
+    "zero": "Tika importēti {count} veidņu dublējumkopijas.",
+    "one": "Tika importēta {count} veidnes dublējums.",
+    "other": "Tika importētas {count} veidņu dublējumkopijas."
+  },
+  "{count} template backups were removed.": {
+    "zero": "Tika noņemti {count} veidņu dublējumkopijas.",
+    "one": "{count} veidnes dublējums tika noņemts.",
+    "other": "Tika noņemtas {count} veidņu dublējumkopijas."
+  },
   "{count} items ready": {
     "zero": "{count} vienumu gatavs",
     "one": "{count} prece ir gatava",

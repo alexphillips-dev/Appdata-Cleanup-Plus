@@ -1,4 +1,12 @@
 {
+  "{count} template backups were imported.": {
+    "one": "Εισήχθη {count} αντίγραφο ασφαλείας προτύπου.",
+    "other": "Εισήχθησαν {count} αντίγραφα ασφαλείας προτύπων."
+  },
+  "{count} template backups were removed.": {
+    "one": "Καταργήθηκε {count} αντίγραφο ασφαλείας προτύπου.",
+    "other": "Καταργήθηκαν {count} αντίγραφα ασφαλείας προτύπων."
+  },
   "{count} items ready": {
     "one": "{count} τεμάχιο έτοιμο",
     "other": "{count} τεμάχια έτοιμα"

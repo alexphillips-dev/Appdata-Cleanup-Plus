@@ -17,6 +17,9 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     const html = execFileSync('php', [path.join(__dirname,'render_i18n_page.php'),'en_US'], {encoding:'utf8',maxBuffer:4e6});
     await setFixtureContent(page, html);
     await page.addStyleTag({path:path.join(plugin,'styles/appdata.cleanup.plus.css')});
+    // SweetAlert is fixed-positioned by Unraid's host stylesheet. This event
+    // fixture otherwise omits native CSS; model that positioning for real clicks.
+    await page.addStyleTag({content:'.sweet-alert { position: fixed; }'});
     await page.addScriptTag({path:require.resolve(dependency('jquery/dist/jquery.js'))});
     await page.evaluate(() => {
       window.requests = [];

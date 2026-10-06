@@ -1,4 +1,6 @@
 {
+  "{count} template backups were imported.": "{count} template backup was imported.",
+  "{count} template backups were removed.": "{count} template backup was removed.",
   "{count} items ready": "{count} item ready",
   "{count} items blocked": "{count} item blocked",
   "{count} items ignored": "{count} item ignored",

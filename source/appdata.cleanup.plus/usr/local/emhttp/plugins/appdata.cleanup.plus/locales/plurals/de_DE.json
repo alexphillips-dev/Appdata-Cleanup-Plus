@@ -1,4 +1,12 @@
 {
+  "{count} template backups were imported.": {
+    "one": "{count} Vorlagensicherung wurde importiert.",
+    "other": "Es wurden {count} Vorlagensicherungen importiert."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} Vorlagensicherung wurde entfernt.",
+    "other": "{count} Vorlagensicherungen wurden entfernt."
+  },
   "{count} items ready": {
     "one": "{count} Artikel fertig",
     "other": "{count} Artikel fertig"

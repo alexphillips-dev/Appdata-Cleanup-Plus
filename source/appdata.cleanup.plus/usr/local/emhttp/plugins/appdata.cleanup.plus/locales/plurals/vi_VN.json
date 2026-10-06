@@ -1,4 +1,10 @@
 {
+  "{count} template backups were imported.": {
+    "other": "{count} bản sao lưu mẫu đã được nhập."
+  },
+  "{count} template backups were removed.": {
+    "other": "{count} bản sao lưu mẫu đã bị xóa."
+  },
   "{count} items ready": {
     "other": "{count} món đã sẵn sàng"
   },

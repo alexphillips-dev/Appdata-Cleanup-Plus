@@ -60,7 +60,7 @@
     var language = config.languageTag || "en-US";
     var dates = {timestampLabel: "timestamp", lastModifiedExact: "lastModified", quarantinedAtLabel: "quarantinedAt", purgeAtLabel: "purgeAt", ignoredAtLabel: "ignoredAt"};
     var ages = {lastModifiedLabel: "lastModified", quarantinedAgeLabel: "quarantinedAt", relativeLabel: "timestamp"};
-    if (!value || typeof value !== "object" || ["bundle", "diagnostics", "settings", "metrics", "supportLogs", "environment", "privacy", "snapshot"].indexOf(field) !== -1) return value;
+    if (!value || typeof value !== "object" || ["bundle", "diagnostics", "backupArchive", "settings", "metrics", "supportLogs", "environment", "privacy", "snapshot"].indexOf(field) !== -1) return value;
     Object.keys(value).forEach(function(key) { value[key] = ACP.localizePresentation(value[key], key); });
     if (typeof Intl === "undefined") return value;
     Object.keys(dates).forEach(function(label) {
@@ -245,11 +245,11 @@
 
     // Flex sizing keeps compact dialog content scrollable without moving the footer.
     // Preserve SweetAlert's inline display:none when closing or reusing a dialog.
-    if ($modal[0].style.display !== "none" && /acp-(?:template-manager|appdata-sources)-modal/.test(String($modal.attr("class")) + " " + String(className))) {
-      $modal.css("display", /acp-(?:template-manager|appdata-sources)-modal/.test(String(className)) ? "flex" : "block");
+    if ($modal[0].style.display !== "none" && /acp-(?:template-manager|appdata-sources|operation-recovery)-modal/.test(String($modal.attr("class")) + " " + String(className))) {
+      $modal.css("display", /acp-(?:template-manager|appdata-sources|operation-recovery)-modal/.test(String(className)) ? "flex" : "block");
     }
 
-    $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-delete-progress-running acp-delete-progress-ready acp-quarantine-manager-modal acp-audit-history-modal acp-appdata-sources-modal acp-zfs-path-mappings-modal acp-tools-modal acp-template-manager-modal acp-help-modal acp-row-details-modal");
+    $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-delete-progress-running acp-delete-progress-ready acp-quarantine-manager-modal acp-audit-history-modal acp-appdata-sources-modal acp-zfs-path-mappings-modal acp-tools-modal acp-template-manager-modal acp-operation-recovery-modal acp-help-modal acp-row-details-modal");
     if (className) {
       $modal.addClass(className);
     }

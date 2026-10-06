@@ -1,4 +1,10 @@
 {
+  "{count} template backups were imported.": {
+    "other": "{count} つのテンプレートのバックアップがインポートされました。"
+  },
+  "{count} template backups were removed.": {
+    "other": "{count} つのテンプレートのバックアップが削除されました。"
+  },
   "{count} items ready": {
     "other": "{count} 個のアイテムが準備できました"
   },

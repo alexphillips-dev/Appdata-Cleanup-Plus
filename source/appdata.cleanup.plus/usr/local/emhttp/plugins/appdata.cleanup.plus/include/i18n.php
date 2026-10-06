@@ -210,7 +210,7 @@ function acpLocalizeText($text, $depth=0) {
 
 function acpLocalizeResponse($payload, $field='') {
   // Diagnostics are a stable, sanitized support format, not localized state.
-  $skip = array('diagnostics', 'bundle', 'settings', 'metrics', 'environment', 'supportLogs', 'privacy', 'snapshot', 'breadcrumbs');
+  $skip = array('diagnostics', 'bundle', 'backupArchive', 'settings', 'metrics', 'environment', 'supportLogs', 'privacy', 'snapshot', 'breadcrumbs');
   if (in_array($field, $skip, true)) return $payload;
   if (is_array($payload)) {
     if (isset($payload['securityLockReason'])) {

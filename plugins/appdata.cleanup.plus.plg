@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.06.02">
-<!ENTITY md5 "1a1720feaf8a75b89c22b5a6e411d3a5">
+<!ENTITY version "2026.10.06.03">
+<!ENTITY md5 "6812d3b94d65ab3619983e8037c739fa">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.06.03
+- Recovery: Review active and recent cleanup results after refresh or connection loss. Quarantine, restore, and manual purge now record progress; interrupted actions are never automatically repeated.
+- Backups: Retain configuration, quarantine records, history, and template backups on uninstall. Add private backup export/import with integrity checks and collision-safe restore, plus separately confirmed backup removal.
+- Languages and mobile: Localize new controls and backup audit counts in all 42 languages; keep long backup labels and recovery results reachable on small screens.
+- Translation review: Add contextual review packets, a safety glossary, desktop/mobile screenshots, and approval tracking that flags changed wording for another native-speaker review.
+
 ###2026.10.06.02
 - Translate the Plugins-page description across all 42 supported webGUI languages for both main and dev packages.
 - Translate the development-build title and testing notice while keeping the Appdata Cleanup Plus product name intact.
@@ -1473,7 +1479,7 @@ echo ""
 removepkg &name;-&version;-x86_64-1
 rm -f /etc/cron.d/appdata.cleanup.plus
 rm -rf &plugdir;
-rm -rf /boot/config/plugins/&name;
+echo "Plugin configuration and template backups have been retained on flash for reinstallation."
 </INLINE>
 </FILE> 
 </PLUGIN>

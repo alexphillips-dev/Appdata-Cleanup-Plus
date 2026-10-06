@@ -67,6 +67,7 @@
       pendingResult: null,
       latest: null
     },
+    recovery: { operations: [], activeId: "", pollTimer: null, requestToken: "", terminal: false, openedAt: 0 },
     sortMode: "name",
     bulkSelectPreset: "safe",
     busy: false
@@ -228,6 +229,7 @@
     renderLoadingState();
     updateActionBar();
     loadScan();
+    loadRecentOperations();
   }
 
   function cacheElements() {
@@ -280,6 +282,22 @@
   }
 
   function bindEvents() {
+    els.$app.on("click", "[data-action='review-recent-operation']", function() {
+      openRecoveredOperation($(this).attr("data-operation-id"));
+    });
+    $(document).on("click.acpRecovery", ".sweet-alert [data-action='dismiss-operation']", function() {
+      var id = $(this).attr("data-operation-id");
+      $(this).prop("disabled", true);
+      apiPost({action: "acknowledgeOperation", operationProgressId: id}).done(function() {
+        if (state.recovery.activeId === id) {
+          state.recovery.activeId = "";
+          if (typeof swal.close === "function") swal.close();
+          ACP.releaseModalScrollLock(false);
+        }
+        loadRecentOperations();
+        loadScan();
+      }).fail(function() { loadRecoveredOperation(id); });
+    });
     els.$search.on("input", renderAll);
 
     els.$sort.on("change", function() {
@@ -661,6 +679,47 @@
         else renderTemplateManagerModal();
       });
     });
+    $(document).on("click.acpBackup", ".sweet-alert [data-action='export-template-backups'], .sweet-alert [data-action='import-template-backups'], .sweet-alert [data-action='remove-template-backups']", function(event) {
+      event.preventDefault();
+      if (state.busy || state.templateManager.loading) return;
+      var action = $(this).attr("data-action");
+      if (action === "import-template-backups") { $("#acp-template-backup-file").val("").trigger("click"); return; }
+      var backupId = $(this).attr("data-backup-id");
+      var ids = backupId ? [backupId] : $.map(((state.templateManager.status || {}).backups || []), function(record) { return record.id; });
+      if (action === "export-template-backups") { runTemplateManagerAction("export", "", {backupIds: JSON.stringify(ids)}); return; }
+      swal({title: ACP.tr("Remove template backups"), text: "", type: "warning", html: true,
+        showCancelButton: true, closeOnConfirm: false, confirmButtonText: ACP.tr("Remove template backups"), cancelButtonText: ACP.tr("Cancel")}, function(confirmed) {
+        if (confirmed && !requireDeleteConfirmationChecked()) return false;
+        getActiveSweetAlertModal().removeClass("acp-template-manager-modal");
+        ensureTemplateManagerModal();
+        if (confirmed) runTemplateManagerAction("remove-backups", "", {backupIds: JSON.stringify(ids), backupRemovalConfirmed: "yes"});
+        else renderTemplateManagerModal();
+      });
+      var backupNames = $.grep(((state.templateManager.status || {}).backups || []), function(record) { return $.inArray(record.id, ids) !== -1; });
+      var backupList = '<ul>' + $.map(backupNames, function(record) { return '<li><code class="acp-modal-path">' + ACP.escapeHtml(record.filename) + '</code></li>'; }).join("") + '</ul>';
+      ACP.applyDeleteModalClass("acp-delete-modal", '<p>' + ACP.escapeHtml(ACP.tr("This permanently removes the listed recovery backups. Export them first if needed. Saved templates and appdata will not change.")) + '</p>' + backupList + buildDeleteConfirmationHtml(ACP.tr("I understand these template backups will be permanently removed.")));
+      syncDeleteConfirmationState();
+    });
+    $(document).on("change.acpBackup", "#acp-template-backup-file", function() {
+      if (state.busy || state.templateManager.loading) return;
+      var file = this.files && this.files[0];
+      if (!file) return;
+      if (file.size > 16777216) { state.templateManager.message = ACP.tr("Backup import was refused. Check the file format, integrity, and size limits."); renderTemplateManagerModal(); return; }
+      var reader = new window.FileReader();
+      state.templateManager.loading = true;
+      reader.onload = function() {
+        state.templateManager.loading = false;
+        if (!isTemplateManagerModalVisible()) return;
+        runTemplateManagerAction("import", "", {backupJson: String(reader.result || "")});
+      };
+      reader.onerror = function() {
+        state.templateManager.loading = false;
+        state.templateManager.message = ACP.tr("Backup import was refused. Check the file format, integrity, and size limits.");
+        if (isTemplateManagerModalVisible()) renderTemplateManagerModal();
+      };
+      renderTemplateManagerModal();
+      reader.readAsText(file);
+    });
     $(document).on("click.acpMounts", ".acp-mount-evidence", function(event) { event.stopPropagation(); });
     $(document).on("keydown.acpMounts", ".acp-mount-evidence", function(event) {
       if (event.key === "Escape") { $(this).prop("open", false).find("summary").focus(); event.stopPropagation(); }
@@ -912,7 +971,8 @@
       url: config.apiUrl,
       method: "POST",
       dataType: "json",
-      timeout: data && data.action === "getDiagnosticsBundle" ? 30000 : 0,
+      timeout: data && data.action === "getDiagnosticsBundle" ? 30000 :
+        (data && /^(getOperationProgress|getRecentOperations|acknowledgeOperation)$/.test(data.action) ? 15000 : 0),
       converters: {"text json": function(text) { return ACP.localizePresentation(JSON.parse(text)); }},
       headers: requestHeaders,
       data: ACP.buildApiRequestData(config, data)
@@ -3621,14 +3681,24 @@
     });
   }
 
-  function runTemplateManagerAction(managerAction, id) {
+  function runTemplateManagerAction(managerAction, id, extraData) {
     state.templateManager.loading = true;
     state.templateManager.message = ACP.tr("Loading saved templates.");
     renderTemplateManagerModal();
-    apiPostForUserAction({action: "templateManagerAction", managerAction: managerAction, templateId: id}).done(function(response) {
+    apiPostForUserAction($.extend({action: "templateManagerAction", managerAction: managerAction, templateId: id}, extraData || {})).done(function(response) {
+      if (managerAction === "export") {
+        state.templateManager.loading = false;
+        try {
+          if (!response.backupArchive || response.backupArchive.format !== "appdata-cleanup-plus-template-backups") throw new Error("invalid backup");
+          downloadJsonFile("appdata-cleanup-plus-private-template-backups.json", response.backupArchive);
+          state.templateManager.message = ACP.tr("Private backups exported. Keep this file secure and do not share it in support reports.");
+        } catch (_error) { state.templateManager.message = ACP.tr("The backup export could not be downloaded."); }
+        if (isTemplateManagerModalVisible()) renderTemplateManagerModal();
+        return;
+      }
       state.templateManager = {loading: false, status: response.templateManager, message: response.message || ""};
       if (isTemplateManagerModalVisible()) renderTemplateManagerModal();
-      if (managerAction !== "status") loadScan();
+      if (managerAction === "archive" || managerAction === "restore") loadScan();
     }).fail(function(xhr) {
       var response = (xhr && xhr.responseJSON) || {};
       state.templateManager.loading = false;
@@ -5439,6 +5509,66 @@
     return "op-" + String(Date.now()) + "-" + String(Math.random()).replace(/[^0-9]/g, "").slice(0, 10);
   }
 
+  function loadRecentOperations() {
+    apiPost({action: "getRecentOperations"}).done(function(response) {
+      state.recovery.operations = $.isArray(response.operations) ? response.operations : [];
+      var $notice = $("#acp-operation-reminders");
+      if (!$notice.length) $notice = $('<section id="acp-operation-reminders" class="acp-notices" aria-label="' + ACP.escapeHtml(ACP.tr("Recent operations")) + '"></section>').insertBefore(els.$notices);
+      var html = [];
+      $.each(state.recovery.operations, function(_, operation) {
+        var labels = {delete: ACP.tr("Permanent delete"), quarantine: ACP.tr("Quarantine"), restore: ACP.tr("Restore"), purge: ACP.tr("Purge")};
+        var time = ACP.localizePresentation({timestamp: operation.startedAt, timestampLabel: ""}).timestampLabel;
+        html.push('<div class="acp-modal-hint"><span>' + ACP.escapeHtml(ACP.tr("Recent operations")) + ': ' + ACP.escapeHtml(labels[operation.operation] || ACP.tr("Action")) + (time ? ' — ' + ACP.escapeHtml(time) : '') + ' — ' + ACP.escapeHtml(operation.message || "") + '</span> <button type="button" class="acp-button acp-button-secondary" data-action="review-recent-operation" data-operation-id="' + ACP.escapeHtml(operation.id) + '">' + ACP.escapeHtml(ACP.tr("Review operation")) + '</button></div>');
+      });
+      $notice.html(html.join(""));
+    });
+  }
+
+  function openRecoveredOperation(id) {
+    state.recovery.activeId = String(id || "");
+    state.recovery.terminal = false;
+    state.recovery.openedAt = Date.now();
+    swal({title: ACP.tr("Recent operations"), text: ACP.tr("Checking operation status."), type: "info", html: true,
+      showCancelButton: false, confirmButtonText: ACP.tr("Close"), closeOnConfirm: true}, function() {
+      state.recovery.activeId = "";
+      var terminal = state.recovery.terminal;
+      window.setTimeout(function() { ACP.releaseModalScrollLock(false); loadRecentOperations(); if (terminal) loadScan(); }, 180);
+    });
+    ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal acp-operation-recovery-modal");
+    loadRecoveredOperation(id);
+  }
+
+  function loadRecoveredOperation(id) {
+    if (!id || state.recovery.activeId !== id || !getActiveSweetAlertModal().hasClass("acp-operation-recovery-modal")) return;
+    if (state.recovery.pollTimer) window.clearTimeout(state.recovery.pollTimer);
+    var requestToken = createOperationProgressId();
+    state.recovery.requestToken = requestToken;
+    function current() { return state.recovery.activeId === id && state.recovery.requestToken === requestToken && getActiveSweetAlertModal().hasClass("acp-operation-recovery-modal"); }
+    apiPost({action: "getOperationProgress", operationProgressId: id}).done(function(response) {
+      if (!current()) return;
+      var progress = response.progress || {};
+      var running = progress.status === "running" || (progress.status === "missing" && Date.now() - state.recovery.openedAt < 15000);
+      if (progress.status === "missing" && !running) progress.message = ACP.tr("No operation record was found. Check audit history and rescan before deciding whether to retry.");
+      state.recovery.terminal = !running;
+      var results = $.isArray(progress.results) ? progress.results : [];
+      var html = '<div class="acp-modal-summary"><p role="status">' + ACP.escapeHtml(progress.message || ACP.tr("Checking operation status.")) + '</p>';
+      html += '<p>' + ACP.escapeHtml(ACP.plural("Processed {count} folders.", Number(progress.completedRoots || 0))) + '</p>';
+      if (progress.currentPath) html += '<code class="acp-modal-path">' + ACP.escapeHtml(progress.currentPath) + '</code>';
+      if (progress.status === "interrupted" || progress.resultsLimited) html += '<p>' + ACP.escapeHtml(ACP.tr("Recorded results may be incomplete. Check audit history and rescan before taking further action.")) + '</p>';
+      if (!running && progress.status !== "missing") html += '<button type="button" class="acp-button acp-button-secondary" data-action="dismiss-operation" data-operation-id="' + ACP.escapeHtml(id) + '">' + ACP.escapeHtml(ACP.tr("Dismiss reminder")) + '</button>';
+      html += '</div>';
+      if (results.length) html += progress.operation === "restore" || progress.operation === "purge"
+        ? buildQuarantineManagerResultsHtml(progress.operation, progress.summary || {}, results)
+        : buildOperationResultsHtml(progress.summary || {}, results, buildOperationContext(progress.operation, []));
+      ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal acp-operation-recovery-modal", html);
+      if (running) state.recovery.pollTimer = window.setTimeout(function() { loadRecoveredOperation(id); }, 2000);
+    }).fail(function() {
+      if (!current()) return;
+      ACP.applyDeleteModalClass("acp-delete-modal acp-delete-results-modal acp-operation-recovery-modal", '<p role="status">' + ACP.escapeHtml(ACP.tr("The connection was interrupted. Status will be checked again. Do not repeat the action.")) + '</p>');
+      state.recovery.pollTimer = window.setTimeout(function() { loadRecoveredOperation(id); }, 3000);
+    });
+  }
+
   function getOperationProgressRatio(progress) {
     var totalItems = Number((progress && progress.totalItems) || 0);
     var processedItems = Number((progress && progress.processedItems) || 0);
@@ -5816,7 +5946,7 @@
   function runCandidateOperation(selectedRows, operation) {
     var context = buildOperationContext(operation, selectedRows);
     var useProgressModal = !context.preview && context.baseOperation === "delete";
-    var operationProgressId = useProgressModal ? createOperationProgressId() : "";
+    var operationProgressId = !context.preview ? createOperationProgressId() : "";
     var requestData;
 
     setBusy(true);
@@ -5836,6 +5966,8 @@
       });
     }
 
+    if (operationProgressId && !useProgressModal) openRecoveredOperation(operationProgressId);
+
     requestData = {
       action: "executeCandidateAction",
       scanToken: state.scanToken,
@@ -5851,6 +5983,10 @@
 
     apiPostForUserAction(requestData).done(function(response) {
       setBusy(false);
+      if (operationProgressId) {
+        state.recovery.activeId = "";
+        loadRecentOperations();
+      }
 
       if (useProgressModal) {
         finalizeOperationProgressModal(response, context);
@@ -5866,6 +6002,12 @@
         stopOperationProgressPolling();
         state.operationProgress.activeId = "";
         state.operationProgress.pendingResult = null;
+      }
+
+      if (operationProgressId && (!xhr || !xhr.status || xhr.status >= 500)) {
+        openRecoveredOperation(operationProgressId);
+        loadRecentOperations();
+        return;
       }
 
       if (xhr && xhr.status === 409) {
@@ -6251,6 +6393,7 @@
   }
 
   function runQuarantineManagerAction(entryIds, action, options) {
+    var operationProgressId = createOperationProgressId();
     var isRestore = action === "restore";
     var requestOptions = $.extend({
       restoreConflictMode: "",
@@ -6279,15 +6422,19 @@
       allowEscapeKey: false,
       allowOutsideClick: false
     });
+    openRecoveredOperation(operationProgressId);
 
     apiPostForUserAction({
       action: "quarantineManagerAction",
       managerAction: action,
+      operationProgressId: operationProgressId,
       entryIds: JSON.stringify(entryIds),
       scanToken: state.scanToken,
       restoreConflictMode: requestOptions.restoreConflictMode,
       restoreConflictNames: JSON.stringify(requestOptions.restoreConflictNames || {})
     }).done(function(response) {
+      state.recovery.activeId = "";
+      loadRecentOperations();
       var quarantine = response.quarantine || {};
       var summary = response.summary || { restored: 0, purged: 0, skipped: 0, conflicts: 0, missing: 0, blocked: 0, errors: 0 };
       var results = $.isArray(response.results) ? response.results : [];
@@ -6328,6 +6475,12 @@
       state.quarantine.loading = false;
       setBusy(false);
       renderPanels();
+
+      if (!xhr || !xhr.status || xhr.status >= 500) {
+        openRecoveredOperation(operationProgressId);
+        loadRecentOperations();
+        return;
+      }
 
       if (xhr && xhr.status === 409) {
         swal({

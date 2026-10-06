@@ -1,4 +1,12 @@
 {
+  "{count} template backups were imported.": {
+    "one": "Er is {count} sjabloonback-up geïmporteerd.",
+    "other": "Er zijn {count} sjabloonback-ups geïmporteerd."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} sjabloonback-up is verwijderd.",
+    "other": "Er zijn {count} sjabloonback-ups verwijderd."
+  },
   "{count} items ready": {
     "one": "{count} artikel klaar",
     "other": "{count} stuks klaar"

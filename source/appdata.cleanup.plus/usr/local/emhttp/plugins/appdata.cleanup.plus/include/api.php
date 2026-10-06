@@ -138,10 +138,16 @@ function appdataCleanupPlusOperationProgressDir() {
   return appdataCleanupPlusRuntimeDir() . "/operation-progress";
 }
 
-function appdataCleanupPlusOperationProgressId($rawId="") {
-  $id = appdataCleanupPlusSanitizeStateKey($rawId);
+function appdataCleanupPlusSetActiveOperation($id) {
+  $file = appdataCleanupPlusRuntimeDir() . "/active-operation.json";
+  $ok = writeAppdataCleanupPlusJsonFile($file, array("id" => (string)$id));
+  if ( $ok ) @chmod($file, 0600);
+  return $ok;
+}
 
-  return substr($id, 0, 80);
+function appdataCleanupPlusOperationProgressId($rawId="") {
+  $id = (string)$rawId;
+  return preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/D', $id) ? $id : "";
 }
 
 function appdataCleanupPlusOperationProgressFile($progressId) {
@@ -169,13 +175,16 @@ function appdataCleanupPlusDefaultOperationProgress($progressId, $operation="del
     "processedItems" => 0,
     "currentPath" => "",
     "recent" => array(),
+    "results" => array(),
+    "acknowledged" => false,
     "summary" => null
   );
 }
 
 function appdataCleanupPlusReadOperationProgress($progressId) {
   $file = appdataCleanupPlusOperationProgressFile($progressId);
-  $payload = $file ? readAppdataCleanupPlusJsonFile($file, array()) : array();
+  $payload = $file && ! is_link($file) && is_file($file) && filesize($file) <= 16777216
+    ? readAppdataCleanupPlusJsonFile($file, array()) : array();
 
   return is_array($payload) ? $payload : array();
 }
@@ -187,18 +196,45 @@ function appdataCleanupPlusWriteOperationProgress($progressId, $payload) {
     return false;
   }
 
-  return writeAppdataCleanupPlusJsonFile($file, $payload);
+  if ( is_link($file) || pathHasSymlinkSegment(dirname($file)) ) return false;
+  while ( strlen(appdataCleanupPlusJsonEncode($payload, JSON_PRETTY_PRINT)) > 16777200 ) {
+    $results = (array)($payload["results"] ?? array());
+    if ( ! $results ) return false;
+    $payload["results"] = array_slice($results, max(1, (int)ceil(count($results) / 2)));
+    $payload["resultsLimited"] = true;
+  }
+  $written = writeAppdataCleanupPlusJsonFile($file, $payload);
+  @chmod(dirname($file), 0700);
+  if ( $written ) @chmod($file, 0600);
+  return $written;
 }
 
 function appdataCleanupPlusInitializeOperationProgress($progressId, $operation, $requestedCount) {
   $id = appdataCleanupPlusOperationProgressId($progressId);
 
-  if ( $id === "" ) {
+  if ( $id === "" || file_exists(appdataCleanupPlusOperationProgressFile($id)) || is_link(appdataCleanupPlusOperationProgressFile($id)) ) {
     return "";
   }
 
   ensureAppdataCleanupPlusDirectory(appdataCleanupPlusOperationProgressDir());
-  appdataCleanupPlusWriteOperationProgress($id, appdataCleanupPlusDefaultOperationProgress($id, $operation, $requestedCount));
+  // Match progress to the actual cleanup lock, not merely an old PID. Status
+  // readers never acquire/recover the lock or resume filesystem work.
+  $store =& appdataCleanupPlusRuntimeStore();
+  $handle = $store["runtimeLocks"]["cleanup-operation"] ?? null;
+  if ( is_resource($handle) ) {
+    @rewind($handle);
+    $lockPayload = json_decode((string)stream_get_contents($handle), true);
+    $metadata = is_array($lockPayload["metadata"] ?? null) ? $lockPayload["metadata"] : array();
+    $metadata["operationProgressId"] = $id;
+    @ftruncate($handle, 0);
+    @rewind($handle);
+    @fwrite($handle, appdataCleanupPlusJsonEncode(array("name" => "cleanup-operation", "pid" => getmypid(), "startedAt" => $lockPayload["startedAt"] ?? date("c"), "metadata" => $metadata)) . "\n");
+    @fflush($handle);
+  }
+  if ( ! appdataCleanupPlusSetActiveOperation($id) || ! appdataCleanupPlusWriteOperationProgress($id, appdataCleanupPlusDefaultOperationProgress($id, $operation, $requestedCount)) ) return "";
+  $GLOBALS["appdataCleanupPlusActiveOperation"] = $id;
+  ignore_user_abort(true);
+  appdataCleanupPlusPruneOperationProgress($id);
 
   return $id;
 }
@@ -305,9 +341,95 @@ function appdataCleanupPlusFinalizeOperationProgress($progressId, $status, $mess
   return $id !== "" ? appdataCleanupPlusUpdateOperationProgress($id, $patch, true) : false;
 }
 
+function appdataCleanupPlusOperationProgressRecordResult($progressId, $result) {
+  if ( ! $progressId ) return;
+  $payload = appdataCleanupPlusReadOperationProgress($progressId);
+  $result = array_intersect_key($result, array_flip(array("path", "displayPath", "sourcePath", "destination", "restoredPath", "status", "message", "datasetName", "datasetMountpoint", "recursive", "zfsImpactSummary", "zfsChildDatasets", "zfsSnapshots", "zfsChildDatasetCount", "zfsSnapshotCount")));
+  foreach ( array("zfsChildDatasets", "zfsSnapshots") as $key ) {
+    if ( isset($result[$key]) && count($result[$key]) > 100 ) {
+      $result[$key] = array_slice($result[$key], 0, 100);
+      $payload["resultsLimited"] = true;
+    }
+  }
+  $results = (array)($payload["results"] ?? array());
+  $results[] = $result;
+  $summary = is_array($payload["summary"] ?? null) ? $payload["summary"] :
+    (in_array($payload["operation"] ?? "", array("restore", "purge"), true) ? buildQuarantineManagerActionSummary(array()) : buildOperationSummary(array()));
+  $key = array("error" => "errors", "conflict" => "conflicts")[$result["status"] ?? ""] ?? ($result["status"] ?? "");
+  if ( isset($summary[$key]) ) $summary[$key]++;
+  appdataCleanupPlusUpdateOperationProgress($progressId, array("summary" => $summary, "results" => array_slice($results, -500), "resultsLimited" => ! empty($payload["resultsLimited"]) || count($results) > 500), true);
+}
+
+function appdataCleanupPlusRecoverOperationProgress($payload) {
+  if ( ($payload["status"] ?? "") !== "running" ) return $payload;
+  $file = appdataCleanupPlusRuntimeLockFile("cleanup-operation");
+  $lock = is_file($file) ? appdataCleanupPlusInspectRuntimeLockFile($file) : array();
+  // Windows locks prevent reading the lock's bytes while it is held. An
+  // atomic pointer outside the locked file is reset on every lock acquisition.
+  $active = readAppdataCleanupPlusJsonFile(appdataCleanupPlusRuntimeDir() . "/active-operation.json", array());
+  $activeId = ! empty($lock["metadata"]) ? ($lock["metadata"]["operationProgressId"] ?? "") : ($active["id"] ?? "");
+  if ( (array_key_exists("held", $lock) && $lock["held"] === false) || ! $lock || $activeId !== ($payload["id"] ?? "") ) {
+    $payload["status"] = "interrupted";
+    $payload["message"] = "The operation stopped before its final result was recorded. Review recorded results and audit history, then rescan before taking further action.";
+  }
+  return $payload;
+}
+
+function appdataCleanupPlusRecentOperations() {
+  $files = (array)glob(appdataCleanupPlusOperationProgressDir() . "/*.json");
+  usort($files, function($a, $b) { return filemtime($b) <=> filemtime($a); });
+  $operations = array();
+  foreach ( array_slice($files, 0, 100) as $file ) {
+    $payload = appdataCleanupPlusReadOperationProgress(basename($file, ".json"));
+    if ( ! $payload || ! empty($payload["acknowledged"]) || strtotime($payload["updatedAt"] ?? "") < time() - 86400 ) continue;
+    $payload = appdataCleanupPlusRecoverOperationProgress($payload);
+    // Lists contain only a bounded summary. Detailed results use the ID endpoint.
+    unset($payload["results"], $payload["recent"], $payload["currentPath"]);
+    $operations[] = $payload;
+  }
+  usort($operations, function($a, $b) { return strcmp($b["startedAt"], $a["startedAt"]); });
+  return array_slice($operations, 0, 20);
+}
+
+function appdataCleanupPlusPruneOperationProgress($activeId) {
+  $files = (array)glob(appdataCleanupPlusOperationProgressDir() . "/*.json");
+  usort($files, function($a, $b) { return filemtime($b) <=> filemtime($a); });
+  $kept = 0;
+  foreach ( $files as $file ) {
+    $id = basename($file, ".json");
+    if ( $id === $activeId || is_link($file) ) continue;
+    if ( $kept >= 99 || filemtime($file) < time() - 86400 ) {
+      @unlink($file);
+      if ( is_file($file . ".lock") && ! is_link($file . ".lock") ) @unlink($file . ".lock");
+    } else $kept++;
+  }
+}
+
+function appdataCleanupPlusInterruptActiveOperation() {
+  $id = $GLOBALS["appdataCleanupPlusActiveOperation"] ?? "";
+  if ( $id && (appdataCleanupPlusReadOperationProgress($id)["status"] ?? "") === "running" ) {
+    appdataCleanupPlusFinalizeOperationProgress($id, "interrupted", "The operation stopped before its final result was recorded. Review recorded results and audit history, then rescan before taking further action.");
+  }
+}
+
+function handleGetRecentOperations() {
+  jsonResponse(array("ok" => true, "operations" => appdataCleanupPlusRecentOperations()));
+}
+
+function handleAcknowledgeOperation() {
+  $id = appdataCleanupPlusOperationProgressId(getPostedString("operationProgressId"));
+  $payload = appdataCleanupPlusReadOperationProgress($id);
+  if ( ! $payload || (appdataCleanupPlusRecoverOperationProgress($payload)["status"] ?? "") === "running" ) {
+    jsonResponse(array("ok" => false, "message" => "An active operation cannot be dismissed."), 409);
+  }
+  // Retain the record and all audit evidence; only remove the reminder.
+  $ok = appdataCleanupPlusUpdateOperationProgress($id, array("acknowledged" => true));
+  jsonResponse(array("ok" => $ok), $ok ? 200 : 500);
+}
+
 function handleGetOperationProgress() {
   $progressId = appdataCleanupPlusOperationProgressId(getPostedString("operationProgressId"));
-  $payload = $progressId ? appdataCleanupPlusReadOperationProgress($progressId) : array();
+  $payload = $progressId ? appdataCleanupPlusRecoverOperationProgress(appdataCleanupPlusReadOperationProgress($progressId)) : array();
 
   if ( empty($payload) ) {
     jsonResponse(array(
@@ -1743,7 +1865,7 @@ function handleExecuteCandidateAction() {
   $settings = getAppdataCleanupPlusSafetySettings();
   $progressId = appdataCleanupPlusOperationProgressId(getPostedString("operationProgressId"));
   $baseOperation = getBaseOperation($operation);
-  $trackProgress = $progressId !== "" && ! isPreviewOperation($operation) && $baseOperation === "delete";
+  $trackProgress = ! isPreviewOperation($operation);
 
   if ( ! $resolvedCandidates["ok"] ) {
     jsonResponse(array(
@@ -1760,7 +1882,10 @@ function handleExecuteCandidateAction() {
   }
 
   if ( $trackProgress ) {
-    appdataCleanupPlusInitializeOperationProgress($progressId, $baseOperation, count($candidateIds));
+    if ( $progressId === "" ) $progressId = "op-" . bin2hex(random_bytes(16));
+    if ( ! appdataCleanupPlusInitializeOperationProgress($progressId, $baseOperation, count($candidateIds)) ) {
+      jsonResponse(array("ok" => false, "message" => "The operation could not be recorded or its ID was already used. Check recent operations before trying again."), 409);
+    }
   }
 
   $execution = executeCandidateOperation($resolvedCandidates["candidates"], $settings, $operation, array(
@@ -1782,7 +1907,7 @@ function handleExecuteCandidateAction() {
     appdataCleanupPlusFinalizeOperationProgress(
       $progressId,
       $execution["summary"]["errors"] === 0 ? "complete" : "warning",
-      $execution["summary"]["errors"] === 0 ? "Delete finished." : "Delete finished with warnings.",
+      $execution["summary"]["errors"] === 0 ? "Cleanup finished." : "Cleanup finished with warnings.",
       $execution["summary"]
     );
   }
@@ -1969,6 +2094,12 @@ function handleQuarantineManagerAction() {
     ), $resolvedEntries["statusCode"]);
   }
 
+  $progressId = appdataCleanupPlusOperationProgressId(getPostedString("operationProgressId"));
+  if ( $progressId === "" ) $progressId = "op-" . bin2hex(random_bytes(16));
+  if ( ! appdataCleanupPlusInitializeOperationProgress($progressId, $action, count($entryIds)) ) {
+    jsonResponse(array("ok" => false, "message" => "The operation could not be recorded or its ID was already used. Check recent operations before trying again."), 409);
+  }
+  $options["operationProgressId"] = $progressId;
   $execution = executeQuarantineManagerAction($resolvedEntries["entries"], $action, $options);
   if ( $action === "restore" ) {
     $updatedScanToken = buildUpdatedSnapshotTokenFromRestoredResults($scanToken, $execution["results"]);
@@ -1983,9 +2114,11 @@ function handleQuarantineManagerAction() {
     "results" => $execution["results"]
   ));
 
+  appdataCleanupPlusFinalizeOperationProgress($progressId, $execution["summary"]["errors"] === 0 ? "complete" : "warning", "Cleanup finished.", $execution["summary"]);
   jsonResponse(array(
     "ok" => $execution["summary"]["errors"] === 0,
     "action" => $execution["action"],
+    "operationProgressId" => $progressId,
     "results" => $execution["results"],
     "summary" => $execution["summary"],
     "quarantine" => buildQuarantineManagerPayload(true),

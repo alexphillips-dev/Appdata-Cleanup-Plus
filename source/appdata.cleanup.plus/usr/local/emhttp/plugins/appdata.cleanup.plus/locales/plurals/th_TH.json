@@ -1,4 +1,10 @@
 {
+  "{count} template backups were imported.": {
+    "other": "นำเข้าข้อมูลสำรองเทมเพลตแล้ว {count} รายการ"
+  },
+  "{count} template backups were removed.": {
+    "other": "นำข้อมูลสำรองเทมเพลต {count} รายการออกแล้ว"
+  },
   "{count} items ready": {
     "other": "พร้อมแล้ว {count} รายการ"
   },

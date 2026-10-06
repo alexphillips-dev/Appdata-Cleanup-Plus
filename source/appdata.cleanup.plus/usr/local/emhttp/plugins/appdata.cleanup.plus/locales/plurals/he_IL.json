@@ -1,4 +1,14 @@
 {
+  "{count} template backups were imported.": {
+    "one": "יובא גיבוי תבנית אחד.",
+    "two": "יובאו {count} גיבויי תבניות.",
+    "other": "יובאו {count} גיבויי תבניות."
+  },
+  "{count} template backups were removed.": {
+    "one": "גיבוי תבנית אחד הוסר.",
+    "two": "{count} גיבויי תבניות הוסרו.",
+    "other": "{count} גיבויי תבניות הוסרו."
+  },
   "{count} items ready": {
     "one": "פריט {count} מוכן",
     "two": "{count} פריטים מוכנים",

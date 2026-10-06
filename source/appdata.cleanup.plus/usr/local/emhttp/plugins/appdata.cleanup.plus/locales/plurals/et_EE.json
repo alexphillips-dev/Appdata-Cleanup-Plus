@@ -1,4 +1,12 @@
 {
+  "{count} template backups were imported.": {
+    "one": "{count} malli varukoopia imporditi.",
+    "other": "Imporditi {count} malli varukoopiat."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} malli varukoopia eemaldati.",
+    "other": "{count} malli varukoopiat eemaldati."
+  },
   "{count} items ready": {
     "one": "{count} toode valmis",
     "other": "{count} eset valmis"

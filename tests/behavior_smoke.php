@@ -128,6 +128,10 @@ function behaviorSmokeFindEntryById($entries, $entryId) {
 }
 
 behaviorSmokeRemoveTree($stateRoot);
+$backupAuditSummary = normalizeAuditSummary(array("imported" => 2, "removed" => 1, "privateFutureField" => "private-fixture-content"));
+behaviorSmokeAssertSame(2, $backupAuditSummary["imported"], "Backup audit import counts must be preserved.");
+behaviorSmokeAssertSame(1, $backupAuditSummary["removed"], "Backup audit removal counts must be preserved.");
+behaviorSmokeAssertSame(false, isset($backupAuditSummary["privateFutureField"]), "Backup audit counts must be numeric and discard unknown fields.");
 behaviorSmokeRemoveTree($appdataShareRoot);
 behaviorSmokeRemoveTree($zfsDatasetRoot);
 behaviorSmokeRemoveTree($manualAliasSourceRoot);
@@ -1188,9 +1192,26 @@ foreach (array("preview_quarantine", "preview_delete") as $operation) {
 $broadDeletePath = $appdataShareRoot . "/broad-delete-fixture";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($broadDeletePath), "Broad delete fixture should exist.");
 file_put_contents($broadDeletePath . "/fixture.txt", "synthetic appdata");
-$broadDelete = executeCandidateOperation(array(array("path" => $broadDeletePath, "realPath" => (string)realpath($broadDeletePath))), $broadSettings, "delete");
+appdataCleanupPlusInitializeOperationProgress("tracked-delete", "delete", 1);
+$broadDelete = executeCandidateOperation(array(array("path" => $broadDeletePath, "realPath" => (string)realpath($broadDeletePath))), $broadSettings, "delete", array("operationProgressId" => "tracked-delete"));
 behaviorSmokeAssertSame("deleted", $broadDelete["results"][0]["status"], "Actual filesystem cleanup must proceed with broad viewers installed.");
 behaviorSmokeAssertSame(false, is_dir($broadDeletePath), "Only the disposable broad-delete fixture should be removed.");
+behaviorSmokeAssertSame("deleted", appdataCleanupPlusReadOperationProgress("tracked-delete")["results"][0]["status"], "Deletion outcomes must survive a lost HTTP response.");
+$recoveryFixturePath = $appdataShareRoot . "/recovery-quarantine-fixture";
+ensureAppdataCleanupPlusDirectory($recoveryFixturePath);
+file_put_contents($recoveryFixturePath . "/retained.txt", "recoverable fixture");
+$recoveryCandidate = array("path" => $recoveryFixturePath, "realPath" => (string)realpath($recoveryFixturePath));
+appdataCleanupPlusInitializeOperationProgress("tracked-quarantine", "quarantine", 1);
+$trackedQuarantine = executeCandidateOperation(array($recoveryCandidate), $broadSettings, "quarantine", array("operationProgressId" => "tracked-quarantine"));
+behaviorSmokeAssertSame("quarantined", $trackedQuarantine["results"][0]["status"], "The disposable recovery fixture must quarantine normally.");
+behaviorSmokeAssertSame("quarantined", appdataCleanupPlusReadOperationProgress("tracked-quarantine")["results"][0]["status"], "Quarantine records its outcome for reconnecting pages.");
+$trackedEntries = array_values(array_filter(getActiveAppdataCleanupPlusQuarantineEntries(false), function($entry) use ($recoveryFixturePath) { return $entry["sourcePath"] === $recoveryFixturePath; }));
+appdataCleanupPlusInitializeOperationProgress("tracked-restore", "restore", 1);
+$trackedRestore = executeQuarantineManagerAction($trackedEntries, "restore", array("operationProgressId" => "tracked-restore"));
+behaviorSmokeAssertSame(1, $trackedRestore["summary"]["restored"], "Recovery fixture restores through ordinary safety checks.");
+behaviorSmokeAssertSame("restored", appdataCleanupPlusReadOperationProgress("tracked-restore")["results"][0]["status"], "Restore records outcomes without retaining raw scan rows.");
+behaviorSmokeAssertSame(false, isset(appdataCleanupPlusReadOperationProgress("tracked-restore")["results"][0]["row"]), "Operation recovery retains presentation fields only.");
+behaviorSmokeAssertSame("recoverable fixture", file_get_contents($recoveryFixturePath . "/retained.txt"), "Progress tracking must preserve restored file bytes.");
 $GLOBALS["acpTestDockerRecords"][] = array("Id" => "new-owner", "Names" => array("/new-owner"), "Mounts" => array(array("Type" => "bind", "Source" => $filesystemOrphanPath, "Destination" => "/config")));
 $specificBlock = executeCandidateOperation(array($broadCandidate), $broadSettings, "delete");
 behaviorSmokeAssertSame("blocked", $specificBlock["results"][0]["status"], "A specific mapping added after scanning must still block actual deletion.");
@@ -1565,7 +1586,9 @@ behaviorSmokeAssertTrue($defaultPurgeRecord["purgeAt"] !== "", "Newly quarantine
 behaviorSmokeAssertTrue(strtotime($defaultPurgeRecord["purgeAt"]) > time(), "Default quarantine purge timers should be scheduled in the future.");
 behaviorSmokeAssertSame(false, is_dir($defaultPurgeCandidatePath), "Quarantining the manual purge fixture should remove its original source path.");
 behaviorSmokeAssertTrue(is_file($defaultPurgeRecord["destination"] . "/destructive-purge.txt"), "The manual purge fixture should retain its contents while quarantined.");
-$manualPurgeExecution = executeQuarantineManagerAction(array($defaultPurgeRecord), "purge");
+appdataCleanupPlusInitializeOperationProgress("tracked-purge", "purge", 1);
+$manualPurgeExecution = executeQuarantineManagerAction(array($defaultPurgeRecord), "purge", array("operationProgressId" => "tracked-purge"));
+behaviorSmokeAssertSame("purged", appdataCleanupPlusReadOperationProgress("tracked-purge")["results"][0]["status"], "Manual purge records its terminal item outcome.");
 behaviorSmokeAssertSame("purge", $manualPurgeExecution["action"], "Manual manager purge should preserve the purge action through dispatch.");
 behaviorSmokeAssertSame(1, (int)$manualPurgeExecution["summary"]["purged"], "Manual manager purge should report one destructively purged folder.");
 behaviorSmokeAssertSame(false, is_dir($defaultPurgeRecord["destination"]), "Manual manager purge should delete the exact quarantined folder.");

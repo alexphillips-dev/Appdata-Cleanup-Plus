@@ -46,6 +46,8 @@ jobs:
       - name: Check bundled language coverage and runtime localization
         run: |
           node scripts/build_i18n.mjs --check
+          node scripts/review_i18n.mjs --check
+          node tests/i18n_reviews.cjs
           php tests/i18n_smoke.php
           node tests/i18n_client.js
           node tests/i18n_page.js
@@ -64,6 +66,7 @@ jobs:
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/browser_fixture_test.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/theme_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/maintenance_ui.cjs
+          ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/recovery_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/i18n_layout.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/plugin_description_ui.cjs
 
@@ -75,6 +78,7 @@ jobs:
           php tests/php_function_checker.php
           php scripts/check_php_functions.php
           php tests/ownership_templates.php
+          php tests/recovery_backups.php
 
       - name: Check diagnostics privacy guards
         run: bash scripts/test_diagnostics_privacy.sh

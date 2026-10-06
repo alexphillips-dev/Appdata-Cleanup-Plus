@@ -1,4 +1,16 @@
 {
+  "{count} template backups were imported.": {
+    "one": "Zaimportowano {count} kopię zapasową szablonu.",
+    "few": "Zaimportowano {count} kopie zapasowe szablonów.",
+    "many": "Zaimportowano {count} kopii zapasowych szablonów.",
+    "other": "Zaimportowano kopie zapasowe szablonów {count}."
+  },
+  "{count} template backups were removed.": {
+    "one": "Usunięto {count} kopię zapasową szablonu.",
+    "few": "Usunięto {count} kopie zapasowe szablonów.",
+    "many": "Usunięto {count} kopii zapasowych szablonów.",
+    "other": "Usunięto kopie zapasowe szablonów w wersji {count}."
+  },
   "{count} items ready": {
     "one": "{count} element gotowy",
     "few": "{count} sztuki gotowe",

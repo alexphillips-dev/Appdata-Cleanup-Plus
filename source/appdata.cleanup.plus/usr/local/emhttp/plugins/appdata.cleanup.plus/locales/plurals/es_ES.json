@@ -1,4 +1,14 @@
 {
+  "{count} template backups were imported.": {
+    "one": "Se importó {count} plantilla de copia de seguridad.",
+    "many": "Se importaron {count} copias de seguridad de plantillas.",
+    "other": "Se importaron {count} copias de seguridad de plantilla."
+  },
+  "{count} template backups were removed.": {
+    "one": "Se eliminó {count} copia de seguridad de plantilla.",
+    "many": "Se eliminaron {count} copias de seguridad de plantillas.",
+    "other": "Se eliminaron {count} copias de seguridad de plantillas."
+  },
   "{count} items ready": {
     "one": "{count} artículo listo",
     "many": "{count} artículos listos",

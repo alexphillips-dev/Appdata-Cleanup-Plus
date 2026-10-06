@@ -1,4 +1,12 @@
 {
+  "{count} template backups were imported.": {
+    "one": "{count} mal backup ble importert.",
+    "other": "{count} mal sikkerhetskopier ble importert."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} mal backup ble fjernet.",
+    "other": "{count} mal sikkerhetskopier ble fjernet."
+  },
   "{count} items ready": {
     "one": "{count} vare klar",
     "other": "{count} varer klare"

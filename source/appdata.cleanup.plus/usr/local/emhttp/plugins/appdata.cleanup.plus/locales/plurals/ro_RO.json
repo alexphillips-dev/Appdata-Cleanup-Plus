@@ -1,4 +1,14 @@
 {
+  "{count} template backups were imported.": {
+    "one": "A fost importat un șablon de rezervă.",
+    "few": "Au fost importate {count} copii de siguranță ale șablonului.",
+    "other": "Au fost importate {count} de copii de siguranță ale șablonului."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} backup șablon a fost eliminat.",
+    "few": "Au fost eliminate {count} copii de siguranță ale șablonului.",
+    "other": "{count} de copii de siguranță ale șablonului au fost eliminate."
+  },
   "{count} items ready": {
     "one": "{count} articol gata",
     "few": "{count} articole gata",

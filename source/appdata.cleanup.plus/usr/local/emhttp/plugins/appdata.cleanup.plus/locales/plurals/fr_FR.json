@@ -1,4 +1,14 @@
 {
+  "{count} template backups were imported.": {
+    "one": "{count} modèle de sauvegarde a été importé.",
+    "many": "{count} de sauvegardes de modèles ont été importées.",
+    "other": "{count} sauvegardes de modèles ont été importées."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} sauvegarde de modèle a été supprimée.",
+    "many": "{count} de sauvegardes de modèles ont été supprimées.",
+    "other": "{count} sauvegardes de modèles ont été supprimées."
+  },
   "{count} items ready": {
     "one": "{count} article prêt",
     "many": "{count} articles prêts",

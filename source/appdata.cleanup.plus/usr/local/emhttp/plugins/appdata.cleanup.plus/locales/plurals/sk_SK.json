@@ -1,4 +1,16 @@
 {
+  "{count} template backups were imported.": {
+    "one": "Bola importovaná {count} záloha šablóny.",
+    "few": "Boli importované {count} zálohy šablón.",
+    "many": "Boli importované zálohy šablón {count}.",
+    "other": "Importovalo sa {count} záloh šablón."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} záloha šablóny bola odstránená.",
+    "few": "Boli odstránené {count} zálohy šablón.",
+    "many": "Zálohy šablón {count} boli odstránené.",
+    "other": "Bolo odstránených {count} záloh šablón."
+  },
   "{count} items ready": {
     "one": "{count} položka pripravená",
     "few": "{count} položky pripravené",

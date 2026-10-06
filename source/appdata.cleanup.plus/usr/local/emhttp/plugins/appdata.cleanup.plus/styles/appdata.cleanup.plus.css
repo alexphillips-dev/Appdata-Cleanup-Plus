@@ -4448,16 +4448,20 @@
 .acp-template-card .acp-template-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
 
 .sweet-alert.acp-appdata-sources-modal,
+.sweet-alert.acp-operation-recovery-modal,
 .sweet-alert.acp-template-manager-modal {
   flex-direction: column;
   max-height: min(760px, calc(100vh - 80px)) !important;
   overflow: hidden !important;
 }
 .sweet-alert.acp-appdata-sources-modal > h2,
+.sweet-alert.acp-operation-recovery-modal > h2,
+.sweet-alert.acp-operation-recovery-modal > .sa-button-container,
 .sweet-alert.acp-appdata-sources-modal > .sa-button-container {
   flex: 0 0 auto;
 }
-.sweet-alert.acp-appdata-sources-modal .acp-modal-host {
+.sweet-alert.acp-appdata-sources-modal .acp-modal-host,
+.sweet-alert.acp-operation-recovery-modal .acp-modal-host {
   flex: 1 1 auto;
   min-height: 0;
   max-height: none !important;
@@ -4499,6 +4503,13 @@
 .acp-template-row > div { min-width: 0; overflow-wrap: anywhere; }
 .acp-template-row code { display: block; }
 .acp-template-row button { flex-shrink: 0; }
+.acp-template-card .acp-modal-inline-actions > .acp-button {
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
 @media (max-width: 600px) {
   .acp-template-card .acp-template-row { align-items: stretch; flex-direction: column; }
 }

@@ -1,4 +1,18 @@
 {
+  "{count} template backups were imported.": {
+    "one": "Iompórtáladh {count} chúltaca teimpléad.",
+    "two": "Iompórtáladh {count} chúltaca theimpléad.",
+    "few": "Iompórtáladh {count} chúltaca teimpléid.",
+    "many": "Iompórtáladh {count} teimpléad cúltaca.",
+    "other": "Iompórtáladh {count} cúltaca teimpléid."
+  },
+  "{count} template backups were removed.": {
+    "one": "Baineadh {count} teimpléad cúltaca.",
+    "two": "Baineadh {count} chúltaca theimpléad.",
+    "few": "Baineadh {count} theimpléad cúltaca.",
+    "many": "Baineadh {count} teimpléad cúltaca.",
+    "other": "Baineadh {count} teimpléad cúltaca."
+  },
   "{count} items ready": {
     "one": "{count} mhír réidh",
     "two": "{count} mhír réidh",

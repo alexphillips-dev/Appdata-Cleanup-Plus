@@ -938,6 +938,10 @@ function buildAuditOperationLabel($operation) {
       return "Template archive";
     case "template_restore":
       return "Template restore";
+    case "template_import":
+      return "Template backup import";
+    case "template_remove_backups":
+      return "Template backup removal";
     case "quarantine":
       return "Quarantine";
     case "restore":
@@ -956,6 +960,8 @@ function buildAuditOperationLabel($operation) {
 
 function normalizeAuditSummary($summary) {
   $defaults = array(
+    "imported" => 0,
+    "removed" => 0,
     "ready" => 0,
     "quarantined" => 0,
     "deleted" => 0,
@@ -984,6 +990,13 @@ function buildLatestAuditMessage($entry) {
   $summary = normalizeAuditSummary($entry["summary"] ?? array());
   $operation = (string)($entry["operation"] ?? "cleanup");
   $parts = array(acpMessage("Last action: {operation}. Time: {date}.", array("operation" => buildAuditOperationLabel($operation), "date" => $timestamp ? formatDateTimeLabel($timestamp) : "recently")));
+  if ( $operation === "template_import" || $operation === "template_remove_backups" ) {
+    if ( $summary["imported"] ) $parts[] = acpCountMessage("{count} template backups were imported.", $summary["imported"]);
+    if ( $summary["removed"] ) $parts[] = acpCountMessage("{count} template backups were removed.", $summary["removed"]);
+    if ( $summary["errors"] ) $parts[] = acpCountMessage("{count} errors occurred.", $summary["errors"]);
+    if ( count($parts) === 1 ) $parts[] = "No changes recorded.";
+    return acpJoinMessages($parts);
+  }
   if ( $operation === "template_archive" || $operation === "template_restore" ) {
     $parts[] = $operation === "template_archive"
       ? "The saved template was archived. Its backup is available for restore. Appdata, images, and containers were not changed."
@@ -1034,7 +1047,7 @@ function buildAuditHistoryRowsFromEntries($history) {
     $timestamp = isset($entry["timestamp"]) ? strtotime((string)$entry["timestamp"]) : 0;
     $summary = normalizeAuditSummary(isset($entry["summary"]) ? $entry["summary"] : array());
     $results = isset($entry["results"]) && is_array($entry["results"]) ? $entry["results"] : array();
-    $completedCount = $summary["quarantined"] + $summary["deleted"] + $summary["restored"] + $summary["purged"];
+    $completedCount = $summary["quarantined"] + $summary["deleted"] + $summary["restored"] + $summary["purged"] + $summary["imported"] + $summary["removed"];
     $warningCount = $summary["skipped"] + $summary["conflicts"] + $summary["missing"] + $summary["blocked"];
     $errorCount = $summary["errors"];
     $pathsPreview = array();

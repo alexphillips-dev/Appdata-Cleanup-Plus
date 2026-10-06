@@ -1,4 +1,12 @@
 {
+  "{count} template backups were imported.": {
+    "one": "{count}টি টেমপ্লেট ব্যাকআপ আমদানি করা হয়েছে৷",
+    "other": "{count}টি টেমপ্লেট ব্যাকআপ আমদানি করা হয়েছে৷"
+  },
+  "{count} template backups were removed.": {
+    "one": "{count}টি টেমপ্লেট ব্যাকআপ সরানো হয়েছে৷",
+    "other": "{count}টি টেমপ্লেট ব্যাকআপ সরানো হয়েছে৷"
+  },
   "{count} items ready": {
     "one": "{count}টি আইটেম প্রস্তুত",
     "other": "{count}টি আইটেম প্রস্তুত"

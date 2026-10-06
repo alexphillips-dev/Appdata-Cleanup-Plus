@@ -1,4 +1,12 @@
 {
+  "{count} template backups were imported.": {
+    "one": "{count} template backup was imported.",
+    "other": "{count} template backups were imported."
+  },
+  "{count} template backups were removed.": {
+    "one": "{count} template backup was removed.",
+    "other": "{count} template backups were removed."
+  },
   "{count} items ready": {
     "one": "{count} item ready",
     "other": "{count} items ready"

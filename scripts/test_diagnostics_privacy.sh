@@ -41,6 +41,9 @@ grep -Fq 'appdataCleanupPlusDiagnosticsIgnoredCandidatesSummary(50)' <<<"${serve
 grep -Fq 'appdataCleanupPlusDiagnosticsRedactValue($bundle)' <<<"${server_bundle}" || fail "Server diagnostics bundle needs a final recursive privacy scrub."
 
 node "${ROOT_DIR}/tests/diagnostics_privacy_client.js"
+grep -Fq 'Private backup names, filenames and IDs must stay outside public diagnostics.' "${ROOT_DIR}/tests/recovery_backups.php" || fail "Private backup export/import privacy coverage is missing."
+grep -Fq 'Operation recovery retains presentation fields only.' "${ROOT_DIR}/tests/behavior_smoke.php" || fail "Operation result allowlist coverage is missing."
+grep -Fq 'Backup audit counts must be numeric and discard unknown fields.' "${ROOT_DIR}/tests/behavior_smoke.php" || fail "Backup audit summary privacy coverage is missing."
 grep -Fq 'Installer URLs and previously scrubbed scheme fragments must not survive' "${ROOT_DIR}/tests/behavior_smoke.php" || fail "Server installer URL privacy coverage is missing."
 grep -Fq 'Stopping size hydration must preserve browser scan metrics' "${ROOT_DIR}/tests/maintenance_ui.cjs" || fail "Scan freshness hydration coverage is missing."
 grep -Fq 'Normal history/log limits must not create a collection warning' "${ROOT_DIR}/tests/maintenance_ui.cjs" || fail "Diagnostics collection severity coverage is missing."
