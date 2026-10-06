@@ -28,11 +28,23 @@ async function checkActionLayout(page, locale, width) {
     const button = document.querySelector('.acp-mode-link'), card = button.closest('.acp-mode-card');
     const range = document.createRange(); range.selectNodeContents(button);
     const bounds = card.getBoundingClientRect();
+    const toolbar = document.querySelector('#acp-action-toolbar'), toolbarBounds = toolbar.getBoundingClientRect();
+    const controls = Array.from(toolbar.querySelectorAll('input, select, .acp-action-toolbar-actions button'));
     return {position:getComputedStyle(bar).position, clearance:parseFloat(getComputedStyle(app).paddingBottom),
       height:bar.getBoundingClientRect().height, bottom:parseFloat(getComputedStyle(bar).bottom) || 0,
+      searchInside:toolbar.contains(document.querySelector('#acp-search')), sortInside:toolbar.contains(document.querySelector('#acp-sort')),
+      controlsFit:controls.every(control=>{const rect=control.getBoundingClientRect();return rect.left>=toolbarBounds.left && rect.right<=toolbarBounds.right && rect.top>=toolbarBounds.top && rect.bottom<=toolbarBounds.bottom;}),
+      searchWidth:document.querySelector('#acp-search').getBoundingClientRect().width,
+      actionGap:parseFloat(getComputedStyle(toolbar.querySelector('.acp-action-toolbar-actions')).columnGap),
+      compactMargins:Array.from(toolbar.querySelectorAll('.acp-action-toolbar-actions button')).every(button=>{const css=getComputedStyle(button);return ['marginTop','marginRight','marginBottom','marginLeft'].every(side=>parseFloat(css[side])===0);}),
       clipped:Array.from(range.getClientRects()).some(rect => rect.left < bounds.left - 2 || rect.right > bounds.right + 2 || rect.bottom > bounds.bottom + 2)};
   });
   assert.equal(result.clipped, false, `${locale} ${width}px: Safe Mode label must fit its card`);
+  assert.ok(result.searchInside && result.sortInside, `${locale}: search and sorting belong in the action bar`);
+  assert.equal(result.controlsFit, true, `${locale} ${width}px: action-bar controls must fit without clipping`);
+  assert.ok(result.searchWidth>=160, `${locale} ${width}px: search remains usable`);
+  assert.ok(result.actionGap<=8, `${locale}: action buttons use compact spacing`);
+  assert.equal(result.compactMargins, true, `${locale}: native button margins must not expand action-bar spacing`);
   if (width <= 760) assert.equal(result.position, 'static', `${locale}: mobile actions must remain in page flow`);
   else {
     assert.equal(result.position, 'fixed');

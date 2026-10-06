@@ -4143,7 +4143,8 @@
   border: 1px solid var(--acp-border-faint);
   border-radius: 8px;
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
   justify-content: space-between;
   padding: 12px 18px;
 }
@@ -4152,9 +4153,33 @@
   padding: 10px 18px;
 }
 
+#acp-app .acp-action-toolbar-left {
+  align-items: center;
+  display: flex;
+  flex: 1 1 480px;
+  gap: 12px;
+  min-width: min(100%, 480px);
+}
+
+#acp-app .acp-action-toolbar-controls {
+  align-items: end;
+  display: grid;
+  flex: 1 1 280px;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  min-width: 0;
+}
+
+#acp-app .acp-action-toolbar-controls .acp-field {
+  min-width: 0;
+}
+
 #acp-app .acp-action-toolbar-copy {
   display: grid;
+  flex: 0 1 140px;
   gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 #acp-app .acp-action-toolbar-copy strong {
@@ -4171,8 +4196,15 @@
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 6px;
   justify-content: flex-end;
+  margin-inline-start: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+
+#acp-app .acp-action-toolbar-actions .acp-button {
+  margin: 0;
 }
 
 #acp-app .acp-results-table-head {
@@ -4370,11 +4402,6 @@
     grid-template-columns: repeat(3, minmax(150px, 1fr));
   }
 
-  #acp-app .acp-action-toolbar {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
   #acp-app .acp-bottom-bar {
     align-items: stretch;
     flex-direction: column;
@@ -4405,6 +4432,33 @@
 }
 
 @media (max-width: 760px) {
+  #acp-app .acp-action-toolbar-left {
+    align-items: stretch;
+    flex-basis: 100%;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  #acp-app .acp-action-toolbar-copy {
+    align-items: baseline;
+    display: flex;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+
+  #acp-app .acp-action-toolbar-controls {
+    flex: 0 1 auto;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #acp-app .acp-action-toolbar-actions {
+    justify-content: flex-start;
+    margin-inline-start: 0;
+    width: 100%;
+  }
+
   #acp-app .acp-bottom-bar {
     position: static;
     margin-top: 8px;

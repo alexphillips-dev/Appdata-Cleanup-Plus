@@ -567,32 +567,31 @@ window.AppdataCleanupPlusHostThemeName = <?php echo json_encode($hostThemeName, 
     <section class="acp-mode-strip" id="acp-mode-strip" aria-live="polite"></section>
   </section>
 
-  <section class="acp-toolbar acp-toolbar-panel acp-results-controls-panel">
-    <div class="acp-toolbar-inline">
-      <label class="acp-field acp-field-grow">
-        <span class="acp-field-label"><?php echo acpH("Search"); ?></span>
-        <input type="search" id="acp-search" class="acp-input" placeholder="<?php echo acpH("Filter by app name or path..."); ?>" autocomplete="off">
-      </label>
-
-      <label class="acp-field acp-compact-field acp-sort-field">
-        <span class="acp-field-label"><?php echo acpH("Sort by"); ?></span>
-        <select id="acp-sort" class="acp-select">
-          <option value="name" selected><?php echo acpH("Name"); ?></option>
-          <option value="path"><?php echo acpH("Path"); ?></option>
-          <option value="last-used"><?php echo acpH("Last modified"); ?></option>
-          <option value="size"><?php echo acpH("Size: Largest"); ?></option>
-          <option value="source"><?php echo acpH("Source"); ?></option>
-          <option value="type"><?php echo acpH("Type"); ?></option>
-          <option value="risk"><?php echo acpH("Risk: Highest"); ?></option>
-        </select>
-      </label>
-    </div>
-  </section>
-
   <section class="acp-action-toolbar" id="acp-action-toolbar">
-    <div class="acp-action-toolbar-copy">
-      <strong><?php echo acpH("Action bar"); ?></strong>
-      <span><?php echo acpH("No items selected"); ?></span>
+    <div class="acp-action-toolbar-left">
+      <div class="acp-action-toolbar-copy">
+        <strong><?php echo acpH("Action bar"); ?></strong>
+        <span><?php echo acpH("No items selected"); ?></span>
+      </div>
+      <div class="acp-action-toolbar-controls">
+        <label class="acp-field acp-field-grow">
+          <span class="acp-field-label"><?php echo acpH("Search"); ?></span>
+          <input type="search" id="acp-search" class="acp-input" placeholder="<?php echo acpH("Filter by app name or path..."); ?>" autocomplete="off">
+        </label>
+
+        <label class="acp-field acp-compact-field acp-sort-field">
+          <span class="acp-field-label"><?php echo acpH("Sort by"); ?></span>
+          <select id="acp-sort" class="acp-select">
+            <option value="name" selected><?php echo acpH("Name"); ?></option>
+            <option value="path"><?php echo acpH("Path"); ?></option>
+            <option value="last-used"><?php echo acpH("Last modified"); ?></option>
+            <option value="size"><?php echo acpH("Size: Largest"); ?></option>
+            <option value="source"><?php echo acpH("Source"); ?></option>
+            <option value="type"><?php echo acpH("Type"); ?></option>
+            <option value="risk"><?php echo acpH("Risk: Highest"); ?></option>
+          </select>
+        </label>
+      </div>
     </div>
     <div class="acp-action-toolbar-actions">
       <button type="button" class="acp-button acp-button-secondary acp-button-with-icon" data-action="open-appdata-sources">

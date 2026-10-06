@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.06.04">
-<!ENTITY md5 "0150edb1d22ea89a53458276683e14cd">
+<!ENTITY version "2026.10.06.05">
+<!ENTITY md5 "dc555db9dd6c392c9bf30588c3d1ec46">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.06.05
+- Move search and sorting into the left side of the action bar, removing the separate controls panel above it.
+- Tighten action-button spacing and remove inherited button margins to leave more room for the controls.
+- Keep search, sorting, selection status, and action buttons usable across all 42 languages, RTL layouts, desktop, and mobile.
+
 ###2026.10.06.04
 - Match audit-history action and result badge colors: green for quarantine, yellow for purge, and red for permanent deletion.
 - Apply matching colors to path previews, result counts, expanded item results, scheduled purges, and older Cleanup entries.
