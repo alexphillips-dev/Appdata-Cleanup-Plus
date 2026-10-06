@@ -236,6 +236,13 @@
     return html.join("");
   };
 
+  function formatAuditResultStatus(strings, status, operation) {
+    var meta = ACP.formatOperationResultStatus(strings, status, operation);
+    if (status === "deleted") meta.tone = "is-deleted";
+    if (status === "purged") meta.tone = "is-purged";
+    return meta;
+  }
+
   ACP.buildAuditHistoryModalHtml = function(context) {
     var state = context.state || {};
     var strings = context.strings || {};
@@ -278,6 +285,16 @@
     } else {
       html.push('<div class="acp-audit-list acp-simple-history-list">');
       $.each(auditHistory, function(_, entry) {
+        var operation = String(entry.operation || "cleanup").toLowerCase();
+        var operationStatus = {quarantine: "quarantined", restore: "restored", purge: "purged", "scheduled-purge": "purged", delete: "deleted", template_archive: "quarantined", template_restore: "restored", template_import: "imported", template_remove_backups: "removed"}[operation] || "";
+        // Older cleanup records use a generic action name; their stored counts
+        // still identify the action without relying on translated labels.
+        if (operation === "cleanup") {
+          $.each(["deleted", "purged", "quarantined", "restored"], function(_, status) {
+            if (Number((entry.summary || {})[status]) > 0) { operationStatus = status; return false; }
+          });
+        }
+        var operationTone = operationStatus ? formatAuditResultStatus(strings, operationStatus, operation).tone : "is-selected";
         html.push('<article class="acp-audit-entry acp-simple-list-item">');
         html.push('<div class="acp-simple-list-main">');
         html.push('<div class="acp-simple-list-copy">');
@@ -285,7 +302,7 @@
         html.push('<div class="acp-simple-list-subtitle">' + ACP.escapeHtml((entry.timestampLabel || entry.timestamp || "") + (entry.relativeLabel ? " | " + entry.relativeLabel : "")) + "</div>");
         html.push("</div>");
         html.push('<div class="acp-simple-badge-row">');
-        html.push('<span class="acp-modal-stat is-selected">' + ACP.escapeHtml(entry.operationLabel || "") + "</span>");
+        html.push('<span class="acp-modal-stat ' + ACP.escapeHtml(operationTone) + '">' + ACP.escapeHtml(entry.operationLabel || "") + "</span>");
         html.push('<span class="acp-modal-stat is-scheduled">' + ACP.escapeHtml(ACP.plural("{count} items submitted", entry.requestedCount || 0)) + "</span>");
         html.push("</div>");
         html.push("</div>");
@@ -295,7 +312,7 @@
         if ($.isArray(entry.pathsPreview) && entry.pathsPreview.length) {
           html.push('<div class="acp-audit-path-preview">');
           $.each(entry.pathsPreview, function(_, preview) {
-            var statusMeta = ACP.formatOperationResultStatus(strings, preview.status, entry.operation);
+            var statusMeta = formatAuditResultStatus(strings, preview.status, entry.operation);
             html.push('<div class="acp-audit-path-preview-row"><span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + '</span><code class="acp-modal-path">' + ACP.escapeHtml(preview.path || "") + "</code></div>");
           });
           if (Number(entry.pathCount || 0) > entry.pathsPreview.length) {
@@ -309,7 +326,7 @@
           if (!count) {
             return;
           }
-          statusMeta = ACP.formatOperationResultStatus(strings, status, entry.operation);
+          statusMeta = formatAuditResultStatus(strings, status, entry.operation);
           html.push('<span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + ": " + ACP.escapeHtml(ACP.formatCount(count)) + "</span>");
         });
         html.push("</div>");
@@ -318,7 +335,7 @@
           html.push('<details class="acp-simple-disclosure acp-simple-list-details"><summary>' + ACP.escapeHtml(ACP.t(strings, "auditHistoryResultsLabel", "Item results")) + "</summary>");
           html.push('<div class="acp-audit-results">');
           $.each(entry.results, function(_, result) {
-            var statusMeta = ACP.formatOperationResultStatus(strings, result.status, entry.operation);
+            var statusMeta = formatAuditResultStatus(strings, result.status, entry.operation);
             html.push('<div class="acp-audit-result">');
             html.push('<div class="acp-audit-result-head"><span class="acp-modal-stat ' + ACP.escapeHtml(statusMeta.tone) + '">' + ACP.escapeHtml(statusMeta.label) + "</span></div>");
             html.push('<code class="acp-modal-path">' + ACP.escapeHtml(result.displayPath || result.sourcePath || result.path || result.destination || "") + "</code>");

@@ -61,6 +61,8 @@
   --acp-safe-text: #67d867;
   --acp-review-soft: rgba(255, 153, 0, 0.12);
   --acp-review-text: #ffbf54;
+  --acp-purge-soft: rgba(255, 213, 79, 0.12);
+  --acp-purge-text: #ffd54f;
   --acp-discovery-soft: rgba(0, 136, 204, 0.12);
   --acp-discovery-text: #75bfff;
   --acp-locked-soft: rgba(226, 40, 40, 0.12);
@@ -111,6 +113,7 @@
   --acp-button-border: rgba(15, 23, 42, 0.18);
   --acp-safe-text: #376b0d;
   --acp-review-text: #805400;
+  --acp-purge-text: #806000;
   --acp-discovery-text: #00649b;
   --acp-locked-text: #a61b1b;
   --acp-template-text: #693797;
@@ -2876,6 +2879,18 @@
   background: var(--acp-locked-soft);
   border-color: var(--acp-locked-text);
   color: var(--acp-locked-text);
+}
+
+.acp-simple-modal-history .acp-modal-stat.is-deleted {
+  background: var(--acp-locked-soft);
+  border-color: var(--acp-locked-text);
+  color: var(--acp-locked-text);
+}
+
+.acp-simple-modal-history .acp-modal-stat.is-purged {
+  background: var(--acp-purge-soft);
+  border-color: var(--acp-purge-text);
+  color: var(--acp-purge-text);
 }
 
 .acp-delete-progress-summary {

@@ -134,6 +134,7 @@ async function nativeCss(version, theme) {
           const operation=T.buildOperationContext('delete',[row]);
           if (flow==='quarantine') context.state.quarantine={entries:Array.from({length:24},(_,i)=>({id:`quarantine-${i}`,name:`Synthetic ${i}`,sourcePath:`/mnt/user/appdata/example-${i}`,destination:`/mnt/user/appdata/.appdata-cleanup-plus-quarantine/example-${i}`,restoreStatus:'ready'})),selected:{}};
           if (flow==='templates') context.state.templateManager={status:{templates:Array.from({length:30},(_,i)=>({id:`template-${i}`,name:`Saved app ${i}`,filename:`my-saved-app-${i}.xml`})),backups:[{id:'backup',name:'Saved backup',filename:'my-backup.xml',canRestore:true}]}};
+          if (flow==='history') context.state.auditHistory=[['quarantine','quarantined'],['purge','purged'],['scheduled-purge','purged'],['delete','deleted'],['cleanup','deleted'],['cleanup','quarantined']].map(([operation,status],i)=>({operation,operationLabel:`Action ${i}`,requestedCount:1,summary:{[status]:1},pathsPreview:[{path:row.path,status}],results:[{path:row.path,status}]}));
           const builders={help:()=>T.buildHelpModalHtml(),details:()=>ACP.buildRowDetailsModalHtml(context,row),sources:()=>ACP.buildAppdataSourcesModalHtml(context),mappings:()=>ACP.buildZfsPathMappingsModalHtml(context),tools:()=>ACP.buildToolsModalHtml(context),templates:()=>ACP.buildTemplateManagerModalHtml(context),quarantine:()=>ACP.buildQuarantineManagerModalHtml(context),history:()=>ACP.buildAuditHistoryModalHtml(context),confirmation:()=>T.buildOperationPreviewHtml([row],operation,{}),progress:()=>T.buildOperationProgressHtml({processed:0,total:1},operation,false),results:()=>T.buildOperationResultsHtml({deleted:1},[{path:row.path,status:'deleted',message:'Deleted'}],operation),conflicts:()=>T.buildRestoreConflictDialogHtml({summary:{conflicts:1,ready:0},conflicts:[{id:'example',sourcePath:row.path,parentPath:'/mnt/user/appdata',suggestedName:'Example-restored'}]})};
           const classes={help:'acp-help-modal',details:'acp-row-details-modal',sources:'acp-appdata-sources-modal',mappings:'acp-zfs-path-mappings-modal',tools:'acp-tools-modal',templates:'acp-template-manager-modal',quarantine:'acp-quarantine-manager-modal',history:'acp-audit-history-modal'};
           ACP.applyDeleteModalClass('acp-delete-modal '+(classes[flow]||'acp-delete-modal-review'),builders[flow]());
@@ -150,7 +151,28 @@ async function nativeCss(version, theme) {
           assert.equal(await page.locator('.acp-quarantine-entry > .acp-simple-list-details').count(),24,'Technical details must stay inside their quarantine entry');
           await page.locator('.acp-quarantine-entry summary').first().click();
         } else {
-          assert.equal(await page.locator('.acp-quarantine-entry, .acp-simple-list-details').count(),0,'Switching dialogs must remove all quarantine content');
+          assert.equal(await page.locator('.acp-quarantine-entry').count(),0,'Switching dialogs must remove all quarantine entries');
+          assert.equal(await page.locator('.acp-simple-list-details').count(),flow==='history'?6:0,'History details replace quarantine details when switching dialogs');
+        }
+        if (flow==='history') {
+          const entries=await page.evaluate(()=>Array.from(document.querySelectorAll('.acp-audit-entry')).map(entry=>{
+            const read=element=>{const css=getComputedStyle(element);return {color:css.color,border:css.borderTopColor,background:css.backgroundColor};};
+            const header=entry.querySelector('.acp-simple-list-main .acp-modal-stat');
+            const badges=Array.from(entry.querySelectorAll('.acp-audit-path-preview-row .acp-modal-stat, .acp-modal-stats .acp-modal-stat, .acp-audit-result-head .acp-modal-stat'));
+            const status=badges[0].textContent;
+            const token={Quarantined:'safe',Purged:'purge',Deleted:'locked'}[status];
+            const probe=document.createElement('span');probe.style.color=`var(--acp-${token}-text)`;entry.append(probe);
+            const expected=getComputedStyle(probe).color;probe.remove();
+            return {status,expected,header:read(header),badges:badges.map(read),submitted:read(entry.querySelector('.acp-simple-list-main .is-scheduled'))};
+          }));
+          assert.equal(entries.length,6);
+          for (const entry of entries) {
+            assert.equal(entry.header.color,entry.expected,`${version} ${theme}: ${entry.status} action color`);
+            assert.equal(entry.badges.length,3,'Path, summary and expanded result badges are checked');
+            for (const badge of entry.badges) assert.deepEqual(badge,entry.header,`${version} ${theme}: left and right ${entry.status} badges match`);
+            assert.notEqual(entry.submitted.color,entry.header.color,'Submitted counts retain their informational color');
+          }
+          assert.equal(new Set(entries.map(entry=>entry.header.color)).size,3,'Quarantine, purge and delete have distinct colors');
         }
         if (flow==='sources') {
           await page.setViewportSize({width,height:650});
