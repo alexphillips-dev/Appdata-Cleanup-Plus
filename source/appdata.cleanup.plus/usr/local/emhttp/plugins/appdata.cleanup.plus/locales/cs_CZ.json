@@ -646,6 +646,7 @@
   "Select ready": "Vybrat připravené složky",
   "Select ready rows to clean them. Protected paths stay blocked.": "Vyberte připravené řádky, které chcete vyčistit. Chráněné cesty zůstávají blokovány.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Vyberte připravené řádky a poté je vložte do karantény nebo je odstraňte v závislosti na nouzovém režimu.",
+  "Select up to 50 backups for export or removal.": "Vyberte až 50 záloh pro export nebo odstranění.",
   "Selected": "Vybráno",
   "Selected ZFS datasets will be destroyed immediately.": "Vybrané datové sady ZFS budou okamžitě zničeny.",
   "Selected datasets to destroy": "Vybrané datové sady ke zničení",

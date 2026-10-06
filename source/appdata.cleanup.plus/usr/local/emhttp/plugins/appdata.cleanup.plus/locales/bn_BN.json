@@ -646,6 +646,7 @@
   "Select ready": "প্রস্তুত ফোল্ডার নির্বাচন করুন",
   "Select ready rows to clean them. Protected paths stay blocked.": "তাদের পরিষ্কার করতে প্রস্তুত সারি নির্বাচন করুন. সুরক্ষিত পথ অবরুদ্ধ থাকে।",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "প্রস্তুত সারি নির্বাচন করুন, তারপর নিরাপদ মোডের উপর নির্ভর করে সেগুলিকে পৃথক করুন বা মুছুন৷",
+  "Select up to 50 backups for export or removal.": "রপ্তানি বা অপসারণের জন্য 50টি পর্যন্ত ব্যাকআপ নির্বাচন করুন৷",
   "Selected": "নির্বাচিত",
   "Selected ZFS datasets will be destroyed immediately.": "নির্বাচিত ZFS ডেটাসেটগুলি অবিলম্বে ধ্বংস করা হবে৷",
   "Selected datasets to destroy": "ধ্বংস করার জন্য নির্বাচিত ডেটাসেট",

@@ -646,6 +646,7 @@
   "Select ready": "Выбрать готовые папки",
   "Select ready rows to clean them. Protected paths stay blocked.": "Выберите готовые ряды, чтобы очистить их. Защищенные пути остаются заблокированными.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Выберите готовые строки, затем поместите их в карантин или удалите в зависимости от безопасного режима.",
+  "Select up to 50 backups for export or removal.": "Выберите до 50 резервных копий для экспорта или удаления.",
   "Selected": "Выбрано",
   "Selected ZFS datasets will be destroyed immediately.": "Выбранные наборы данных ZFS будут немедленно уничтожены.",
   "Selected datasets to destroy": "Выбранные наборы данных для уничтожения",

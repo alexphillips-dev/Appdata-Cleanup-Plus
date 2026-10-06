@@ -102,6 +102,46 @@ const locales = JSON.parse(fs.readFileSync(path.join(plugin,'locales/locales.jso
       assert.match(await page.evaluate(()=>requests.at(-1).options.data.backupJson),/private-import-canary/);
       await page.evaluate(()=>{requests.at(-1).deferred.reject({status:409,responseJSON:{message:AppdataCleanupPlus.tr('Backup import was refused. Check the file format, integrity, and size limits.')}});});
       assert.ok(!await page.evaluate(()=>JSON.stringify(recoveryTest.buildDiagnosticsPayload()).includes('private-import-canary')),'Import errors cannot leak private contents into diagnostics');
+      // More than 50 records stay accessible through bounded selection groups.
+      for (const count of [50,51,101]) {
+        await page.evaluate(count=>{
+          recoveryTest.state.templateManager={loading:false,message:'',selected:null,status:{templates:[],backups:Array.from({length:count},(_,i)=>({id:'batch-'+i,name:'Fixture '+i,filename:'my-fixture-'+i+'.xml',canRestore:true}))}};
+          recoveryTest.ensureTemplateManagerModal();recoveryTest.renderTemplateManagerModal();
+        },count);
+        assert.equal(await page.locator('[data-action="select-template-backup"]:checked').count(),50);
+        await page.locator('[data-action="export-template-backups"]').first().click();
+        assert.deepEqual(await page.evaluate(()=>JSON.parse(requests.at(-1).options.data.backupIds)),Array.from({length:50},(_,i)=>'batch-'+i));
+        await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,backupArchive:{format:'appdata-cleanup-plus-template-backups',schemaVersion:1,backups:[]}}));
+        if(count>50) {
+          await page.locator('[data-action="select-template-backup"][data-backup-id="batch-50"]').evaluate(node=>{node.checked=true;node.dispatchEvent(new Event('change',{bubbles:true}));});
+          assert.equal(await page.locator('[data-action="select-template-backup"]:checked').count(),50,'Checking a 51st record cannot exceed the limit');
+          assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('data-backup-id')),'batch-50','Selection redraw preserves keyboard focus');
+          if(count===101) {
+            await page.locator('[data-action="select-template-backup-batch"]').selectOption('50');
+            await page.locator('[data-action="export-template-backups"]').first().click();
+            assert.deepEqual(await page.evaluate(()=>JSON.parse(requests.at(-1).options.data.backupIds)),Array.from({length:50},(_,i)=>'batch-'+(i+50)),'Middle groups retain every backup ID');
+            await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,backupArchive:{format:'appdata-cleanup-plus-template-backups',schemaVersion:1,backups:[]}}));
+          }
+          const start=count===51?50:100;
+          await page.locator('[data-action="select-template-backup-batch"]').selectOption(String(start));
+          assert.equal(await page.locator('[data-action="select-template-backup"]:checked').count(),1,'Final group remains reachable');
+          await page.locator('[data-action="export-template-backups"]').first().click();
+          assert.deepEqual(await page.evaluate(()=>JSON.parse(requests.at(-1).options.data.backupIds)),['batch-'+start]);
+          await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,backupArchive:{format:'appdata-cleanup-plus-template-backups',schemaVersion:1,backups:[]}}));
+          await page.locator('[data-action="remove-template-backups"]').first().click();
+          assert.equal(await page.locator('.acp-modal-host li').count(),1,'Removal confirmation lists only selected backups');
+          await page.locator('.acp-delete-confirm-checkbox').check();await page.evaluate(()=>confirmCallback(true));
+          assert.deepEqual(await page.evaluate(()=>JSON.parse(requests.at(-1).options.data.backupIds)),['batch-'+start]);
+          await page.evaluate(()=>{requests.at(-1).deferred.reject({status:409,responseJSON:{message:'Fixture refused'}});});
+        }
+        await page.locator('[data-action="clear-template-backup-selection"]').click();
+        assert.equal(await page.locator('[data-action="export-template-backups"]').first().isDisabled(),true,'Empty bulk selection cannot accidentally export all backups');
+        assert.equal(await page.locator('[data-action="remove-template-backups"]').first().isDisabled(),true);
+        await page.locator('[data-action="export-template-backups"][data-backup-id="batch-0"]').click();
+        assert.deepEqual(await page.evaluate(()=>JSON.parse(requests.at(-1).options.data.backupIds)),['batch-0'],'Individual actions remain available');
+        await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,backupArchive:{format:'appdata-cleanup-plus-template-backups',schemaVersion:1,backups:[]}}));
+        assert.equal(await page.locator('.acp-template-manager-modal').evaluate(node=>node.scrollWidth>node.clientWidth+2),false,`${locale} ${width}: bounded backup controls fit`);
+      }
       assert.deepEqual(errors,[],`${locale} ${width}: browser errors`);
       await page.close();
     }

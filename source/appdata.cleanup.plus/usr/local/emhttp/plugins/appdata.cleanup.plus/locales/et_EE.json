@@ -646,6 +646,7 @@
   "Select ready": "Vali valmis kaustad",
   "Select ready rows to clean them. Protected paths stay blocked.": "Valige nende puhastamiseks valmis read. Kaitstud teed jäävad blokeerituks.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Valige valmis read, seejärel pange need karantiini või kustutage need olenevalt turvarežiimist.",
+  "Select up to 50 backups for export or removal.": "Valige eksportimiseks või eemaldamiseks kuni 50 varukoopiat.",
   "Selected": "Valitud",
   "Selected ZFS datasets will be destroyed immediately.": "Valitud ZFS andmekogumid hävitatakse kohe.",
   "Selected datasets to destroy": "Valitud andmestikud hävitamiseks",

@@ -25,7 +25,7 @@
       message: "",
       status: null
     },
-    templateManager: { loading: false, status: null, message: "" },
+    templateManager: { loading: false, status: null, message: "", selected: null },
     deferredDataRequestToken: "",
     scanWarningMessage: "",
     scanVerification: "not_checked",
@@ -679,13 +679,41 @@
         else renderTemplateManagerModal();
       });
     });
-    $(document).on("click.acpBackup", ".sweet-alert [data-action='export-template-backups'], .sweet-alert [data-action='import-template-backups'], .sweet-alert [data-action='remove-template-backups']", function(event) {
+    $(document).on("change.acpBackup", ".sweet-alert [data-action='select-template-backup'], .sweet-alert [data-action='select-template-backup-batch']", function() {
+      if (state.busy || state.templateManager.loading) return;
+      var action = $(this).attr("data-action"), backupId = $(this).attr("data-backup-id");
+      var $modal = getActiveSweetAlertModal();
+      var hostScroll = $modal.find(".acp-modal-host").scrollTop(), listScroll = $modal.find(".acp-template-list").scrollTop();
+      var ids = ACP.selectedTemplateBackupIds(state.templateManager);
+      var selected = {};
+      if (action === "select-template-backup-batch") {
+        if ($(this).val() === "") return;
+        var start = Number($(this).val());
+        ids = $.map(((state.templateManager.status || {}).backups || []).slice(start, start + 50), function(row) { return row.id; });
+      } else {
+        var id = $(this).attr("data-backup-id");
+        ids = $.grep(ids, function(value) { return value !== id; });
+        if (this.checked && ids.length >= 50) {
+          this.checked = false;
+          state.templateManager.message = ACP.tr("Select up to 50 backups for export or removal.");
+        } else if (this.checked) ids.push(id);
+      }
+      $.each(ids, function(_, id) { selected[id] = true; });
+      state.templateManager.selected = selected;
+      renderTemplateManagerModal();
+      $modal.find("[data-action]").filter(function() { return $(this).attr("data-action") === action && $(this).attr("data-backup-id") === backupId; }).first().trigger("focus");
+      $modal.find(".acp-modal-host").scrollTop(hostScroll);
+      $modal.find(".acp-template-list").scrollTop(listScroll);
+    });
+    $(document).on("click.acpBackup", ".sweet-alert [data-action='export-template-backups'], .sweet-alert [data-action='import-template-backups'], .sweet-alert [data-action='remove-template-backups'], .sweet-alert [data-action='clear-template-backup-selection']", function(event) {
       event.preventDefault();
       if (state.busy || state.templateManager.loading) return;
       var action = $(this).attr("data-action");
+      if (action === "clear-template-backup-selection") { state.templateManager.selected = {}; renderTemplateManagerModal(); return; }
       if (action === "import-template-backups") { $("#acp-template-backup-file").val("").trigger("click"); return; }
       var backupId = $(this).attr("data-backup-id");
-      var ids = backupId ? [backupId] : $.map(((state.templateManager.status || {}).backups || []), function(record) { return record.id; });
+      var ids = backupId ? [backupId] : ACP.selectedTemplateBackupIds(state.templateManager);
+      if (!ids.length) return;
       if (action === "export-template-backups") { runTemplateManagerAction("export", "", {backupIds: JSON.stringify(ids)}); return; }
       swal({title: ACP.tr("Remove template backups"), text: "", type: "warning", html: true,
         showCancelButton: true, closeOnConfirm: false, confirmButtonText: ACP.tr("Remove template backups"), cancelButtonText: ACP.tr("Cancel")}, function(confirmed) {
@@ -3696,7 +3724,7 @@
         if (isTemplateManagerModalVisible()) renderTemplateManagerModal();
         return;
       }
-      state.templateManager = {loading: false, status: response.templateManager, message: response.message || ""};
+      state.templateManager = {loading: false, status: response.templateManager, message: response.message || "", selected: state.templateManager.selected};
       if (isTemplateManagerModalVisible()) renderTemplateManagerModal();
       if (managerAction === "archive" || managerAction === "restore") loadScan();
     }).fail(function(xhr) {

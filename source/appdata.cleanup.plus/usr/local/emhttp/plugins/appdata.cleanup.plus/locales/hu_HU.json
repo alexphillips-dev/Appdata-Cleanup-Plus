@@ -646,6 +646,7 @@
   "Select ready": "Tisztításra kész mappák kijelölése",
   "Select ready rows to clean them. Protected paths stay blocked.": "Válassza ki a kész sorokat a tisztításhoz. A védett utak zárva maradnak.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Válassza ki a kész sorokat, majd helyezze karanténba vagy törölje azokat a csökkentett módtól függően.",
+  "Select up to 50 backups for export or removal.": "Válasszon ki legfeljebb 50 biztonsági másolatot exportáláshoz vagy eltávolításhoz.",
   "Selected": "Kiválasztva",
   "Selected ZFS datasets will be destroyed immediately.": "A kiválasztott ZFS adatkészletek azonnal megsemmisülnek.",
   "Selected datasets to destroy": "Megsemmisítendő kiválasztott adatkészletek",

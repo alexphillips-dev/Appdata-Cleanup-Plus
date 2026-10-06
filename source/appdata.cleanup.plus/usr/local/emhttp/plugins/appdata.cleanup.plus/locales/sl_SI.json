@@ -646,6 +646,7 @@
   "Select ready": "Izberi pripravljene mape",
   "Select ready rows to clean them. Protected paths stay blocked.": "Izberite pripravljene vrstice, da jih očistite. Zavarovane poti ostajajo blokirane.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Izberite pripravljene vrstice, nato jih postavite v karanteno ali izbrišite, odvisno od varnega načina.",
+  "Select up to 50 backups for export or removal.": "Izberite do 50 varnostnih kopij za izvoz ali odstranitev.",
   "Selected": "Izbrano",
   "Selected ZFS datasets will be destroyed immediately.": "Izbrani nabori podatkov ZFS bodo takoj uničeni.",
   "Selected datasets to destroy": "Izbrani nizi podatkov za uničenje",

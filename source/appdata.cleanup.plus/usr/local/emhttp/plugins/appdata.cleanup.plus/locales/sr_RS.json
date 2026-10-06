@@ -646,6 +646,7 @@
   "Select ready": "Изабери спремне фасцикле",
   "Select ready rows to clean them. Protected paths stay blocked.": "Изаберите спремне редове да их очистите. Заштићене стазе остају блокиране.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Изаберите спремне редове, а затим их ставите у карантин или избришите у зависности од безбедног режима.",
+  "Select up to 50 backups for export or removal.": "Изаберите до 50 резервних копија за извоз или уклањање.",
   "Selected": "Одабрано",
   "Selected ZFS datasets will be destroyed immediately.": "Одабраних ZFS скупова података биће одмах уништено.",
   "Selected datasets to destroy": "Одабрани скупови података за уништавање",

@@ -646,6 +646,7 @@
   "Select ready": "Izvēlēties gatavās mapes",
   "Select ready rows to clean them. Protected paths stay blocked.": "Atlasiet gatavas rindas, lai tās notīrītu. Aizsargātie ceļi paliek bloķēti.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Atlasiet gatavas rindas, pēc tam novietojiet tās karantīnā vai izdzēsiet atkarībā no drošā režīma.",
+  "Select up to 50 backups for export or removal.": "Eksportēšanai vai noņemšanai atlasiet līdz 50 dublējumiem.",
   "Selected": "Atlasīts",
   "Selected ZFS datasets will be destroyed immediately.": "Atlasītās ZFS datu kopas tiks nekavējoties iznīcinātas.",
   "Selected datasets to destroy": "Iznīcināmās atlasītās datu kopas",

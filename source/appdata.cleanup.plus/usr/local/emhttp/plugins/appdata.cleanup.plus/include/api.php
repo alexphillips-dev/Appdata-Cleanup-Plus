@@ -360,6 +360,14 @@ function appdataCleanupPlusOperationProgressRecordResult($progressId, $result) {
   appdataCleanupPlusUpdateOperationProgress($progressId, array("summary" => $summary, "results" => array_slice($results, -500), "resultsLimited" => ! empty($payload["resultsLimited"]) || count($results) > 500), true);
 }
 
+function appdataCleanupPlusFinalizeOperationResults($progressId, $summary) {
+  $hasWarnings = false;
+  foreach ( array("errors", "blocked", "missing", "skipped", "conflicts") as $key ) {
+    if ( (int)($summary[$key] ?? 0) > 0 ) $hasWarnings = true;
+  }
+  return appdataCleanupPlusFinalizeOperationProgress($progressId, $hasWarnings ? "warning" : "complete", $hasWarnings ? "Cleanup finished with warnings." : "Cleanup finished.", $summary);
+}
+
 function appdataCleanupPlusRecoverOperationProgress($payload) {
   if ( ($payload["status"] ?? "") !== "running" ) return $payload;
   $file = appdataCleanupPlusRuntimeLockFile("cleanup-operation");
@@ -1904,12 +1912,7 @@ function handleExecuteCandidateAction() {
   }
 
   if ( $trackProgress ) {
-    appdataCleanupPlusFinalizeOperationProgress(
-      $progressId,
-      $execution["summary"]["errors"] === 0 ? "complete" : "warning",
-      $execution["summary"]["errors"] === 0 ? "Cleanup finished." : "Cleanup finished with warnings.",
-      $execution["summary"]
-    );
+    appdataCleanupPlusFinalizeOperationResults($progressId, $execution["summary"]);
   }
 
   jsonResponse(array(
@@ -2114,7 +2117,7 @@ function handleQuarantineManagerAction() {
     "results" => $execution["results"]
   ));
 
-  appdataCleanupPlusFinalizeOperationProgress($progressId, $execution["summary"]["errors"] === 0 ? "complete" : "warning", "Cleanup finished.", $execution["summary"]);
+  appdataCleanupPlusFinalizeOperationResults($progressId, $execution["summary"]);
   jsonResponse(array(
     "ok" => $execution["summary"]["errors"] === 0,
     "action" => $execution["action"],

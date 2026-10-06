@@ -646,6 +646,7 @@
   "Select ready": "Selectează folderele pregătite",
   "Select ready rows to clean them. Protected paths stay blocked.": "Selectați rândurile gata pentru a le curăța. Căile protejate rămân blocate.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Selectați rândurile gata, apoi plasați-le în carantină sau ștergeți-le în funcție de modul sigur.",
+  "Select up to 50 backups for export or removal.": "Selectați până la 50 de copii de siguranță pentru export sau eliminare.",
   "Selected": "Selectat",
   "Selected ZFS datasets will be destroyed immediately.": "Seturile de date ZFS selectate vor fi distruse imediat.",
   "Selected datasets to destroy": "Seturi de date selectate de distrus",

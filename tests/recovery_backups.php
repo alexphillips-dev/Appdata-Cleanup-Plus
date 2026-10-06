@@ -35,6 +35,20 @@ try {
   recoveryCheck(appdataCleanupPlusReadOperationProgress("fixture-shutdown")["status"] === "interrupted", "Shutdown persists interruption without repeating an action.");
   releaseAllAppdataCleanupPlusRuntimeLocks();
 
+  foreach (array("candidate-warning", "restore-warning", "purge-clean") as $mode) {
+    $worker = proc_open(array(PHP_BINARY, __DIR__ . "/recovery_worker.php", $root, $mode), array(0 => array("pipe", "r"), 1 => array("pipe", "w"), 2 => array("pipe", "w")), $pipes);
+    recoveryCheck(is_resource($worker), "Warning handler worker starts.");
+    fclose($pipes[0]);
+    $response = json_decode(stream_get_contents($pipes[1]), true);
+    $error = stream_get_contents($pipes[2]); fclose($pipes[1]); fclose($pipes[2]);
+    recoveryCheck(proc_close($worker) === 0 && $error === "", "Warning handler exits cleanly: " . $error);
+    $progress = appdataCleanupPlusReadOperationProgress($mode);
+    $clean = $mode === "purge-clean";
+    recoveryCheck(($response["summary"][$clean ? "purged" : "blocked"] ?? 0) === 1 && $progress["status"] === ($clean ? "complete" : "warning") && $progress["message"] === ($clean ? "Cleanup finished." : "Cleanup finished with warnings."), $mode . ": the actual handler records accurate outcomes.");
+    if ($mode === "restore-warning") recoveryCheck(is_dir($root . "/guarded-folder"), "Blocked restore must preserve guarded fixture data.");
+    if ($clean) recoveryCheck(!is_dir($root . "/guarded-folder"), "Clean purge removes only its isolated fixture folder.");
+  }
+
   for ($i = 0; $i < 105; $i++) appdataCleanupPlusInitializeOperationProgress("bounded-" . $i, "delete", 1);
   recoveryCheck(count(glob(appdataCleanupPlusOperationProgressDir() . "/*.json")) <= 100 && appdataCleanupPlusReadOperationProgress("bounded-104"), "Retention stays bounded and keeps the newly active operation.");
   $expiredFile = appdataCleanupPlusOperationProgressFile("expired-fixture");
@@ -42,6 +56,19 @@ try {
   touch($expiredFile, time() - 90000);clearstatcache();
   appdataCleanupPlusPruneOperationProgress("bounded-104");
   recoveryCheck(!is_file($expiredFile), "Expired progress records are pruned during new operations, not status reads.");
+
+  foreach (array("delete", "quarantine", "restore", "purge") as $operation) {
+    foreach (array("errors", "blocked", "missing", "skipped", "conflicts", "clean") as $warning) {
+      $progressId = "summary-" . $operation . "-" . $warning;
+      appdataCleanupPlusInitializeOperationProgress($progressId, $operation, 2);
+      $summary = array("errors" => 0, "blocked" => 0, "missing" => 0, "skipped" => 0, "conflicts" => 0, "deleted" => 1);
+      if ($warning !== "clean") $summary[$warning] = 1;
+      appdataCleanupPlusFinalizeOperationResults($progressId, $summary);
+      $progress = appdataCleanupPlusReadOperationProgress($progressId);
+      recoveryCheck($progress["status"] === ($warning === "clean" ? "complete" : "warning") && $progress["summary"] === $summary, $operation . ": retain accurate status and counts for " . $warning);
+      recoveryCheck($progress["message"] === ($warning === "clean" ? "Cleanup finished." : "Cleanup finished with warnings."), "Recovery messages agree with terminal status.");
+    }
+  }
 
   mkdir($root . "/templates");
   $xml = '<Container><Name>Private fixture</Name><Config Type="Variable" Target="PASSWORD">private-backup-canary</Config></Container>';
@@ -83,6 +110,28 @@ try {
   $manifest = file_get_contents(dirname(__DIR__) . "/plugins/appdata.cleanup.plus.plg");
   $remove = substr($manifest, strpos($manifest, '<FILE Run="/bin/bash" Method="remove">'));
   recoveryCheck(strpos($remove, 'rm -rf /boot/config/plugins/') === false && strpos($remove, 'rm -rf &plugdir;') !== false, "Uninstall retains private recovery state while removing installed plugin code.");
+  $bulkIds = array();
+  for ($i = 0; $i < 51; $i++) {
+    $input = $record; $input["filename"] = "my-bulk-fixture-" . $i . ".xml";
+    $validated = appdataCleanupPlusValidateImportedTemplateBackup($input);
+    recoveryCheck(writeAppdataCleanupPlusJsonFile(appdataCleanupPlusTemplateBackupDir() . "/" . $validated["id"] . ".json", $validated), "Bulk fixture backup is written.");
+    $bulkIds[] = $validated["id"];
+  }
+  recoveryCheck(count(appdataCleanupPlusTemplateManagerPayload()["backups"]) === 51, "All stored backups remain visible.");
+  recoveryCheck(appdataCleanupPlusExportTemplateBackups($bulkIds) === null && !appdataCleanupPlusRemoveTemplateBackups($bulkIds)["ok"], "Oversized direct requests remain rejected.");
+  foreach (array_chunk($bulkIds, 50) as $ids) {
+    $export = appdataCleanupPlusExportTemplateBackups($ids);
+    recoveryCheck($export !== null && count($export["backups"]) === count($ids) && hash_equals($export["sha256"], hash("sha256", appdataCleanupPlusJsonEncode($export["backups"]))), "Each selected batch exports with complete records and valid integrity.");
+    recoveryCheck(appdataCleanupPlusRemoveTemplateBackups($ids)["ok"], "Each confirmed bounded batch can be removed.");
+    recoveryCheck(appdataCleanupPlusImportTemplateBackups(appdataCleanupPlusJsonEncode($export))["ok"], "Every exported batch can be imported using the existing archive format.");
+    $importedIds = array();
+    foreach ((array)glob(appdataCleanupPlusTemplateBackupDir() . "/*.json") as $file) {
+      $backup = appdataCleanupPlusTemplateBackup(basename($file, ".json"));
+      if ($backup && in_array($backup["filename"], array_column($export["backups"], "filename"), true)) $importedIds[] = $backup["id"];
+    }
+    recoveryCheck(count($importedIds) === count($ids) && appdataCleanupPlusRemoveTemplateBackups($importedIds)["ok"], "Imported batch has fresh IDs and remains removable.");
+  }
+  recoveryCheck(!glob(appdataCleanupPlusTemplateBackupDir() . "/*.json") && file_get_contents($root . "/templates/my-fixture.xml") === $xml, "All 51 backups can be managed without changing restored templates.");
   echo "recovery_backups: OK (cross-process recovery, partial outcomes, duplicate IDs, retention, private export/import, integrity, unsafe XML, collision and removal safety)\n";
 } finally {
   if (isset($worker) && is_resource($worker)) {

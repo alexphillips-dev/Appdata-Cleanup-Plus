@@ -646,6 +646,7 @@
   "Select ready": "준비된 폴더 선택",
   "Select ready rows to clean them. Protected paths stay blocked.": "준비된 행을 선택하여 정리하세요. 보호된 경로는 차단된 상태로 유지됩니다.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "준비된 행을 선택한 다음 안전 모드에 따라 격리하거나 삭제합니다.",
+  "Select up to 50 backups for export or removal.": "내보내거나 제거할 백업을 최대 50개까지 선택하세요.",
   "Selected": "선택됨",
   "Selected ZFS datasets will be destroyed immediately.": "선택한 ZFS 데이터세트는 즉시 폐기됩니다.",
   "Selected datasets to destroy": "파괴할 데이터세트를 선택했습니다.",

@@ -646,6 +646,7 @@
   "Select ready": "Selecciona les carpetes preparades",
   "Select ready rows to clean them. Protected paths stay blocked.": "Seleccioneu les files preparades per netejar-les. Els camins protegits romanen bloquejats.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Seleccioneu les files preparades i, a continuació, poseu-les en quarantena o suprimiu-les en funció del mode segur.",
+  "Select up to 50 backups for export or removal.": "Seleccioneu fins a 50 còpies de seguretat per exportar o eliminar.",
   "Selected": "Seleccionat",
   "Selected ZFS datasets will be destroyed immediately.": "Els conjunts de dades ZFS seleccionats es destruiran immediatament.",
   "Selected datasets to destroy": "Conjunts de dades seleccionats per destruir",

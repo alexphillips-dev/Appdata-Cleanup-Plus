@@ -646,6 +646,7 @@
   "Select ready": "選取就緒資料夾",
   "Select ready rows to clean them. Protected paths stay blocked.": "選擇準備好的行來清理它們。受保護的路徑保持阻塞。",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "選擇準備好的行，然後根據安全模式隔離或刪除它們。",
+  "Select up to 50 backups for export or removal.": "最多選擇 50 個備份進行匯出或刪除。",
   "Selected": "已選擇",
   "Selected ZFS datasets will be destroyed immediately.": "選定的 ZFS 資料集將立即銷毀。",
   "Selected datasets to destroy": "選取要銷毀的資料集",

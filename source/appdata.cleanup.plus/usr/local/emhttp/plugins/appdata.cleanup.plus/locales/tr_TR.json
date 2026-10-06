@@ -646,6 +646,7 @@
   "Select ready": "Hazır klasörleri seç",
   "Select ready rows to clean them. Protected paths stay blocked.": "Temizlemek için hazır satırları seçin. Korunan yollar kapalı kalır.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Hazır satırları seçin, ardından Güvenli Mod'a bağlı olarak bunları karantinaya alın veya silin.",
+  "Select up to 50 backups for export or removal.": "Dışa aktarma veya kaldırma için en fazla 50 yedekleme seçin.",
   "Selected": "Seçildi",
   "Selected ZFS datasets will be destroyed immediately.": "Seçilen ZFS veri kümeleri hemen imha edilecek.",
   "Selected datasets to destroy": "Yok edilecek seçilen veri kümeleri",

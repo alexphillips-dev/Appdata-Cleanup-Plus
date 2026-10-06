@@ -646,6 +646,7 @@
   "Select ready": "Roghnaigh fillteáin réidh",
   "Select ready rows to clean them. Protected paths stay blocked.": "Roghnaigh sraitheanna réidh chun iad a ghlanadh. Fanann cosáin chosanta bacáilte.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Roghnaigh sraitheanna réidh, ansin coraintín nó scrios iad ag brath ar Mhód Sábháilte.",
+  "Select up to 50 backups for export or removal.": "Roghnaigh suas le 50 cúltaca le heaspórtáil nó le baint.",
   "Selected": "Roghnaithe",
   "Selected ZFS datasets will be destroyed immediately.": "Scriosfar tacair shonraí roghnaithe ZFS láithreach.",
   "Selected datasets to destroy": "Tacar sonraí roghnaithe le scriosadh",

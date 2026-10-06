@@ -646,6 +646,7 @@
   "Select ready": "Seleziona cartelle pronte",
   "Select ready rows to clean them. Protected paths stay blocked.": "Seleziona le righe pronte per pulirle. I percorsi protetti rimangono bloccati.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Seleziona le righe pronte, quindi mettile in quarantena o eliminale a seconda della modalità provvisoria.",
+  "Select up to 50 backups for export or removal.": "Seleziona fino a 50 backup per l'esportazione o la rimozione.",
   "Selected": "Selezionato",
   "Selected ZFS datasets will be destroyed immediately.": "I set di dati ZFS selezionati verranno distrutti immediatamente.",
   "Selected datasets to destroy": "Set di dati selezionati da distruggere",

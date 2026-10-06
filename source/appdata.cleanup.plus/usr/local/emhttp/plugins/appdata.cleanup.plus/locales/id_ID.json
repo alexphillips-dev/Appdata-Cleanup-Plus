@@ -646,6 +646,7 @@
   "Select ready": "Pilih folder yang siap",
   "Select ready rows to clean them. Protected paths stay blocked.": "Pilih baris siap untuk membersihkannya. Jalur yang dilindungi tetap diblokir.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Pilih baris yang sudah siap, lalu karantina atau hapus baris tersebut tergantung pada Safe Mode.",
+  "Select up to 50 backups for export or removal.": "Pilih hingga 50 cadangan untuk diekspor atau dihapus.",
   "Selected": "Dipilih",
   "Selected ZFS datasets will be destroyed immediately.": "Kumpulan data ZFS yang dipilih akan segera dimusnahkan.",
   "Selected datasets to destroy": "Kumpulan data yang dipilih untuk dimusnahkan",

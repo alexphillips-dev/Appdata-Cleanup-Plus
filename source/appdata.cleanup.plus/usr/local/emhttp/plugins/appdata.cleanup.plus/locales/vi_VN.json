@@ -646,6 +646,7 @@
   "Select ready": "Chọn thư mục sẵn sàng",
   "Select ready rows to clean them. Protected paths stay blocked.": "Chọn các hàng đã sẵn sàng để làm sạch chúng. Đường dẫn được bảo vệ vẫn bị chặn.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Chọn các hàng đã sẵn sàng, sau đó cách ly hoặc xóa chúng tùy theo Chế độ an toàn.",
+  "Select up to 50 backups for export or removal.": "Chọn tối đa 50 bản sao lưu để xuất hoặc xóa.",
   "Selected": "Đã chọn",
   "Selected ZFS datasets will be destroyed immediately.": "Bộ dữ liệu ZFS đã chọn sẽ bị hủy ngay lập tức.",
   "Selected datasets to destroy": "Bộ dữ liệu được chọn để hủy",

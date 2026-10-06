@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.06.06">
-<!ENTITY md5 "e60a790cfd1a27effaff810b2c3a0c32">
+<!ENTITY version "2026.10.06.07">
+<!ENTITY md5 "fc7f809d74d079f6238569b849ae63b6">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.06.07
+- Manage large template-backup libraries with selectable groups of up to 50 backups; export and removal affect only the selected records.
+- Record cleanup, restore, and purge operations as finished with warnings when results include blocked, missing, skipped, conflicting, or failed items.
+- Translate backup selection guidance across all 42 supported languages and preserve desktop, mobile, and RTL layouts.
+
 ###2026.10.06.06
 - Align action-bar buttons with the search input and sorting dropdown below their labels.
 - Match action-button heights to the controls while keeping compact spacing and responsive wrapping across all supported languages and Unraid themes.

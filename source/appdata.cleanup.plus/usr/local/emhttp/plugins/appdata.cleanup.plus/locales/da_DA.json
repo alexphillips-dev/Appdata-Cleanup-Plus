@@ -646,6 +646,7 @@
   "Select ready": "Vælg klargjorte mapper",
   "Select ready rows to clean them. Protected paths stay blocked.": "Vælg klar rækker for at rense dem. Beskyttede stier forbliver spærret.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Vælg klar rækker, sæt derefter karantæne eller slet dem afhængigt af fejlsikret tilstand.",
+  "Select up to 50 backups for export or removal.": "Vælg op til 50 sikkerhedskopier til eksport eller fjernelse.",
   "Selected": "Valgt",
   "Selected ZFS datasets will be destroyed immediately.": "Udvalgte ZFS-datasæt vil blive ødelagt med det samme.",
   "Selected datasets to destroy": "Udvalgte datasæt til at ødelægge",

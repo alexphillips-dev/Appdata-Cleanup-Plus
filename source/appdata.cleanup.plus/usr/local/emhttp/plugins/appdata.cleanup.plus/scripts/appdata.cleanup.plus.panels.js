@@ -642,9 +642,16 @@
     return ACP.t(strings, "rowDetailsNextStepReady", "You can quarantine it now, or permanently delete it if that mode is enabled.");
   }
 
+  ACP.selectedTemplateBackupIds = function(manager) {
+    manager = manager || {};
+    var backups = (manager.status || {}).backups || [];
+    return $.map(manager.selected ? $.grep(backups, function(row) { return !!manager.selected[row.id]; }) : backups.slice(0, 50), function(row) { return row.id; }).slice(0, 50);
+  };
+
   ACP.buildTemplateManagerHtml = function(manager) {
     manager = manager || {};
     var status = manager.status || {};
+    var selectedIds = ACP.selectedTemplateBackupIds(manager);
     var html = ['<p>' + ACP.escapeHtml(ACP.tr("Review saved templates whose containers are no longer installed. Archiving keeps a restorable backup and does not change appdata, images, or containers.")) + '</p>'];
     if (manager.message || status.message) html.push('<p role="status">' + ACP.escapeHtml(manager.message || status.message) + '</p>');
     if (manager.status) {
@@ -656,13 +663,22 @@
       });
       html.push('<h4>' + ACP.escapeHtml(ACP.tr("Template backups")) + '</h4>');
       html.push('<p>' + ACP.escapeHtml(ACP.tr("Configuration and backups survive uninstall. Private backup exports may contain credentials; keep them secure and do not attach them to support reports.")) + '</p>');
-      html.push('<div class="acp-modal-inline-actions"><button type="button" class="acp-button acp-button-secondary" data-action="export-template-backups"' + (manager.loading || !(status.backups || []).length ? ' disabled' : '') + '>' + ACP.escapeHtml(ACP.tr("Export backups")) + '</button>' +
+      if ((status.backups || []).length) {
+        html.push('<p>' + ACP.escapeHtml(ACP.tr("Select up to 50 backups for export or removal.")) + '</p><div class="acp-modal-inline-actions"><span>' + ACP.escapeHtml(ACP.tr("Selected")) + ': ' + ACP.escapeHtml(ACP.formatCount(selectedIds.length)) + ' / ' + ACP.escapeHtml(ACP.formatCount(50)) + '</span>');
+        if (status.backups.length > 50) {
+          html.push('<select class="acp-select" data-action="select-template-backup-batch" aria-label="' + ACP.escapeHtml(ACP.tr("Template backups")) + '"' + (manager.loading ? ' disabled' : '') + '><option value=""' + (manager.selected ? ' selected' : '') + '>' + ACP.escapeHtml(ACP.tr("Selected")) + '</option>');
+          for (var start = 0; start < status.backups.length; start += 50) html.push('<option value="' + start + '"' + (!manager.selected && start === 0 ? ' selected' : '') + '>' + ACP.escapeHtml(ACP.formatCount(start + 1)) + '–' + ACP.escapeHtml(ACP.formatCount(Math.min(start + 50, status.backups.length))) + '</option>');
+          html.push('</select>');
+        }
+        html.push('<button type="button" class="acp-button acp-button-secondary" data-action="clear-template-backup-selection"' + (manager.loading || !selectedIds.length ? ' disabled' : '') + '>' + ACP.escapeHtml(ACP.tr("Clear selection")) + '</button></div>');
+      }
+      html.push('<div class="acp-modal-inline-actions"><button type="button" class="acp-button acp-button-secondary" data-action="export-template-backups"' + (manager.loading || !selectedIds.length ? ' disabled' : '') + '>' + ACP.escapeHtml(ACP.tr("Export backups")) + '</button>' +
         '<button type="button" class="acp-button acp-button-secondary" data-action="import-template-backups"' + (manager.loading ? ' disabled' : '') + '>' + ACP.escapeHtml(ACP.tr("Import backups")) + '</button>' +
         '<input type="file" id="acp-template-backup-file" accept=".json,application/json" hidden />' +
-        '<button type="button" class="acp-button acp-button-secondary" data-action="remove-template-backups"' + (manager.loading || !(status.backups || []).length ? ' disabled' : '') + '>' + ACP.escapeHtml(ACP.tr("Remove template backups")) + '</button></div>');
+        '<button type="button" class="acp-button acp-button-secondary" data-action="remove-template-backups"' + (manager.loading || !selectedIds.length ? ' disabled' : '') + '>' + ACP.escapeHtml(ACP.tr("Remove template backups")) + '</button></div>');
       if (!(status.backups || []).length) html.push('<p>' + ACP.escapeHtml(ACP.tr("No template backups are available.")) + '</p>');
       $.each(status.backups || [], function(_, row) {
-        html.push('<div class="acp-template-row"><div><strong>' + ACP.escapeHtml(row.name) + '</strong><code class="acp-modal-path">' + ACP.escapeHtml(row.filename) + '</code><small>' + ACP.escapeHtml(row.timestampLabel || row.archivedAt || '') + '</small></div><div class="acp-modal-inline-actions"><button type="button" class="acp-button acp-button-secondary" data-action="restore-template" data-template-id="' + ACP.escapeHtml(row.id) + '"' + (manager.loading || !row.canRestore ? ' disabled' : '') + '>' + ACP.escapeHtml(row.canRestore ? ACP.tr("Restore template") : ACP.tr("Template already exists")) + '</button>' +
+        html.push('<div class="acp-template-row"><div><label><input type="checkbox" data-action="select-template-backup" data-backup-id="' + ACP.escapeHtml(row.id) + '"' + ($.inArray(row.id, selectedIds) !== -1 ? ' checked' : '') + (manager.loading ? ' disabled' : '') + ' /> <strong>' + ACP.escapeHtml(row.name) + '</strong></label><code class="acp-modal-path">' + ACP.escapeHtml(row.filename) + '</code><small>' + ACP.escapeHtml(row.timestampLabel || row.archivedAt || '') + '</small></div><div class="acp-modal-inline-actions"><button type="button" class="acp-button acp-button-secondary" data-action="restore-template" data-template-id="' + ACP.escapeHtml(row.id) + '"' + (manager.loading || !row.canRestore ? ' disabled' : '') + '>' + ACP.escapeHtml(row.canRestore ? ACP.tr("Restore template") : ACP.tr("Template already exists")) + '</button>' +
           '<button type="button" class="acp-button acp-button-secondary" data-action="export-template-backups" data-backup-id="' + ACP.escapeHtml(row.id) + '"' + (manager.loading ? ' disabled' : '') + '>' + ACP.escapeHtml(ACP.tr("Export backups")) + '</button>' +
           '<button type="button" class="acp-button acp-button-secondary" data-action="remove-template-backups" data-backup-id="' + ACP.escapeHtml(row.id) + '"' + (manager.loading ? ' disabled' : '') + '>' + ACP.escapeHtml(ACP.tr("Remove template backups")) + '</button></div></div>');
       });
