@@ -2,17 +2,64 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.06.08">
-<!ENTITY md5 "3708b44ca9f024fbc98693e8f549511d">
+<!ENTITY version "2026.10.06.09">
+<!ENTITY md5 "074d71666935dc3c8ee2787816772d81">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.06.09
+Includes all changes since stable 2026.09.19.12.
+
+**Cleanup review and results**
+- Rename Last used to Last modified and show the exact filesystem timestamp in Details, explaining that modification time does not establish container usage.
+- Show expected-outcome counts in cleanup reviews and dry runs for folders to quarantine, folders to permanently delete, selected dataset roots to destroy, and unchanged items.
+- Explain that quarantine normally does not free space, folder sizes do not guarantee reclaimed space, and ZFS child datasets, snapshots, and shared blocks need separate review.
+- Group completed, skipped/blocked, and failed action results with practical next steps. Keep unsuccessful cleanup items selected for review while repeating all existing safety checks before another action.
+- Show quarantine restore readiness, destination conflicts, protected restore paths, missing storage, and whether records were recovered from markers or the folder layout.
+- Retain missing quarantine records for review when storage is unavailable, while excluding missing entries from actions.
+
+**Operation recovery**
+- Review active and recent permanent-delete, quarantine, restore, and manual-purge operations after a page refresh or connection loss, using server-recorded progress and item outcomes.
+- Distinguish completed operations from interrupted work and operations finished with warnings, including blocked, missing, skipped, conflicting, and failed items.
+- Allow finished or interrupted reminders to be dismissed while retaining operation records and audit evidence. Interrupted actions are never automatically repeated.
+- Keep recovery records bounded to the last 24 hours, with clear notices when recorded results are limited; persistent audit history remains available after reboot.
+- Ignore late immediate-delete progress responses so an older request cannot overwrite Recovery, completed results, or a newer dialog.
+
+**Template backups and retention**
+- Retain configuration, quarantine records, audit history, and template backups on flash when uninstalling, allowing recovery after reinstallation.
+- Add private template-backup export/import with archive and content integrity checks, filename/XML validation, duplicate detection, and existing collision-safe restore.
+- Support selectable groups of up to 50 backups so large libraries remain manageable; export and removal affect only the selected records.
+- Add separately confirmed permanent backup removal, leaving saved templates and appdata intact, and record import/removal results in audit history.
+- Explain backup size limits and that private exports may contain credentials and must be kept out of support reports.
+
+**Languages, desktop, and mobile**
+- Translate the Plugins-page description for both main and dev installs across all 42 supported webGUI languages, including the development title and testing notice. Follow language changes on reload, support RTL, and keep an English fallback using bundled translations.
+- Correct Select ready and Clear selection wording across supported non-English languages. Translate Cancel and hide it when a dialog does not request it.
+- Translate new cleanup, recovery, backup, audit, and troubleshooting messages across all 42 languages, including count-aware backup audit summaries and localized dates.
+- Prevent long Safe Mode labels and dialog buttons from clipping, preserve RTL badge spacing, and keep template Refresh controls and long backup labels usable on mobile.
+- Move search and sorting to the left of the action bar, tighten button spacing, and align action buttons with the search and sorting controls.
+- Keep mobile cleanup actions below the results, hide them for empty scans, and reserve measured space for the fixed desktop action bar.
+- Use matching audit-history action and result colors: green for quarantine, yellow for purge, and red for permanent deletion, including previews, totals, expanded results, scheduled purges, and older Cleanup entries.
+- Keep Appdata Sources and Recovery dialogs compact with fixed titles/footers and internally scrolling content. Fix stale quarantine markup when switching to Help or Appdata Sources so scrolling and Done remain usable.
+
+**Diagnostics and troubleshooting**
+- Treat normal history/log limits and unavailable optional logs as informational, while retaining warnings for failed collectors, missing required evidence, and detected health problems.
+- Support test fixtures through configured appdata source links that resolve to safe dedicated pool folders, while blocking unsafe links, protected roots, mounted fixture folders, and linked fixture files.
+- Explain fixture-root availability separately from scan detection and refresh Tools status after failed fixture requests.
+- Add sanitized fixture request types, root eligibility reasons, and source-link counts to diagnostics without exporting raw response bodies or private paths.
+
+**Validation and repository maintenance**
+- Expand regression coverage for recovery, backup integrity and selection limits, warning states, diagnostics privacy, quarantine recovery, dialog reuse, all 42 languages, and desktop/mobile layouts across Unraid themes.
+- Verify localized Plugins-page rendering for main/dev packages using Unraid 7.0 and 7.3 Markdown behavior, including language switching, fallback, escaping, and mobile layouts.
+- Add contextual translation review packets, a safety glossary, desktop/mobile screenshots, and approval tracking that flags changed wording for another native-speaker review. Catalogs remain machine translated until individually reviewed.
+- Update the pinned PHP setup and artifact-upload actions, disable automatic Dependabot version PRs, and enforce the repository policy of keeping only main and dev branches.
+
 ###2026.10.06.08
 - Keep Recovery usable after an immediate-delete connection failure by ignoring late progress responses from the previous dialog.
 - Preserve completed results and newer dialogs when older delete-progress requests finish, without repeating deletion.
@@ -1473,7 +1520,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
