@@ -238,6 +238,7 @@
 
     $modal.attr("dir", (window.appdataCleanupPlusConfig || {}).direction || "ltr");
     $modal.attr("lang", (window.appdataCleanupPlusConfig || {}).languageTag || "en-US");
+    $modal.find("button.cancel").text(ACP.tr("Cancel"));
 
     $baseText = $modal.children("p").first();
     $existingHost = $modal.children(".acp-modal-host");

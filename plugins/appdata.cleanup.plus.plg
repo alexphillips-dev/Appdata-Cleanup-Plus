@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.09.21.01">
-<!ENTITY md5 "6956a3429c583739d30416b6c93971f9">
+<!ENTITY version "2026.10.06.01">
+<!ENTITY md5 "80e516addf81de7427f738059038cccc">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.06.01
+- Correct Select ready and Clear selection action labels across the supported non-English languages.
+- Keep dialog Cancel buttons hidden when the dialog does not request them, and translate Cancel when it is shown.
+- Let long translated Safe Mode labels and dialog buttons wrap without clipping; preserve right-to-left badge spacing.
+- Keep mobile cleanup actions below the results, hide them for empty scans, and reserve measured space for the desktop action bar.
+- Give template Refresh controls sufficient room on mobile and add browser regression checks for all 42 languages.
+
 ###2026.09.21.01
 - Fix quarantine dialog markup that could leave entries behind in Help and Appdata Sources, prevent scrolling, and hide the Done button after switching dialogs.
 - Support test fixtures on configured appdata source links that resolve to safe dedicated pool folders. Keep unsafe links, protected roots, mounted fixture folders, and linked fixture files blocked.

@@ -64,6 +64,7 @@ jobs:
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/browser_fixture_test.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/theme_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/maintenance_ui.cjs
+          ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/i18n_layout.cjs
 
       - name: Check destructive confirmation flows
         run: bash scripts/test_ui_confirmation.sh

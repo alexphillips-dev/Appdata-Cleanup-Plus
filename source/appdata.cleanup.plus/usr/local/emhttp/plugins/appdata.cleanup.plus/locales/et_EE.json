@@ -619,7 +619,7 @@
   "Select at least one ready row before continuing.": "Valige enne jätkamist vähemalt üks valmis rida.",
   "Select folder": "Valige kaust",
   "Select preset": "Valige eelseade",
-  "Select ready": "Valige valmis",
+  "Select ready": "Vali valmis kaustad",
   "Select ready rows to clean them. Protected paths stay blocked.": "Valige nende puhastamiseks valmis read. Kaitstud teed jäävad blokeerituks.",
   "Select ready rows, then quarantine or delete them depending on Safe Mode.": "Valige valmis read, seejärel pange need karantiini või kustutage need olenevalt turvarežiimist.",
   "Selected": "Valitud",

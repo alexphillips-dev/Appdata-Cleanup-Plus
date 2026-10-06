@@ -1,11 +1,15 @@
 {
   "af_ZA": {
+    "Select ready": "Kies gereed vouers",
+    "Clear selection": "Maak seleksie skoon",
     "Delete": "Verwyder",
     "Quarantine": "Kwarantyn",
     "Restore": "Herstel",
     "Purge": "Permanent verwyder"
   },
   "ar_AR": {
+    "Select ready": "تحديد المجلدات الجاهزة",
+    "Clear selection": "إلغاء التحديد",
     "Delete": "حذف",
     "Quarantine": "عزل",
     "Restore": "استعادة",
@@ -13,12 +17,16 @@
     "dataset": "مجموعة بيانات"
   },
   "bn_BN": {
+    "Select ready": "প্রস্তুত ফোল্ডার নির্বাচন করুন",
+    "Clear selection": "নির্বাচন বাতিল করুন",
     "Delete": "মুছুন",
     "Quarantine": "আলাদা করে রাখুন",
     "Restore": "পুনরুদ্ধার করুন",
     "Purge": "স্থায়ীভাবে মুছুন"
   },
   "bs_BA": {
+    "Select ready": "Odaberi spremne fascikle",
+    "Clear selection": "Poništi odabir",
     "Delete": "Izbriši",
     "Quarantine": "Karantena",
     "Restore": "Vrati",
@@ -54,18 +62,24 @@
     "Locations scanned: {paths}.": "Skenirane lokacije: {paths}."
   },
   "ca_CA": {
+    "Select ready": "Selecciona les carpetes preparades",
+    "Clear selection": "Desmarca-ho tot",
     "Delete": "Suprimeix",
     "Quarantine": "Quarantena",
     "Restore": "Restaura",
     "Purge": "Suprimeix definitivament"
   },
   "cs_CZ": {
+    "Select ready": "Vybrat připravené složky",
+    "Clear selection": "Zrušit výběr",
     "Delete": "Smazat",
     "Quarantine": "Karanténa",
     "Restore": "Obnovit",
     "Purge": "Trvale smazat"
   },
   "da_DA": {
+    "Select ready": "Vælg klargjorte mapper",
+    "Clear selection": "Ryd markering",
     "Delete": "Slet",
     "Quarantine": "Karantæne",
     "Restore": "Gendan",
@@ -73,30 +87,40 @@
     "Destroy mode": "Sletningstilstand"
   },
   "de_DE": {
+    "Select ready": "Bereite Ordner auswählen",
+    "Clear selection": "Auswahl aufheben",
     "Delete": "Löschen",
     "Quarantine": "Quarantäne",
     "Restore": "Wiederherstellen",
     "Purge": "Endgültig löschen"
   },
   "el_GR": {
+    "Select ready": "Επιλογή έτοιμων φακέλων",
+    "Clear selection": "Κατάργηση επιλογής",
     "Delete": "Διαγραφή",
     "Quarantine": "Καραντίνα",
     "Restore": "Επαναφορά",
     "Purge": "Οριστική διαγραφή"
   },
   "es_ES": {
+    "Select ready": "Seleccionar carpetas listas",
+    "Clear selection": "Quitar selección",
     "Delete": "Eliminar",
     "Quarantine": "Cuarentena",
     "Restore": "Restaurar",
     "Purge": "Eliminar definitivamente"
   },
   "et_EE": {
+    "Select ready": "Vali valmis kaustad",
+    "Clear selection": "Tühjenda valik",
     "Delete": "Kustuta",
     "Quarantine": "Karantiin",
     "Restore": "Taasta",
     "Purge": "Kustuta jäädavalt"
   },
   "fa_FA": {
+    "Select ready": "انتخاب پوشه‌های آماده",
+    "Clear selection": "لغو انتخاب",
     "Delete": "حذف",
     "Quarantine": "قرنطینه",
     "Restore": "بازیابی",
@@ -104,42 +128,56 @@
     "DRY RUN": "آزمایش بدون تغییر"
   },
   "fi_FI": {
+    "Select ready": "Valitse valmiit kansiot",
+    "Clear selection": "Poista valinnat",
     "Delete": "Poista",
     "Quarantine": "Karanteeni",
     "Restore": "Palauta",
     "Purge": "Poista pysyvästi"
   },
   "fr_FR": {
+    "Select ready": "Sélectionner les dossiers prêts",
+    "Clear selection": "Désélectionner tout",
     "Delete": "Supprimer",
     "Quarantine": "Quarantaine",
     "Restore": "Restaurer",
     "Purge": "Supprimer définitivement"
   },
   "ga_IE": {
+    "Select ready": "Roghnaigh fillteáin réidh",
+    "Clear selection": "Glan an roghnú",
     "Delete": "Scrios",
     "Quarantine": "Coraintín",
     "Restore": "Athchóirigh",
     "Purge": "Scrios go buan"
   },
   "he_IL": {
+    "Select ready": "בחר תיקיות מוכנות",
+    "Clear selection": "נקה את הבחירה",
     "Delete": "מחיקה",
     "Quarantine": "בידוד",
     "Restore": "שחזור",
     "Purge": "מחיקה לצמיתות"
   },
   "hi_IN": {
+    "Select ready": "तैयार फ़ोल्डर चुनें",
+    "Clear selection": "चयन हटाएँ",
     "Delete": "हटाएँ",
     "Quarantine": "अलग रखें",
     "Restore": "पुनर्स्थापित करें",
     "Purge": "स्थायी रूप से हटाएँ"
   },
   "hr_HR": {
+    "Select ready": "Odaberi spremne mape",
+    "Clear selection": "Poništi odabir",
     "Delete": "Izbriši",
     "Quarantine": "Karantena",
     "Restore": "Vrati",
     "Purge": "Trajno izbriši"
   },
   "hu_HU": {
+    "Select ready": "Tisztításra kész mappák kijelölése",
+    "Clear selection": "Kijelölés megszüntetése",
     "Delete": "Törlés",
     "Quarantine": "Karantén",
     "Restore": "Visszaállítás",
@@ -153,30 +191,40 @@
     "Dataset": "Adatkészlet"
   },
   "id_ID": {
+    "Select ready": "Pilih folder yang siap",
+    "Clear selection": "Batalkan pilihan",
     "Delete": "Hapus",
     "Quarantine": "Karantina",
     "Restore": "Pulihkan",
     "Purge": "Hapus permanen"
   },
   "it_IT": {
+    "Select ready": "Seleziona cartelle pronte",
+    "Clear selection": "Deseleziona tutto",
     "Delete": "Elimina",
     "Quarantine": "Quarantena",
     "Restore": "Ripristina",
     "Purge": "Elimina definitivamente"
   },
   "ja_JA": {
+    "Select ready": "準備完了のフォルダーを選択",
+    "Clear selection": "選択を解除",
     "Delete": "削除",
     "Quarantine": "隔離",
     "Restore": "復元",
     "Purge": "完全に削除"
   },
   "ko_KO": {
+    "Select ready": "준비된 폴더 선택",
+    "Clear selection": "선택 해제",
     "Delete": "삭제",
     "Quarantine": "격리",
     "Restore": "복원",
     "Purge": "영구 삭제"
   },
   "lv_LV": {
+    "Select ready": "Izvēlēties gatavās mapes",
+    "Clear selection": "Notīrīt atlasi",
     "Delete": "Dzēst",
     "Quarantine": "Karantīna",
     "Restore": "Atjaunot",
@@ -184,6 +232,8 @@
     "DRY RUN": "IZMĒĢINĀJUMS BEZ IZMAIŅĀM"
   },
   "nl_NL": {
+    "Select ready": "Selecteer gereedstaande mappen",
+    "Clear selection": "Selectie opheffen",
     "Delete": "Verwijderen",
     "Quarantine": "Quarantaine",
     "Restore": "Herstellen",
@@ -191,12 +241,16 @@
     "ZFS dataset mount root": "Hoofdkoppelpunt van de ZFS-dataset"
   },
   "no_NO": {
+    "Select ready": "Velg klare mapper",
+    "Clear selection": "Fjern markering",
     "Delete": "Slett",
     "Quarantine": "Karantene",
     "Restore": "Gjenopprett",
     "Purge": "Slett permanent"
   },
   "pl_PL": {
+    "Select ready": "Wybierz gotowe foldery",
+    "Clear selection": "Wyczyść zaznaczenie",
     "Delete": "Usuń",
     "Quarantine": "Kwarantanna",
     "Restore": "Przywróć",
@@ -204,36 +258,48 @@
     "folder": "folder"
   },
   "pt_BR": {
+    "Select ready": "Selecionar pastas prontas",
+    "Clear selection": "Desmarcar tudo",
     "Delete": "Excluir",
     "Quarantine": "Quarentena",
     "Restore": "Restaurar",
     "Purge": "Excluir permanentemente"
   },
   "pt_PT": {
+    "Select ready": "Selecionar pastas prontas",
+    "Clear selection": "Desmarcar tudo",
     "Delete": "Eliminar",
     "Quarantine": "Quarentena",
     "Restore": "Restaurar",
     "Purge": "Eliminar permanentemente"
   },
   "ro_RO": {
+    "Select ready": "Selectează folderele pregătite",
+    "Clear selection": "Deselectează tot",
     "Delete": "Șterge",
     "Quarantine": "Carantină",
     "Restore": "Restaurează",
     "Purge": "Șterge definitiv"
   },
   "ru_RU": {
+    "Select ready": "Выбрать готовые папки",
+    "Clear selection": "Снять выделение",
     "Delete": "Удалить",
     "Quarantine": "Карантин",
     "Restore": "Восстановить",
     "Purge": "Удалить навсегда"
   },
   "sk_SK": {
+    "Select ready": "Vybrať pripravené priečinky",
+    "Clear selection": "Zrušiť výber",
     "Delete": "Vymazať",
     "Quarantine": "Karanténa",
     "Restore": "Obnoviť",
     "Purge": "Natrvalo vymazať"
   },
   "sl_SI": {
+    "Select ready": "Izberi pripravljene mape",
+    "Clear selection": "Počisti izbor",
     "Delete": "Izbriši",
     "Quarantine": "Karantena",
     "Restore": "Obnovi",
@@ -241,12 +307,16 @@
     "DRY RUN": "PREIZKUS BREZ SPREMEMB"
   },
   "sr_RS": {
+    "Select ready": "Изабери спремне фасцикле",
+    "Clear selection": "Поништи избор",
     "Delete": "Обриши",
     "Quarantine": "Карантин",
     "Restore": "Врати",
     "Purge": "Трајно обриши"
   },
   "sv_SE": {
+    "Select ready": "Välj klara mappar",
+    "Clear selection": "Avmarkera alla",
     "Delete": "Ta bort",
     "Quarantine": "Karantän",
     "Restore": "Återställ",
@@ -254,6 +324,8 @@
     "Action gate": "Åtgärdens tillgänglighet"
   },
   "th_TH": {
+    "Select ready": "เลือกโฟลเดอร์ที่พร้อม",
+    "Clear selection": "ยกเลิกการเลือก",
     "Delete": "ลบ",
     "Quarantine": "กักกัน",
     "Restore": "กู้คืน",
@@ -262,30 +334,40 @@
     "Action gate": "ความพร้อมในการดำเนินการ"
   },
   "tr_TR": {
+    "Select ready": "Hazır klasörleri seç",
+    "Clear selection": "Seçimi kaldır",
     "Delete": "Sil",
     "Quarantine": "Karantina",
     "Restore": "Geri yükle",
     "Purge": "Kalıcı olarak sil"
   },
   "uk_UA": {
+    "Select ready": "Вибрати готові папки",
+    "Clear selection": "Скасувати вибір",
     "Delete": "Видалити",
     "Quarantine": "Карантин",
     "Restore": "Відновити",
     "Purge": "Видалити назавжди"
   },
   "vi_VN": {
+    "Select ready": "Chọn thư mục sẵn sàng",
+    "Clear selection": "Bỏ chọn tất cả",
     "Delete": "Xóa",
     "Quarantine": "Cách ly",
     "Restore": "Khôi phục",
     "Purge": "Xóa vĩnh viễn"
   },
   "zh_CN": {
+    "Select ready": "选择就绪文件夹",
+    "Clear selection": "取消选择",
     "Delete": "删除",
     "Quarantine": "隔离",
     "Restore": "恢复",
     "Purge": "永久删除"
   },
   "zh_TW": {
+    "Select ready": "選取就緒資料夾",
+    "Clear selection": "取消選取",
     "Delete": "刪除",
     "Quarantine": "隔離",
     "Restore": "還原",

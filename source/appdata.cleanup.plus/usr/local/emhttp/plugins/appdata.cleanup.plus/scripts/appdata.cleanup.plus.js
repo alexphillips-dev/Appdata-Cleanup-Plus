@@ -4,6 +4,7 @@
   var ACP = window.AppdataCleanupPlus = window.AppdataCleanupPlus || {};
   var config = window.appdataCleanupPlusConfig || {};
   var strings = config.strings || {};
+  var actionBarResizeObserver = null;
   var state = {
     rows: [],
     summary: { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 },
@@ -215,6 +216,7 @@
   function init() {
     installDiagnosticsErrorCapture();
     cacheElements();
+    installActionBarLayout();
     ACP.applyThemeState(els.$app);
     ACP.watchThemeChanges(function() {
       ACP.applyThemeState(els.$app);
@@ -249,6 +251,32 @@
     els.$results = $("#acp-results");
     els.$selectionSummary = $("#acp-selection-summary");
     els.$selectionDetail = $("#acp-selection-detail");
+    els.$bottomBar = $("#acp-bottom-bar");
+  }
+
+  function syncActionBarLayout() {
+    if (!els.$bottomBar || !els.$bottomBar.length || !els.$app || !els.$app.length) {
+      return;
+    }
+
+    var bar = els.$bottomBar[0];
+    var style = window.getComputedStyle(bar);
+    var clearance = style.position === "fixed" && style.display !== "none"
+      ? Math.ceil(bar.getBoundingClientRect().height + (parseFloat(style.bottom) || 0) + 16)
+      : 16;
+    els.$app[0].style.setProperty("--acp-bottom-clearance", clearance + "px");
+  }
+
+  function installActionBarLayout() {
+    $(window).off("resize.acpActionBarLayout").on("resize.acpActionBarLayout", syncActionBarLayout);
+    if (actionBarResizeObserver) {
+      actionBarResizeObserver.disconnect();
+    }
+    if (typeof window.ResizeObserver === "function" && els.$bottomBar && els.$bottomBar.length) {
+      actionBarResizeObserver = new window.ResizeObserver(syncActionBarLayout);
+      actionBarResizeObserver.observe(els.$bottomBar[0]);
+    }
+    syncActionBarLayout();
   }
 
   function bindEvents() {
@@ -4692,7 +4720,10 @@
     els.$selectAll.prop("disabled", state.busy || totalSelectableCount === 0 || selectedReadyRows.length >= totalSelectableCount);
     els.$selectVisible.prop("disabled", state.busy || visibleSelectableCount === 0);
     els.$clearSelection.prop("disabled", state.busy || selectedRows.length === 0);
-
+    if (els.$bottomBar && els.$bottomBar.length) {
+      els.$bottomBar.toggleClass("is-empty", !(state.rows || []).length);
+    }
+    syncActionBarLayout();
   }
 
   function getSelectedRows() {

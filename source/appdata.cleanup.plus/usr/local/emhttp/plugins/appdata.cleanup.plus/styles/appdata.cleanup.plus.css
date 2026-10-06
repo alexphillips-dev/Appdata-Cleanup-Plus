@@ -1522,15 +1522,18 @@
   border-radius: 8px !important;
   box-shadow: var(--acp-button-shadow) !important;
   color: var(--acp-button-text) !important;
-  display: inline-flex !important;
+  display: inline-flex;
   font-size: 11px !important;
   font-weight: 700 !important;
-  height: 34px !important;
+  height: auto !important;
   justify-content: center !important;
   letter-spacing: 0.08em !important;
-  line-height: 1 !important;
+  line-height: 1.25 !important;
   min-height: 34px !important;
-  padding: 0 14px !important;
+  padding: 6px 14px !important;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
   text-transform: uppercase !important;
   vertical-align: middle !important;
 }
@@ -1661,6 +1664,7 @@
   gap: 10px !important;
   justify-content: center !important;
   margin-top: 14px !important;
+  flex-wrap: wrap !important;
 }
 
 .sweet-alert.acp-delete-modal .sa-confirm-button-container {
@@ -3409,7 +3413,7 @@
   border-radius: 8px;
   gap: 10px;
   min-height: 0;
-  padding: 18px 20px 100px;
+  padding: 18px 20px var(--acp-bottom-clearance, 100px);
 }
 
 #acp-app .acp-hero {
@@ -3927,7 +3931,7 @@
 
 @media (max-width: 760px) {
   #acp-app.acp-shell {
-    padding: 12px 10px 104px;
+    padding: 12px 10px var(--acp-bottom-clearance, 104px);
   }
 
   #acp-app .acp-hero,
@@ -3966,7 +3970,7 @@
   display: grid;
   gap: 10px;
   grid-template-columns: 34px minmax(0, 1fr);
-  height: 118px;
+  height: auto;
   min-height: 118px;
   padding: 16px 18px;
 }
@@ -4055,7 +4059,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-right: 58px;
+  padding-inline-end: 58px;
 }
 
 #acp-app .acp-summary-label {
@@ -4094,6 +4098,11 @@
   border-color: rgba(239, 68, 68, 0.4);
 }
 
+#acp-app[dir="rtl"] .acp-mode-card-title strong {
+  left: 16px;
+  right: auto;
+}
+
 #acp-app .acp-mode-link {
   line-height: 1.2;
   margin-top: 9px;
@@ -4108,6 +4117,9 @@
   font-weight: 800;
   padding: 4px 0 0;
   text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 
 #acp-app .acp-action-toolbar {
@@ -4327,6 +4339,10 @@
   min-height: 50px;
 }
 
+#acp-app .acp-bottom-bar.is-empty {
+  display: none;
+}
+
 @media (max-width: 1320px) {
   #acp-app .acp-dashboard-top,
   #acp-app .acp-toolbar-inline,
@@ -4370,6 +4386,32 @@
   #acp-app .acp-bottom-actions .acp-button {
     min-width: 0;
     width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  #acp-app .acp-bottom-bar {
+    position: static;
+    margin-top: 8px;
+  }
+
+  #acp-app .acp-bottom-actions {
+    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #acp-app .acp-bottom-actions .acp-button {
+    margin: 0;
+    min-height: 40px;
+  }
+
+  .sweet-alert[class*="acp-"] .acp-simple-modal-card-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sweet-alert[class*="acp-"] .acp-simple-modal-card-actions .acp-button {
+    flex: 1 1 auto;
   }
 }
 
