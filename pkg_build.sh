@@ -71,10 +71,10 @@ plugin_summary_text() {
 plugin_readme_title_for_branch() {
     local target_branch="${1:-}"
     if [ "$target_branch" = "dev" ]; then
-        printf '%s' "**Appdata Cleanup Plus (Dev)**"
+        printf '%s' "Appdata Cleanup Plus (Dev)"
         return
     fi
-    printf '%s' "**Appdata Cleanup Plus**"
+    printf '%s' "Appdata Cleanup Plus"
 }
 
 plugin_description_for_branch() {
@@ -93,6 +93,7 @@ apply_branch_channel_messaging() {
     local readme_file="${package_root}/usr/local/emhttp/plugins/appdata.cleanup.plus/README.md"
     local summary=""
     local title=""
+    local channel="main"
     if [ -z "$package_root" ] || [ -z "$target_branch" ]; then
         echo "ERROR: apply_branch_channel_messaging requires a package root and branch." >&2
         exit 1
@@ -100,11 +101,17 @@ apply_branch_channel_messaging() {
     summary="$(plugin_summary_text)"
     title="$(plugin_readme_title_for_branch "$target_branch")"
     if [ -f "$readme_file" ]; then
-        if [ "$target_branch" = "dev" ]; then
-            printf '%s\n\n%s\n\n%s\n' "$title" "$summary" "Dev build: testing channel. Expect preview changes before main." > "$readme_file"
-        else
-            printf '%s\n\n%s\n' "$title" "$summary" > "$readme_file"
-        fi
+        {
+            printf '%s\n' '<div id="acp-plugin-description" lang="en-US" dir="ltr" style="white-space:normal;overflow-wrap:anywhere;text-align:start">'
+            printf '<p><strong data-acp-plugin-text="title">%s</strong></p>\n' "$title"
+            printf '<p data-acp-plugin-text="summary">%s</p>\n' "$summary"
+            if [ "$target_branch" = "dev" ]; then
+                channel="dev"
+                printf '%s\n' '<p data-acp-plugin-text="notice">Dev build: testing channel. Expect preview changes before main.</p>'
+            fi
+            printf '%s\n' '</div>'
+            printf '\n<script src="/plugins/appdata.cleanup.plus/include/plugin-description.php?channel=%s"></script>\n' "$channel"
+        } > "$readme_file"
     fi
 }
 

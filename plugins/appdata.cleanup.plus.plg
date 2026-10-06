@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.06.01">
-<!ENTITY md5 "80e516addf81de7427f738059038cccc">
+<!ENTITY version "2026.10.06.02">
+<!ENTITY md5 "1a1720feaf8a75b89c22b5a6e411d3a5">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.06.02
+- Translate the Plugins-page description across all 42 supported webGUI languages for both main and dev packages.
+- Translate the development-build title and testing notice while keeping the Appdata Cleanup Plus product name intact.
+- Follow language changes on each Plugins-page reload, support right-to-left text, and retain a readable English fallback.
+- Use bundled translations without contacting a translation service; keep the description request read-only and treat translated content as plain text.
+- Add main/dev package browser checks using Unraid 7.0 and 7.3 Markdown rendering, including mobile layouts, language switching, fallback, and escaping.
+
 ###2026.10.06.01
 - Correct Select ready and Clear selection action labels across the supported non-English languages.
 - Keep dialog Cancel buttons hidden when the dialog does not request them, and translate Cancel when it is shown.

@@ -1,5 +1,8 @@
 {
   "af_ZA": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus soek ongebruikte Docker appdata-vouers en presiese ZFS-datastelkandidate. Vanuit die skoonmaakpaneel kan jy items nagaan, aksies sonder veranderinge voorskou, dit in kwarantyn plaas, herstel, die ouditgeskiedenis sien of dit permanent uitvee.",
+    "Dev build: testing channel. Expect preview changes before main.": "Ontwikkelingsweergawe vir toetsing. Verwag veranderinge voordat die stabiele weergawe vrygestel word.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Ontwikkeling)",
     "Select ready": "Kies gereed vouers",
     "Clear selection": "Maak seleksie skoon",
     "Delete": "Verwyder",
@@ -8,6 +11,9 @@
     "Purge": "Permanent verwyder"
   },
   "ar_AR": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "يبحث Appdata Cleanup Plus عن مجلدات Docker appdata غير المستخدمة ومرشحي مجموعات بيانات ZFS المطابقة بدقة. تتيح لك لوحة التنظيف مراجعة العناصر ومحاكاة الإجراءات دون تغيير البيانات ووضعها في الحجر واستعادتها وعرض سجل التدقيق أو حذفها نهائيًا.",
+    "Dev build: testing channel. Expect preview changes before main.": "نسخة تطوير للاختبار. توقّع تغييرات قبل إصدار النسخة المستقرة.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (نسخة تطوير)",
     "Select ready": "تحديد المجلدات الجاهزة",
     "Clear selection": "إلغاء التحديد",
     "Delete": "حذف",
@@ -17,6 +23,9 @@
     "dataset": "مجموعة بيانات"
   },
   "bn_BN": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus অব্যবহৃত Docker appdata ফোল্ডার এবং সুনির্দিষ্ট ZFS ডেটাসেটের সম্ভাব্য প্রার্থী খুঁজে বের করে। ক্লিনআপ ড্যাশবোর্ড থেকে আপনি এগুলি পর্যালোচনা, কোনো পরিবর্তন না করে কাজের ফলাফল পরীক্ষা, কোয়ারেন্টাইন, পুনরুদ্ধার, কার্যকলাপের ইতিহাস দেখা বা স্থায়ীভাবে মুছে ফেলতে পারেন।",
+    "Dev build: testing channel. Expect preview changes before main.": "পরীক্ষার জন্য উন্নয়ন সংস্করণ। স্থিতিশীল সংস্করণ প্রকাশের আগে পরিবর্তন হতে পারে।",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (উন্নয়ন সংস্করণ)",
     "Select ready": "প্রস্তুত ফোল্ডার নির্বাচন করুন",
     "Clear selection": "নির্বাচন বাতিল করুন",
     "Delete": "মুছুন",
@@ -25,6 +34,9 @@
     "Purge": "স্থায়ীভাবে মুছুন"
   },
   "bs_BA": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus pronalazi nekorištene Docker appdata fascikle i tačno podudarne ZFS skupove podataka koji su kandidati za čišćenje. Na kontrolnoj ploči možete pregledati stavke, simulirati radnje bez izmjena, staviti ih u karantin, vratiti ih, pregledati historiju radnji ili ih trajno izbrisati.",
+    "Dev build: testing channel. Expect preview changes before main.": "Razvojna verzija za testiranje. Očekujte promjene prije objave stabilne verzije.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Razvojna verzija)",
     "Select ready": "Odaberi spremne fascikle",
     "Clear selection": "Poništi odabir",
     "Delete": "Izbriši",
@@ -62,6 +74,9 @@
     "Locations scanned: {paths}.": "Skenirane lokacije: {paths}."
   },
   "ca_CA": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus cerca carpetes Docker appdata sense ús i candidats de conjunts de dades ZFS amb coincidència exacta. El tauler de neteja permet revisar elements, simular accions sense fer canvis, posar-los en quarantena, restaurar-los, consultar l'historial o suprimir-los definitivament.",
+    "Dev build: testing channel. Expect preview changes before main.": "Versió de desenvolupament per fer proves. Pot haver-hi canvis abans de la versió estable.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Desenvolupament)",
     "Select ready": "Selecciona les carpetes preparades",
     "Clear selection": "Desmarca-ho tot",
     "Delete": "Suprimeix",
@@ -70,6 +85,9 @@
     "Purge": "Suprimeix definitivament"
   },
   "cs_CZ": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus vyhledává nepoužívané složky Docker appdata a přesně odpovídající datové sady ZFS vhodné k posouzení. Panel čištění umožňuje položky zkontrolovat, simulovat akce bez změn, přesunout je do karantény, obnovit je, zobrazit historii nebo je trvale odstranit.",
+    "Dev build: testing channel. Expect preview changes before main.": "Vývojová verze pro testování. Před vydáním stabilní verze očekávejte změny.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Vývojová verze)",
     "Select ready": "Vybrat připravené složky",
     "Clear selection": "Zrušit výběr",
     "Delete": "Smazat",
@@ -78,6 +96,9 @@
     "Purge": "Trvale smazat"
   },
   "da_DA": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus finder ubrugte Docker appdata-mapper og præcist matchende ZFS-datasæt som kandidater til oprydning. Oprydningspanelet lader dig gennemgå dem, simulere handlinger uden ændringer, sætte dem i karantæne, gendanne dem, se historikken eller slette dem permanent.",
+    "Dev build: testing channel. Expect preview changes before main.": "Udviklingsversion til test. Forvent ændringer før den stabile udgivelse.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Udvikling)",
     "Select ready": "Vælg klargjorte mapper",
     "Clear selection": "Ryd markering",
     "Delete": "Slet",
@@ -87,6 +108,9 @@
     "Destroy mode": "Sletningstilstand"
   },
   "de_DE": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus findet ungenutzte Docker appdata-Ordner und exakt zugeordnete ZFS-Datensätze als Bereinigungskandidaten. Im Bereinigungs-Dashboard können Sie diese prüfen, Aktionen ohne Änderungen simulieren, Ordner in Quarantäne verschieben, wiederherstellen, den Verlauf einsehen oder dauerhaft löschen.",
+    "Dev build: testing channel. Expect preview changes before main.": "Entwicklungsversion zum Testen. Rechnen Sie mit Änderungen vor der stabilen Veröffentlichung.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Entwicklung)",
     "Select ready": "Bereite Ordner auswählen",
     "Clear selection": "Auswahl aufheben",
     "Delete": "Löschen",
@@ -95,6 +119,9 @@
     "Purge": "Endgültig löschen"
   },
   "el_GR": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Το Appdata Cleanup Plus εντοπίζει αχρησιμοποίητους φακέλους Docker appdata και υποψήφια σύνολα δεδομένων ZFS με ακριβή αντιστοίχιση. Από τον πίνακα καθαρισμού μπορείτε να τα εξετάσετε, να προσομοιώσετε ενέργειες χωρίς αλλαγές, να τα θέσετε σε καραντίνα, να τα επαναφέρετε, να δείτε το ιστορικό ή να τα διαγράψετε οριστικά.",
+    "Dev build: testing channel. Expect preview changes before main.": "Έκδοση ανάπτυξης για δοκιμές. Αναμένονται αλλαγές πριν από τη σταθερή έκδοση.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Ανάπτυξη)",
     "Select ready": "Επιλογή έτοιμων φακέλων",
     "Clear selection": "Κατάργηση επιλογής",
     "Delete": "Διαγραφή",
@@ -103,6 +130,9 @@
     "Purge": "Οριστική διαγραφή"
   },
   "es_ES": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus busca carpetas Docker appdata sin uso y conjuntos de datos ZFS candidatos con coincidencia exacta. Desde el panel de limpieza puede revisarlos, simular acciones sin hacer cambios, ponerlos en cuarentena, restaurarlos, consultar el historial o eliminarlos permanentemente.",
+    "Dev build: testing channel. Expect preview changes before main.": "Versión de desarrollo para pruebas. Se esperan cambios antes de la versión estable.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Desarrollo)",
     "Select ready": "Seleccionar carpetas listas",
     "Clear selection": "Quitar selección",
     "Delete": "Eliminar",
@@ -111,6 +141,9 @@
     "Purge": "Eliminar definitivamente"
   },
   "et_EE": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus leiab kasutamata Docker appdata kaustad ja täpselt vastavad ZFS andmekogumid puhastamise kandidaatideks. Puhastuspaneelil saab neid üle vaadata, toiminguid muudatusteta proovida, karantiini panna, taastada, toimingute ajalugu vaadata või jäädavalt kustutada.",
+    "Dev build: testing channel. Expect preview changes before main.": "Arendusversioon testimiseks. Enne stabiilse versiooni avaldamist võib tulla muudatusi.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Arendus)",
     "Select ready": "Vali valmis kaustad",
     "Clear selection": "Tühjenda valik",
     "Delete": "Kustuta",
@@ -119,6 +152,9 @@
     "Purge": "Kustuta jäädavalt"
   },
   "fa_FA": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus پوشه‌های بلااستفادهٔ Docker appdata و نامزدهای مجموعه‌دادهٔ ZFS با تطبیق دقیق را پیدا می‌کند. در داشبورد پاکسازی می‌توانید موارد را بررسی کنید، عملیات را بدون ایجاد تغییر شبیه‌سازی کنید، آن‌ها را قرنطینه یا بازیابی کنید، سابقهٔ عملیات را ببینید یا آن‌ها را برای همیشه حذف کنید.",
+    "Dev build: testing channel. Expect preview changes before main.": "نسخهٔ توسعه برای آزمایش. پیش از انتشار نسخهٔ پایدار انتظار تغییرات داشته باشید.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (نسخهٔ آزمایشی)",
     "Select ready": "انتخاب پوشه‌های آماده",
     "Clear selection": "لغو انتخاب",
     "Delete": "حذف",
@@ -128,6 +164,9 @@
     "DRY RUN": "آزمایش بدون تغییر"
   },
   "fi_FI": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus etsii käyttämättömiä Docker appdata-kansioita ja täsmällisesti vastaavia ZFS-tietojoukkoja puhdistusehdokkaiksi. Puhdistusnäkymässä voit tarkistaa ne, simuloida toimintoja ilman muutoksia, siirtää ne karanteeniin, palauttaa ne, tarkastella historiaa tai poistaa ne pysyvästi.",
+    "Dev build: testing channel. Expect preview changes before main.": "Kehitysversio testausta varten. Odota muutoksia ennen vakaata julkaisua.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Kehitysversio)",
     "Select ready": "Valitse valmiit kansiot",
     "Clear selection": "Poista valinnat",
     "Delete": "Poista",
@@ -136,6 +175,9 @@
     "Purge": "Poista pysyvästi"
   },
   "fr_FR": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus recherche les dossiers Docker appdata inutilisés et les jeux de données ZFS candidats avec une correspondance exacte. Le tableau de nettoyage permet de les examiner, de simuler les actions sans modification, de les mettre en quarantaine, de les restaurer, de consulter l'historique ou de les supprimer définitivement.",
+    "Dev build: testing channel. Expect preview changes before main.": "Version de développement destinée aux tests. Des changements sont à prévoir avant la version stable.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Développement)",
     "Select ready": "Sélectionner les dossiers prêts",
     "Clear selection": "Désélectionner tout",
     "Delete": "Supprimer",
@@ -144,6 +186,9 @@
     "Purge": "Supprimer définitivement"
   },
   "ga_IE": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Aimsíonn Appdata Cleanup Plus fillteáin Docker appdata nach bhfuil in úsáid agus tacair sonraí ZFS a mheaitseálann go beacht mar iarrthóirí glantacháin. Ón deais is féidir iad a athbhreithniú, gníomhartha a insamhladh gan athruithe, iad a chur i gcoraintín, iad a athchóiriú, an stair a fheiceáil nó iad a scriosadh go buan.",
+    "Dev build: testing channel. Expect preview changes before main.": "Leagan forbartha le haghaidh tástála. Bí ag súil le hathruithe roimh an leagan cobhsaí.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Forbairt)",
     "Select ready": "Roghnaigh fillteáin réidh",
     "Clear selection": "Glan an roghnú",
     "Delete": "Scrios",
@@ -152,6 +197,9 @@
     "Purge": "Scrios go buan"
   },
   "he_IL": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus מאתר תיקיות Docker appdata שאינן בשימוש ומועמדים של מערכי נתונים ZFS עם התאמה מדויקת. מלוח הניקוי אפשר לבדוק אותם, לדמות פעולות ללא שינויים, להעביר להסגר, לשחזר, לעיין בהיסטוריית הפעולות או למחוק לצמיתות.",
+    "Dev build: testing channel. Expect preview changes before main.": "גרסת פיתוח לבדיקה. צפויים שינויים לפני פרסום הגרסה היציבה.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (פיתוח)",
     "Select ready": "בחר תיקיות מוכנות",
     "Clear selection": "נקה את הבחירה",
     "Delete": "מחיקה",
@@ -160,6 +208,9 @@
     "Purge": "מחיקה לצמיתות"
   },
   "hi_IN": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus अप्रयुक्त Docker appdata फ़ोल्डर और सटीक मिलान वाले संभावित ZFS डेटासेट खोजता है। क्लीनअप डैशबोर्ड से आप इन्हें जाँच सकते हैं, बिना बदलाव किए कार्रवाइयों का पूर्वाभ्यास कर सकते हैं, अलग रख सकते हैं, पुनर्स्थापित कर सकते हैं, गतिविधियों का इतिहास देख सकते हैं या स्थायी रूप से हटा सकते हैं।",
+    "Dev build: testing channel. Expect preview changes before main.": "परीक्षण के लिए विकास संस्करण। स्थिर संस्करण जारी होने से पहले बदलाव हो सकते हैं।",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (विकास)",
     "Select ready": "तैयार फ़ोल्डर चुनें",
     "Clear selection": "चयन हटाएँ",
     "Delete": "हटाएँ",
@@ -168,6 +219,9 @@
     "Purge": "स्थायी रूप से हटाएँ"
   },
   "hr_HR": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus pronalazi nekorištene Docker appdata mape i točno podudarne ZFS skupove podataka koji su kandidati za čišćenje. Na nadzornoj ploči možete ih pregledati, simulirati radnje bez izmjena, staviti ih u karantenu, vratiti ih, pregledati povijest radnji ili ih trajno izbrisati.",
+    "Dev build: testing channel. Expect preview changes before main.": "Razvojna verzija za testiranje. Očekujte promjene prije objave stabilne verzije.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Razvojna verzija)",
     "Select ready": "Odaberi spremne mape",
     "Clear selection": "Poništi odabir",
     "Delete": "Izbriši",
@@ -176,6 +230,9 @@
     "Purge": "Trajno izbriši"
   },
   "hu_HU": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Az Appdata Cleanup Plus megkeresi a nem használt Docker appdata-mappákat és a pontosan megfeleltetett ZFS-adatkészleteket mint tisztítási jelölteket. A tisztítási felületen áttekintheti őket, változtatások nélkül szimulálhatja a műveleteket, karanténba helyezheti vagy visszaállíthatja őket, megtekintheti az előzményeket, vagy véglegesen törölheti őket.",
+    "Dev build: testing channel. Expect preview changes before main.": "Fejlesztői verzió teszteléshez. A stabil kiadás előtt változások várhatók.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Fejlesztői verzió)",
     "Select ready": "Tisztításra kész mappák kijelölése",
     "Clear selection": "Kijelölés megszüntetése",
     "Delete": "Törlés",
@@ -191,6 +248,9 @@
     "Dataset": "Adatkészlet"
   },
   "id_ID": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus mencari folder Docker appdata yang tidak digunakan dan kandidat kumpulan data ZFS dengan kecocokan tepat. Dari dasbor pembersihan, Anda dapat meninjaunya, menyimulasikan tindakan tanpa perubahan, mengarantina, memulihkan, melihat riwayat tindakan, atau menghapusnya secara permanen.",
+    "Dev build: testing channel. Expect preview changes before main.": "Versi pengembangan untuk pengujian. Perubahan dapat terjadi sebelum rilis stabil.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Pengembangan)",
     "Select ready": "Pilih folder yang siap",
     "Clear selection": "Batalkan pilihan",
     "Delete": "Hapus",
@@ -199,6 +259,9 @@
     "Purge": "Hapus permanen"
   },
   "it_IT": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus cerca cartelle Docker appdata inutilizzate e set di dati ZFS candidati con corrispondenza esatta. Dal pannello di pulizia è possibile esaminarli, simulare le azioni senza modifiche, metterli in quarantena, ripristinarli, consultare la cronologia o eliminarli definitivamente.",
+    "Dev build: testing channel. Expect preview changes before main.": "Versione di sviluppo per i test. Sono previste modifiche prima della versione stabile.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Sviluppo)",
     "Select ready": "Seleziona cartelle pronte",
     "Clear selection": "Deseleziona tutto",
     "Delete": "Elimina",
@@ -207,6 +270,9 @@
     "Purge": "Elimina definitivamente"
   },
   "ja_JA": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus は、未使用の Docker appdata フォルダーと、完全一致する ZFS データセットの候補を検出します。クリーンアップ画面で内容を確認し、変更を加えずに操作を試行したり、隔離、復元、操作履歴の確認、完全削除を行ったりできます。",
+    "Dev build: testing channel. Expect preview changes before main.": "テスト用の開発版です。安定版の公開前に変更される場合があります。",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (開発版)",
     "Select ready": "準備完了のフォルダーを選択",
     "Clear selection": "選択を解除",
     "Delete": "削除",
@@ -215,6 +281,9 @@
     "Purge": "完全に削除"
   },
   "ko_KO": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus는 사용하지 않는 Docker appdata 폴더와 정확히 일치하는 ZFS 데이터 세트 후보를 찾습니다. 정리 대시보드에서 항목을 검토하고, 변경 없이 작업을 시뮬레이션하고, 격리하거나 복원하고, 작업 기록을 확인하거나 영구 삭제할 수 있습니다.",
+    "Dev build: testing channel. Expect preview changes before main.": "테스트용 개발 버전입니다. 안정 버전 출시 전에 변경될 수 있습니다.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (개발 버전)",
     "Select ready": "준비된 폴더 선택",
     "Clear selection": "선택 해제",
     "Delete": "삭제",
@@ -223,6 +292,9 @@
     "Purge": "영구 삭제"
   },
   "lv_LV": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus atrod neizmantotas Docker appdata mapes un precīzi atbilstošas ZFS datu kopas kā tīrīšanas kandidātus. Tīrīšanas panelī varat tās pārskatīt, simulēt darbības bez izmaiņām, ievietot karantīnā, atjaunot, apskatīt darbību vēsturi vai neatgriezeniski dzēst.",
+    "Dev build: testing channel. Expect preview changes before main.": "Izstrādes versija testēšanai. Pirms stabilās versijas izlaišanas ir iespējamas izmaiņas.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Izstrādes versija)",
     "Select ready": "Izvēlēties gatavās mapes",
     "Clear selection": "Notīrīt atlasi",
     "Delete": "Dzēst",
@@ -232,6 +304,9 @@
     "DRY RUN": "IZMĒĢINĀJUMS BEZ IZMAIŅĀM"
   },
   "nl_NL": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus zoekt ongebruikte Docker appdata-mappen en exact overeenkomende ZFS-datasets als kandidaten voor opschoning. Via het opschoningsdashboard kunt u ze beoordelen, acties zonder wijzigingen simuleren, in quarantaine plaatsen, herstellen, de actiegeschiedenis bekijken of permanent verwijderen.",
+    "Dev build: testing channel. Expect preview changes before main.": "Ontwikkelingsversie voor tests. Verwacht wijzigingen vóór de stabiele release.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Ontwikkeling)",
     "Select ready": "Selecteer gereedstaande mappen",
     "Clear selection": "Selectie opheffen",
     "Delete": "Verwijderen",
@@ -241,6 +316,9 @@
     "ZFS dataset mount root": "Hoofdkoppelpunt van de ZFS-dataset"
   },
   "no_NO": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus finner ubrukte Docker appdata-mapper og nøyaktig samsvarende ZFS-datasett som kandidater for opprydding. Fra oppryddingspanelet kan du gjennomgå dem, simulere handlinger uten endringer, sette dem i karantene, gjenopprette dem, se historikken eller slette dem permanent.",
+    "Dev build: testing channel. Expect preview changes before main.": "Utviklingsversjon for testing. Forvent endringer før den stabile utgivelsen.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Utvikling)",
     "Select ready": "Velg klare mapper",
     "Clear selection": "Fjern markering",
     "Delete": "Slett",
@@ -249,6 +327,9 @@
     "Purge": "Slett permanent"
   },
   "pl_PL": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus wyszukuje nieużywane foldery Docker appdata i dokładnie dopasowane zbiory danych ZFS jako kandydatów do czyszczenia. Panel czyszczenia umożliwia ich przeglądanie, symulowanie działań bez zmian, przenoszenie do kwarantanny, przywracanie, sprawdzanie historii lub trwałe usuwanie.",
+    "Dev build: testing channel. Expect preview changes before main.": "Wersja rozwojowa do testów. Przed wydaniem stabilnej wersji mogą nastąpić zmiany.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Wersja rozwojowa)",
     "Select ready": "Wybierz gotowe foldery",
     "Clear selection": "Wyczyść zaznaczenie",
     "Delete": "Usuń",
@@ -258,6 +339,9 @@
     "folder": "folder"
   },
   "pt_BR": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus encontra pastas Docker appdata sem uso e conjuntos de dados ZFS candidatos com correspondência exata. No painel de limpeza, você pode revisá-los, simular ações sem fazer alterações, colocá-los em quarentena, restaurá-los, consultar o histórico ou excluí-los permanentemente.",
+    "Dev build: testing channel. Expect preview changes before main.": "Versão de desenvolvimento para testes. Podem ocorrer mudanças antes da versão estável.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Desenvolvimento)",
     "Select ready": "Selecionar pastas prontas",
     "Clear selection": "Desmarcar tudo",
     "Delete": "Excluir",
@@ -266,6 +350,9 @@
     "Purge": "Excluir permanentemente"
   },
   "pt_PT": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus encontra pastas Docker appdata sem utilização e conjuntos de dados ZFS candidatos com correspondência exata. No painel de limpeza, pode revê-los, simular ações sem efetuar alterações, colocá-los em quarentena, restaurá-los, consultar o histórico ou eliminá-los permanentemente.",
+    "Dev build: testing channel. Expect preview changes before main.": "Versão de desenvolvimento para testes. Podem ocorrer alterações antes da versão estável.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Desenvolvimento)",
     "Select ready": "Selecionar pastas prontas",
     "Clear selection": "Desmarcar tudo",
     "Delete": "Eliminar",
@@ -274,6 +361,9 @@
     "Purge": "Eliminar permanentemente"
   },
   "ro_RO": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus găsește dosare Docker appdata neutilizate și seturi de date ZFS candidate cu potrivire exactă. Din panoul de curățare le puteți verifica, simula acțiuni fără modificări, pune în carantină, restaura, consulta istoricul sau șterge definitiv.",
+    "Dev build: testing channel. Expect preview changes before main.": "Versiune de dezvoltare pentru testare. Sunt posibile modificări înainte de versiunea stabilă.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Dezvoltare)",
     "Select ready": "Selectează folderele pregătite",
     "Clear selection": "Deselectează tot",
     "Delete": "Șterge",
@@ -282,6 +372,9 @@
     "Purge": "Șterge definitiv"
   },
   "ru_RU": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus находит неиспользуемые папки Docker appdata и точно сопоставленные наборы данных ZFS как кандидатов на очистку. На панели очистки можно проверить их, смоделировать действия без изменений, поместить в карантин, восстановить, посмотреть историю действий или удалить навсегда.",
+    "Dev build: testing channel. Expect preview changes before main.": "Версия для разработки и тестирования. До выхода стабильной версии возможны изменения.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Разработка)",
     "Select ready": "Выбрать готовые папки",
     "Clear selection": "Снять выделение",
     "Delete": "Удалить",
@@ -290,6 +383,9 @@
     "Purge": "Удалить навсегда"
   },
   "sk_SK": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus vyhľadáva nepoužívané priečinky Docker appdata a presne zodpovedajúce množiny údajov ZFS ako kandidátov na čistenie. Na paneli čistenia ich môžete skontrolovať, simulovať akcie bez zmien, presunúť do karantény, obnoviť, zobraziť históriu alebo natrvalo odstrániť.",
+    "Dev build: testing channel. Expect preview changes before main.": "Vývojová verzia na testovanie. Pred vydaním stabilnej verzie očakávajte zmeny.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Vývojová verzia)",
     "Select ready": "Vybrať pripravené priečinky",
     "Clear selection": "Zrušiť výber",
     "Delete": "Vymazať",
@@ -298,6 +394,9 @@
     "Purge": "Natrvalo vymazať"
   },
   "sl_SI": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus poišče neuporabljene mape Docker appdata in natančno ujemajoče se podatkovne zbirke ZFS kot kandidate za čiščenje. Na nadzorni plošči jih lahko pregledate, simulirate dejanja brez sprememb, postavite v karanteno, obnovite, pregledate zgodovino ali trajno izbrišete.",
+    "Dev build: testing channel. Expect preview changes before main.": "Razvojna različica za preizkušanje. Pred stabilno izdajo pričakujte spremembe.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Razvojna različica)",
     "Select ready": "Izberi pripravljene mape",
     "Clear selection": "Počisti izbor",
     "Delete": "Izbriši",
@@ -307,6 +406,9 @@
     "DRY RUN": "PREIZKUS BREZ SPREMEMB"
   },
   "sr_RS": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus проналази некоришћене фасцикле Docker appdata и тачно подударне скупове података ZFS као кандидате за чишћење. На контролној табли можете их прегледати, симулирати радње без измена, ставити у карантин, вратити их, прегледати историју радњи или их трајно избрисати.",
+    "Dev build: testing channel. Expect preview changes before main.": "Развојна верзија за тестирање. Очекујте измене пре објављивања стабилне верзије.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Развојна верзија)",
     "Select ready": "Изабери спремне фасцикле",
     "Clear selection": "Поништи избор",
     "Delete": "Обриши",
@@ -315,6 +417,9 @@
     "Purge": "Трајно обриши"
   },
   "sv_SE": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus hittar oanvända Docker appdata-mappar och exakt matchande ZFS-datauppsättningar som kandidater för rensning. I rensningspanelen kan du granska dem, simulera åtgärder utan ändringar, sätta dem i karantän, återställa dem, se historiken eller ta bort dem permanent.",
+    "Dev build: testing channel. Expect preview changes before main.": "Utvecklingsversion för testning. Förvänta dig ändringar före den stabila utgåvan.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Utveckling)",
     "Select ready": "Välj klara mappar",
     "Clear selection": "Avmarkera alla",
     "Delete": "Ta bort",
@@ -324,6 +429,9 @@
     "Action gate": "Åtgärdens tillgänglighet"
   },
   "th_TH": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus ค้นหาโฟลเดอร์ Docker appdata ที่ไม่ได้ใช้งานและชุดข้อมูล ZFS ที่ตรงกันอย่างแม่นยำซึ่งเป็นรายการที่อาจทำความสะอาดได้ จากแดชบอร์ด คุณสามารถตรวจสอบรายการ จำลองการทำงานโดยไม่เปลี่ยนแปลงข้อมูล กักกัน กู้คืน ดูประวัติการทำงาน หรือลบอย่างถาวรได้",
+    "Dev build: testing channel. Expect preview changes before main.": "รุ่นพัฒนาสำหรับการทดสอบ อาจมีการเปลี่ยนแปลงก่อนเผยแพร่รุ่นเสถียร",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (รุ่นพัฒนา)",
     "Select ready": "เลือกโฟลเดอร์ที่พร้อม",
     "Clear selection": "ยกเลิกการเลือก",
     "Delete": "ลบ",
@@ -334,6 +442,9 @@
     "Action gate": "ความพร้อมในการดำเนินการ"
   },
   "tr_TR": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus, kullanılmayan Docker appdata klasörlerini ve tam eşleşen ZFS veri kümesi adaylarını bulur. Temizleme panelinden bunları inceleyebilir, değişiklik yapmadan işlemleri simüle edebilir, karantinaya alabilir, geri yükleyebilir, işlem geçmişini görüntüleyebilir veya kalıcı olarak silebilirsiniz.",
+    "Dev build: testing channel. Expect preview changes before main.": "Test için geliştirme sürümü. Kararlı sürüm yayımlanmadan önce değişiklikler olabilir.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Geliştirme)",
     "Select ready": "Hazır klasörleri seç",
     "Clear selection": "Seçimi kaldır",
     "Delete": "Sil",
@@ -342,6 +453,9 @@
     "Purge": "Kalıcı olarak sil"
   },
   "uk_UA": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus знаходить невикористовувані папки Docker appdata і точно зіставлені набори даних ZFS як кандидати на очищення. На панелі очищення можна їх переглянути, змоделювати дії без змін, помістити в карантин, відновити, переглянути історію дій або видалити назавжди.",
+    "Dev build: testing channel. Expect preview changes before main.": "Версія для розробки й тестування. До виходу стабільної версії можливі зміни.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Розробка)",
     "Select ready": "Вибрати готові папки",
     "Clear selection": "Скасувати вибір",
     "Delete": "Видалити",
@@ -350,6 +464,9 @@
     "Purge": "Видалити назавжди"
   },
   "vi_VN": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus tìm các thư mục Docker appdata không sử dụng và các tập dữ liệu ZFS ứng viên khớp chính xác. Từ bảng điều khiển dọn dẹp, bạn có thể xem xét, mô phỏng thao tác mà không thay đổi dữ liệu, cách ly, khôi phục, xem lịch sử thao tác hoặc xóa vĩnh viễn.",
+    "Dev build: testing channel. Expect preview changes before main.": "Bản phát triển để thử nghiệm. Có thể có thay đổi trước khi phát hành bản ổn định.",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (Bản phát triển)",
     "Select ready": "Chọn thư mục sẵn sàng",
     "Clear selection": "Bỏ chọn tất cả",
     "Delete": "Xóa",
@@ -358,6 +475,9 @@
     "Purge": "Xóa vĩnh viễn"
   },
   "zh_CN": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus 查找未使用的 Docker appdata 文件夹和精确匹配的 ZFS 数据集候选项。您可以在清理面板中查看这些项目、模拟操作而不更改数据、隔离、恢复、查看操作历史或永久删除。",
+    "Dev build: testing channel. Expect preview changes before main.": "供测试使用的开发版本。稳定版发布前可能发生变化。",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (开发版)",
     "Select ready": "选择就绪文件夹",
     "Clear selection": "取消选择",
     "Delete": "删除",
@@ -366,6 +486,9 @@
     "Purge": "永久删除"
   },
   "zh_TW": {
+    "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus 尋找未使用的 Docker appdata 資料夾和精確比對的 ZFS 資料集候選項。您可以在清理面板中檢視這些項目、模擬操作而不變更資料、隔離、還原、檢視操作歷程或永久刪除。",
+    "Dev build: testing channel. Expect preview changes before main.": "供測試使用的開發版本。穩定版發布前可能發生變更。",
+    "Appdata Cleanup Plus (Dev)": "Appdata Cleanup Plus (開發版)",
     "Select ready": "選取就緒資料夾",
     "Clear selection": "取消選取",
     "Delete": "刪除",

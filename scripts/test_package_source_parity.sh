@@ -47,12 +47,18 @@ diff -ru \
 PACKAGED_README="${EXTRACTED_DIR}/usr/local/emhttp/plugins/appdata.cleanup.plus/README.md"
 [[ -f "${PACKAGED_README}" ]] || fail "Packaged README is missing."
 
-EXPECTED_README_TITLE='**Appdata Cleanup Plus**'
+EXPECTED_README_TITLE='Appdata Cleanup Plus'
+EXPECTED_README_CHANNEL='main'
 if grep -Fq '&github;/dev/plugins/' "${MANIFEST}"; then
-    EXPECTED_README_TITLE='**Appdata Cleanup Plus (Dev)**'
+    EXPECTED_README_TITLE='Appdata Cleanup Plus (Dev)'
+    EXPECTED_README_CHANNEL='dev'
 fi
 
-grep -Fxq "${EXPECTED_README_TITLE}" "${PACKAGED_README}" ||
+grep -Fxq "<p><strong data-acp-plugin-text=\"title\">${EXPECTED_README_TITLE}</strong></p>" "${PACKAGED_README}" ||
     fail "Packaged README does not identify the manifest release channel."
+grep -Fxq "<script src=\"/plugins/appdata.cleanup.plus/include/plugin-description.php?channel=${EXPECTED_README_CHANNEL}\"></script>" "${PACKAGED_README}" ||
+    fail "Packaged README is missing its channel-specific localization script."
+[[ -f "${EXTRACTED_DIR}/usr/local/emhttp/plugins/appdata.cleanup.plus/include/plugin-description.php" ]] ||
+    fail "Packaged plugin description localization endpoint is missing."
 
 echo "test_package_source_parity: current archive matches shipped source files."
