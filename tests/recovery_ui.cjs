@@ -43,7 +43,7 @@ const locales = JSON.parse(fs.readFileSync(path.join(plugin,'locales/locales.jso
       });
       for(const file of ['appdata.cleanup.plus.shared.js','appdata.cleanup.plus.panels.js'])await page.addScriptTag({path:path.join(plugin,'scripts',file)});
       const main=fs.readFileSync(path.join(plugin,'scripts/appdata.cleanup.plus.js'),'utf8');
-      const hook='window.recoveryTest={state,loadRecentOperations,openRecoveredOperation,loadRecoveredOperation,runCandidateOperation,runQuarantineManagerAction,runTemplateManagerAction,ensureTemplateManagerModal,renderTemplateManagerModal,buildDiagnosticsPayload};cacheElements();bindEvents();loadScan=function(){};loadAuditHistory=function(){};loadQuarantineSummary=function(){};';
+      const hook='window.recoveryTest={state,loadRecentOperations,openRecoveredOperation,loadRecoveredOperation,runCandidateOperation,runQuarantineManagerAction,runTemplateManagerAction,ensureTemplateManagerModal,renderTemplateManagerModal,buildDiagnosticsPayload,pollOperationProgress,stopOperationProgressPolling,startOperationProgressModal,buildOperationContext};cacheElements();bindEvents();loadScan=function(){};loadAuditHistory=function(){};loadQuarantineSummary=function(){};';
       await page.addScriptTag({content:main.replace('$(init);',hook)});
       await page.evaluate(()=>recoveryTest.loadRecentOperations());
       await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,operations:[{id:'server-operation',operation:'quarantine',status:'interrupted',message:AppdataCleanupPlus.tr('Recorded results may be incomplete. Check audit history and rescan before taking further action.')}]}));
@@ -73,6 +73,59 @@ const locales = JSON.parse(fs.readFileSync(path.join(plugin,'locales/locales.jso
       await page.evaluate(()=>oldRequest.deferred.resolve({ok:true,progress:{status:'interrupted'}}));
       assert.equal(await page.locator('.sweet-alert h2').textContent(),'Other modal');
       assert.equal(await page.locator('.acp-operation-recovery-modal').count(),0,'Modal reuse removes recovery identity');
+      // A pending immediate-delete status request must not reclaim a newer dialog.
+      await page.evaluate(()=>{
+        const rows=[{id:'delete-fixture',path:'/mnt/user/appdata/fixture',displayPath:'/mnt/user/appdata/fixture',storageKind:'filesystem'}];
+        window.deleteContext=recoveryTest.buildOperationContext('delete',rows);
+        deleteContext.rows=rows;
+        recoveryTest.runCandidateOperation(rows,'delete');recoveryTest.stopOperationProgressPolling();
+        window.deleteAction=requests.findLast(r=>r.options.data.action==='executeCandidateAction');
+        window.deleteId=deleteAction.options.data.operationProgressId;
+        recoveryTest.pollOperationProgress(deleteId,deleteContext);
+        requests.at(-1).deferred.resolve({ok:true,progress:{id:deleteId,status:'running',completedRoots:1,totalRoots:2,message:'Current progress'}});
+        recoveryTest.stopOperationProgressPolling();
+      });
+      assert.equal(await page.evaluate(()=>recoveryTest.state.operationProgress.latest.completedRoots),1,'Current delete progress still renders');
+      await page.evaluate(()=>{
+        recoveryTest.pollOperationProgress(deleteId,deleteContext);window.lateDeletePoll=requests.at(-1);
+        recoveryTest.pollOperationProgress(deleteId,deleteContext);window.lateDeleteFailure=requests.at(-1);
+        deleteAction.deferred.reject({status:0});
+        window.recoveryRequest=requests.findLast(r=>r.options.data.action==='getOperationProgress');
+        lateDeletePoll.deferred.resolve({ok:true,progress:{id:deleteId,status:'running',message:'Stale progress'}});
+      });
+      assert.equal(await page.locator('.acp-operation-recovery-modal').count(),1,'Late delete progress cannot replace Recovery after connection loss');
+      assert.equal(await page.locator('.sweet-alert button.confirm').isDisabled(),false,'Recovery Close remains usable');
+      await page.evaluate(()=>{lateDeleteFailure.deferred.reject({status:0});});
+      assert.equal(await page.evaluate(()=>recoveryTest.state.operationProgress.pollTimer),null,'Stale failures cannot restart delete polling');
+      await page.evaluate(()=>{recoveryRequest.deferred.resolve({ok:true,progress:{id:deleteId,operation:'delete',status:'complete',completedRoots:1,results:[],summary:{deleted:1}}});});
+      assert.equal(await page.locator('[data-action="dismiss-operation"]').count(),1,'Recovery can still show the finished delete');
+      assert.equal(await page.evaluate(()=>requests.filter(r=>r.options.data.action==='executeCandidateAction' && r.options.data.operationProgressId===deleteId).length),1,'Connection loss never replays deletion');
+      await page.evaluate(()=>{
+        recoveryTest.runCandidateOperation(deleteContext.rows,'delete');recoveryTest.stopOperationProgressPolling();
+        window.completedDeleteAction=requests.findLast(r=>r.options.data.action==='executeCandidateAction');
+        window.completedDeleteId=completedDeleteAction.options.data.operationProgressId;
+        recoveryTest.pollOperationProgress(completedDeleteId,deleteContext);window.completedDeletePoll=requests.at(-1);
+        completedDeleteAction.deferred.resolve({ok:true,summary:{deleted:1},results:[]});
+        window.completedProgress=recoveryTest.state.operationProgress.latest;
+        completedDeletePoll.deferred.resolve({ok:true,progress:{status:'running',message:'Old running result'}});
+      });
+      assert.equal(await page.evaluate(()=>recoveryTest.state.operationProgress.latest===completedProgress),true,'Old polling cannot overwrite completed progress');
+      assert.equal(await page.locator('.acp-delete-progress-ready button.confirm').isDisabled(),false);
+      await page.evaluate(()=>{
+        recoveryTest.startOperationProgressModal('old-delete',deleteContext);recoveryTest.stopOperationProgressPolling();
+        recoveryTest.pollOperationProgress('old-delete',deleteContext);window.previousDeletePoll=requests.at(-1);
+        recoveryTest.startOperationProgressModal('new-delete',deleteContext);recoveryTest.stopOperationProgressPolling();
+        previousDeletePoll.deferred.resolve({ok:true,progress:{id:'old-delete',message:'Old operation'}});
+      });
+      assert.equal(await page.evaluate(()=>recoveryTest.state.operationProgress.latest.id),'new-delete','A previous operation cannot replace current progress');
+      await page.evaluate(()=>{
+        recoveryTest.pollOperationProgress('new-delete',deleteContext);window.reusedDeletePoll=requests.at(-1);
+        AppdataCleanupPlus.applyDeleteModalClass('acp-delete-modal acp-tools-modal','<p>Replacement dialog</p>');
+        reusedDeletePoll.deferred.resolve({ok:true,progress:{id:'new-delete',message:'Old dialog'}});
+        recoveryTest.stopOperationProgressPolling();
+      });
+      assert.equal(await page.locator('.acp-tools-modal').count(),1,'Delete polling respects a replacement dialog even with the same operation ID');
+      await page.evaluate(()=>{recoveryTest.state.operationProgress.activeId='';recoveryTest.state.operationProgress.pendingResult=null;});
       await page.evaluate(()=>{
         recoveryTest.state.templateManager={loading:false,message:'',status:{templates:[],backups:[{id:'server-backup',name:'Example app',filename:'my-example.xml',canRestore:true}]}};
         recoveryTest.ensureTemplateManagerModal();recoveryTest.renderTemplateManagerModal();

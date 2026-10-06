@@ -5694,7 +5694,11 @@
   }
 
   function pollOperationProgress(operationProgressId, context) {
-    if (!operationProgressId || state.operationProgress.activeId !== operationProgressId) {
+    function current() {
+      return state.operationProgress.activeId === operationProgressId && !state.operationProgress.pendingResult && getActiveSweetAlertModal().hasClass("acp-delete-progress-running");
+    }
+
+    if (!operationProgressId || !current()) {
       return;
     }
 
@@ -5702,6 +5706,7 @@
       action: "getOperationProgress",
       operationProgressId: operationProgressId
     }).done(function(response) {
+      if (!current()) return;
       var progress = $.isPlainObject(response && response.progress) ? response.progress : {};
       var readyForResults = !!state.operationProgress.pendingResult;
 
@@ -5714,7 +5719,7 @@
         }, 500);
       }
     }).fail(function() {
-      if (state.operationProgress.activeId === operationProgressId && !state.operationProgress.pendingResult) {
+      if (current()) {
         state.operationProgress.pollTimer = window.setTimeout(function() {
           pollOperationProgress(operationProgressId, context);
         }, 1000);

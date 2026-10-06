@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.06.07">
-<!ENTITY md5 "fc7f809d74d079f6238569b849ae63b6">
+<!ENTITY version "2026.10.06.08">
+<!ENTITY md5 "3708b44ca9f024fbc98693e8f549511d">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.06.08
+- Keep Recovery usable after an immediate-delete connection failure by ignoring late progress responses from the previous dialog.
+- Preserve completed results and newer dialogs when older delete-progress requests finish, without repeating deletion.
+
 ###2026.10.06.07
 - Manage large template-backup libraries with selectable groups of up to 50 backups; export and removal affect only the selected records.
 - Record cleanup, restore, and purge operations as finished with warnings when results include blocked, missing, skipped, conflicting, or failed items.
