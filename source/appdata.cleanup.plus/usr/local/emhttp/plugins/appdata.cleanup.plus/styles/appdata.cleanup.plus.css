@@ -4138,7 +4138,7 @@
 }
 
 #acp-app .acp-action-toolbar {
-  align-items: center;
+  align-items: flex-end;
   background: var(--acp-panel-soft);
   border: 1px solid var(--acp-border-faint);
   border-radius: 8px;
@@ -4154,7 +4154,7 @@
 }
 
 #acp-app .acp-action-toolbar-left {
-  align-items: center;
+  align-items: flex-end;
   display: flex;
   flex: 1 1 480px;
   gap: 12px;
@@ -4193,7 +4193,7 @@
 }
 
 #acp-app .acp-action-toolbar-actions {
-  align-items: center;
+  align-items: flex-end;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -4205,6 +4205,7 @@
 
 #acp-app .acp-action-toolbar-actions .acp-button {
   margin: 0;
+  min-height: 36px;
 }
 
 #acp-app .acp-results-table-head {

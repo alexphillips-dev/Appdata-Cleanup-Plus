@@ -30,6 +30,12 @@ async function checkActionLayout(page, locale, width) {
     const bounds = card.getBoundingClientRect();
     const toolbar = document.querySelector('#acp-action-toolbar'), toolbarBounds = toolbar.getBoundingClientRect();
     const controls = Array.from(toolbar.querySelectorAll('input, select, .acp-action-toolbar-actions button'));
+    const searchBounds = document.querySelector('#acp-search').getBoundingClientRect();
+    const sortBounds = document.querySelector('#acp-sort').getBoundingClientRect();
+    const actions = toolbar.querySelector('.acp-action-toolbar-actions'), actionBounds = actions.getBoundingClientRect();
+    const buttonBounds = Array.from(actions.querySelectorAll('button'), button => button.getBoundingClientRect());
+    const sharedRow = actionBounds.top < sortBounds.bottom && actionBounds.bottom > sortBounds.top;
+    const singleButtonRow = buttonBounds.every(rect => Math.abs(rect.top - buttonBounds[0].top) <= 1);
     return {position:getComputedStyle(bar).position, clearance:parseFloat(getComputedStyle(app).paddingBottom),
       height:bar.getBoundingClientRect().height, bottom:parseFloat(getComputedStyle(bar).bottom) || 0,
       searchInside:toolbar.contains(document.querySelector('#acp-search')), sortInside:toolbar.contains(document.querySelector('#acp-sort')),
@@ -37,6 +43,9 @@ async function checkActionLayout(page, locale, width) {
       searchWidth:document.querySelector('#acp-search').getBoundingClientRect().width,
       actionGap:parseFloat(getComputedStyle(toolbar.querySelector('.acp-action-toolbar-actions')).columnGap),
       compactMargins:Array.from(toolbar.querySelectorAll('.acp-action-toolbar-actions button')).every(button=>{const css=getComputedStyle(button);return ['marginTop','marginRight','marginBottom','marginLeft'].every(side=>parseFloat(css[side])===0);}),
+      sharedRow, alignedBottoms:Math.abs(actionBounds.bottom - sortBounds.bottom) <= 1,
+      alignedTops:Math.abs(actionBounds.top - sortBounds.top) <= 1, singleButtonRow,
+      matchingControlHeights:buttonBounds.every(rect => rect.height >= searchBounds.height - 1),
       clipped:Array.from(range.getClientRects()).some(rect => rect.left < bounds.left - 2 || rect.right > bounds.right + 2 || rect.bottom > bounds.bottom + 2)};
   });
   assert.equal(result.clipped, false, `${locale} ${width}px: Safe Mode label must fit its card`);
@@ -45,6 +54,11 @@ async function checkActionLayout(page, locale, width) {
   assert.ok(result.searchWidth>=160, `${locale} ${width}px: search remains usable`);
   assert.ok(result.actionGap<=8, `${locale}: action buttons use compact spacing`);
   assert.equal(result.compactMargins, true, `${locale}: native button margins must not expand action-bar spacing`);
+  assert.equal(result.matchingControlHeights, true, `${locale} ${width}px: action buttons must match the input control height`);
+  if (result.sharedRow) {
+    assert.equal(result.alignedBottoms, true, `${locale} ${width}px: action buttons must align with the sorting control, below its label`);
+    if (result.singleButtonRow) assert.equal(result.alignedTops, true, `${locale} ${width}px: action buttons and sorting control must share their top edge`);
+  }
   if (width <= 760) assert.equal(result.position, 'static', `${locale}: mobile actions must remain in page flow`);
   else {
     assert.equal(result.position, 'fixed');
