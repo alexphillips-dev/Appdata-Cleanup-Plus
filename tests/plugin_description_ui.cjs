@@ -14,7 +14,6 @@ const refs = {'7.0':'25bc9e2d16525e4e4f9796c9c64c1a3e1c63402d','7.3':'41e8d5ad5d
 const summary = 'Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.';
 const notice = 'Dev build: testing channel. Expect preview changes before main.';
 const bash = process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : 'bash';
-const bashPath = file => file.replace(/\\/g, '/').replace(/^([A-Za-z]):/, (_, drive) => '/' + drive.toLowerCase());
 async function availablePort() {
   const probe = http.createServer();
   await new Promise(resolve => probe.listen(0, '127.0.0.1', resolve));
@@ -29,7 +28,8 @@ function packageSnapshot(directory) {
   });
 }
 (async () => {
-  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'acp-plugin-description-'));
+  // Exercise literal paths with spaces and shell metacharacters during extraction.
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'acp-plugin-description- spaces $(echo ACP_SHELL_EXPANSION) & '));
   let server, browser;
   try {
     const readmes = {}, catalogs = {}, snapshots = {};
@@ -41,7 +41,7 @@ function packageSnapshot(directory) {
       execFileSync(bash, ['pkg_build.sh', '--branch', channel, '--no-validate'], {cwd:build});
       const archive = path.join(build, 'archive', fs.readdirSync(path.join(build, 'archive'))[0]);
       const unpacked = path.join(build, 'package'); fs.mkdirSync(unpacked);
-      execFileSync(bash, ['-c', 'tar -xf "$1" -C "$2"', 'fixture', bashPath(archive), bashPath(unpacked)]);
+      execFileSync('tar', ['-xf', archive, '-C', unpacked]);
       readmes[channel] = path.join(unpacked, pluginPath, 'README.md');
       catalogs[channel] = path.join(unpacked, pluginPath, 'locales');
       snapshots[channel] = packageSnapshot(unpacked);
