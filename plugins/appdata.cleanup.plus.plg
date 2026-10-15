@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.15.01">
-<!ENTITY md5 "9817a1ae457e9bb00827aa321d056f2e">
+<!ENTITY version "2026.10.15.02">
+<!ENTITY md5 "559d5a6668c5ed1a72181641d2e66416">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.15.02
+- Harden runtime directories, cleanup locks, and operation-progress files against unsafe ownership, permissions, symlinks, and hard links; keep status reads non-mutating and preserve the lock namespace across updates.
+- Block cleanup when mount inventory or filesystem metadata cannot be verified, including exact ZFS candidates, while preserving safe Tools fixture creation.
+- Store the disposable size/stat cache in runtime storage instead of persistent configuration, preserving expiry and entry limits; rebuild it after reboot without changing audit or recovery records.
+- Show broad container access directly in candidate rows with translated, keyboard-accessible disclosures; broad access remains informational and does not change cleanup eligibility.
+
 ###2026.10.15.01
 - Fix Compose Manager projects that point directly to a Compose file, including custom filenames and legacy file targets, so valid stacks no longer lock unrelated cleanup candidates.
 - Preserve ownership protection from selected files, environment variables, and overrides; keep cleanup blocked for missing or unreadable targets, invalid mode metadata, and unsupported bind syntax.

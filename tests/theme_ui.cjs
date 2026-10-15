@@ -47,7 +47,7 @@ async function nativeCss(version, theme) {
         T.cacheElements();
         ACP.applyThemeState($('#acp-app'));
         ACP.watchThemeChanges(()=>{ ACP.applyThemeState($('#acp-app')); ACP.syncDeleteModalThemeTokens($('.sweet-alert')); });
-        T.state.rows=[{id:'example',name:'Example',path:'/mnt/user/appdata/Example',displayPath:'/mnt/user/appdata/Example',sourceKind:'filesystem',sourceNames:[],targetPaths:[],templateRefs:[],canDelete:true,storageKind:'filesystem',risk:'safe',status:'orphaned',sizeLabel:'1 MB'}];
+        T.state.rows=[{id:'example',name:'Example',path:'/mnt/user/appdata/Example',displayPath:'/mnt/user/appdata/Example',sourceKind:'filesystem',sourceNames:[],targetPaths:[],templateRefs:[],canDelete:true,storageKind:'filesystem',risk:'safe',status:'orphaned',sizeLabel:'1 MB',broadMountEvidence:[{name:'Viewer',paths:['/mnt/user']}]}];
         T.state.summary={total:1,safe:1,review:0,blocked:0,deletable:1,ignored:0};
         T.renderSummaryCards(); T.renderResults();
         const modal=document.createElement('div'); modal.className='sweet-alert showSweetAlert'; modal.style.display='block';
@@ -105,6 +105,12 @@ async function nativeCss(version, theme) {
         document.querySelector('#acp-primary-action').classList.add('acp-button-danger');
       });
       const ordinaryButton=page.locator('#acp-app .acp-button').first();
+      const broad=page.locator('#acp-results .acp-mount-evidence');
+      await broad.locator('summary').click();
+      assert.equal(await broad.evaluate(el=>el.open),true,'Broad access disclosure opens with native theme styles');
+      assert.ok(await broad.evaluate(el=>el.getBoundingClientRect().right<=innerWidth+2),'Expanded broad access fits the viewport');
+      assert.equal(await page.locator('.acp-row-checkbox').isDisabled(),false,'Broad access keeps the candidate selectable');
+      await broad.locator('summary').click();
       await ordinaryButton.hover();
       await ordinaryButton.evaluate(el=>Promise.all(el.getAnimations().map(animation=>animation.finished)));
       assert.equal(await ordinaryButton.evaluate(el=>getComputedStyle(el).color),baseline.text,'Hovered plugin buttons retain neutral text');

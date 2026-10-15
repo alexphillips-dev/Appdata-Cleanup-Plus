@@ -204,8 +204,6 @@ function appdataCleanupPlusWriteOperationProgress($progressId, $payload) {
     $payload["resultsLimited"] = true;
   }
   $written = writeAppdataCleanupPlusJsonFile($file, $payload);
-  @chmod(dirname($file), 0700);
-  if ( $written ) @chmod($file, 0600);
   return $written;
 }
 
@@ -384,6 +382,7 @@ function appdataCleanupPlusRecoverOperationProgress($payload) {
 }
 
 function appdataCleanupPlusRecentOperations() {
+  if ( ! appdataCleanupPlusValidateRuntimeDirectory(appdataCleanupPlusOperationProgressDir()) ) return array();
   $files = (array)glob(appdataCleanupPlusOperationProgressDir() . "/*.json");
   usort($files, function($a, $b) { return filemtime($b) <=> filemtime($a); });
   $operations = array();
@@ -400,6 +399,7 @@ function appdataCleanupPlusRecentOperations() {
 }
 
 function appdataCleanupPlusPruneOperationProgress($activeId) {
+  if ( ! appdataCleanupPlusValidateRuntimeDirectory(appdataCleanupPlusOperationProgressDir()) ) return;
   $files = (array)glob(appdataCleanupPlusOperationProgressDir() . "/*.json");
   usort($files, function($a, $b) { return filemtime($b) <=> filemtime($a); });
   $kept = 0;

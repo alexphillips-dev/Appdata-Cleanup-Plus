@@ -4601,7 +4601,7 @@
             "</div>" +
             '<div class="acp-row-size">' + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || ACP.tr("Unknown"))) + "</div>" +
             '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
-            '<div class="acp-row-badges">' + badgeHtml + ACP.buildMountEvidenceHtml(row.mountEvidence) + "</div>" +
+            '<div class="acp-row-badges">' + badgeHtml + ACP.buildMountEvidenceHtml(row.mountEvidence) + ACP.buildMountEvidenceHtml(row.broadMountEvidence, true) + "</div>" +
             '<div class="acp-row-detection-reason"><span class="acp-row-detection-label">' + ACP.escapeHtml(ACP.tr("Detection reason")) + '</span>' + ACP.escapeHtml(ACP.getRowDetectionReason(row)) + "</div>" +
             '<div class="acp-row-side">' +
               rowActionHtml +

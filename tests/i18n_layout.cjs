@@ -93,7 +93,7 @@ async function checkActionLayout(page, locale, width) {
         assert.equal(await page.locator('#acp-bottom-bar').isVisible(), false, `${locale}: empty scan hides cleanup actions`);
         await page.evaluate(() => {
           const F = window.i18nLayoutFlows;
-          F.state.rows = [{id:'example',name:'Example',path:'/mnt/user/appdata/Example',displayPath:'/mnt/user/appdata/Example',sourceKind:'filesystem',sourceNames:[],targetPaths:[],templateRefs:[],canDelete:true,storageKind:'filesystem',risk:'safe',status:'orphaned',sizeLabel:'1 MB'}];
+          F.state.rows = [{id:'example',name:'Example',path:'/mnt/user/appdata/Example',displayPath:'/mnt/user/appdata/Example',sourceKind:'filesystem',sourceNames:[],targetPaths:[],templateRefs:[],canDelete:true,storageKind:'filesystem',risk:'safe',status:'orphaned',sizeLabel:'1 MB',broadMountEvidence:[{name:'Broad viewer',paths:['/mnt/user']}]}];
           F.state.summary = {total:1,safe:1,review:0,blocked:0,deletable:1,ignored:0};
           F.renderAll();
         });
@@ -109,6 +109,12 @@ async function checkActionLayout(page, locale, width) {
         const initial = await page.evaluate(() => ({scroll:document.documentElement.scrollWidth, direction:getComputedStyle(document.querySelector('#acp-app')).direction}));
         assert.ok(initial.scroll <= width + 2, `${locale} ${width}px: page overflow ${initial.scroll}`);
         assert.equal(initial.direction, direction);
+        const broad=page.locator('#acp-results .acp-mount-evidence');
+        assert.equal(await broad.locator('summary').textContent(),await page.evaluate(()=>AppdataCleanupPlus.tr('Broad container access')));
+        await broad.locator('summary').click();
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),`${locale}: expanded broad access fits`);
+        assert.equal(await broad.locator('code').evaluate(el=>getComputedStyle(el).direction),'ltr','Mount paths stay LTR');
+        await broad.locator('summary').click();
         await page.evaluate(() => {
           const ACP = window.AppdataCleanupPlus;
           const host = document.createElement('div');

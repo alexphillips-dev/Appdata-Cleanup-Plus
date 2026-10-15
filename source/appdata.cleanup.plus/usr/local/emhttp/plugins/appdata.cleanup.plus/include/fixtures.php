@@ -125,7 +125,7 @@ function appdataCleanupPlusFixturePathIsSafe($path, $root) {
     dirname($normalizedPath) === $normalizedRoot &&
     in_array($base, $names, true) &&
     ! @is_link($normalizedPath) &&
-    ! pathIsMountPoint($normalizedPath);
+    (file_exists($normalizedPath) ? ! pathIsMountPoint($normalizedPath) : appdataCleanupPlusMountStatus($normalizedRoot) !== "unknown");
 }
 
 function appdataCleanupPlusGetTestFixtureStatus($settings=null) {
@@ -178,7 +178,7 @@ function appdataCleanupPlusCreateTestFixtures($settings=null) {
       continue;
     }
 
-    if ( ! ensureAppdataCleanupPlusDirectory($fixture["path"]) ) {
+    if ( ! ensureAppdataCleanupPlusDirectory($fixture["path"]) || ! appdataCleanupPlusFixturePathIsSafe($fixture["path"], $root) ) {
       $errors[] = $fixture["name"] . ": folder could not be created";
       continue;
     }

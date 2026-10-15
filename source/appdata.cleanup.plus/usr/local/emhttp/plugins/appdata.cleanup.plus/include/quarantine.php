@@ -1206,10 +1206,11 @@ function restoreTrackedQuarantineEntry($entry, $options=array()) {
     );
   }
 
-  if ( pathIsMountPoint($destination) ) {
+  $mountReason = appdataCleanupPlusMountSafetyReason($destination);
+  if ( $mountReason !== "" ) {
     return array(
       "status" => "blocked",
-      "message" => "This quarantine entry could not be restored safely."
+      "message" => $mountReason === "Mount-point folders are locked for safety." ? "This quarantine entry could not be restored safely." : $mountReason
     );
   }
 
@@ -1358,10 +1359,11 @@ function nativeDeleteDirectory($path, $options=array()) {
     );
   }
 
-  if ( pathIsMountPoint($deletePath) ) {
+  $mountReason = appdataCleanupPlusMountSafetyReason($deletePath);
+  if ( $mountReason !== "" ) {
     return array(
       "ok" => false,
-      "message" => "Mount-point folders are locked for safety."
+      "message" => $mountReason
     );
   }
 
@@ -1705,16 +1707,15 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
     );
   }
 
-  if (
-    (pathIsMountPoint($displayPath) || pathIsMountPoint($currentRealPath)) &&
-    $storageMeta["kind"] !== "zfs"
-  ) {
+  $mountReason = appdataCleanupPlusMountSafetyReason($displayPath, $storageMeta["kind"] === "zfs");
+  if ( $mountReason === "" ) $mountReason = appdataCleanupPlusMountSafetyReason($currentRealPath, $storageMeta["kind"] === "zfs");
+  if ( $mountReason !== "" ) {
     return array(
       "ok" => false,
       "path" => $candidatePath,
       "displayPath" => $displayPath,
       "status" => "blocked",
-      "message" => "Mount-point folders cannot be acted on here."
+      "message" => $mountReason === "Mount-point folders are locked for safety." ? "Mount-point folders cannot be acted on here." : $mountReason
     );
   }
 

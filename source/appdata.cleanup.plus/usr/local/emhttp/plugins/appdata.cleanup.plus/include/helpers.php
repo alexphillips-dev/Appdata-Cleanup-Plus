@@ -1049,8 +1049,81 @@ function appdataCleanupPlusDirectoryMode() {
   return 0755;
 }
 
+function appdataCleanupPlusIsRuntimePath($path) {
+  $root = appdataCleanupPlusRuntimeDir();
+  $path = rtrim(str_replace("\\", "/", (string)$path), "/");
+  return $path === $root || strpos($path, $root . "/") === 0;
+}
+
+// Retain the lock namespace across upgrades. A root-owned sticky /var/tmp
+// protects a validated private child just as a non-writable parent does.
+// Never repair an untrusted entry: chmod does not change its owner.
+function appdataCleanupPlusValidateRuntimeDirectory($path, $create=false) {
+  $path = rtrim(str_replace("\\", "/", (string)$path), "/");
+  $root = appdataCleanupPlusRuntimeDir();
+  if ( ! appdataCleanupPlusIsRuntimePath($path) || preg_match('~(?:^|/)\.{1,2}(?:/|$)|[\x00-\x1f]~', $path) ) return false;
+  if ( ! preg_match('~^(?:/|[A-Za-z]:/)~', $path) ) return false;
+  $chain = array();
+  for ( $part = $path; dirname($part) !== $part; $part = dirname($part) ) array_unshift($chain, $part);
+  $uid = function_exists("posix_geteuid") ? posix_geteuid() : 0;
+  foreach ( $chain as $part ) {
+    $private = $part === $root || strpos($part, $root . "/") === 0;
+    clearstatcache(true, $part);
+    $stat = @lstat($part);
+    if ( $stat === false && $create && $private ) {
+      @mkdir($part, 0700);
+      clearstatcache(true, $part);
+      $stat = @lstat($part);
+    }
+    if ( ! is_array($stat) || ($stat["mode"] & 0170000) !== 0040000 || is_link($part) ) return false;
+    // Windows is supported only for development fixtures; production is POSIX.
+    if ( PHP_OS_FAMILY !== "Windows" ) {
+      if ( $private ? $stat["uid"] !== $uid : ! in_array($stat["uid"], array(0, $uid), true) ) return false;
+      $trustedStickyParent = ! $private && $stat["uid"] === 0 && ($stat["mode"] & 01000);
+      if ( ($stat["mode"] & 0022) && ! $trustedStickyParent ) return false;
+      if ( $private && $create && ($stat["mode"] & 0777) !== 0700 ) {
+        if ( ! @chmod($part, 0700) ) return false;
+      }
+    }
+  }
+  return true;
+}
+
+function appdataCleanupPlusRuntimeFileStat($path) {
+  if ( ! appdataCleanupPlusIsRuntimePath($path) || ! appdataCleanupPlusValidateRuntimeDirectory(dirname($path)) ||
+    preg_match('~(?:^|/)\.{1,2}(?:/|$)|[\x00-\x1f]~', (string)$path) ) return false;
+  clearstatcache(true, $path);
+  $stat = @lstat($path);
+  if ( ! is_array($stat) || ($stat["mode"] & 0170000) !== 0100000 || is_link($path) || $stat["nlink"] !== 1 ) return false;
+  if ( PHP_OS_FAMILY !== "Windows" && ($stat["uid"] !== (function_exists("posix_geteuid") ? posix_geteuid() : 0) || ($stat["mode"] & 0022)) ) return false;
+  return $stat;
+}
+
+function appdataCleanupPlusOpenRuntimeFile($path, $write=false, $create=false) {
+  if ( ! appdataCleanupPlusValidateRuntimeDirectory(dirname($path), $create) ) return false;
+  $stat = appdataCleanupPlusRuntimeFileStat($path);
+  if ( ! $stat && (! $create || file_exists($path) || is_link($path)) ) return false;
+  $previousUmask = umask(0077);
+  try {
+    $handle = @fopen($path, $stat ? ($write ? "r+b" : "rb") : "x+b");
+  } finally {
+    umask($previousUmask);
+  }
+  if ( ! is_resource($handle) ) return false;
+  $opened = @fstat($handle);
+  $current = appdataCleanupPlusRuntimeFileStat($path);
+  if ( ! $current || ! is_array($opened) || $opened["dev"] !== $current["dev"] || $opened["ino"] !== $current["ino"] ) {
+    @fclose($handle);
+    return false;
+  }
+  if ( $write && ! @chmod($path, 0600) ) { @fclose($handle); return false; }
+  return $handle;
+}
+
 function ensureAppdataCleanupPlusDirectory($path) {
   $path = rtrim((string)$path, "/");
+
+  if ( appdataCleanupPlusIsRuntimePath($path) ) return appdataCleanupPlusValidateRuntimeDirectory($path, true);
 
   if ( ! $path ) {
     return false;
@@ -1087,9 +1160,7 @@ function acquireAppdataCleanupPlusRuntimeLock($name, $metadata=array()) {
     return false;
   }
 
-  recoverAppdataCleanupPlusStaleRuntimeLockFile($lockFile);
-
-  $handle = @fopen($lockFile, "c+");
+  $handle = appdataCleanupPlusOpenRuntimeFile($lockFile, true, true);
   if ( ! $handle ) {
     return false;
   }
@@ -1099,15 +1170,17 @@ function acquireAppdataCleanupPlusRuntimeLock($name, $metadata=array()) {
     return false;
   }
 
-  @ftruncate($handle, 0);
-  @rewind($handle);
-  @fwrite($handle, appdataCleanupPlusJsonEncode(array(
+  $contents = appdataCleanupPlusJsonEncode(array(
     "name" => $lockName,
     "pid" => function_exists("getmypid") ? getmypid() : null,
     "startedAt" => date("c"),
     "metadata" => is_array($metadata) ? $metadata : array()
-  )) . "\n");
-  @fflush($handle);
+  )) . "\n";
+  if ( ! @ftruncate($handle, 0) || ! @rewind($handle) || @fwrite($handle, $contents) !== strlen($contents) || ! @fflush($handle) ) {
+    @flock($handle, LOCK_UN);
+    @fclose($handle);
+    return false;
+  }
 
   if ( ! isset($store["runtimeLocks"]) || ! is_array($store["runtimeLocks"]) ) {
     $store["runtimeLocks"] = array();
@@ -1188,9 +1261,9 @@ function appdataCleanupPlusIsPidRunning($pid) {
 function appdataCleanupPlusInspectRuntimeLockFile($path) {
   $payload = appdataCleanupPlusParseRuntimeLockPayload($path);
   $name = isset($payload["name"]) ? appdataCleanupPlusSanitizeStateKey($payload["name"]) : basename((string)$path, ".lock");
-  $startedTimestamp = appdataCleanupPlusRuntimeLockStartedTimestamp($payload, $path);
+  $startedTimestamp = appdataCleanupPlusRuntimeLockStartedTimestamp($payload, appdataCleanupPlusRuntimeFileStat($path) ? $path : "");
   $ageSeconds = $startedTimestamp > 0 ? max(0, time() - $startedTimestamp) : null;
-  $handle = @fopen($path, "c");
+  $handle = appdataCleanupPlusOpenRuntimeFile($path);
   $held = null;
 
   if ( $handle ) {
@@ -1227,7 +1300,7 @@ function recoverAppdataCleanupPlusStaleRuntimeLockFile($path) {
     return false;
   }
 
-  $handle = @fopen($path, "c+");
+  $handle = appdataCleanupPlusOpenRuntimeFile($path, true);
   if ( ! is_resource($handle) || ! @flock($handle, LOCK_EX | LOCK_NB) ) {
     if ( is_resource($handle) ) {
       @fclose($handle);
@@ -1235,7 +1308,10 @@ function recoverAppdataCleanupPlusStaleRuntimeLockFile($path) {
     return false;
   }
 
-  $recovered = @ftruncate($handle, 0);
+  // Another writer may have refreshed the metadata after the initial probe.
+  $payload = json_decode((string)stream_get_contents($handle), true);
+  $started = appdataCleanupPlusRuntimeLockStartedTimestamp(is_array($payload) ? $payload : array(), $path);
+  $recovered = $started > 0 && time() - $started >= appdataCleanupPlusRuntimeLockStaleSeconds() && @ftruncate($handle, 0);
   @fflush($handle);
   @flock($handle, LOCK_UN);
   @fclose($handle);
@@ -1244,7 +1320,7 @@ function recoverAppdataCleanupPlusStaleRuntimeLockFile($path) {
 
 function appdataCleanupPlusListRuntimeLocks() {
   $lockDir = appdataCleanupPlusRuntimeLockDir();
-  $lockFiles = is_dir($lockDir) ? glob($lockDir . "/*.lock") : array();
+  $lockFiles = appdataCleanupPlusValidateRuntimeDirectory($lockDir) ? glob($lockDir . "/*.lock") : array();
   $locks = array();
 
   if ( ! is_array($lockFiles) ) {
@@ -1292,6 +1368,14 @@ function readAppdataCleanupPlusTemplateFile($path) {
 }
 
 function readAppdataCleanupPlusJsonFile($path, $default=array()) {
+  if ( appdataCleanupPlusIsRuntimePath($path) ) {
+    $handle = appdataCleanupPlusOpenRuntimeFile($path);
+    if ( ! is_resource($handle) ) return $default;
+    $contents = stream_get_contents($handle);
+    fclose($handle);
+    $decoded = is_string($contents) ? json_decode($contents, true) : null;
+    return is_array($decoded) ? $decoded : $default;
+  }
   if ( ! is_file($path) ) {
     return $default;
   }
@@ -1358,6 +1442,9 @@ function appdataCleanupPlusJsonFileLockPath($path) {
 }
 
 function appdataCleanupPlusWriteJsonFileUnlocked($path, $payload) {
+  $runtime = appdataCleanupPlusIsRuntimePath($path);
+  if ( $runtime && (! appdataCleanupPlusValidateRuntimeDirectory(dirname($path), true) ||
+    ((file_exists($path) || is_link($path)) && ! appdataCleanupPlusRuntimeFileStat($path))) ) return false;
   $tmpFile = "";
   $handle = null;
   $encoded = appdataCleanupPlusJsonEncode($payload, JSON_PRETTY_PRINT);
@@ -1368,6 +1455,10 @@ function appdataCleanupPlusWriteJsonFileUnlocked($path, $payload) {
 
   $tmpFile = @tempnam(dirname($path), basename($path) . ".tmp.");
   if ( ! is_string($tmpFile) || $tmpFile === "" ) {
+    return false;
+  }
+  if ( $runtime && str_replace("\\", "/", dirname($tmpFile)) !== str_replace("\\", "/", dirname($path)) ) {
+    @unlink($tmpFile);
     return false;
   }
 
@@ -1389,7 +1480,8 @@ function appdataCleanupPlusWriteJsonFileUnlocked($path, $payload) {
     @fsync($handle);
   }
   @fclose($handle);
-  @chmod($tmpFile, 0644);
+  $permissionsSet = @chmod($tmpFile, $runtime ? 0600 : 0644);
+  if ( $runtime && ! $permissionsSet ) { @unlink($tmpFile); return false; }
 
   if ( ! @rename($tmpFile, $path) ) {
     @unlink($tmpFile);
@@ -1401,7 +1493,7 @@ function appdataCleanupPlusWriteJsonFileUnlocked($path, $payload) {
 
 function appdataCleanupPlusOpenJsonFileLock($path) {
   $lockPath = appdataCleanupPlusJsonFileLockPath($path);
-  $handle = @fopen($lockPath, "c+");
+  $handle = appdataCleanupPlusIsRuntimePath($path) ? appdataCleanupPlusOpenRuntimeFile($lockPath, true, true) : @fopen($lockPath, "c+");
 
   if ( ! is_resource($handle) || ! @flock($handle, LOCK_EX) ) {
     if ( is_resource($handle) ) {
@@ -1423,7 +1515,7 @@ function appdataCleanupPlusCloseJsonFileLock($handle) {
 }
 
 function writeAppdataCleanupPlusJsonFile($path, $payload) {
-  if ( ! ensureAppdataCleanupPlusConfigDir() ) {
+  if ( ! appdataCleanupPlusIsRuntimePath($path) && ! ensureAppdataCleanupPlusConfigDir() ) {
     return false;
   }
 
@@ -1444,7 +1536,7 @@ function writeAppdataCleanupPlusJsonFile($path, $payload) {
 }
 
 function mutateAppdataCleanupPlusJsonFile($path, $default, $mutator) {
-  if ( ! is_callable($mutator) || ! ensureAppdataCleanupPlusConfigDir() || ! ensureAppdataCleanupPlusDirectory(dirname($path)) ) {
+  if ( ! is_callable($mutator) || (! appdataCleanupPlusIsRuntimePath($path) && ! ensureAppdataCleanupPlusConfigDir()) || ! ensureAppdataCleanupPlusDirectory(dirname($path)) ) {
     return false;
   }
 
@@ -1479,7 +1571,7 @@ function appdataCleanupPlusSnapshotStorageDir() {
 }
 
 function appdataCleanupPlusStatsCacheFile() {
-  return appdataCleanupPlusStateFile("path-stats-cache.json");
+  return appdataCleanupPlusRuntimeDir() . "/path-stats-cache.json";
 }
 
 function appdataCleanupPlusLatestScanMetricsFile() {

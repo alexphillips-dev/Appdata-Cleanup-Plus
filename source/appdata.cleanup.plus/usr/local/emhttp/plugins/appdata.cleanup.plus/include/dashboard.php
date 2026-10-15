@@ -1609,9 +1609,8 @@ function buildPathSecurityLockReason($resolvedPath, $settings=null, $storageMeta
     return buildPathSymlinkSegmentLockReason($resolvedPath);
   }
 
-  if ( pathIsMountPoint($resolvedPath) && (! isset($storageMeta["kind"]) || $storageMeta["kind"] !== "zfs") ) {
-    return "Mount-point folders are locked for safety.";
-  }
+  $mountReason = appdataCleanupPlusMountSafetyReason($resolvedPath, ($storageMeta["kind"] ?? "") === "zfs");
+  if ( $mountReason !== "" ) return $mountReason;
 
   if ( ! @realpath($resolvedPath) ) {
     return "Path could not be canonicalized safely.";

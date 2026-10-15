@@ -79,6 +79,7 @@ jobs:
           php scripts/check_php_functions.php
           php tests/ownership_templates.php
           php tests/recovery_backups.php
+          php tests/runtime_safety.php
 
       - name: Check diagnostics privacy guards
         run: bash scripts/test_diagnostics_privacy.sh
