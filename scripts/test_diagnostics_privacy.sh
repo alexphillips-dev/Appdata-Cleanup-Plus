@@ -22,6 +22,10 @@ grep -Fq 'sanitizeDiagnosticsRowId' <<<"${payload_flow}" || fail "Client diagnos
 grep -Fq 'sanitizeDiagnosticsValue(payload' <<<"${payload_flow}" || fail "Client diagnostics payload needs a final recursive privacy scrub."
 grep -Fq 'nextRow.mountEvidence = sanitizeDiagnosticsMountEvidence' "${JS_FILE}" || fail "Specific container mount evidence must use an allowlisted sanitizer."
 grep -Fq 'nextRow.broadMountEvidence = sanitizeDiagnosticsMountEvidence' "${JS_FILE}" || fail "Broad container access evidence must use an allowlisted sanitizer."
+grep -Fq 'appdataCleanupPlusDiagnosticsStatsCacheSummary()' "${API_FILE}" || fail "Runtime cache diagnostics must use the secured summary."
+grep -Fq 'appdataCleanupPlusSanitizeMountInspection' "${API_FILE}" || fail "Mount telemetry must use fixed-code count sanitization."
+grep -Fq 'Refused lock inspection must never produce a healthy finding.' "${ROOT_DIR}/tests/runtime_safety.php" || fail "Runtime diagnostic severity regression coverage is missing."
+grep -Fq 'Cache diagnostics exclude keys and stored paths.' "${ROOT_DIR}/tests/runtime_safety.php" || fail "Cache summary privacy coverage is missing."
 if grep -Eq 'templateManager|template-backups|TemplateBackup' <<<"${payload_flow}${server_bundle}"; then
     fail "Private template backups and manager state must not enter diagnostics exports."
 fi

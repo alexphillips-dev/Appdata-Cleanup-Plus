@@ -3064,9 +3064,24 @@
   function sanitizeDiagnosticsValue(value, redactor, keyName) {
     var sanitized = {};
 
+    if (keyName === "mountInspection") return sanitizeDiagnosticsMountInspection(value);
+    if (keyName === "mountReasonCode") return diagnosticsMountReasonCode(value);
+    if (keyName === "status" && "complete partial unavailable failed verified incomplete not_checked".split(" ").indexOf(value) !== -1) return value;
+    if (keyName === "validation" && "valid invalid missing unreadable inspection_refused skipped-large-file".split(" ").indexOf(value) !== -1) return value;
+    if (keyName === "reasonCode" || keyName === "inspectionStatus") {
+      var healthCodes = "verified verified_empty missing inspection_refused unsafe_path unsafe_symlink unsafe_hardlink unsafe_owner unsafe_permissions invalid_type unreadable invalid_json size_limit ready not_writable no_sources unknown not_checked mount_inventory_unavailable mount_inventory_empty mount_inventory_invalid filesystem_metadata_failed".split(" ");
+      if (healthCodes.indexOf(value) !== -1) return value;
+    }
+    if (keyName === "reasonCounts") {
+      "verified missing inspection_refused unsafe_path unsafe_symlink unsafe_hardlink unsafe_owner unsafe_permissions invalid_type unreadable ready not_writable no_sources directory mount mount_inventory_unavailable mount_inventory_empty mount_inventory_invalid filesystem_metadata_failed".split(" ").forEach(function(code) {
+        if (value && Object.prototype.hasOwnProperty.call(value, code)) sanitized[code] = Math.max(0, Math.min(100000000, Math.floor(Number(value[code]) || 0)));
+      });
+      return sanitized;
+    }
+    if (keyName === "storage" && value === "runtime") return value;
     if (keyName === "dockerInventory" || keyName === "ownershipDiagnostics") return sanitizeDiagnosticsDockerInventory(value);
     if (keyName === "decision") {
-      var codes = "discovery template unknown exact_dataset folder mapping_without_exact_dataset specific_mount broad_access ownership_unverified symlink mount_point root_path unsafe_path protected_path permanent_delete zfs_disabled policy_lock not_actionable none".split(" ");
+      var codes = "discovery template unknown exact_dataset folder mapping_without_exact_dataset specific_mount broad_access ownership_unverified symlink mount_point root_path unsafe_path protected_path permanent_delete zfs_disabled policy_lock not_actionable none mount_inventory_unavailable mount_inventory_empty mount_inventory_invalid filesystem_metadata_failed".split(" ");
       var safeCode = function(code) { return codes.indexOf(code) !== -1 ? code : "unknown"; };
       var safeDecision = value || {};
       return {source:safeCode(safeDecision.source),storage:safeCode(safeDecision.storage),evidence:$.map((safeDecision.evidence || []).slice(0,10),safeCode),blockers:$.map((safeDecision.blockers || []).slice(0,10),safeCode),primaryBlocker:safeCode(safeDecision.primaryBlocker),specificMountCount:Math.max(0,Number(safeDecision.specificMountCount)||0),broadAccessCount:Math.max(0,Number(safeDecision.broadAccessCount)||0),ignored:!!safeDecision.ignored};
@@ -3105,6 +3120,7 @@
 
 
   function diagnosticsSchemaKey(key) {
+    if ("mountInspection mountInventoryCurrent mountReasonCode inspectionStatus reasonCounts refusedCount ttlSeconds entryCount validEntryCount expiredEntryCount invalidEntryCount checkCount failedCheckCount mountCount validation valid modifiedAt sizeBytes runtimeLocks statsCache".split(" ").indexOf(String(key)) !== -1) return true;
     if ("collection sections status includedCount omittedCount omissionReason freshness browserVersion serverVersion versionMatch scanMatch currentSnapshot collectedAt issuedAt expiresAt candidateCount localization locale languageTag direction viewport width height capabilities numberFormat pluralRules relativeTimeFormat dateTimeFormat recentFailures occurredAt action httpStatus category totalCount decision evidence blockers primaryBlocker source storage specificMountCount broadAccessCount ignored captureStartedAt".split(" ").indexOf(String(key)) !== -1) return true;
     if (["mountEvidence", "broadMountEvidence", "paths"].indexOf(String(key)) !== -1) return true;
     // Fixed schema keys are metadata, not user values. Unknown/path-based keys
@@ -3127,10 +3143,27 @@
     return result;
   }
 
+  function diagnosticsMountReasonCode(value) {
+    return "directory mount mount_inventory_unavailable mount_inventory_empty mount_inventory_invalid filesystem_metadata_failed".split(" ").indexOf(value) !== -1 ? value : "not_checked";
+  }
+
+  function sanitizeDiagnosticsMountInspection(value) {
+    var counts = {};
+    value = value || {};
+    var total = 0, failed = 0;
+    "directory mount mount_inventory_unavailable mount_inventory_empty mount_inventory_invalid filesystem_metadata_failed".split(" ").forEach(function(code) {
+      counts[code] = Math.max(0, Math.min(100000000, Math.floor(Number((value.reasonCounts || {})[code]) || 0)));
+      total += counts[code];
+      if (code !== "directory" && code !== "mount") failed += counts[code];
+    });
+    return {status:total === 0 ? "not_checked" : (failed ? "incomplete" : "verified"),checkCount:total,failedCheckCount:failed,reasonCounts:counts};
+  }
+
   function sanitizeDiagnosticsScanMetrics(value) {
     value = value || {};
     var names = "settings template_glob docker_state docker_query template_scan compose_scan filesystem_discovery candidate_filtering row_build snapshot_write fallback_heavy_row_build filter_installed filter_compose filter_existing filter_parent filter_parent_mounts filter_vm".split(" ");
     var result = {startedAt:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/.test(value.startedAt || "") ? value.startedAt : "",totalMs:Math.max(0, Math.min(100000000, Number(value.totalMs) || 0)),phases:[],dockerInventory:sanitizeDiagnosticsDockerInventory(value.dockerInventory)};
+    result.mountInspection = sanitizeDiagnosticsMountInspection(value.mountInspection);
     (Array.isArray(value.phases) ? value.phases : []).slice(0,32).forEach(function(phase) {
       if (!phase || names.indexOf(phase.name) === -1) return;
       var next = {name:phase.name};
@@ -3280,7 +3313,10 @@
     if (specific) { evidence.push("specific_mount"); blockers.push("specific_mount"); }
     if (broad) evidence.push("broad_access");
     if (row.scanVerificationLocked) blockers.unshift("ownership_unverified");
-    if (row.securityLockReason) blockers.push(["symlink", "mount_point", "root_path", "unsafe_path"].indexOf(row.securityReasonCode) !== -1 ? row.securityReasonCode : "protected_path");
+    if (row.securityLockReason) {
+      var mountReason = diagnosticsMountReasonCode(row.mountReasonCode);
+      blockers.push(["mount_inventory_unavailable", "mount_inventory_empty", "mount_inventory_invalid", "filesystem_metadata_failed"].indexOf(mountReason) !== -1 ? mountReason : (["symlink", "mount_point", "root_path", "unsafe_path"].indexOf(row.securityReasonCode) !== -1 ? row.securityReasonCode : "protected_path"));
+    }
     if (row.policyLocked) blockers.push(["permanent_delete", "zfs_disabled"].indexOf(row.policyReasonCode) !== -1 ? row.policyReasonCode : "policy_lock");
     if (!row.canDelete && !blockers.length) blockers.push("not_actionable");
     return {source:source, storage:storage, evidence:evidence, blockers:blockers, primaryBlocker:blockers[0] || "none", specificMountCount:specific, broadAccessCount:broad, ignored:!!row.ignored};

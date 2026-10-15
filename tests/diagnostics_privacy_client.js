@@ -56,6 +56,25 @@ assert.equal(decision.broadAccessCount,1);
 assert.equal(decision.storage,'exact_dataset');
 assert.ok(!JSON.stringify(decision).includes('private-canary'),'Decision evidence must use fixed codes, not names or prose');
 assert.equal(privacy.buildDiagnosticsDecision({canDelete:true,broadMountEvidence:[{}]}).primaryBlocker,'none');
+for (const code of ['mount_inventory_unavailable','mount_inventory_empty','mount_inventory_invalid','filesystem_metadata_failed']) {
+  const decision = privacy.buildDiagnosticsDecision({canDelete:false,securityLockReason:'localized message',mountReasonCode:code});
+  assert.equal(decision.primaryBlocker,code,'Mount failures retain distinct reasons regardless of UI language');
+  assert.equal(privacy.sanitizeDiagnosticsValue({decision},privacy.buildDiagnosticsRedactor(),'').decision.primaryBlocker,code);
+}
+assert.equal(privacy.buildDiagnosticsDecision({canDelete:false,securityLockReason:'locked',mountReasonCode:'private-canary'}).primaryBlocker,'protected_path');
+const mountTelemetry = privacy.sanitizeDiagnosticsScanMetrics({mountInspection:{status:'verified',reasonCounts:{directory:2,mount_inventory_invalid:1,filesystem_metadata_failed:2,'private-canary':99},raw:'private-canary'}});
+assert.equal(mountTelemetry.mountInspection.status,'incomplete');
+assert.equal(mountTelemetry.mountInspection.failedCheckCount,3);
+assert.equal(mountTelemetry.mountInspection.checkCount,5);
+assert.ok(!JSON.stringify(mountTelemetry).includes('private-canary'));
+assert.equal(privacy.sanitizeDiagnosticsScanMetrics({}).mountInspection.status,'not_checked');
+const healthRedactor = privacy.buildDiagnosticsRedactor();
+privacy.sanitizeDiagnosticsRow({name:'runtime',path:'/mnt/user/appdata/runtime',sourceNames:['unsafe_permissions','mountInspection','verified']},healthRedactor);
+const health = privacy.sanitizeDiagnosticsValue({statsCache:{storage:'runtime',reasonCode:'unsafe_permissions',entryCount:null},mountInspection:mountTelemetry.mountInspection,reasonCounts:{unsafe_hardlink:1,'private-canary':2}},healthRedactor,'');
+assert.equal(health.statsCache.storage,'runtime','Storage classification is not a user name');
+assert.equal(health.statsCache.reasonCode,'unsafe_permissions','Fixed health reason codes survive name alias collisions');
+assert.equal(health.mountInspection.failedCheckCount,3);
+assert.deepEqual(Object.keys(health.reasonCounts),['unsafe_hardlink']);
 const decisionRedactor = privacy.buildDiagnosticsRedactor();
 privacy.sanitizeDiagnosticsRow({name:'folder',canDelete:true,storageKind:'filesystem'},decisionRedactor);
 const stableDecision = privacy.sanitizeDiagnosticsValue({decision:privacy.buildDiagnosticsDecision({canDelete:true,storageKind:'filesystem'})},decisionRedactor,'');

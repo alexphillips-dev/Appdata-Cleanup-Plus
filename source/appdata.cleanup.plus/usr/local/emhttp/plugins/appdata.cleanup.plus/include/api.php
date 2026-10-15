@@ -20,6 +20,8 @@ function appdataCleanupPlusBuildDashboardPayload($dockerRunning, $settings, $row
 
 function appdataCleanupPlusCreateScanMetrics() {
   $started = microtime(true);
+  $store =& appdataCleanupPlusRuntimeStore();
+  $store["scanMountInspection"] = array("reasonCounts" => array());
 
   return array(
     "startedAt" => date("c"),
@@ -50,6 +52,9 @@ function appdataCleanupPlusMarkScanPhase(&$metrics, $name, $extra=array()) {
 }
 
 function appdataCleanupPlusFinalizeScanMetrics($metrics) {
+  $store =& appdataCleanupPlusRuntimeStore();
+  $mountInspection = appdataCleanupPlusSanitizeMountInspection($store["scanMountInspection"] ?? array());
+  unset($store["scanMountInspection"]);
   $now = microtime(true);
   $started = isset($metrics["startedMicrotime"]) ? (float)$metrics["startedMicrotime"] : $now;
   $phases = isset($metrics["phases"]) && is_array($metrics["phases"]) ? $metrics["phases"] : array();
@@ -58,7 +63,8 @@ function appdataCleanupPlusFinalizeScanMetrics($metrics) {
     "startedAt" => isset($metrics["startedAt"]) ? (string)$metrics["startedAt"] : "",
     "totalMs" => (int)round(($now - $started) * 1000),
     "phases" => $phases,
-    "dockerInventory" => appdataCleanupPlusSanitizeDockerDiagnostics($metrics["dockerInventory"] ?? array())
+    "dockerInventory" => appdataCleanupPlusSanitizeDockerDiagnostics($metrics["dockerInventory"] ?? array()),
+    "mountInspection" => $mountInspection
   );
 }
 
@@ -88,6 +94,7 @@ function appdataCleanupPlusSanitizeScanMetrics($metrics) {
     $out["phases"][] = $next;
   }
   $out["dockerInventory"] = appdataCleanupPlusSanitizeDockerDiagnostics($metrics["dockerInventory"] ?? array());
+  $out["mountInspection"] = appdataCleanupPlusSanitizeMountInspection($metrics["mountInspection"] ?? array());
   return $out;
 }
 
@@ -904,8 +911,22 @@ function appdataCleanupPlusDiagnosticsSnapshotSummary() {
 
 function appdataCleanupPlusDiagnosticsRuntimeLockSummary() {
   $locks = array();
-
-  foreach ( appdataCleanupPlusListRuntimeLocks() as $lock ) {
+  $dir = appdataCleanupPlusRuntimeLockDir();
+  $reason = "verified";
+  $verified = appdataCleanupPlusValidateRuntimeDirectory($dir, false, $reason);
+  $files = $verified && is_readable($dir) ? glob($dir . "/*.lock") : false;
+  if ($verified && $files === false) { $verified = false; $reason = "unreadable"; }
+  $refused = 0;
+  $reasonCounts = array();
+  foreach ( is_array($files) ? $files : array() as $file ) {
+    $fileReason = "verified";
+    if (!appdataCleanupPlusRuntimeFileStat($file, $fileReason)) {
+      $refused++;
+      $reasonCounts[$fileReason] = ($reasonCounts[$fileReason] ?? 0) + 1;
+      continue;
+    }
+    $lock = appdataCleanupPlusInspectRuntimeLockFile($file);
+    if ($lock["held"] === null) { $refused++; $reasonCounts["unreadable"] = ($reasonCounts["unreadable"] ?? 0) + 1; }
     $metadata = isset($lock["metadata"]) && is_array($lock["metadata"]) ? $lock["metadata"] : array();
     $locks[] = array(
       "name" => isset($lock["name"]) ? (string)$lock["name"] : "",
@@ -921,6 +942,11 @@ function appdataCleanupPlusDiagnosticsRuntimeLockSummary() {
   }
 
   return array(
+    "status" => !$verified || $refused ? ($reason === "missing" ? "unavailable" : "partial") : "complete",
+    "inspectionStatus" => !$verified ? ($reason === "missing" ? "missing" : "inspection_refused") : ($refused ? "inspection_refused" : (count($locks) ? "verified" : "verified_empty")),
+    "reasonCode" => !$verified ? $reason : ($refused ? "inspection_refused" : "verified"),
+    "refusedCount" => $refused,
+    "reasonCounts" => $reasonCounts,
     "count" => count($locks),
     "staleSeconds" => appdataCleanupPlusRuntimeLockStaleSeconds(),
     "locks" => $locks
@@ -976,6 +1002,16 @@ function appdataCleanupPlusDiagnosticsUnraidVersion() {
 }
 
 function appdataCleanupPlusDiagnosticsDirectoryHealth($id, $path, $required=false) {
+  if (appdataCleanupPlusIsRuntimePath($path)) {
+    $verified = appdataCleanupPlusValidateRuntimeDirectory($path, false, $reason);
+    if ($verified && !is_readable($path)) { $verified = false; $reason = "unreadable"; }
+    return array("id" => (string)$id, "required" => (bool)$required, "path" => appdataCleanupPlusDiagnosticsRedactPath($path),
+      "exists" => $verified ? true : ($reason === "missing" ? false : null),
+      "readable" => $verified ? is_readable($path) : null, "writable" => $verified ? is_writable($path) : null,
+      "freeBytes" => $verified && ($free = @disk_free_space($path)) !== false ? (int)$free : null,
+      "inspectionStatus" => $verified ? "verified" : ($reason === "missing" ? "missing" : "inspection_refused"),
+      "reasonCode" => $reason);
+  }
   $exists = is_dir($path);
   $readable = $exists ? is_readable($path) : null;
   $writable = $exists ? is_writable($path) : null;
@@ -998,6 +1034,11 @@ function appdataCleanupPlusDiagnosticsDirectoryHealth($id, $path, $required=fals
 }
 
 function appdataCleanupPlusDiagnosticsJsonFileHealth($id, $path, $required=false, $format="json") {
+  if (appdataCleanupPlusIsRuntimePath($path)) {
+    $result = appdataCleanupPlusDiagnosticsReadRuntimeJson($path);
+    unset($result["data"]);
+    return array_merge(array("id" => (string)$id, "required" => (bool)$required, "format" => $format), $result);
+  }
   $exists = is_file($path);
   $readable = $exists ? is_readable($path) : null;
   $sizeBytes = $exists ? @filesize($path) : false;
@@ -1043,6 +1084,71 @@ function appdataCleanupPlusDiagnosticsJsonFileHealth($id, $path, $required=false
   );
 }
 
+// Read through the same inode/ownership checks as runtime operations. No
+// create, chmod, recovery, cache loading or persistence is allowed here.
+function appdataCleanupPlusDiagnosticsReadRuntimeJson($path) {
+  $stat = appdataCleanupPlusRuntimeFileStat($path, $reason);
+  $out = array("status" => "unavailable", "inspectionStatus" => "missing", "reasonCode" => $reason,
+    "exists" => false, "readable" => null, "valid" => null, "validation" => "missing",
+    "path" => appdataCleanupPlusDiagnosticsRedactPath($path), "writable" => null,
+    "sizeBytes" => null, "modifiedAt" => "", "data" => array());
+  if (!$stat) {
+    if ($reason !== "missing") {
+      $out["status"] = "failed"; $out["inspectionStatus"] = "inspection_refused";
+      $out["exists"] = null; $out["validation"] = "inspection_refused";
+    }
+    return $out;
+  }
+  $out["exists"] = true;
+  $out["writable"] = is_writable($path);
+  $out["sizeBytes"] = (int)$stat["size"];
+  $out["modifiedAt"] = date("c", $stat["mtime"]);
+  $out["inspectionStatus"] = "verified";
+  if ($stat["size"] > 5242880) {
+    $out["status"] = "partial"; $out["reasonCode"] = "size_limit"; $out["validation"] = "skipped-large-file";
+    return $out;
+  }
+  $handle = appdataCleanupPlusOpenRuntimeFile($path);
+  if (!$handle) {
+    $out["status"] = "failed"; $out["inspectionStatus"] = "inspection_refused";
+    $out["reasonCode"] = "unreadable"; $out["validation"] = "unreadable"; $out["readable"] = false;
+    return $out;
+  }
+  $contents = stream_get_contents($handle, 5242881);
+  fclose($handle);
+  $out["readable"] = is_string($contents);
+  if (is_string($contents) && strlen($contents) > 5242880) {
+    $out["status"] = "partial"; $out["reasonCode"] = "size_limit"; $out["validation"] = "skipped-large-file";
+    return $out;
+  }
+  $data = is_string($contents) ? json_decode($contents, true) : null;
+  $out["valid"] = is_array($data) && json_last_error() === JSON_ERROR_NONE;
+  $out["status"] = $out["valid"] ? "complete" : "failed";
+  $out["reasonCode"] = !$out["readable"] ? "unreadable" : ($out["valid"] ? "verified" : "invalid_json");
+  $out["validation"] = !$out["readable"] ? "unreadable" : ($out["valid"] ? "valid" : "invalid");
+  if ($out["valid"]) $out["data"] = $data;
+  return $out;
+}
+
+function appdataCleanupPlusDiagnosticsStatsCacheSummary() {
+  $read = appdataCleanupPlusDiagnosticsReadRuntimeJson(appdataCleanupPlusStatsCacheFile());
+  $entries = $read["data"];
+  unset($read["data"]);
+  $read["storage"] = "runtime";
+  $read["ttlSeconds"] = appdataCleanupPlusStatsCacheTtlSeconds();
+  $read["entryCount"] = $read["valid"] ? count($entries) : null;
+  $read["validEntryCount"] = $read["valid"] ? 0 : null;
+  $read["expiredEntryCount"] = $read["valid"] ? 0 : null;
+  $read["invalidEntryCount"] = $read["valid"] ? 0 : null;
+  $now = time();
+  foreach ($entries as $entry) {
+    if (!is_array($entry) || !is_numeric($entry["cachedAt"] ?? null) || $entry["cachedAt"] <= 0 || $entry["cachedAt"] > $now) $read["invalidEntryCount"]++;
+    elseif ($entry["cachedAt"] + $read["ttlSeconds"] < $now) $read["expiredEntryCount"]++;
+    else $read["validEntryCount"]++;
+  }
+  return $read;
+}
+
 function appdataCleanupPlusDiagnosticsQuarantineHealth() {
   $registry = getAppdataCleanupPlusQuarantineRegistry();
   $now = time();
@@ -1085,6 +1191,7 @@ function appdataCleanupPlusDiagnosticsLatestScanSummary() {
   $phases = isset($metrics["phases"]) && is_array($metrics["phases"]) ? $metrics["phases"] : array();
   $slowestPhase = array("name" => "", "durationMs" => 0);
   $warningFlags = array();
+  if ($metrics["mountInspection"]["failedCheckCount"] > 0) $warningFlags[] = "mount-inspection-incomplete";
 
   foreach ( $phases as $phase ) {
     if ( ! is_array($phase) ) {
@@ -1119,6 +1226,7 @@ function appdataCleanupPlusDiagnosticsLatestScanSummary() {
     "totalMs" => isset($metrics["totalMs"]) ? (int)$metrics["totalMs"] : 0,
     "phaseCount" => count($phases),
     "dockerInventory" => $metrics["dockerInventory"],
+    "mountInspection" => $metrics["mountInspection"],
     "verification" => appdataCleanupPlusScanVerification($metrics),
     "slowestPhase" => $slowestPhase,
     "warningFlags" => array_values(array_unique($warningFlags))
@@ -1179,7 +1287,7 @@ function appdataCleanupPlusDiagnosticsTroubleshootingSummary($logs) {
   }
 
   $invalidFiles = array_values(array_filter($stateFiles, function($file) {
-    return ! empty($file["exists"]) && ($file["validation"] === "invalid" || empty($file["readable"]));
+    return ($file["inspectionStatus"] ?? "") === "inspection_refused" || (! empty($file["exists"]) && ($file["validation"] === "invalid" || $file["readable"] === false));
   }));
   $checks[] = appdataCleanupPlusDiagnosticsCheck(
     "state-files",
@@ -1194,12 +1302,26 @@ function appdataCleanupPlusDiagnosticsTroubleshootingSummary($logs) {
   $activeLockCount = count(array_filter(isset($locks["locks"]) ? $locks["locks"] : array(), function($lock) {
     return ! empty($lock["held"]);
   }));
+  $lockUnknown = $locks["inspectionStatus"] === "inspection_refused";
+  $lockMissing = $locks["inspectionStatus"] === "missing";
   $checks[] = appdataCleanupPlusDiagnosticsCheck(
     "runtime-locks",
-    $staleLockCount > 0 ? "warning" : ($activeLockCount > 0 ? "info" : "ok"),
-    $staleLockCount > 0 ? "Stale operation locks may be blocking plugin actions." : ($activeLockCount > 0 ? "A plugin operation was active while diagnostics were collected." : "No active or stale operation locks were detected."),
-    array("activeCount" => $activeLockCount, "staleCount" => $staleLockCount, "staleSeconds" => isset($locks["staleSeconds"]) ? $locks["staleSeconds"] : null)
+    $lockUnknown || $staleLockCount > 0 ? "warning" : ($lockMissing || $activeLockCount > 0 ? "info" : "ok"),
+    $lockUnknown ? "Runtime lock inspection was refused; lock state is unknown." : ($lockMissing ? "Runtime lock storage is missing; no lock inspection was performed." : ($staleLockCount > 0 ? "Stale operation locks may be blocking plugin actions." : ($activeLockCount > 0 ? "A plugin operation was active while diagnostics were collected." : "No active or stale operation locks were detected."))),
+    array("inspectionStatus" => $locks["inspectionStatus"], "reasonCode" => $locks["reasonCode"], "refusedCount" => $locks["refusedCount"], "reasonCounts" => $locks["reasonCounts"], "activeCount" => $activeLockCount, "staleCount" => $staleLockCount, "staleSeconds" => $locks["staleSeconds"])
   );
+  $runtimeHealth = $directories[1];
+  $checks[] = appdataCleanupPlusDiagnosticsCheck("runtime-safety",
+    $runtimeHealth["inspectionStatus"] === "inspection_refused" ? "error" : ($runtimeHealth["inspectionStatus"] === "missing" ? "info" : "ok"),
+    "Runtime directory safety inspection; missing volatile storage can be normal after reboot.", $runtimeHealth);
+  $cache = appdataCleanupPlusDiagnosticsStatsCacheSummary();
+  $checks[] = appdataCleanupPlusDiagnosticsCheck("stats-cache",
+    in_array($cache["status"], array("failed", "partial"), true) || $cache["invalidEntryCount"] > 0 ? "warning" : ($cache["status"] === "unavailable" ? "info" : "ok"),
+    "Runtime statistics cache inspection; a missing disposable cache rebuilds on demand.", $cache);
+  $mountInventory = appdataCleanupPlusDiagnosticsMountInventory();
+  $checks[] = appdataCleanupPlusDiagnosticsCheck("mount-inventory-current",
+    $mountInventory["status"] === "complete" ? "ok" : "warning",
+    "Mount inventory checked at export time; latest-scan mount checks are reported separately.", $mountInventory);
 
   $quarantineStatus = $quarantine["purgeErrorCount"] > 0 || $quarantine["destinationMissingCount"] > 0
     ? "warning"
@@ -1306,6 +1428,12 @@ function appdataCleanupPlusDiagnosticsCollect($callback, &$metadata) {
   }
 }
 
+function appdataCleanupPlusDiagnosticsMountInventory() {
+  $paths = appdataCleanupPlusReadMountInfoPaths($reason);
+  return array("status" => $paths === null ? "unavailable" : "complete", "reasonCode" => $reason,
+    "collectedAt" => date("c"), "mountCount" => $paths === null ? null : count($paths));
+}
+
 function appdataCleanupPlusDiagnosticsFixtureRootSummary() {
   $info = appdataCleanupPlusResolveFixtureRootInfo();
   $counts = array_fill_keys(array("ready", "missing", "not_writable", "unsafe_symlink", "unsafe_path", "no_sources"), 0);
@@ -1363,11 +1491,8 @@ function buildAppdataCleanupPlusDiagnosticsBundle($token="") {
       "ignoredCandidates" => $collect("ignoredCandidates", function() { return appdataCleanupPlusDiagnosticsIgnoredCandidatesSummary(50); }),
       "auditHistory" => $collect("auditHistory", function() { return appdataCleanupPlusDiagnosticsRedactAuditHistory(getAppdataCleanupPlusAuditHistory(50)); }),
       "runtimeLocks" => $collect("runtimeLocks", function() { return appdataCleanupPlusDiagnosticsRuntimeLockSummary(); }),
-      "statsCache" => $collect("statsCache", function() { return array(
-        "path" => appdataCleanupPlusDiagnosticsRedactPath(appdataCleanupPlusStatsCacheFile()),
-        "exists" => is_file(appdataCleanupPlusStatsCacheFile()),
-        "entryCount" => count(readAppdataCleanupPlusJsonFile(appdataCleanupPlusStatsCacheFile(), array()))
-      ); }),
+      "statsCache" => $collect("statsCache", function() { return appdataCleanupPlusDiagnosticsStatsCacheSummary(); }),
+      "mountInventoryCurrent" => $collect("mountInventoryCurrent", function() { return appdataCleanupPlusDiagnosticsMountInventory(); }),
       "latestScanMetrics" => $collect("latestScanMetrics", function() { return appdataCleanupPlusDiagnosticsStateFileEnvelope(appdataCleanupPlusLatestScanMetricsFile(), appdataCleanupPlusSanitizeScanMetrics(readAppdataCleanupPlusJsonFile(appdataCleanupPlusLatestScanMetricsFile(), array())), 1); }),
       "snapshots" => $collect("snapshots", function() { return appdataCleanupPlusDiagnosticsSnapshotSummary(); })
     ),
@@ -1402,7 +1527,7 @@ function buildAppdataCleanupPlusDiagnosticsBundle($token="") {
     $sections["snapshots"]["omittedCount"] = max(0, ($bundle["state"]["snapshots"]["count"] ?? 0) - $sections["snapshots"]["includedCount"]);
     if ($sections["snapshots"]["omittedCount"] > 0) $sections["snapshots"]["status"] = "partial";
   }
-  foreach (array("auditHistory" => array(appdataCleanupPlusAuditLogFile(), "jsonl"), "statsCache" => array(appdataCleanupPlusStatsCacheFile(), "json")) as $id => $file) {
+  foreach (array("auditHistory" => array(appdataCleanupPlusAuditLogFile(), "jsonl")) as $id => $file) {
     $health = appdataCleanupPlusDiagnosticsJsonFileHealth($id, $file[0], false, $file[1]);
     if ($sections[$id]["status"] === "failed") continue;
     if (!$health["exists"]) $sections[$id]["status"] = "unavailable";

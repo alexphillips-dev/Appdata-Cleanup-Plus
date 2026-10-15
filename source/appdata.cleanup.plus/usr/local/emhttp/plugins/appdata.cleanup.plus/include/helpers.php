@@ -1058,7 +1058,8 @@ function appdataCleanupPlusIsRuntimePath($path) {
 // Retain the lock namespace across upgrades. A root-owned sticky /var/tmp
 // protects a validated private child just as a non-writable parent does.
 // Never repair an untrusted entry: chmod does not change its owner.
-function appdataCleanupPlusValidateRuntimeDirectory($path, $create=false) {
+function appdataCleanupPlusValidateRuntimeDirectory($path, $create=false, &$reasonCode=null) {
+  $reasonCode = "unsafe_path";
   $path = rtrim(str_replace("\\", "/", (string)$path), "/");
   $root = appdataCleanupPlusRuntimeDir();
   if ( ! appdataCleanupPlusIsRuntimePath($path) || preg_match('~(?:^|/)\.{1,2}(?:/|$)|[\x00-\x1f]~', $path) ) return false;
@@ -1075,27 +1076,50 @@ function appdataCleanupPlusValidateRuntimeDirectory($path, $create=false) {
       clearstatcache(true, $part);
       $stat = @lstat($part);
     }
-    if ( ! is_array($stat) || ($stat["mode"] & 0170000) !== 0040000 || is_link($part) ) return false;
+    $reasonCode = "missing";
+    if ( ! is_array($stat) ) { if ( ! is_readable(dirname($part)) ) $reasonCode = "unreadable"; return false; }
+    $reasonCode = "unsafe_symlink";
+    if ( is_link($part) ) return false;
+    $reasonCode = "invalid_type";
+    if ( ($stat["mode"] & 0170000) !== 0040000 ) return false;
     // Windows is supported only for development fixtures; production is POSIX.
     if ( PHP_OS_FAMILY !== "Windows" ) {
+      $reasonCode = "unsafe_owner";
       if ( $private ? $stat["uid"] !== $uid : ! in_array($stat["uid"], array(0, $uid), true) ) return false;
       $trustedStickyParent = ! $private && $stat["uid"] === 0 && ($stat["mode"] & 01000);
+      $reasonCode = "unsafe_permissions";
       if ( ($stat["mode"] & 0022) && ! $trustedStickyParent ) return false;
       if ( $private && $create && ($stat["mode"] & 0777) !== 0700 ) {
         if ( ! @chmod($part, 0700) ) return false;
       }
     }
   }
+  $reasonCode = "verified";
   return true;
 }
 
-function appdataCleanupPlusRuntimeFileStat($path) {
-  if ( ! appdataCleanupPlusIsRuntimePath($path) || ! appdataCleanupPlusValidateRuntimeDirectory(dirname($path)) ||
+function appdataCleanupPlusRuntimeFileStat($path, &$reasonCode=null) {
+  $reasonCode = "unsafe_path";
+  if ( ! appdataCleanupPlusIsRuntimePath($path) ||
     preg_match('~(?:^|/)\.{1,2}(?:/|$)|[\x00-\x1f]~', (string)$path) ) return false;
+  if ( ! appdataCleanupPlusValidateRuntimeDirectory(dirname($path), false, $reasonCode) ) return false;
   clearstatcache(true, $path);
   $stat = @lstat($path);
-  if ( ! is_array($stat) || ($stat["mode"] & 0170000) !== 0100000 || is_link($path) || $stat["nlink"] !== 1 ) return false;
-  if ( PHP_OS_FAMILY !== "Windows" && ($stat["uid"] !== (function_exists("posix_geteuid") ? posix_geteuid() : 0) || ($stat["mode"] & 0022)) ) return false;
+  $reasonCode = is_readable(dirname($path)) ? "missing" : "unreadable";
+  if ( ! is_array($stat) ) return false;
+  $reasonCode = "unsafe_symlink";
+  if ( is_link($path) ) return false;
+  $reasonCode = "invalid_type";
+  if ( ($stat["mode"] & 0170000) !== 0100000 ) return false;
+  $reasonCode = "unsafe_hardlink";
+  if ( $stat["nlink"] !== 1 ) return false;
+  if ( PHP_OS_FAMILY !== "Windows" ) {
+    $reasonCode = "unsafe_owner";
+    if ( $stat["uid"] !== (function_exists("posix_geteuid") ? posix_geteuid() : 0) ) return false;
+    $reasonCode = "unsafe_permissions";
+    if ( $stat["mode"] & 0022 ) return false;
+  }
+  $reasonCode = "verified";
   return $stat;
 }
 

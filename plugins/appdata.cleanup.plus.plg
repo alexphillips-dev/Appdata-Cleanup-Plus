@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.15.03">
-<!ENTITY md5 "d1642348e67bf83e25fd44fc8169b0ec">
+<!ENTITY version "2026.10.15.04">
+<!ENTITY md5 "b19523349eaa132200f3e9f58c5fae8e">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.15.04
+- Improve diagnostics for runtime safety: distinguish missing or empty lock storage from refused ownership, permission, link, and readability checks without changing runtime state.
+- Include distinct mount-verification failure reasons and scan check counts, with a separate timestamped mount-inventory check at export time.
+- Report runtime cache health, expiry and entry counts using bounded secure reads; preserve privacy and treat a missing disposable cache as normal.
+
 ###2026.10.15.03
 - Keep Broad container access in Details only, removing its expandable disclosure from the Source column so cleanup rows stay compact.
 

@@ -1582,7 +1582,8 @@ function removeParentsUsedByInstalledContainers($availableVolumes, $containers) 
   return $filtered;
 }
 
-function buildPathSecurityLockReason($resolvedPath, $settings=null, $storageMeta=null) {
+function buildPathSecurityLockReason($resolvedPath, $settings=null, $storageMeta=null, &$mountReasonCode=null) {
+  $mountReasonCode = "not_checked";
   if ( ! is_dir($resolvedPath) ) {
     return "Path no longer exists.";
   }
@@ -1609,7 +1610,7 @@ function buildPathSecurityLockReason($resolvedPath, $settings=null, $storageMeta
     return buildPathSymlinkSegmentLockReason($resolvedPath);
   }
 
-  $mountReason = appdataCleanupPlusMountSafetyReason($resolvedPath, ($storageMeta["kind"] ?? "") === "zfs");
+  $mountReason = appdataCleanupPlusMountSafetyReason($resolvedPath, ($storageMeta["kind"] ?? "") === "zfs", $mountReasonCode);
   if ( $mountReason !== "" ) return $mountReason;
 
   if ( ! @realpath($resolvedPath) ) {
@@ -1675,7 +1676,7 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
       $zfsResolutionMessage = "";
       $zfsResolutionDetail = isset($storageMeta["resolutionDetail"]) ? trim((string)$storageMeta["resolutionDetail"]) : "";
       $matchedZfsMapping = isset($storageMeta["matchedMapping"]) && is_array($storageMeta["matchedMapping"]) ? $storageMeta["matchedMapping"] : array();
-      $securityLockReason = buildPathSecurityLockReason($resolvedPath, $settings, $storageMeta);
+      $securityLockReason = buildPathSecurityLockReason($resolvedPath, $settings, $storageMeta, $mountReasonCode);
       $pathStats = buildCandidatePathStats($resolvedPath, $classification, $securityLockReason, $includeHeavyStats);
       $realPath = @realpath($resolvedPath);
 
@@ -1747,6 +1748,7 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
         "lastModifiedExact" => $pathStats["lastModifiedExact"],
         "statsPending" => ! empty($pathStats["statsPending"]),
         "securityLockReason" => $securityLockReason,
+        "mountReasonCode" => $mountReasonCode,
         "policyLocked" => false,
         "policyReason" => "",
         "ignored" => false,

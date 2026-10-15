@@ -185,6 +185,24 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     });
     const failedCollector = await page.evaluate(async()=>JSON.parse(await downloadedBlob.text()));
     assert.ok(failedCollector.troubleshooting.findings.some(f=>f.id==='collection'),'Failed collectors still require attention');
+    await page.evaluate(() => {
+      maintenance.state.rows=[{id:'mount-failure',name:'runtime',canDelete:false,securityLockReason:'Localized safety message',mountReasonCode:'mount_inventory_invalid'}];
+      maintenance.state.scanMetrics={startedAt:'2026-09-19T10:00:00Z',phases:[],mountInspection:{reasonCounts:{mount_inventory_invalid:1}}};
+      maintenance.exportDiagnostics();
+      requests.at(-1).deferred.resolve({ok:true,bundle:{schemaVersion:5,collection:{status:'partial',sections:{runtimeLocks:{status:'partial'}}},
+        troubleshooting:{overview:{status:'warning'},checks:[{id:'runtime-locks',status:'warning',summary:'Inspection refused',details:{inspectionStatus:'inspection_refused',reasonCode:'unsafe_permissions'}}]},
+        state:{runtimeLocks:{status:'partial',inspectionStatus:'inspection_refused',reasonCode:'unsafe_permissions'},
+          statsCache:{status:'unavailable',storage:'runtime',reasonCode:'missing',entryCount:null,ttlSeconds:900},
+          mountInventoryCurrent:{status:'complete',reasonCode:'verified',mountCount:3}}}});
+    });
+    const runtimeDiagnostics = await page.evaluate(async()=>JSON.parse(await downloadedBlob.text()));
+    assert.equal(runtimeDiagnostics.rows[0].decision.primaryBlocker,'mount_inventory_invalid');
+    assert.equal(runtimeDiagnostics.scan.metrics.mountInspection.failedCheckCount,1);
+    assert.equal(runtimeDiagnostics.serverDiagnostics.state.mountInventoryCurrent.reasonCode,'verified');
+    assert.equal(runtimeDiagnostics.serverDiagnostics.state.statsCache.entryCount,null);
+    assert.equal(runtimeDiagnostics.serverDiagnostics.state.statsCache.storage,'runtime');
+    assert.equal(runtimeDiagnostics.troubleshooting.findings.find(item=>item.id==='runtime-locks').details.reasonCode,'unsafe_permissions');
+    assert.equal(runtimeDiagnostics.troubleshooting.status,'warning','Refused inspection remains a warning in the downloaded bundle');
     const refined = await page.evaluate(() => {
       const rows=[{id:'ok',path:'/fixture/ok',displayPath:'/fixture/ok',canDelete:true},{id:'retry',path:'/fixture/retry',displayPath:'/fixture/retry',canDelete:true}];
       const context=maintenance.buildOperationContext('delete',rows);

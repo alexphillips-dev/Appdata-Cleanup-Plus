@@ -28,7 +28,8 @@ function appdataCleanupPlusDecodeMountInfoPath($path) {
   );
 }
 
-function appdataCleanupPlusReadMountInfoPaths() {
+function appdataCleanupPlusReadMountInfoPaths(&$reasonCode=null) {
+  $reasonCode = "mount_inventory_unavailable";
   $contents = false;
   $mountPaths = array();
 
@@ -38,7 +39,10 @@ function appdataCleanupPlusReadMountInfoPaths() {
     $contents = @file_get_contents("/proc/self/mountinfo");
   }
 
-  if ( ! is_string($contents) || trim($contents) === "" ) return null;
+  if ( ! is_string($contents) ) return null;
+  $reasonCode = "mount_inventory_empty";
+  if ( trim($contents) === "" ) return null;
+  $reasonCode = "mount_inventory_invalid";
 
   foreach ( preg_split('/\r\n|\r|\n/', $contents) as $line ) {
     $fields = preg_split('/\s+/', trim((string)$line));
@@ -50,12 +54,36 @@ function appdataCleanupPlusReadMountInfoPaths() {
     $mountPaths[$mountPath] = true;
   }
 
+  $reasonCode = "verified";
   return $mountPaths;
+}
+
+function appdataCleanupPlusSanitizeMountInspection($value) {
+  $value = is_array($value) ? $value : array();
+  $counts = array();
+  foreach (array("directory", "mount", "mount_inventory_unavailable", "mount_inventory_empty", "mount_inventory_invalid", "filesystem_metadata_failed") as $code) {
+    $count = $value["reasonCounts"][$code] ?? 0;
+    $counts[$code] = is_numeric($count) ? max(0, min(100000000, (int)$count)) : 0;
+  }
+  $failed = $counts["mount_inventory_unavailable"] + $counts["mount_inventory_empty"] + $counts["mount_inventory_invalid"] + $counts["filesystem_metadata_failed"];
+  return array("status" => array_sum($counts) === 0 ? "not_checked" : ($failed ? "incomplete" : "verified"),
+    "checkCount" => array_sum($counts), "failedCheckCount" => $failed, "reasonCounts" => $counts);
 }
 
 // Unknown is a separate result: even an exact ZFS mapping must not turn a
 // failed filesystem/mount inspection into authorization to act.
-function appdataCleanupPlusMountStatus($path) {
+function appdataCleanupPlusMountStatus($path, &$reasonCode=null) {
+  $status = appdataCleanupPlusInspectMountStatus($path, $reasonCode);
+  $store =& appdataCleanupPlusRuntimeStore();
+  if (isset($store["scanMountInspection"])) {
+    $counts =& $store["scanMountInspection"]["reasonCounts"];
+    $counts[$reasonCode] = min(100000000, ($counts[$reasonCode] ?? 0) + 1);
+  }
+  return $status;
+}
+
+function appdataCleanupPlusInspectMountStatus($path, &$reasonCode=null) {
+  $reasonCode = "filesystem_metadata_failed";
   $path = appdataCleanupPlusCanonicalizePath($path);
   clearstatcache(true, $path);
 
@@ -64,17 +92,20 @@ function appdataCleanupPlusMountStatus($path) {
   }
 
   if ( isset($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"]) && is_array($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"]) ) {
-    return ! empty($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"][$path]) ? "mount" : "directory";
+    $reasonCode = ! empty($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"][$path]) ? "mount" : "directory";
+    return $reasonCode;
   }
 
-  $mountInfoPaths = appdataCleanupPlusReadMountInfoPaths();
+  $mountInfoPaths = appdataCleanupPlusReadMountInfoPaths($reasonCode);
   if ( $mountInfoPaths === null ) return "unknown";
   if ( isset($mountInfoPaths[$path]) ) {
+    $reasonCode = "mount";
     return "mount";
   }
 
   $parentPath = dirname($path);
   if ( $parentPath === $path ) {
+    $reasonCode = "mount";
     return "mount";
   }
 
@@ -83,18 +114,20 @@ function appdataCleanupPlusMountStatus($path) {
   $parentStat = @stat($parentPath);
 
   if ( ! is_array($pathStat) || ! is_array($parentStat) || ! isset($pathStat["dev"], $parentStat["dev"]) ) {
+    $reasonCode = "filesystem_metadata_failed";
     return "unknown";
   }
 
-  return $pathStat["dev"] !== $parentStat["dev"] ? "mount" : "directory";
+  $reasonCode = $pathStat["dev"] !== $parentStat["dev"] ? "mount" : "directory";
+  return $reasonCode;
 }
 
 function pathIsMountPoint($path) {
   return appdataCleanupPlusMountStatus($path) !== "directory";
 }
 
-function appdataCleanupPlusMountSafetyReason($path, $allowVerifiedMount=false) {
-  $status = appdataCleanupPlusMountStatus($path);
+function appdataCleanupPlusMountSafetyReason($path, $allowVerifiedMount=false, &$reasonCode=null) {
+  $status = appdataCleanupPlusMountStatus($path, $reasonCode);
   if ( $status === "unknown" ) return "Folder contents could not be inspected safely.";
   return $status === "mount" && ! $allowVerifiedMount ? "Mount-point folders are locked for safety." : "";
 }
