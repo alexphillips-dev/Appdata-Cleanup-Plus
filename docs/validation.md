@@ -36,6 +36,8 @@ Row exports distinguish blocking `mountEvidence` from informational `broadMountE
 
 Compose protection covers Compose Manager project files, indirect projects, supported short/long bind syntax, `.env` variables (including `export`), and override files. It is a conservative scanner, not a complete YAML/Compose interpreter. Unresolved variables, traversal, relative bind paths, and detected include/extends/inline-volume forms block cleanup until the configuration can be inspected safely. Additional syntax requires regression fixtures before claiming support.
 
+Indirect projects support directory targets and explicit Compose file targets, including custom filenames and legacy file targets without an `indirect_mode` marker. File targets use their parent directory for `.env`, standard filenames, and adjacent overrides; project-side overrides remain protective. The selected file is required: missing/unreadable targets or invalid/contradictory mode metadata keep cleanup blocked. Regression tests cover scan metrics, owned-path filtering, unrelated actionable candidates, and action-time blocking when a selected file disappears. Unreadable-file permission coverage requires non-root POSIX PHP and reports a skip on Windows or when run as root. On Unraid, confirm these flows with a stopped file-mode stack and verify that its appdata remains protected after reload and rescan.
+
 ## Pull-request test packages
 
 A maintainer can apply the `test-build` label to a pull request. **PR test package** builds that exact head SHA with a read-only token and uploads a 14-day artifact whose name includes the PR number and SHA. Remove and reapply the label to request a new build after changes. Review the PR's normal CI results before installing its package.

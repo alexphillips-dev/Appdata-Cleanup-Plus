@@ -166,6 +166,83 @@ try {
   file_put_contents($root . '/projects/demo/compose.override.yml', "services:\n  app:\n    volumes:\n      - /mnt/user/appdata/override:/config\n");
   check(appdataCleanupPlusCurrentOwnershipLockReason('/mnt/user/appdata/indirect', $settings) !== '', 'Indirect stacks must be protected.');
   check(appdataCleanupPlusCurrentOwnershipLockReason('/mnt/user/appdata/override', $settings) !== '', 'Project overrides must be protected.');
+  $meta = array(); appdataCleanupPlusComposeReferencedPaths($settings, $meta);
+  check(!$meta['uncertain'] && $meta['fileCount'] === 2, 'Legacy indirect directories must remain verified.');
+  file_put_contents($root . '/projects/demo/indirect_mode', 'folder');
+  appdataCleanupPlusComposeReferencedPaths($settings, $meta);
+  check(!$meta['uncertain'], 'Explicit folder mode must remain verified.');
+
+  // File mode must protect stopped stacks without locking unrelated appdata.
+  $fileBase = $root . '/file stacks';
+  mkdir($fileBase);
+  file_put_contents($fileBase . '/.env', "APPDATA=/mnt/user/appdata\nSTACK=selected\n");
+  file_put_contents($fileBase . '/compose.override.yml', "services:\n  app:\n    volumes:\n      - /mnt/user/appdata/adjacent-override:/extra\n");
+  foreach (array('docker-compose.prod.yml', 'compose.yaml', 'compose.yml', 'docker-compose.yaml', 'docker-compose.yml') as $filename) {
+    $selectedFile = $fileBase . '/' . $filename;
+    file_put_contents($selectedFile, 'services:' . "\n  app:\n    volumes:\n      - " . '${APPDATA}/${STACK}:/config' . "\n");
+    file_put_contents($root . '/projects/demo/indirect', $selectedFile);
+    foreach (array('file', null) as $mode) {
+      if ($mode === null) unlink($root . '/projects/demo/indirect_mode');
+      else file_put_contents($root . '/projects/demo/indirect_mode', $mode);
+      clearstatcache();
+      $info = appdataCleanupPlusComposeFileListForProject($root . '/projects/demo');
+      check(!$info['uncertain'] && $info['baseDir'] === $fileBase && $info['files'][0] === $selectedFile, 'Explicit and inferred file mode must select the exact file and its parent.');
+      $protected = appdataCleanupPlusComposeReferencedPaths($settings, $meta);
+      check(!$meta['uncertain'] && $meta['projectCount'] === 1 && $meta['fileCount'] === 3, 'Read the selected file once plus both override locations.');
+      foreach (array('selected', 'adjacent-override', 'override') as $name) {
+        $path = '/mnt/user/appdata/' . $name;
+        check(removeComposeReferencedCandidates(array('owned'=>array('HostDir'=>$path)), $protected, $settings) === array(), 'Selected-file and override ownership must filter scan candidates.');
+        check(strpos(appdataCleanupPlusCurrentOwnershipLockReason($path, $settings), 'stack now references') !== false, 'Action-time checks must retain actual file-mode ownership.');
+      }
+      check(appdataCleanupPlusCurrentOwnershipLockReason('/mnt/user/appdata/unrelated', $settings) === '', 'A readable file-mode stack must not lock unrelated appdata.');
+    }
+    unlink($selectedFile);
+  }
+
+  $selectedFile = $fileBase . '/docker-compose.prod.yml';
+  file_put_contents($root . '/projects/demo/indirect', $selectedFile);
+  file_put_contents($root . '/projects/demo/indirect_mode', 'file');
+  foreach (array('      - ${MISSING}/data:/config', '      - ./data:/config', '      - *saved-bind') as $volume) {
+    file_put_contents($selectedFile, "services:\n  app:\n    volumes:\n$volume\n");
+    appdataCleanupPlusComposeReferencedPaths($settings, $meta);
+    check($meta['uncertain'], 'File-mode discovery must preserve unresolved-variable and unsupported-bind safeguards.');
+  }
+  file_put_contents($selectedFile, "services:\n  app:\n    volumes:\n      - /mnt/user/appdata/selected:/config\n");
+  // Revalidation must notice changes after a successful ownership scan.
+  appdataCleanupPlusComposeReferencedPaths($settings, $meta);
+  check(!$meta['uncertain'], 'Valid file mode must recover after its contents are repaired.');
+  unlink($selectedFile);
+  foreach (array($selectedFile, $fileBase, '') as $invalidTarget) {
+    file_put_contents($root . '/projects/demo/indirect', $invalidTarget);
+    clearstatcache();
+    appdataCleanupPlusComposeReferencedPaths($settings, $meta);
+    check($meta['uncertain'], 'Missing, directory, and empty file-mode targets must fail closed despite readable overrides.');
+    foreach (array('preview_delete', 'delete', 'quarantine', 'dry-run-delete', 'dry-run-quarantine') as $operation) {
+      $result = executeCandidateOperation(array(array('path'=>$root . '/candidate')), $settings, $operation);
+      check($result['results'][0]['status'] === 'blocked', 'Invalid file-mode targets must block real and preview operations during revalidation.');
+      check(file_get_contents($root . '/candidate/keep.txt') === 'untouched', 'Invalid Compose inventory must preserve candidate data.');
+    }
+  }
+  file_put_contents($selectedFile, "services: {}\n");
+  file_put_contents($root . '/projects/demo/indirect', $selectedFile);
+  foreach (array('folder', 'unknown', '') as $invalidMode) {
+    file_put_contents($root . '/projects/demo/indirect_mode', $invalidMode);
+    appdataCleanupPlusComposeReferencedPaths($settings, $meta);
+    check($meta['uncertain'], 'Contradictory or invalid mode metadata must not authorize cleanup.');
+  }
+  file_put_contents($root . '/projects/demo/indirect_mode', 'file');
+  if (PHP_OS_FAMILY !== 'Windows' && function_exists('posix_geteuid') && posix_geteuid() !== 0) {
+    chmod($selectedFile, 0000);
+    clearstatcache();
+    check(!is_readable($selectedFile), 'The permission fixture must actually be unreadable.');
+    appdataCleanupPlusComposeReferencedPaths($settings, $meta);
+    check($meta['uncertain'], 'Unreadable selected files must fail closed.');
+    chmod($selectedFile, 0600);
+    clearstatcache();
+  } else {
+    echo "ownership_templates: SKIP unreadable-file permissions (requires non-root POSIX PHP)\n";
+  }
+  unlink($root . '/projects/demo/indirect_mode');
   unlink($root . '/projects/demo/indirect');
   unlink($root . '/projects/demo/compose.override.yml');
   unlink($root . '/projects/demo/compose.yaml');

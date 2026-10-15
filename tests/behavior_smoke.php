@@ -1306,6 +1306,35 @@ behaviorSmokeAssertContains($manualCustomSourceRoot, $manualCustomFilesystemRow[
 behaviorSmokeAssertSame($slashLivePath, normalizeUserPath($slashTemplatePath), "Path normalization should collapse trailing slashes on saved template paths.");
 behaviorSmokeAssertTrue(! empty($templatedRow["statsPending"]), "Initial dashboard rows should mark heavy stats as pending for progressive hydration.");
 $composeUncertainProjectDir = $composeProjectsFixtureDir . "/compose-uncertain";
+// Issue #9: file-mode projects must filter their owned data without locking
+// unrelated rows; missing targets must still lock the entire scan.
+$composeFileBase = $stateRoot . "/compose file mode";
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($composeFileBase), "File-mode fixture directory should be created.");
+$composeSelectedFile = $composeFileBase . "/docker-compose.prod.yml";
+file_put_contents($composeFileBase . "/.env", "APPDATA_ROOT=" . $appdataShareRoot . "\n");
+file_put_contents($composeSelectedFile, "services:\n  protected:\n    volumes:\n      - \${APPDATA_ROOT}/compose-owned:/config\n");
+file_put_contents($composeProtectedProjectDir . "/indirect", $composeSelectedFile);
+file_put_contents($composeProtectedProjectDir . "/indirect_mode", "file");
+$composeFileDashboard = buildDashboardPayload();
+$composeFileRows = $composeFileDashboard["payload"]["rows"];
+behaviorSmokeAssertSame(null, behaviorSmokeFindRowByPath($composeFileRows, $composeProtectedPath), "File-mode owned data must not appear as orphaned.");
+$composeFileUnrelated = behaviorSmokeFindRowByPath($composeFileRows, $manualAliasTemplatePath);
+behaviorSmokeAssertTrue(is_array($composeFileUnrelated) && !empty($composeFileUnrelated["canDelete"]) && empty($composeFileUnrelated["scanVerificationLocked"]), "Valid file-mode projects must leave unrelated candidates actionable.");
+behaviorSmokeAssertSame(1, count(array_filter($composeFileDashboard["payload"]["scanMetrics"]["phases"], function($phase) {
+  return $phase["name"] === "compose_scan" && $phase["projectCount"] === 1 && $phase["fileCount"] === 1 && !$phase["uncertain"];
+})), "File-mode scan metrics must report the selected file without uncertainty.");
+unlink($composeSelectedFile);
+clearstatcache();
+$missingComposeAction = resolveCandidateForAction($composeFileUnrelated, getAppdataCleanupPlusSafetySettings(), "quarantine");
+behaviorSmokeAssertSame(false, $missingComposeAction["ok"], "A selected file removed after scanning must block action-time revalidation.");
+$missingComposeDashboard = buildDashboardPayload();
+behaviorSmokeAssertTrue(count($missingComposeDashboard["payload"]["rows"]) > 0, "Missing file-mode targets must retain review rows.");
+foreach ($missingComposeDashboard["payload"]["rows"] as $lockedComposeRow) {
+  behaviorSmokeAssertTrue(!empty($lockedComposeRow["scanVerificationLocked"]) && empty($lockedComposeRow["canDelete"]), "Missing file-mode targets must lock every returned row.");
+}
+unlink($composeProtectedProjectDir . "/indirect");
+unlink($composeProtectedProjectDir . "/indirect_mode");
+behaviorSmokeRemoveTree($composeFileBase);
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($composeUncertainProjectDir), "Compose uncertain project fixture should be created.");
 file_put_contents($composeUncertainProjectDir . "/compose.yaml", "services:\n  uncertain:\n    volumes:\n      - \${MISSING_APPDATA_ROOT}/compose-uncertain:/config\n");
 $composeUncertainDashboard = buildDashboardPayload();

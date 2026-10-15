@@ -431,19 +431,39 @@ function appdataCleanupPlusExpandComposeEnv($text, $env) {
 function appdataCleanupPlusComposeFileListForProject($projectDir) {
   $baseDir = $projectDir;
   $uncertain = false;
+  $requiredFile = "";
+  $files = array();
 
-  if ( is_file($projectDir . "/indirect") ) {
-    $indirect = trim((string)@file_get_contents($projectDir . "/indirect"));
-    if ( $indirect !== "" ) {
-      $baseDir = rtrim($indirect, "/");
+  $indirectPath = $projectDir . "/indirect";
+  if ( file_exists($indirectPath) || is_link($indirectPath) ) {
+    $indirect = is_file($indirectPath) ? trim((string)@file_get_contents($indirectPath)) : "";
+    $modePath = $projectDir . "/indirect_mode";
+    $mode = "";
+    if ( file_exists($modePath) || is_link($modePath) ) {
+      $mode = is_file($modePath) ? strtolower(trim((string)@file_get_contents($modePath))) : "";
+      $uncertain = ! in_array($mode, array("file", "folder"), true);
     }
-    $uncertain = $indirect === "" || ! is_dir($baseDir) || ! is_readable($baseDir);
+
+    // Older projects may have no mode marker. A selected file is mandatory,
+    // unlike the optional standard names and overrides probed below.
+    if ( $mode === "file" || ($indirect !== "" && is_file($indirect)) ) {
+      $requiredFile = $indirect;
+      if ( $indirect !== "" ) {
+        $baseDir = dirname($indirect);
+        $files[] = $indirect;
+      }
+      $uncertain = $uncertain || $mode === "folder" || $indirect === "" || ! is_file($indirect) || ! is_readable($indirect);
+    } else {
+      if ( $indirect !== "" ) $baseDir = rtrim($indirect, "/");
+      $uncertain = $uncertain || $indirect === "" || ! is_dir($baseDir) || ! is_readable($baseDir);
+    }
   }
 
   return array(
     "baseDir" => $baseDir,
     "uncertain" => $uncertain,
-    "files" => array_values(array_unique(array(
+    "requiredFile" => $requiredFile,
+    "files" => array_values(array_unique(array_merge($files, array(
       $baseDir . "/compose.yaml",
       $baseDir . "/compose.yml",
       $baseDir . "/docker-compose.yaml",
@@ -456,7 +476,7 @@ function appdataCleanupPlusComposeFileListForProject($projectDir) {
       $projectDir . "/compose.override.yml",
       $projectDir . "/docker-compose.override.yaml",
       $projectDir . "/docker-compose.override.yml"
-    )))
+    ))))
   );
 }
 
@@ -552,6 +572,7 @@ function appdataCleanupPlusComposeReferencedPaths($settings=null, &$meta=null) {
 
     foreach ( isset($fileInfo["files"]) ? (array)$fileInfo["files"] : array() as $composeFile ) {
       if ( ! is_file($composeFile) ) {
+        if ( $composeFile === $fileInfo["requiredFile"] ) $uncertain = true;
         continue;
       }
 

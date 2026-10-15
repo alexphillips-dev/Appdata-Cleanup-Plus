@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.06.09">
-<!ENTITY md5 "3708b44ca9f024fbc98693e8f549511d">
+<!ENTITY version "2026.10.15.01">
+<!ENTITY md5 "9817a1ae457e9bb00827aa321d056f2e">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.15.01
+- Fix Compose Manager projects that point directly to a Compose file, including custom filenames and legacy file targets, so valid stacks no longer lock unrelated cleanup candidates.
+- Preserve ownership protection from selected files, environment variables, and overrides; keep cleanup blocked for missing or unreadable targets, invalid mode metadata, and unsupported bind syntax.
+
 ###2026.10.06.09
 Includes all changes since stable 2026.09.19.12.
 
