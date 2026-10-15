@@ -135,6 +135,20 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     assert.equal(mismatch.localization.viewport.width,1440);
     assert.ok(!JSON.stringify(mismatch).includes('private-scan-token'));
     await page.evaluate(() => {
+      const history=[{results:[{datasetName:'PrivateHistoryPool/RetiredApp',status:'deleted',message:"Destroyed ZFS dataset 'PrivateHistoryPool/RetiredApp'.",
+        zfsChildDatasets:['PrivateHistoryPool/RetiredApp/Child'],zfsSnapshots:['PrivateHistoryPool/RetiredApp@saved'],zfsSnapshotCount:1}]}];
+      maintenance.state.auditHistory=history;
+      maintenance.state.auditHistoryLoaded=true;
+      maintenance.exportDiagnostics();
+      window.historicalServerBundle={schemaVersion:5,state:{auditHistory:history},collection:{status:'complete'}};
+      requests.at(-1).deferred.resolve({ok:true,bundle:historicalServerBundle});
+    });
+    const historicalDownload=await page.evaluate(async()=>JSON.parse(await downloadedBlob.text()));
+    assert.ok(!/PrivateHistoryPool|RetiredApp|@saved/.test(JSON.stringify(historicalDownload)),'Downloaded diagnostics must redact historical ZFS fields and messages on both export paths');
+    assert.equal(historicalDownload.auditHistory[0].results[0].status,'deleted');
+    assert.equal(historicalDownload.serverDiagnostics.state.auditHistory[0].results[0].zfsSnapshotCount,1);
+    assert.equal(await page.evaluate(()=>historicalServerBundle.state.auditHistory[0].results[0].datasetName),'PrivateHistoryPool/RetiredApp','Export must not mutate the server response');
+    await page.evaluate(() => {
       maintenance.startScanStatHydration(); // No pending sizes must retain scan evidence.
       maintenance.state.scanHydration={active:true,queue:[],requestToken:'finished'};
       maintenance.requestNextScanStatBatch('finished'); // Normal completion.

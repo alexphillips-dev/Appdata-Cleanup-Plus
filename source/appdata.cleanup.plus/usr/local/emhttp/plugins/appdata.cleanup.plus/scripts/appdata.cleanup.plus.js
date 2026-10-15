@@ -3013,7 +3013,7 @@
       // Match complete identifier words, and never re-redact an alias emitted
       // earlier in this export. Names such as "data" must not corrupt prose.
       var pattern = /^[A-Za-z0-9_]+$/.test(raw) ? new RegExp("\\b" + raw + "\\b", "g") : null;
-      text = text.split(/(<[a-z]+(?:-\d+)?>)/g).map(function(part, index) {
+      text = text.split(/(<(?:audit-)?[a-z]+(?:-\d+)?>)/g).map(function(part, index) {
         if (index % 2) return part;
         return pattern ? part.replace(pattern, function() { return sanitized; }) : part.split(raw).join(sanitized);
       }).join("");
@@ -3376,6 +3376,22 @@
   }
 
   function sanitizeDiagnosticsAuditHistory(history, redactor) {
+    // Keep audit ZFS replacements separate from the generic redactor so a
+    // dataset named like a status code cannot change machine-readable fields.
+    var zfsRedactor = buildDiagnosticsRedactor();
+    var zfsName = function(value, label) {
+      if (typeof value !== "string") return "";
+      if (/^<(?:audit-)?(?:dataset|snapshot)-\d+>$/.test(value)) return value;
+      return sanitizeDiagnosticsName(value, zfsRedactor, label);
+    };
+    $.each($.isArray(history) ? history : [], function(_, entry) {
+      $.each($.isArray(entry && entry.results) ? entry.results : [], function(_, result) {
+        result = result || {};
+        zfsName(result.datasetName, "audit-dataset");
+        $.each($.isArray(result.zfsChildDatasets) ? result.zfsChildDatasets : [], function(_, value) { zfsName(value, "audit-dataset"); });
+        $.each($.isArray(result.zfsSnapshots) ? result.zfsSnapshots : [], function(_, value) { zfsName(value, "audit-snapshot"); });
+      });
+    });
     return $.map($.isArray(history) ? history : [], function(entry) {
       var nextEntry = $.extend(true, {}, entry || {});
 
@@ -3388,13 +3404,19 @@
         nextResult.restoredPath = sanitizeDiagnosticsPath(nextResult.restoredPath || "", redactor);
         nextResult.displayPath = sanitizeDiagnosticsPath(nextResult.displayPath || nextResult.path || "", redactor);
         nextResult.path = sanitizeDiagnosticsPath(nextResult.path || "", redactor);
-        nextResult.message = sanitizeDiagnosticsFreeText(nextResult.message || "", redactor);
+        if (Object.prototype.hasOwnProperty.call(nextResult, "datasetName")) nextResult.datasetName = zfsName(nextResult.datasetName, "audit-dataset");
+        if (Object.prototype.hasOwnProperty.call(nextResult, "datasetMountpoint")) nextResult.datasetMountpoint = sanitizeDiagnosticsPath(nextResult.datasetMountpoint, redactor);
+        ["zfsChildDatasets", "zfsSnapshots"].forEach(function(field) {
+          if (Object.prototype.hasOwnProperty.call(nextResult, field)) nextResult[field] = $.map($.isArray(nextResult[field]) ? nextResult[field] : [], function(value) { return zfsName(value, field === "zfsSnapshots" ? "audit-snapshot" : "audit-dataset"); });
+        });
+        if (Object.prototype.hasOwnProperty.call(nextResult, "zfsImpactSummary")) nextResult.zfsImpactSummary = sanitizeDiagnosticsFreeText(sanitizeDiagnosticsFreeText(nextResult.zfsImpactSummary, zfsRedactor), redactor);
+        nextResult.message = sanitizeDiagnosticsFreeText(sanitizeDiagnosticsFreeText(nextResult.message || "", zfsRedactor), redactor);
         delete nextResult.id;
         delete nextResult.row;
         return nextResult;
       });
       delete nextEntry.requestedIds;
-      nextEntry.message = sanitizeDiagnosticsFreeText(nextEntry.message || "", redactor);
+      nextEntry.message = sanitizeDiagnosticsFreeText(sanitizeDiagnosticsFreeText(nextEntry.message || "", zfsRedactor), redactor);
 
       return nextEntry;
     });
@@ -3666,7 +3688,10 @@
 
   function completeDiagnosticsExport(payload, serverBundle, failure) {
     var serverAvailable = !!(serverBundle && typeof serverBundle === "object" && [4,5].indexOf(serverBundle.schemaVersion) !== -1);
-    payload.serverDiagnostics = serverAvailable ? sanitizeDiagnosticsValue(serverBundle, buildDiagnosticsRedactor(), "") : {};
+    var serverRedactor = buildDiagnosticsRedactor();
+    var serverCopy = serverAvailable ? $.extend(true, {}, serverBundle) : {};
+    if (serverCopy.state && $.isArray(serverCopy.state.auditHistory)) serverCopy.state.auditHistory = sanitizeDiagnosticsAuditHistory(serverCopy.state.auditHistory, serverRedactor);
+    payload.serverDiagnostics = sanitizeDiagnosticsValue(serverCopy, serverRedactor, "");
     payload.collection.sections.server = {status:serverAvailable ? ((serverBundle.collection || {}).status || "partial") : "failed", category:serverAvailable ? "none" : (failure === "invalid_response" ? "invalid_response" : "request_failed")};
     var browserVersion = diagnosticsVersion(payload.pluginVersion);
     var serverVersion = diagnosticsVersion(serverBundle && serverBundle.runtime && serverBundle.runtime.pluginVersion);

@@ -629,7 +629,32 @@ setIgnoredAppdataCleanupPlusCandidates(array(
   )
 ));
 file_put_contents($syslogFixture, "\nAppdata Cleanup Plus: rename(/mnt/user/appdata/My Private App,/mnt/user/appdata/.quarantine/My Private App): Permission denied\nAppdata Cleanup Plus: cannot open '/mnt/user/appdata/Private, Financial Records': Permission denied\n", FILE_APPEND);
+$historicalZfs = array(
+  array("message" => "Earlier reference to PrivatePool/RetiredApp/Child@saved", "results" => array()),
+  array("results" => array(array("datasetName" => "PrivatePool/RetiredApp", "datasetMountpoint" => "/mnt/PrivatePool/RetiredApp",
+    "status" => "deleted", "recursive" => true, "zfsChildDatasetCount" => 1, "zfsSnapshotCount" => 1,
+    "zfsChildDatasets" => array("PrivatePool/RetiredApp/Child"), "zfsSnapshots" => array("PrivatePool/RetiredApp/Child@saved"),
+    "zfsImpactSummary" => "PrivatePool/RetiredApp/Child and PrivatePool/RetiredApp/Child@saved",
+    "message" => "Destroyed ZFS dataset 'PrivatePool/RetiredApp'.")))
+);
+$historicalBefore = json_encode($historicalZfs);
+$historicalExport = appdataCleanupPlusDiagnosticsRedactAuditHistory($historicalZfs);
+foreach (array("PrivatePool", "RetiredApp", "/Child", "@saved") as $privateFragment) {
+  behaviorSmokeAssertNotContains($privateFragment, json_encode($historicalExport), "Historical ZFS identifiers must be redacted without current scan rows.");
+}
+behaviorSmokeAssertSame($historicalBefore, json_encode($historicalZfs), "Export must not mutate audit history.");
+behaviorSmokeAssertSame("deleted", $historicalExport[1]["results"][0]["status"], "ZFS redaction must retain operation status.");
+behaviorSmokeAssertSame(1, $historicalExport[1]["results"][0]["zfsSnapshotCount"], "ZFS redaction must retain snapshot counts.");
+$aliasCollision = appdataCleanupPlusDiagnosticsRedactAuditHistory(array(array("results" => array(array("name" => "audit", "datasetName" => "pool/audit", "message" => "Destroyed ZFS dataset 'pool/audit'.")))));
+behaviorSmokeAssertContains($aliasCollision[0]["results"][0]["datasetName"], $aliasCollision[0]["results"][0]["message"], "Application names must not corrupt generated audit dataset aliases.");
+behaviorSmokeAssertContains($historicalExport[1]["results"][0]["zfsSnapshots"][0], $historicalExport[0]["message"], "Earlier messages must use aliases collected from later results.");
+$auditFileBefore = file_get_contents(appdataCleanupPlusAuditLogFile());
+appendAppdataCleanupPlusAuditEntry($historicalZfs[1]);
+$auditFileWithFixture = file_get_contents(appdataCleanupPlusAuditLogFile());
 $diagnosticsBundle = buildAppdataCleanupPlusDiagnosticsBundle();
+behaviorSmokeAssertNotContains("PrivatePool", json_encode($diagnosticsBundle), "The complete server bundle must redact historical ZFS fields and messages.");
+behaviorSmokeAssertSame($auditFileWithFixture, file_get_contents(appdataCleanupPlusAuditLogFile()), "Diagnostics must leave persisted audit identifiers intact.");
+file_put_contents(appdataCleanupPlusAuditLogFile(), $auditFileBefore);
 foreach (array("Private App", "Financial Records") as $privateFragment) {
   behaviorSmokeAssertNotContains($privateFragment, json_encode($diagnosticsBundle), "The complete server bundle must remove private path fragments containing spaces and punctuation.");
 }

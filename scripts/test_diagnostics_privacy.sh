@@ -45,6 +45,8 @@ grep -Fq 'appdataCleanupPlusDiagnosticsIgnoredCandidatesSummary(50)' <<<"${serve
 grep -Fq 'appdataCleanupPlusDiagnosticsRedactValue($bundle)' <<<"${server_bundle}" || fail "Server diagnostics bundle needs a final recursive privacy scrub."
 
 node "${ROOT_DIR}/tests/diagnostics_privacy_client.js"
+grep -Fq 'Historical ZFS identifiers must be redacted without current scan rows.' "${ROOT_DIR}/tests/behavior_smoke.php" || fail "Historical ZFS server privacy coverage is missing."
+grep -Fq 'Downloaded diagnostics must redact historical ZFS fields and messages on both export paths' "${ROOT_DIR}/tests/maintenance_ui.cjs" || fail "Historical ZFS download privacy coverage is missing."
 grep -Fq 'Private backup names, filenames and IDs must stay outside public diagnostics.' "${ROOT_DIR}/tests/recovery_backups.php" || fail "Private backup export/import privacy coverage is missing."
 grep -Fq 'Operation recovery retains presentation fields only.' "${ROOT_DIR}/tests/behavior_smoke.php" || fail "Operation result allowlist coverage is missing."
 grep -Fq 'Backup audit counts must be numeric and discard unknown fields.' "${ROOT_DIR}/tests/behavior_smoke.php" || fail "Backup audit summary privacy coverage is missing."

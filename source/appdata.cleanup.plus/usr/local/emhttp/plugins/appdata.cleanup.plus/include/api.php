@@ -759,6 +759,19 @@ function appdataCleanupPlusDiagnosticsLineMatches($line) {
 
 function appdataCleanupPlusDiagnosticsRedactAuditHistory($history) {
   $entries = array();
+  $zfsAliases = array();
+  // Collect the whole history first: entry messages can reference identifiers
+  // present in later results, independently of the current scan.
+  foreach ( is_array($history) ? $history : array() as $entry ) {
+    foreach ( is_array($entry["results"] ?? null) ? $entry["results"] : array() as $result ) {
+      foreach (array("datasetName" => "audit-dataset", "zfsChildDatasets" => "audit-dataset", "zfsSnapshots" => "audit-snapshot") as $field => $label) {
+        $values = $field === "datasetName" ? array($result[$field] ?? "") : ($result[$field] ?? array());
+        foreach (is_array($values) ? $values : array() as $value) {
+          if (is_string($value) && $value !== "" && !isset($zfsAliases[$value])) $zfsAliases[$value] = "<" . $label . "-" . (count($zfsAliases) + 1) . ">";
+        }
+      }
+    }
+  }
 
   foreach ( is_array($history) ? $history : array() as $entry ) {
     $nextEntry = is_array($entry) ? $entry : array();
@@ -770,6 +783,14 @@ function appdataCleanupPlusDiagnosticsRedactAuditHistory($history) {
       if ( isset($nextResult["name"]) ) {
         $nextResult["name"] = "<app>";
       }
+      if (isset($nextResult["datasetName"])) $nextResult["datasetName"] = is_string($result["datasetName"]) ? ($zfsAliases[$result["datasetName"]] ?? "") : "";
+      foreach (array("zfsChildDatasets", "zfsSnapshots") as $field) {
+        if (isset($nextResult[$field])) $nextResult[$field] = array_map(function($value) use ($zfsAliases) {
+          return is_string($value) ? ($zfsAliases[$value] ?? "") : "";
+        }, is_array($result[$field]) ? $result[$field] : array());
+      }
+      if (isset($nextResult["datasetMountpoint"])) $nextResult["datasetMountpoint"] = appdataCleanupPlusDiagnosticsRedactPath($nextResult["datasetMountpoint"]);
+      if (isset($nextResult["zfsImpactSummary"])) $nextResult["zfsImpactSummary"] = appdataCleanupPlusDiagnosticsRedactText(strtr(appdataCleanupPlusDiagnosticsString($nextResult["zfsImpactSummary"]), $zfsAliases));
 
       foreach ( array("sourcePath", "destination", "restoredPath", "displayPath", "path") as $pathKey ) {
         if ( isset($nextResult[$pathKey]) ) {
@@ -778,9 +799,13 @@ function appdataCleanupPlusDiagnosticsRedactAuditHistory($history) {
       }
 
       if ( isset($nextResult["message"]) ) {
-        $message = appdataCleanupPlusDiagnosticsRedactText($nextResult["message"]);
+        $message = appdataCleanupPlusDiagnosticsRedactText(strtr(appdataCleanupPlusDiagnosticsString($nextResult["message"]), $zfsAliases));
         if ( isset($result["name"]) && trim((string)$result["name"]) !== "" ) {
-          $message = str_replace((string)$result["name"], "<app>", $message);
+          $parts = preg_split('/(<(?:audit-)?[a-z]+(?:-\d+)?>)/', $message, -1, PREG_SPLIT_DELIM_CAPTURE);
+          foreach ($parts as $index => $part) {
+            if ($index % 2 === 0) $parts[$index] = str_replace((string)$result["name"], "<app>", $part);
+          }
+          $message = implode("", $parts);
         }
         $nextResult["message"] = $message;
       }
@@ -792,7 +817,7 @@ function appdataCleanupPlusDiagnosticsRedactAuditHistory($history) {
     $nextEntry["results"] = $nextResults;
     unset($nextEntry["requestedIds"]);
     if ( isset($nextEntry["message"]) ) {
-      $nextEntry["message"] = appdataCleanupPlusDiagnosticsRedactText($nextEntry["message"]);
+      $nextEntry["message"] = appdataCleanupPlusDiagnosticsRedactText(strtr(appdataCleanupPlusDiagnosticsString($nextEntry["message"]), $zfsAliases));
     }
 
     $entries[] = appdataCleanupPlusDiagnosticsRedactValue($nextEntry);

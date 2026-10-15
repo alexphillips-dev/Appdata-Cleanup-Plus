@@ -9,7 +9,7 @@ const repoRoot = path.resolve(__dirname, "..");
 const sourcePath = path.join(repoRoot, "source", "appdata.cleanup.plus", "usr", "local", "emhttp", "plugins", "appdata.cleanup.plus", "scripts", "appdata.cleanup.plus.js");
 const source = fs.readFileSync(sourcePath, "utf8");
 const startMarker = "  function buildDiagnosticsRedactor()";
-const endMarker = "  function sanitizeDiagnosticsAuditHistory(";
+const endMarker = "  function sanitizeDiagnosticsSettings(";
 const start = source.indexOf(startMarker);
 const end = source.indexOf(endMarker, start);
 
@@ -43,12 +43,32 @@ const jquery = {
 
 const context = { $: jquery };
 vm.runInNewContext(
-  source.slice(start, end) + "\nthis.privacy = { buildDiagnosticsDecision, buildDiagnosticsRedactor, sanitizeDiagnosticsFreeText, diagnosticsKeyLooksLikePath, sanitizeDiagnosticsValue, sanitizeDiagnosticsPath, sanitizeDiagnosticsTemplateRefs, sanitizeDiagnosticsRow, sanitizeDiagnosticsScanMetrics };",
+  source.slice(start, end) + "\nthis.privacy = { buildDiagnosticsDecision, buildDiagnosticsRedactor, sanitizeDiagnosticsFreeText, diagnosticsKeyLooksLikePath, sanitizeDiagnosticsValue, sanitizeDiagnosticsPath, sanitizeDiagnosticsTemplateRefs, sanitizeDiagnosticsRow, sanitizeDiagnosticsScanMetrics, sanitizeDiagnosticsAuditHistory };",
   context,
   { filename: sourcePath }
 );
 
 const privacy = context.privacy;
+const historicalZfs = [{message:"Earlier reference to PrivatePool/RetiredApp/Child@saved",results:[]},{results:[{
+  datasetName:'PrivatePool/RetiredApp',datasetMountpoint:'/mnt/PrivatePool/RetiredApp',status:'deleted',recursive:true,
+  zfsChildDatasets:['PrivatePool/RetiredApp/Child'],zfsSnapshots:['PrivatePool/RetiredApp/Child@saved'],
+  zfsChildDatasetCount:1,zfsSnapshotCount:1,zfsImpactSummary:'PrivatePool/RetiredApp/Child and PrivatePool/RetiredApp/Child@saved',
+  message:"Destroyed ZFS dataset 'PrivatePool/RetiredApp'."
+}]}];
+const historyBefore=JSON.stringify(historicalZfs);
+const auditRedactor=privacy.buildDiagnosticsRedactor();
+const historicalExport=privacy.sanitizeDiagnosticsValue(privacy.sanitizeDiagnosticsAuditHistory(historicalZfs,auditRedactor),auditRedactor,'');
+assert.ok(!/PrivatePool|RetiredApp|Child|saved/.test(JSON.stringify(historicalExport).replace(/zfsChildDatasets|zfsChildDatasetCount/g,'')),'Historical ZFS identifiers must be redacted without current scan rows');
+assert.equal(historicalExport[1].results[0].status,'deleted');
+assert.equal(historicalExport[1].results[0].zfsSnapshotCount,1);
+assert.ok(historicalExport[0].message.includes(historicalExport[1].results[0].zfsSnapshots[0]),'Aliases must match earlier messages and later result fields');
+assert.ok(historicalExport[1].results[0].message.includes(historicalExport[1].results[0].datasetName));
+assert.equal(JSON.stringify(historicalZfs),historyBefore,'Export must not modify stored/browser audit records');
+const codeCollision=privacy.sanitizeDiagnosticsAuditHistory([{results:[{datasetName:'deleted',status:'deleted',message:"Destroyed ZFS dataset 'deleted'."},{datasetName:'dataset',message:"Destroyed ZFS dataset 'dataset'."}]}],privacy.buildDiagnosticsRedactor());
+assert.equal(codeCollision[0].results[0].status,'deleted','Dataset aliases must not change status codes');
+assert.match(codeCollision[0].results[1].datasetName,/^<audit-dataset-\d+>$/);
+const serverAliases=privacy.sanitizeDiagnosticsAuditHistory([{results:[{datasetName:'<audit-dataset-1>',message:"Destroyed ZFS dataset '<audit-dataset-1>'."}]}],privacy.buildDiagnosticsRedactor());
+assert.equal(serverAliases[0].results[0].datasetName,'<audit-dataset-1>','Already-sanitized server aliases remain intact');
 const decision = privacy.buildDiagnosticsDecision({sourceKind:'template',storageKind:'zfs',canDelete:false,scanVerificationLocked:true,mountEvidence:[{name:'private-canary'}],broadMountEvidence:[{paths:['/private-canary']}],securityLockReason:'private-canary',securityReasonCode:'private-canary'});
 assert.equal(decision.primaryBlocker,'ownership_unverified');
 assert.equal(decision.specificMountCount,1);
