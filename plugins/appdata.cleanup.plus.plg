@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.15.02">
-<!ENTITY md5 "559d5a6668c5ed1a72181641d2e66416">
+<!ENTITY version "2026.10.15.03">
+<!ENTITY md5 "d1642348e67bf83e25fd44fc8169b0ec">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.15.03
+- Keep Broad container access in Details only, removing its expandable disclosure from the Source column so cleanup rows stay compact.
+
 ###2026.10.15.02
 - Harden runtime directories, cleanup locks, and operation-progress files against unsafe ownership, permissions, symlinks, and hard links; keep status reads non-mutating and preserve the lock namespace across updates.
 - Block cleanup when mount inventory or filesystem metadata cannot be verified, including exact ZFS candidates, while preserving safe Tools fixture creation.

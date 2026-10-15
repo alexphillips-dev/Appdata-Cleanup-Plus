@@ -109,12 +109,7 @@ async function checkActionLayout(page, locale, width) {
         const initial = await page.evaluate(() => ({scroll:document.documentElement.scrollWidth, direction:getComputedStyle(document.querySelector('#acp-app')).direction}));
         assert.ok(initial.scroll <= width + 2, `${locale} ${width}px: page overflow ${initial.scroll}`);
         assert.equal(initial.direction, direction);
-        const broad=page.locator('#acp-results .acp-mount-evidence');
-        assert.equal(await broad.locator('summary').textContent(),await page.evaluate(()=>AppdataCleanupPlus.tr('Broad container access')));
-        await broad.locator('summary').click();
-        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),`${locale}: expanded broad access fits`);
-        assert.equal(await broad.locator('code').evaluate(el=>getComputedStyle(el).direction),'ltr','Mount paths stay LTR');
-        await broad.locator('summary').click();
+        assert.equal(await page.locator('#acp-results .acp-mount-evidence').count(),0,`${locale}: broad access stays out of Source`);
         await page.evaluate(() => {
           const ACP = window.AppdataCleanupPlus;
           const host = document.createElement('div');
@@ -123,9 +118,14 @@ async function checkActionLayout(page, locale, width) {
           host.innerHTML = '<h2></h2><p></p><div class="sa-button-container"><button class="cancel" style="display:none">Cancel</button><button class="confirm">Done</button></div>';
           document.body.append(host);
           const context = {strings:window.appdataCleanupPlusConfig.strings, state:{settings:ACP.defaultSafetySettings()}};
-          const row = {name:'Delete', path:'/mnt/user/appdata/Delete', displayPath:'/mnt/user/appdata/Delete', sourceKind:'filesystem', sourceNames:[], targetPaths:[], templateRefs:[], canDelete:true, storageKind:'filesystem'};
+          const row = {name:'Delete', path:'/mnt/user/appdata/Delete', displayPath:'/mnt/user/appdata/Delete', sourceKind:'filesystem', sourceNames:[], targetPaths:[], templateRefs:[], canDelete:true, storageKind:'filesystem', broadMountEvidence:[{name:'Broad viewer',paths:['/mnt/user']}]};
           ACP.applyDeleteModalClass('acp-delete-modal acp-row-details-modal', ACP.buildRowDetailsModalHtml(context, row));
         });
+        const broad=page.locator('.sweet-alert .acp-mount-evidence');
+        assert.equal(await broad.locator('summary').textContent(),await page.evaluate(()=>AppdataCleanupPlus.tr('Broad container access')));
+        await broad.locator('summary').click();
+        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),`${locale}: expanded Details evidence fits`);
+        assert.equal(await broad.locator('code').evaluate(el=>getComputedStyle(el).direction),'ltr','Mount paths stay LTR');
         const modal = await page.evaluate(() => {
           const node = document.querySelector('.sweet-alert');
           return {direction:node.dir, scroll:document.documentElement.scrollWidth, text:node.textContent, codeDirection:getComputedStyle(node.querySelector('code')).direction};

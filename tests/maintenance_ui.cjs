@@ -257,7 +257,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     for (const entry of reasons) assert.ok(entry.details.includes(entry.reason), 'Details and column must share wording');
     for (const headings of await page.locator('.acp-results-table-head').allTextContents()) assert.match(headings, /SourceDetection reasonActions/);
     assert.ok(await page.locator('.acp-row-badges + .acp-row-detection-reason + .acp-row-side').count());
-    // Broad access is visible in the row without changing selection or ownership.
+    // Broad access stays in Details so it cannot expand the Source column.
     await page.evaluate(()=>{
       const row = {id:'mount',name:'Example',path:'/mnt/user/appdata/example',displayPath:'/mnt/user/appdata/example',canDelete:true,mountEvidence:[],broadMountEvidence:[{name:'Viewer',paths:['/mnt/user']}]};
       maintenance.state.rows=[row];
@@ -266,24 +266,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
       document.querySelector('.sweet-alert').classList.remove('showSweetAlert');
       AppdataCleanupPlus.releaseModalScrollLock(false);
     });
-    assert.equal(await page.locator('#acp-results .acp-mount-evidence').count(),1,'Broad access must be discoverable in the row');
-    const broad = page.locator('#acp-results .acp-mount-evidence');
-    assert.equal(await broad.locator('summary').textContent(),'Broad container access');
-    await broad.locator('summary').click();
-    assert.equal(await broad.evaluate(el=>el.open),true);
-    assert.match(await broad.textContent(),/does not block cleanup/);
-    assert.equal(await page.locator('.acp-row-checkbox').isChecked(),false,'Disclosure clicks must not select a candidate');
-    await broad.locator('summary').press('Escape');
-    assert.equal(await broad.evaluate(el=>el.open),false);
-    await broad.locator('summary').press('Enter');
-    assert.equal(await broad.evaluate(el=>el.open),true,'Keyboard users can inspect broad access');
-    assert.equal(await page.locator('.acp-row-checkbox').isChecked(),false);
-    await page.setViewportSize({width:390,height:844});
-    await broad.locator('summary').click();
-    await broad.locator('summary').click();
-    assert.equal(await broad.evaluate(el=>el.open),true,'Narrow-screen users can inspect broad access');
-    assert.ok(await broad.evaluate(el=>el.getBoundingClientRect().right<=document.documentElement.clientWidth),'Evidence stays within the viewport');
-    await page.setViewportSize({width:1440,height:1000});
+    assert.equal(await page.locator('#acp-results .acp-mount-evidence').count(),0,'Broad access must not expand the Source column');
     assert.ok(!(await page.locator('.acp-row-detection-reason').textContent()).includes('Broad container access'), 'Broad access explanation stays in Details');
     const details=await page.evaluate(()=>AppdataCleanupPlus.buildRowDetailsModalHtml({strings:appdataCleanupPlusConfig.strings,state:maintenance.state},maintenance.state.rows[0]));
     assert.match(details,/Broad container access/);
@@ -292,7 +275,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     assert.equal(await page.locator('.acp-row-checkbox').isChecked(),false);
     await page.locator('.acp-row-checkbox').check();
     assert.equal(await page.locator('.acp-row-checkbox').isChecked(),true,'The actual selection handler must accept a broadly accessible row');
-    const escapedBroad=await page.evaluate(()=>maintenance.buildRowHtml({...maintenance.state.rows[0],broadMountEvidence:[{name:'<img src=x onerror=alert(1)>',paths:['<script>alert(1)</script>']}]}));
+    const escapedBroad=await page.evaluate(()=>AppdataCleanupPlus.buildRowDetailsModalHtml({strings:appdataCleanupPlusConfig.strings,state:maintenance.state},{...maintenance.state.rows[0],broadMountEvidence:[{name:'<img src=x onerror=alert(1)>',paths:['<script>alert(1)</script>']}]}));
     assert.ok(!escapedBroad.includes('<img src=x') && !escapedBroad.includes('<script>'),'Broad-access evidence must escape names and paths');
     // Specific mount blockers still disclose safely with mouse and keyboard.
     await page.evaluate(()=>{

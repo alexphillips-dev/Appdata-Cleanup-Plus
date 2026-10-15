@@ -105,12 +105,8 @@ async function nativeCss(version, theme) {
         document.querySelector('#acp-primary-action').classList.add('acp-button-danger');
       });
       const ordinaryButton=page.locator('#acp-app .acp-button').first();
-      const broad=page.locator('#acp-results .acp-mount-evidence');
-      await broad.locator('summary').click();
-      assert.equal(await broad.evaluate(el=>el.open),true,'Broad access disclosure opens with native theme styles');
-      assert.ok(await broad.evaluate(el=>el.getBoundingClientRect().right<=innerWidth+2),'Expanded broad access fits the viewport');
+      assert.equal(await page.locator('#acp-results .acp-mount-evidence').count(),0,'Broad access is absent from Source');
       assert.equal(await page.locator('.acp-row-checkbox').isDisabled(),false,'Broad access keeps the candidate selectable');
-      await broad.locator('summary').click();
       await ordinaryButton.hover();
       await ordinaryButton.evaluate(el=>Promise.all(el.getAnimations().map(animation=>animation.finished)));
       assert.equal(await ordinaryButton.evaluate(el=>getComputedStyle(el).color),baseline.text,'Hovered plugin buttons retain neutral text');
@@ -152,6 +148,13 @@ async function nativeCss(version, theme) {
         assert.equal(result.bg,baseline.page,`${version} ${theme} ${flow}: modal surface`);
         assert.equal(result.text,baseline.text,`${version} ${theme} ${flow}: modal text`);
         assert.equal(result.kind,expectedClass);
+        if (flow==='details') {
+          const broad=page.locator('.sweet-alert .acp-mount-evidence');
+          assert.equal(await broad.locator('summary').textContent(),'Broad container access');
+          await broad.locator('summary').click();
+          assert.equal(await broad.evaluate(el=>el.open),true,'Broad access remains expandable in Details');
+          assert.ok(await broad.evaluate(el=>el.getBoundingClientRect().right<=innerWidth+2),'Details evidence fits the viewport');
+        }
         if (flow==='quarantine') {
           assert.equal(await page.locator('.acp-modal-host .acp-quarantine-entry').count(),24,'Every quarantine entry must remain inside the replaceable modal host');
           assert.equal(await page.locator('.acp-quarantine-entry > .acp-simple-list-details').count(),24,'Technical details must stay inside their quarantine entry');
