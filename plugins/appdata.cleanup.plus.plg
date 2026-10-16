@@ -2,17 +2,43 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.15.06">
-<!ENTITY md5 "d26e64c276bfb18d59341289f3fbfafe">
+<!ENTITY version "2026.10.15.07">
+<!ENTITY md5 "37d712fabe0ec754db1382e19c7eee6a">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.15.07
+Includes all changes since stable 2026.10.06.09.
+
+**Compose Manager ownership detection**
+- Support projects that point directly to a Compose file, including custom filenames and legacy file targets without an indirect_mode marker, so valid file-mode stacks no longer block unrelated cleanup candidates.
+- Resolve supported relative directory and file binds such as ./db/data and ./db/init.sql against the base Compose file's directory, including short/long bind syntax, environment-variable expansion and relative paths in overrides.
+- Stop reading unrelated default Compose files when an explicit file-mode target is selected. Retain conservative protection from adjacent and project-side overrides.
+- Preserve action-time ownership revalidation and fail closed for missing or unreadable selected files, invalid mode metadata, unresolved variables, traversal, unsafe relative symlink paths and unsupported bind syntax.
+
+**Runtime and cleanup safety**
+- Harden runtime directories, cleanup locks and operation-progress files against unsafe ownership, permissions, symlinks and hard links. Keep status reads non-mutating and preserve the lock namespace across updates.
+- Block cleanup when mount inventory or filesystem metadata cannot be verified, including exact ZFS candidates, while preserving safe Tools fixture creation.
+- Move the disposable size/stat cache from persistent configuration to runtime storage, retaining its 15-minute expiry and 512-entry limit. Rebuild it after reboot without changing persistent audit or recovery records.
+
+**Diagnostics and privacy**
+- Distinguish verified-empty lock storage, missing runtime storage and refused ownership, permission, link or readability checks without repairing or changing runtime state during export.
+- Report mount-verification failure reasons and scan check counts, with a separate timestamped mount-inventory probe at export time.
+- Include runtime cache health, expiry and current/expired/invalid entry counts using bounded secure reads. Keep cache keys and paths private, and treat a missing disposable cache as normal.
+- Redact historical ZFS dataset, child-dataset and snapshot identifiers from audit fields, messages and impact summaries even when they are absent from the current scan. Preserve consistent aliases and stored audit records; browser downloads also sanitize historical audit data from older servers.
+- Add localized diagnostics explanations across all 42 supported languages.
+
+**Interface and validation**
+- Keep Broad container access in Details only, removing its expandable disclosure from the Source column so cleanup rows remain compact. Broad access remains informational and does not establish ownership or block cleanup.
+- Expand ownership, action-revalidation, runtime-safety, mount-failure, diagnostics-privacy and browser regression coverage, including the new runtime-safety CI suite.
+- Remove the unnecessary shell wrapper from package extraction in the plugin-description browser test and exercise paths containing spaces and shell metacharacters.
+
 ###2026.10.15.06
 - Fix Compose ownership checks for relative directory and file binds such as ./db/data and ./db/init.sql, resolving them against the base Compose directory while retaining traversal, unresolved-variable, unreadable-configuration and unsafe-symlink safeguards.
 - Stop loading unrelated default Compose files when an explicit file-mode target is selected; retain conservative override protection and recheck ownership before cleanup.
@@ -1545,7 +1571,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
