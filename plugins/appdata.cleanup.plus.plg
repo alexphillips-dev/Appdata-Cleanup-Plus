@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.15.05">
-<!ENTITY md5 "e41a2acaf3d5ae2c3325d6b00e23fe51">
+<!ENTITY version "2026.10.15.06">
+<!ENTITY md5 "d26e64c276bfb18d59341289f3fbfafe">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.10.15.06
+- Fix Compose ownership checks for relative directory and file binds such as ./db/data and ./db/init.sql, resolving them against the base Compose directory while retaining traversal, unresolved-variable, unreadable-configuration and unsafe-symlink safeguards.
+- Stop loading unrelated default Compose files when an explicit file-mode target is selected; retain conservative override protection and recheck ownership before cleanup.
+
 ###2026.10.15.05
 - Fix diagnostics privacy for historical ZFS operations: redact dataset, child-dataset and snapshot identifiers from audit fields and messages even when absent from the current scan, while preserving stored audit records.
 

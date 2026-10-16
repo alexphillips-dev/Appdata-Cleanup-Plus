@@ -459,15 +459,17 @@ function appdataCleanupPlusComposeFileListForProject($projectDir) {
     }
   }
 
+  // An explicit file replaces default base-file discovery. Keep the existing
+  // conservative override probes in both locations.
+  if ( $requiredFile === "" ) {
+    foreach ( array("compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml") as $name ) $files[] = $baseDir . "/" . $name;
+  }
+
   return array(
     "baseDir" => $baseDir,
     "uncertain" => $uncertain,
     "requiredFile" => $requiredFile,
     "files" => array_values(array_unique(array_merge($files, array(
-      $baseDir . "/compose.yaml",
-      $baseDir . "/compose.yml",
-      $baseDir . "/docker-compose.yaml",
-      $baseDir . "/docker-compose.yml",
       $baseDir . "/compose.override.yaml",
       $baseDir . "/compose.override.yml",
       $baseDir . "/docker-compose.override.yaml",
@@ -503,7 +505,7 @@ function appdataCleanupPlusBuildComposeRootPattern($sourceRoots) {
 // Conservatively inspect supported bind syntax before matching source roots.
 // This is not a YAML parser: unsupported bind layouts must never silently mean
 // that a stopped stack owns no data.
-function appdataCleanupPlusComposeBindHosts($contents, &$uncertain) {
+function appdataCleanupPlusComposeBindHosts($contents, &$uncertain, $baseDir="") {
   $hosts = array();
   foreach ( preg_split('/\r?\n/', $contents) as $line ) {
     $value = null;
@@ -520,8 +522,24 @@ function appdataCleanupPlusComposeBindHosts($contents, &$uncertain) {
     }
     if ( preg_match('/^\s*(?:include|extends)\s*:|^\s*volumes\s*:\s*[\[{]\s*[^\s\]}]/', $line) ) $uncertain = true;
     if ( $value === null ) continue;
-    if ( preg_match('/[\x00-\x1f\x7f$]/', $value) || preg_match('#(^|/)\.\.(/|$)#', $value) || strpos($value, './') === 0 ) {
+    if ( preg_match('/[\x00-\x1f\x7f$]/', $value) || preg_match('#(^|/)\.\.(/|$)#', $value) ) {
       $uncertain = true;
+      continue;
+    }
+    if ( $value === "." || strpos($value, './') === 0 ) {
+      // Overrides also resolve against the first/base Compose file, not their
+      // own directory. Never fall back to the PHP process working directory.
+      $base = appdataCleanupPlusCanonicalizePath($baseDir);
+      if ( $base === "" || ! preg_match('#^(?:/|[A-Za-z]:/)#', $base) || ! is_dir($base) || ! is_readable($base) || preg_match('/[\x00-\x1f\x7f\\\\]/', $value) ) {
+        $uncertain = true;
+        continue;
+      }
+      $value = appdataCleanupPlusCanonicalizePath(preg_replace('#/\.(?=/|$)#', '', rtrim($base, '/') . '/' . $value));
+      if ( $value === "" || pathHasSymlinkSegment($value) ) {
+        $uncertain = true;
+        continue;
+      }
+      $hosts[] = $value;
       continue;
     }
     if ( strpos($value, '/') !== 0 ) continue; // named volumes do not name an appdata bind
@@ -584,7 +602,7 @@ function appdataCleanupPlusComposeReferencedPaths($settings=null, &$meta=null) {
 
       $fileCount++;
       $contents = appdataCleanupPlusExpandComposeEnv($contents, $env);
-      foreach ( appdataCleanupPlusComposeBindHosts($contents, $uncertain) as $host ) {
+      foreach ( appdataCleanupPlusComposeBindHosts($contents, $uncertain, $baseDir) as $host ) {
         foreach ( $sourceRoots as $sourceRoot ) {
           if ( ! appdataCleanupPlusPathsOverlap($sourceRoot, $host) ) continue;
           // Retain whole-root references and the complete path, including spaces.

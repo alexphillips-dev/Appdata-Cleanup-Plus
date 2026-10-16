@@ -134,7 +134,7 @@ try {
       check(removeComposeReferencedCandidates(array('row'=>array('HostDir'=>$expected)), $protected) === array(), 'Scan must apply the same overlap policy.');
     }
   }
-  foreach (array('      - /mnt/user/appdata/../appdata/demo:/config', '      - ${MISSING}/demo:/config', '      - ./demo:/config') as $volume) {
+  foreach (array('      - /mnt/user/appdata/../appdata/demo:/config', '      - ${MISSING}/demo:/config', '      - ./../demo:/config') as $volume) {
     file_put_contents($root . '/projects/demo/compose.yaml', "services:\n  app:\n    volumes:\n$volume\n");
     $meta = array(); appdataCleanupPlusComposeReferencedPaths($settings, $meta);
     check($meta['uncertain'], 'Ambiguous binds must not silently produce an empty protected set.');
@@ -202,7 +202,67 @@ try {
   $selectedFile = $fileBase . '/docker-compose.prod.yml';
   file_put_contents($root . '/projects/demo/indirect', $selectedFile);
   file_put_contents($root . '/projects/demo/indirect_mode', 'file');
-  foreach (array('      - ${MISSING}/data:/config', '      - ./data:/config', '      - *saved-bind') as $volume) {
+  // Relative directory/file binds, including overrides, use the base directory.
+  $relativeSettings = $settings;
+  $relativeSettings['manualAppdataSources'] = array($fileBase);
+  mkdir($fileBase . '/db/data', 0700, true);
+  file_put_contents($fileBase . '/db/data/keep.txt', 'untouched');
+  file_put_contents($fileBase . '/db/init.sql', 'fixture SQL');
+  foreach (array('./db/data'=>'db/data', './db/init.sql'=>'db/init.sql', './My App'=>'My App', '././db//data/.'=>'db/data', '.'=>'') as $relative=>$suffix) {
+    foreach (array("      - \"$relative:/config:ro\"", "      - type: bind\n        source: '$relative' # literal path\n        target: /config") as $volume) {
+      $uncertain = false;
+      $hosts = appdataCleanupPlusComposeBindHosts("services:\n  app:\n    volumes:\n$volume\n", $uncertain, $fileBase);
+      check(!$uncertain && $hosts === array($fileBase . ($suffix === '' ? '' : '/' . $suffix)), 'Relative short/long binds must resolve dots, file paths and spaces against the base directory.');
+    }
+  }
+  foreach (array('', 'relative-base', $fileBase . '/missing', $fileBase . '/../file stacks') as $invalidBase) {
+    $uncertain = false;
+    check(appdataCleanupPlusComposeBindHosts("      - ./db/data:/data\n", $uncertain, $invalidBase) === array() && $uncertain, 'Relative binds without a usable absolute base must fail closed.');
+  }
+  if (PHP_OS_FAMILY !== 'Windows') {
+    file_put_contents($fileBase . '/.env', "DATA=./db/data\n");
+    file_put_contents($selectedFile, 'services:' . "\n  app:\n    volumes:\n      - " . '${DATA}:/var/lib/postgresql/data' . "\n      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro\n");
+    file_put_contents($fileBase . '/docker-compose.yml', "services:\n  unused:\n    volumes:\n      - \${MISSING}/data:/data\n      - /mnt/user/appdata/unselected:/data2\n");
+    file_put_contents($root . '/projects/demo/compose.override.yml', "services:\n  app:\n    volumes:\n      - ./override-data:/extra\n");
+    foreach (array('file', null) as $mode) {
+      if ($mode === null) unlink($root . '/projects/demo/indirect_mode');
+      else file_put_contents($root . '/projects/demo/indirect_mode', $mode);
+      $protected = appdataCleanupPlusComposeReferencedPaths($relativeSettings, $meta);
+      check(!$meta['uncertain'] && $meta['fileCount'] === 3, 'File mode must ignore an unselected default file even if it contains unresolved binds.');
+      foreach (array('db/data', 'db/init.sql', 'override-data') as $suffix) {
+        $owned = $fileBase . '/' . $suffix;
+        check(in_array($owned, $protected, true), 'Relative binds must preserve their full protected path, including nonexistent bind targets.');
+        check(removeComposeReferencedCandidates(array('owned'=>array('HostDir'=>dirname($owned))), $protected, $relativeSettings) === array(), 'A relative bind must protect its candidate parent.');
+        check(strpos(appdataCleanupPlusCurrentOwnershipLockReason($owned, $relativeSettings), 'stack now references') !== false, 'Action revalidation must protect relative bind ownership.');
+        foreach (array('preview_delete', 'delete', 'quarantine', 'dry-run-delete', 'dry-run-quarantine') as $operation) {
+          $result = executeCandidateOperation(array(array('path'=>$owned)), $relativeSettings, $operation);
+          check($result['results'][0]['status'] === 'blocked', 'Every cleanup flow must reject relative Compose ownership before filesystem mutation.');
+        }
+      }
+      check(appdataCleanupPlusCurrentOwnershipLockReason('/mnt/user/appdata/unselected', $relativeSettings) === '', 'Unselected default files must not add ownership.');
+      check(appdataCleanupPlusCurrentOwnershipLockReason($fileBase . '/unrelated', $relativeSettings) === '', 'Verified relative binds must leave unrelated candidates unlocked.');
+      check(file_get_contents($fileBase . '/db/data/keep.txt') === 'untouched' && file_get_contents($fileBase . '/db/init.sql') === 'fixture SQL', 'Blocked operations must preserve relative bind data and files.');
+    }
+    // Directory mode still discovers the default file and preserves uncertainty.
+    file_put_contents($root . '/projects/demo/indirect', $fileBase);
+    file_put_contents($root . '/projects/demo/indirect_mode', 'folder');
+    appdataCleanupPlusComposeReferencedPaths($relativeSettings, $meta);
+    check($meta['uncertain'], 'Directory mode must continue inspecting default Compose files.');
+    file_put_contents($fileBase . '/docker-compose.yml', file_get_contents($selectedFile));
+    $protected = appdataCleanupPlusComposeReferencedPaths($relativeSettings, $meta);
+    check(!$meta['uncertain'] && in_array($fileBase . '/db/data', $protected, true), 'Directory-mode relative binds must also resolve against the project base.');
+    unlink($fileBase . '/docker-compose.yml');
+    file_put_contents($root . '/projects/demo/indirect', $selectedFile);
+    file_put_contents($root . '/projects/demo/indirect_mode', 'file');
+    check(symlink($root . '/candidate', $fileBase . '/linked'), 'Create an isolated symlink fixture.');
+    $uncertain = false;
+    appdataCleanupPlusComposeBindHosts("      - ./linked/missing:/data\n", $uncertain, $fileBase);
+    check($uncertain, 'Relative binds through symlink ancestors must fail closed even for missing leaves.');
+    unlink($fileBase . '/linked');
+  } else {
+    echo "ownership_templates: SKIP relative source-root integration (requires POSIX paths; parser cases still run)\n";
+  }
+  foreach (array('      - ${MISSING}/data:/config', '      - ./../data:/config', '      - ./db/../data:/config', '      - ./db\\..\\data:/config', '      - *saved-bind') as $volume) {
     file_put_contents($selectedFile, "services:\n  app:\n    volumes:\n$volume\n");
     appdataCleanupPlusComposeReferencedPaths($settings, $meta);
     check($meta['uncertain'], 'File-mode discovery must preserve unresolved-variable and unsupported-bind safeguards.');

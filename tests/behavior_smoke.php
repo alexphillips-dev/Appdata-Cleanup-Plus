@@ -1333,21 +1333,31 @@ behaviorSmokeAssertTrue(! empty($templatedRow["statsPending"]), "Initial dashboa
 $composeUncertainProjectDir = $composeProjectsFixtureDir . "/compose-uncertain";
 // Issue #9: file-mode projects must filter their owned data without locking
 // unrelated rows; missing targets must still lock the entire scan.
-$composeFileBase = $stateRoot . "/compose file mode";
+$composeFileBase = $appdataShareRoot . "/compose file mode";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($composeFileBase), "File-mode fixture directory should be created.");
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($composeFileBase . "/db/data"), "Relative bind directory fixture should be created.");
+file_put_contents($composeFileBase . "/db/init.sql", "fixture SQL");
 $composeSelectedFile = $composeFileBase . "/docker-compose.prod.yml";
 file_put_contents($composeFileBase . "/.env", "APPDATA_ROOT=" . $appdataShareRoot . "\n");
-file_put_contents($composeSelectedFile, "services:\n  protected:\n    volumes:\n      - \${APPDATA_ROOT}/compose-owned:/config\n");
+file_put_contents($composeSelectedFile, "services:\n  protected:\n    volumes:\n      - \${APPDATA_ROOT}/compose-owned:/config\n      - ./db/data:/var/lib/postgresql/data\n      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro\n");
+file_put_contents($composeFileBase . "/docker-compose.yml", "services:\n  unused:\n    volumes:\n      - \${MISSING}/unused:/config\n");
 file_put_contents($composeProtectedProjectDir . "/indirect", $composeSelectedFile);
 file_put_contents($composeProtectedProjectDir . "/indirect_mode", "file");
 $composeFileDashboard = buildDashboardPayload();
 $composeFileRows = $composeFileDashboard["payload"]["rows"];
 behaviorSmokeAssertSame(null, behaviorSmokeFindRowByPath($composeFileRows, $composeProtectedPath), "File-mode owned data must not appear as orphaned.");
+behaviorSmokeAssertSame(null, behaviorSmokeFindRowByPath($composeFileRows, $composeFileBase), "A project containing relative bind data must not appear as orphaned.");
+behaviorSmokeAssertSame(null, behaviorSmokeFindRowByPath($composeFileRows, $composeFileBase . "/db"), "Relative bind parents must not appear as orphaned.");
 $composeFileUnrelated = behaviorSmokeFindRowByPath($composeFileRows, $manualAliasTemplatePath);
 behaviorSmokeAssertTrue(is_array($composeFileUnrelated) && !empty($composeFileUnrelated["canDelete"]) && empty($composeFileUnrelated["scanVerificationLocked"]), "Valid file-mode projects must leave unrelated candidates actionable.");
 behaviorSmokeAssertSame(1, count(array_filter($composeFileDashboard["payload"]["scanMetrics"]["phases"], function($phase) {
   return $phase["name"] === "compose_scan" && $phase["projectCount"] === 1 && $phase["fileCount"] === 1 && !$phase["uncertain"];
 })), "File-mode scan metrics must report the selected file without uncertainty.");
+// A supported bind introduced after scanning must block the stale candidate.
+file_put_contents($composeSelectedFile, "services:\n  protected:\n    volumes:\n      - ./db/data:/config\n      - " . $manualAliasTemplatePath . ":/late-owner\n");
+$changedComposeAction = resolveCandidateForAction($composeFileUnrelated, getAppdataCleanupPlusSafetySettings(), "quarantine");
+behaviorSmokeAssertSame(false, $changedComposeAction["ok"], "Changed Compose ownership must block a previously actionable candidate.");
+behaviorSmokeAssertContains("stack now references", $changedComposeAction["message"], "Relative binds must not obscure a concrete action-time ownership conflict.");
 unlink($composeSelectedFile);
 clearstatcache();
 $missingComposeAction = resolveCandidateForAction($composeFileUnrelated, getAppdataCleanupPlusSafetySettings(), "quarantine");
