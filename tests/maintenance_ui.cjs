@@ -351,7 +351,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
       M.state.selected={};
       M.renderResults(); M.renderNotices(M.buildLocalNotices()); M.updateActionBar();
     });
-    assert.equal(await page.locator('.acp-badge-kind-actionability').textContent(),'Protected');
+    assert.equal(await page.locator('.acp-row-badges .acp-badge-kind-actionability').count(),0,'Status is not a source');
     assert.match(await page.locator('.acp-row-next-step').textContent(),/Keep required mappings/);
     assert.match(await page.locator('#acp-selection-detail').textContent(),/Select ready rows/,'The bottom bar must display its calculated action guidance');
     assert.equal(await page.locator('.acp-notice-title').first().textContent(),'Scan warning','A valid snapshot with a discovery warning is not a read-only scan');

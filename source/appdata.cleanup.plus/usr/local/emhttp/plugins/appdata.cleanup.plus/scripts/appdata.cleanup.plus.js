@@ -5,6 +5,9 @@
   var config = window.appdataCleanupPlusConfig || {};
   var strings = config.strings || {};
   var actionBarResizeObserver = null;
+  var auroraHeaderObserver = null;
+  var summaryInfoHideTimer = null;
+  var summaryInfoPinnedId = "";
   var state = {
     rows: [],
     summary: { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 },
@@ -219,9 +222,11 @@
     cacheElements();
     installActionBarLayout();
     ACP.applyThemeState(els.$app);
+    installAuroraHeaderSync();
     ACP.watchThemeChanges(function() {
       ACP.applyThemeState(els.$app);
       ACP.syncDeleteModalThemeTokens($(".sweet-alert"));
+      syncAuroraHeader();
     });
     bindEvents();
     renderSummaryCards();
@@ -281,7 +286,96 @@
     syncActionBarLayout();
   }
 
+  function syncAuroraHeader() {
+    var box = document.getElementById("displaybox");
+    var app = document.getElementById("acp-app");
+    if (!box) return;
+    var active = !!app && box.contains(app) && document.documentElement.classList.contains("tp-enhance") && Array.prototype.some.call(document.querySelectorAll("script[src]"), function(script) {
+      try {
+        var url = new URL(script.getAttribute("src"), document.baseURI);
+        return url.origin === window.location.origin && /^\/plugins\/Aurora-Theme\/scripts\/enhance(?:-\d+)?\.js$/.test(url.pathname);
+      } catch (_error) { return false; }
+    });
+    var controls = 'a, button, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])';
+    Array.prototype.forEach.call(box.children, function(heading) {
+      if (!heading.classList.contains("tp-heading")) return;
+      var text = Array.prototype.filter.call(heading.children, function(child) { return child.classList.contains("tp-heading-text"); })[0];
+      [heading, text].forEach(function(node) {
+        if (!node) return;
+        if (active && text && text.querySelector("h1") && !node.matches(controls) && !node.querySelector(controls)) node.setAttribute("data-acp-aurora-duplicate", "true");
+        else node.removeAttribute("data-acp-aurora-duplicate");
+      });
+    });
+  }
+
+  function installAuroraHeaderSync() {
+    if (auroraHeaderObserver) auroraHeaderObserver.disconnect();
+    syncAuroraHeader();
+    var box = document.getElementById("displaybox");
+    if (!box || typeof window.MutationObserver !== "function") return;
+    auroraHeaderObserver = new window.MutationObserver(function(records) {
+      if (records.some(function(record) {
+        return record.target === box || (record.target.nodeType === 1 && record.target.closest(".tp-heading"));
+      })) syncAuroraHeader();
+    });
+    auroraHeaderObserver.observe(box, {childList: true, subtree: true});
+  }
+
+  function closeSummaryInfo() {
+    window.clearTimeout(summaryInfoHideTimer);
+    summaryInfoHideTimer = null;
+    summaryInfoPinnedId = "";
+    if (!els.$summaryCards) return;
+    els.$summaryCards.find(".acp-summary-tooltip").prop("hidden", true);
+    els.$summaryCards.find(".acp-summary-info").attr("aria-expanded", "false");
+  }
+
+  function showSummaryInfo(button, pinned) {
+    var id = button.getAttribute("aria-describedby");
+    var tooltip = document.getElementById(id);
+    if (!tooltip) return;
+    closeSummaryInfo();
+    summaryInfoPinnedId = pinned ? id : "";
+    button.setAttribute("aria-expanded", "true");
+    tooltip.hidden = false;
+    var bounds = button.getBoundingClientRect();
+    var size = tooltip.getBoundingClientRect();
+    var gap = 8;
+    var left = Math.max(12, Math.min(bounds.right - size.width, window.innerWidth - size.width - 12));
+    var top = bounds.bottom + gap;
+    if (top + size.height > window.innerHeight - 12) top = Math.max(12, bounds.top - size.height - gap);
+    tooltip.style.left = left + "px";
+    tooltip.style.top = top + "px";
+  }
+
+  function scheduleSummaryInfoClose() {
+    window.clearTimeout(summaryInfoHideTimer);
+    summaryInfoHideTimer = window.setTimeout(function() {
+      if (summaryInfoPinnedId) return;
+      var active = document.activeElement;
+      if (active && active.classList.contains("acp-summary-info")) return;
+      if (els.$summaryCards.find(".acp-summary-info:hover, .acp-summary-tooltip:hover").length) return;
+      closeSummaryInfo();
+    }, 150);
+  }
+
   function bindEvents() {
+    els.$summaryCards.on("mouseenter.acpSummaryInfo focusin.acpSummaryInfo", ".acp-summary-info", function() {
+      if (summaryInfoPinnedId !== this.getAttribute("aria-describedby")) showSummaryInfo(this, false);
+    }).on("mouseleave.acpSummaryInfo focusout.acpSummaryInfo", ".acp-summary-info", scheduleSummaryInfoClose)
+      .on("mouseenter.acpSummaryInfo", ".acp-summary-tooltip", function() { window.clearTimeout(summaryInfoHideTimer); })
+      .on("mouseleave.acpSummaryInfo", ".acp-summary-tooltip", scheduleSummaryInfoClose)
+      .on("click.acpSummaryInfo", ".acp-summary-info", function() {
+        var id = this.getAttribute("aria-describedby");
+        if (summaryInfoPinnedId === id) closeSummaryInfo();
+        else showSummaryInfo(this, true);
+      });
+    $(document).on("keydown.acpSummaryInfo", function(event) {
+      if (event.key === "Escape") closeSummaryInfo();
+    }).on("click.acpSummaryInfo", function(event) {
+      if (!$(event.target).closest(".acp-summary-info, .acp-summary-tooltip").length) closeSummaryInfo();
+    });
+    $(window).on("resize.acpSummaryInfo scroll.acpSummaryInfo", closeSummaryInfo);
     els.$app.on("click", "[data-action='review-recent-operation']", function() {
       openRecoveredOperation($(this).attr("data-operation-id"));
     });
@@ -2780,29 +2874,55 @@
   }
 
   function renderSummaryCards() {
+    closeSummaryInfo();
     var selectedCount = getSelectedRows().length;
     var detectedIcon = '<svg viewBox="0 0 24 24" focusable="false"><circle cx="10.75" cy="10.75" r="5.75"></circle><path d="m15.25 15.25 4 4"></path></svg>';
     var readyIcon = '<svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="8.25"></circle><path d="m8.25 12.35 2.55 2.55 5.25-5.8"></path></svg>';
     var blockedIcon = '<svg viewBox="0 0 24 24" focusable="false"><rect x="6.5" y="10.25" width="11" height="8.25" rx="1.75"></rect><path d="M8.75 10.25V8.2a3.25 3.25 0 0 1 6.5 0v2.05"></path><path d="M12 13.4v2"></path></svg>';
     var selectedIcon = '<svg viewBox="0 0 24 24" focusable="false"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>';
     var cards = [
-      { label: state.scanVerification === "incomplete" ? ACP.tr("Unverified") : ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, subtitle: state.scanVerification === "incomplete" ? ACP.tr("Ownership check incomplete") : ACP.t(strings, "cardTotalSubtitle", "Total orphaned"), tone: "is-detected", iconHtml: detectedIcon },
-      { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, subtitle: ACP.t(strings, "cardDeletableSubtitle", "Review before cleanup"), tone: "is-safe", iconHtml: readyIcon },
-      { label: ACP.t(strings, "cardBlocked", "Blocked"), value: state.summary.blocked || 0, subtitle: ACP.t(strings, "cardBlockedSubtitle", "Review the reason in Details"), tone: "is-blocked", iconHtml: blockedIcon },
-      { label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount, subtitle: ACP.t(strings, "cardSelectedSubtitle", "Marked this scan"), tone: "is-selected", iconHtml: selectedIcon }
+      {
+        key: "detected", label: state.scanVerification === "incomplete" ? ACP.tr("Unverified") : ACP.t(strings, "cardTotal", "Detected"),
+        value: state.summary.total || 0, subtitle: state.scanVerification === "incomplete" ? ACP.tr("Ownership check incomplete") : ACP.tr("Scan candidates"), tone: "is-detected", iconHtml: detectedIcon,
+        description: ACP.tr("Found in this scan; ignored items are excluded."),
+        info: ACP.tr("Counts non-ignored folders and datasets found in the current scan, including blocked items. Search does not change this total. A partial scan may omit items, and detection does not mean data is safe to delete.")
+      },
+      {
+        key: "ready", label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0,
+        subtitle: ACP.t(strings, "cardDeletableSubtitle", "Review before cleanup"), tone: "is-safe", iconHtml: readyIcon,
+        description: ACP.tr("Available for review under the current cleanup settings."),
+        info: ACP.tr("Counts non-ignored items allowed by the current checks and cleanup mode. Review Details and run a dry run before acting. Ready is not a guarantee that the data is no longer needed.")
+      },
+      {
+        key: "blocked", label: ACP.t(strings, "cardBlocked", "Blocked"), value: state.summary.blocked || 0,
+        subtitle: ACP.t(strings, "cardBlockedSubtitle", "Review the reason in Details"), tone: "is-blocked", iconHtml: blockedIcon,
+        description: ACP.tr("Cleanup is unavailable; open Details for the reason."),
+        info: ACP.tr("Counts items that cannot be cleaned under the current scan and settings. Reasons include protected storage, container mappings, incomplete ownership checks, or a ZFS dataset requiring permanent delete mode. Changing Safe Mode does not bypass safety protection.")
+      },
+      {
+        key: "selected", label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount,
+        subtitle: ACP.t(strings, "cardSelectedSubtitle", "Marked this scan"), tone: "is-selected", iconHtml: selectedIcon,
+        description: ACP.tr("Chosen for the next dry run or cleanup action."),
+        info: ACP.tr("Counts currently selected, non-ignored items that remain selectable. Selection can include items outside the current search. Selecting an item does not change files; the action still requires its normal checks and confirmation.")
+      }
     ];
     var html = [];
 
     $.each(cards, function(_, card) {
       var glowClass = Number(card.value || 0) > 0 ? " has-glow" : "";
+      var infoId = "acp-summary-info-" + card.key;
       html.push(
         '<article class="acp-summary-card ' + card.tone + glowClass + '">' +
+          '<button type="button" class="acp-summary-info" aria-expanded="false" aria-describedby="' + infoId + '" aria-label="' + ACP.escapeHtml(ACP.tr("More information about {label}", {label: card.label})) + '">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 10.5v6M12 7.5h.01" stroke-linecap="round"></path></svg>' +
+          '</button><div class="acp-summary-tooltip" id="' + infoId + '" role="tooltip" hidden>' + ACP.escapeHtml(card.info) + '</div>' +
           '<span class="acp-summary-icon" aria-hidden="true">' + (card.iconHtml || "") + "</span>" +
           '<span class="acp-summary-copy">' +
             '<span class="acp-summary-label">' + ACP.escapeHtml(card.label) + "</span>" +
             '<span class="acp-summary-value">' + ACP.escapeHtml(ACP.formatCount(card.value)) + "</span>" +
             '<span class="acp-summary-subtitle">' + ACP.escapeHtml(card.subtitle || "") + "</span>" +
           "</span>" +
+          '<span class="acp-summary-description">' + ACP.escapeHtml(card.description) + '</span>' +
         "</article>"
       );
     });
@@ -4565,7 +4685,7 @@
   }
 
   function getRowBadgeDescriptors(row) {
-    var descriptors = [getRowActionabilityDescriptor(row), getRowSourceDescriptor(row)];
+    var descriptors = [getRowSourceDescriptor(row)];
     pushBadgeDescriptor(descriptors, getRowStorageDescriptor(row));
     return descriptors;
   }

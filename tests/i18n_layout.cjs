@@ -23,6 +23,19 @@ async function nativeCss(theme) {
 }
 
 async function checkActionLayout(page, locale, width) {
+  const summaries = await page.evaluate(() => {
+    const cards=Array.from(document.querySelectorAll('.acp-summary-card'));
+    const mode=document.querySelector('.acp-mode-card').getBoundingClientRect();
+    const rects=cards.map(card=>card.getBoundingClientRect());
+    return {heights:rects.map(rect=>rect.height), modeHeight:mode.height,
+      sharedRow:rects.every(rect=>Math.abs(rect.top-mode.top)<=1),
+      descriptions:cards.every(card=>card.querySelector('.acp-summary-description').textContent.trim()),
+      infoCount:document.querySelectorAll('.acp-summary-info svg').length};
+  });
+  assert.equal(summaries.infoCount,4,`${locale}: each summary includes an Info SVG`);
+  assert.equal(summaries.descriptions,true,`${locale}: each summary explains its count`);
+  assert.ok(Math.max(...summaries.heights)-Math.min(...summaries.heights)<=1,`${locale} ${width}px: summary card heights match`);
+  if(summaries.sharedRow) for(const height of summaries.heights) assert.ok(Math.abs(height-summaries.modeHeight)<=1,`${locale} ${width}px: summaries match Safe Mode height`);
   const result = await page.evaluate(() => {
     const app = document.querySelector('#acp-app'), bar = document.querySelector('#acp-bottom-bar');
     const button = document.querySelector('.acp-mode-link'), card = button.closest('.acp-mode-card');

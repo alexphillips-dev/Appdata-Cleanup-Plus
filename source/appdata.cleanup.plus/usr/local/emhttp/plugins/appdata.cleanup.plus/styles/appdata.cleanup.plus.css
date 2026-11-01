@@ -3479,15 +3479,20 @@
 }
 
 #acp-app .acp-dashboard-top {
+  align-items: stretch;
   display: grid;
   gap: 22px;
   grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
 }
 
 #acp-app .acp-summary-grid {
+  align-content: stretch;
+  align-self: stretch;
   display: grid;
   gap: 8px;
+  grid-auto-rows: 1fr;
   grid-template-columns: repeat(4, minmax(150px, 1fr));
+  min-width: 0;
   width: 100%;
 }
 
@@ -3495,15 +3500,16 @@
   align-items: center;
   background: var(--acp-card);
   border-radius: 8px;
-  display: flex;
-  gap: 14px;
-  grid-template-columns: none;
-  grid-template-rows: none;
-  height: 118px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 58px minmax(0, 1fr);
+  grid-template-rows: minmax(72px, 1fr) auto;
+  height: auto;
   justify-content: flex-start;
   min-height: 118px;
-  overflow: hidden;
-  padding: 0 20px;
+  min-width: 0;
+  overflow: visible;
+  padding: 14px 16px;
 }
 
 #acp-app .acp-summary-card::before {
@@ -3574,6 +3580,95 @@
 #acp-app .acp-summary-subtitle {
   color: var(--acp-muted-strong);
   font-size: 13px;
+}
+
+#acp-app .acp-summary-description {
+  align-self: end;
+  color: var(--acp-muted-strong);
+  display: block;
+  font-size: 12px;
+  grid-column: 1 / -1;
+  line-height: 1.4;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#acp-app .acp-summary-info {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  background-image: none !important;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+  color: var(--acp-muted-strong);
+  cursor: pointer;
+  display: inline-flex;
+  height: 36px;
+  inset-block-start: 4px;
+  inset-inline-end: 4px;
+  justify-content: center;
+  line-height: 1;
+  margin: 0;
+  min-height: 36px;
+  min-width: 36px;
+  padding: 8px;
+  position: absolute;
+  width: 36px;
+}
+
+#acp-app .acp-summary-info:hover,
+#acp-app .acp-summary-info[aria-expanded="true"] {
+  background: var(--acp-panel-soft);
+  color: var(--acp-input-focus);
+}
+
+#acp-app .acp-summary-info:focus-visible {
+  outline: 2px solid var(--acp-input-focus);
+  outline-offset: 1px;
+}
+
+#acp-app .acp-summary-info svg {
+  display: block;
+  fill: none;
+  height: 18px;
+  pointer-events: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  width: 18px;
+}
+
+/* JavaScript clamps this panel to the viewport and owns its visibility. */
+#acp-app .acp-summary-tooltip {
+  background: var(--acp-panel-soft);
+  border: 1px solid var(--acp-border-strong);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  box-sizing: border-box;
+  color: var(--acp-text);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  overflow-wrap: anywhere;
+  padding: 12px;
+  position: fixed;
+  text-align: start;
+  white-space: normal;
+  width: min(300px, calc(100vw - 24px));
+  z-index: 30;
+}
+
+#acp-app .acp-summary-tooltip[hidden] {
+  display: none;
+}
+
+#acp-app .acp-mode-strip {
+  align-self: stretch;
+  min-width: 0;
 }
 
 #acp-app .acp-mode-card {
@@ -4065,6 +4160,7 @@
 
 #acp-app .acp-summary-copy {
   align-content: center;
+  padding-inline-end: 20px;
 }
 
 #acp-app .acp-mode-card.is-safe-mode .acp-mode-card-copy,
@@ -4080,6 +4176,8 @@
 #acp-app .acp-summary-label {
   line-height: 1.1;
   min-height: 0;
+  overflow-wrap: anywhere;
+  padding: 0;
 }
 
 #acp-app .acp-summary-value {
@@ -4400,7 +4498,7 @@
   }
 
   #acp-app .acp-summary-grid {
-    grid-template-columns: repeat(3, minmax(150px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   #acp-app .acp-bottom-bar {
@@ -4617,10 +4715,46 @@
   outline-offset: 2px;
 }
 
+@media (max-width: 980px) {
+  #acp-app .acp-summary-card {
+    grid-template-columns: 44px minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  #acp-app .acp-summary-icon {
+    height: 44px;
+    width: 44px;
+  }
+
+  #acp-app .acp-summary-icon svg {
+    height: 26px;
+    width: 26px;
+  }
+}
+
+@media (max-width: 760px), (pointer: coarse) {
+  #acp-app .acp-summary-info {
+    height: 44px;
+    min-height: 44px;
+    min-width: 44px;
+    width: 44px;
+  }
+
+  #acp-app .acp-summary-copy {
+    padding-inline-end: 36px;
+  }
+}
+
 @media (max-width: 760px) {
   #acp-app .acp-summary-grid {
     grid-template-columns: minmax(0, 1fr);
     min-width: 0;
     width: 100%;
   }
+}
+/* Aurora enhancements add a second page heading outside the plugin root.
+   JavaScript marks only that heading, preserving native titles and actions. */
+#displaybox > .tp-heading[data-acp-aurora-duplicate="true"],
+#displaybox > .tp-heading > .tp-heading-text[data-acp-aurora-duplicate="true"] {
+  display: none !important;
 }
