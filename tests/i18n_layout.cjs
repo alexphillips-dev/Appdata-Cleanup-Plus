@@ -161,12 +161,18 @@ async function checkActionLayout(page, locale, width) {
         assert.ok(modal.text.includes('/mnt/user/appdata/Delete'));
         assert.equal(await page.locator('.sweet-alert button.cancel').isVisible(), false, `${locale}: hidden Cancel must stay hidden`);
         assert.equal(await page.locator('.sweet-alert button.cancel').textContent(), await page.evaluate(() => window.AppdataCleanupPlus.tr('Cancel')), `${locale}: Cancel must use the locale`);
-        for (const flow of ['help', 'quarantine', 'conflicts', 'confirmation', 'history', 'templates', 'mounts', 'unverified']) {
+        for (const flow of ['tools', 'help', 'quarantine', 'conflicts', 'confirmation', 'history', 'templates', 'mounts', 'unverified']) {
           await page.evaluate(flow => {
             const ACP = window.AppdataCleanupPlus;
             const context = {strings:window.appdataCleanupPlusConfig.strings,state:{settings:ACP.defaultSafetySettings()}};
             let html, modalClass;
-            if (flow === 'help') {
+            if (flow === 'tools') {
+              context.state.scanToken = 'synthetic-scan';
+              context.state.settings.zfsPathMappings = [{shareRoot:'/mnt/user/appdata',datasetRoot:'/mnt/synthetic-pool/appdata'}];
+              context.state.fixtureTools = {status:{root:'/mnt/synthetic-pool/appdata/a-long-synthetic-root-for-layout-validation',rootReasonCode:'ready',createdCount:1,templateExists:false,templatePath:'/synthetic/templates/acp-test-template.xml',fixtures:Array.from({length:3},(_,index)=>({key:'fixture-'+index,name:'Synthetic fixture '+index,type:'Folder',path:'/mnt/synthetic-pool/appdata/a-long-synthetic-root-for-layout-validation/fixture-'+index,exists:index===0}))}};
+              html = ACP.buildToolsModalHtml(context);
+              modalClass = 'acp-tools-modal';
+            } else if (flow === 'help') {
               window.i18nLayoutFlows.state.scanToken = 'synthetic-scan';
               window.i18nLayoutFlows.state.settings.enablePermanentDelete = false;
               html = window.i18nLayoutFlows.buildHelpModalHtml();
@@ -200,11 +206,24 @@ async function checkActionLayout(page, locale, width) {
             }
             ACP.applyDeleteModalClass('acp-delete-modal ' + modalClass, html);
             if (flow === 'help') document.querySelectorAll('.acp-help-question').forEach(node => { node.open = true; });
+            if (flow === 'tools') document.querySelectorAll('[data-tools-section]').forEach(node => { node.open = true; });
           }, flow);
           const result = await page.evaluate(() => ({scroll:document.documentElement.scrollWidth,dir:document.querySelector('.sweet-alert').dir}));
           assert.ok(result.scroll <= width + 2, `${locale} ${width}px ${flow}: overflow ${result.scroll}`);
           assert.equal(result.dir, direction);
           assert.equal(await page.locator('.sweet-alert button.cancel').isVisible(), false, `${locale} ${flow}: hidden Cancel must stay hidden`);
+          if (flow === 'tools') {
+            const tools = await page.locator('.sweet-alert').evaluate(modal => {
+              const body=modal.querySelector('.acp-tools-body'),footer=modal.querySelector('.sa-button-container');
+              const scrolls=[modal,...modal.querySelectorAll('*')].filter(node=>/auto|scroll/.test(getComputedStyle(node).overflowY)&&node.scrollHeight>node.clientHeight+2);
+              return {onlyBody:scrolls.every(node=>node===body),widthFits:body.scrollWidth<=body.clientWidth+2,footerBottom:footer.getBoundingClientRect().bottom,viewportHeight:innerHeight,
+                cards:body.querySelectorAll('.acp-tools-primary-grid > section').length,notCreated:body.querySelectorAll('.acp-tools-not-created').length};
+            });
+            assert.equal(tools.onlyBody,true,`${locale}: expanded Tools has one scrolling body`);
+            assert.equal(tools.widthFits,true,`${locale}: Tools copy and paths fit`);
+            assert.ok(tools.footerBottom<=tools.viewportHeight,`${locale}: Tools Done remains visible`);
+            assert.equal(tools.cards,2); assert.equal(tools.notCreated,3);
+          }
           if (flow === 'help') {
             const help = await page.locator('.sweet-alert').evaluate(modal => {
               const body=modal.querySelector('.acp-help-body'),footer=modal.querySelector('.sa-button-container');
@@ -242,7 +261,7 @@ async function checkActionLayout(page, locale, width) {
         assert.deepEqual(errors, []);
         await page.close();
       }
-      console.log(`${locale}: desktop/mobile page, Details, Help, quarantine, conflicts, confirmation, history, RTL and light theme passed`);
+      console.log(`${locale}: desktop/mobile page, Details, Help, Tools, quarantine, conflicts, confirmation, history, RTL and light theme passed`);
     }
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -67,6 +67,7 @@ jobs:
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/dashboard_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/details_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/help_ui.cjs
+          ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/tools_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/theme_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/maintenance_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/recovery_ui.cjs

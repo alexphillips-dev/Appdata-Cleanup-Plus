@@ -801,62 +801,61 @@
   ACP.buildToolsModalHtml = function(context) {
     var state = context.state || {};
     var strings = context.strings || {};
+    var settings = state.settings || {};
     var fixtureTools = state.fixtureTools || {};
     var fixtureStatus = fixtureTools.status || {};
-    var fixtureRoot = fixtureStatus.root || (fixtureTools.loading ? ACP.tr("Loading fixture status.") : (fixtureTools.status ? ACP.tr("No usable fixture root") : ACP.tr("Fixture status unavailable")));
+    var fixtureRoot = fixtureStatus.root || (fixtureTools.loading ? ACP.tr("Loading test data status.") : (fixtureTools.status ? ACP.tr("No usable fixture root") : ACP.tr("Test data status unavailable.")));
+    var unavailable = ACP.tr("Unavailable");
+    var fixtures = $.isArray(fixtureStatus.fixtures) ? fixtureStatus.fixtures : [];
+    var mappings = $.isArray(settings.zfsPathMappings) ? settings.zfsPathMappings : [];
+    var fixtureDisabled = state.busy || fixtureTools.loading ? ' disabled' : '';
+    var primaryDisabled = state.busy ? ' disabled' : '';
     var fixtureRows = [];
+    var rootUnavailable = !!fixtureStatus.rootReasonCode && fixtureStatus.rootReasonCode !== "ready";
+    var fixtureMutationDisabled = fixtureDisabled || !fixtureStatus.root || rootUnavailable ? ' disabled' : '';
+    var createdCount = typeof fixtureStatus.createdCount === "number" && isFinite(fixtureStatus.createdCount) && fixtureStatus.createdCount >= 0 ? ACP.formatCount(fixtureStatus.createdCount) : unavailable;
+    var templateState = fixtureStatus.templateExists === true ? ACP.tr("Created") : (fixtureStatus.templateExists === false ? ACP.tr("Not created") : unavailable);
 
-    $.each($.isArray(fixtureStatus.fixtures) ? fixtureStatus.fixtures : [], function(_, fixture) {
+    $.each(fixtures, function(_, fixture) {
+      var statusLabel = fixture.exists === true ? ACP.tr("Created") : (fixture.exists === false ? ACP.tr("Not created") : unavailable);
       fixtureRows.push(
         '<div class="acp-fixture-row">' +
-          '<div><strong>' + ACP.escapeHtml(fixture.name || "") + "</strong><span>" + ACP.escapeHtml(ACP.tr(fixture.type || "")) + "</span></div>" +
-          '<span class="acp-modal-stat ' + (fixture.exists ? "is-safe" : "is-blocked") + '">' + ACP.escapeHtml(fixture.exists ? ACP.t(strings, "toolsFixtureExistsLabel", "Created") : ACP.t(strings, "toolsFixtureMissingLabel", "Missing")) + "</span>" +
-        "</div>"
+          '<div class="acp-tools-fixture-copy"><strong>' + ACP.escapeHtml(fixture.name || unavailable) + '</strong>' +
+          (fixture.type ? '<span>' + ACP.escapeHtml(fixture.key === "template" ? ACP.tr("Template folder") : ACP.tr(fixture.type)) + '</span>' : '') +
+          (fixture.path ? '<code class="acp-modal-path">' + ACP.escapeHtml(fixture.path) + '</code>' : '') +
+          (fixture.description ? '<small class="acp-tools-fixture-description">' + ACP.escapeHtml(fixture.description) + '</small>' : '') + '</div>' +
+          '<span class="acp-modal-stat ' + (fixture.exists === true ? 'is-safe' : 'acp-tools-not-created') + '">' + ACP.escapeHtml(statusLabel) + '</span>' +
+        '</div>'
       );
     });
 
     return [
-      '<div class="acp-simple-modal-shell acp-simple-modal-tools">',
-      buildSimpleModalIntro(
-        "T",
-        ACP.t(strings, "toolsTitle", "Tools"),
-        ACP.t(strings, "toolsSubtitle", "Support and maintainer utilities for exporting the current plugin state."),
-        ""
-      ),
-      buildSimpleModalCard(
-        ACP.t(strings, "toolsDiagnosticsTitle", "Diagnostics"),
-        '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsSimpleMessage", "Download a redacted support bundle when troubleshooting a bug or unexpected result.")) + "</p>" +
-        '<details class="acp-simple-disclosure"><summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>" +
-        '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsPrivacyNote", "App-specific names, template filenames, full filesystem paths, IPs, emails, tokens, and hostnames are redacted or aliased before export. Review before sharing.")) + "</p>" +
-        "</details>",
-        '<button type="button" class="acp-button acp-button-secondary" data-action="export-diagnostics">' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsExportLabel", "Download diagnostics")) + "</button>",
-        ""
-      ),
-      buildSimpleModalCard(
-        ACP.t(strings, "zfsPathMappingsTitle", "ZFS path mappings"),
-        '<p>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsLead", "Map the user-share appdata root to the dataset mount root so scan results can resolve exact ZFS datasets safely.")) + "</p>",
-        '<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings"' + (state.busy ? " disabled" : "") + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsOpenLabel", "ZFS mappings")) + "</button>",
-        ""
-      ),
-      buildSimpleModalCard(
-        ACP.t(strings, "toolsFixtureTitle", "Test fixtures"),
-        '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsFixtureSimpleMessage", "Create safe, namespaced appdata test folders so scan, selection, dry run, quarantine, and delete can be validated.")) + "</p>" +
-        '<div class="acp-fixture-status">' +
-          '<div class="acp-fixture-root"><span>' + ACP.escapeHtml(ACP.t(strings, "toolsFixtureRootLabel", "Fixture root")) + '</span><code class="acp-modal-path">' + ACP.escapeHtml(fixtureRoot) + "</code></div>" +
-          (fixtureStatus.rootMessage ? ('<div class="acp-modal-hint">' + ACP.escapeHtml(fixtureStatus.rootMessage) + "</div>") : "") +
-          (fixtureRows.length ? ('<div class="acp-fixture-list">' + fixtureRows.join("") + "</div>") : '<div class="acp-modal-hint">' + ACP.escapeHtml(ACP.t(strings, "toolsFixtureStatusHint", "Refresh status to check fixture paths.")) + "</div>") +
-          (fixtureStatus.zfsNote ? ('<div class="acp-modal-hint">' + ACP.escapeHtml(fixtureStatus.zfsNote) + "</div>") : "") +
-          (fixtureTools.message ? ('<div class="acp-modal-feedback ' + (fixtureTools.ok === false ? "is-error" : (fixtureTools.ok === true ? "is-success" : "")) + '">' + ACP.escapeHtml(fixtureTools.message) + "</div>") : "") +
-        "</div>",
-        '<button type="button" class="acp-button acp-button-secondary" data-action="create-test-fixtures"' + (fixtureTools.loading ? " disabled" : "") + ">" + ACP.escapeHtml(ACP.t(strings, "toolsFixtureCreateLabel", "Create fixtures")) + "</button>" +
-        '<button type="button" class="acp-button acp-button-secondary" data-action="remove-test-fixtures"' + (fixtureTools.loading ? " disabled" : "") + ">" + ACP.escapeHtml(ACP.t(strings, "toolsFixtureRemoveLabel", "Remove fixtures")) + "</button>" +
-        '<button type="button" class="acp-button acp-button-secondary" data-action="refresh-test-fixtures"' + (fixtureTools.loading ? " disabled" : "") + ">" + ACP.escapeHtml(ACP.t(strings, "refreshLabel", "Refresh")) + "</button>",
-        "acp-fixture-card"
-      ),
-      "</div>"
-    ].join("");
+      '<div class="acp-tools-shell"><div class="acp-tools-body">',
+      '<section class="acp-tools-intro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.7 6.3a4 4 0 0 0-5 5L4 17v3h3l5.7-5.7a4 4 0 0 0 5-5l-2.6 2.6-2.9-2.9Z"></path></svg><div><h3>' + ACP.escapeHtml(ACP.tr("Support and advanced tools")) + '</h3><p>' + ACP.escapeHtml(ACP.tr("Download support information, configure ZFS mappings, or manage optional test data.")) + '</p></div></section>',
+      '<div class="acp-tools-primary-grid">',
+      '<section class="acp-tools-card acp-tools-diagnostics"><h3>' + ACP.escapeHtml(ACP.tr("Diagnostics")) + '</h3><p class="acp-tools-description">' + ACP.escapeHtml(ACP.tr("Download a redacted troubleshooting bundle for support.")) + '</p>',
+      '<button type="button" class="acp-button acp-button-primary" data-action="export-diagnostics"' + primaryDisabled + '>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsExportLabel", "Download diagnostics")) + '</button>',
+      '<p class="acp-tools-review-note">' + ACP.escapeHtml(ACP.tr("Review before sharing.")) + '</p>',
+      '<details class="acp-tools-disclosure" data-tools-section="diagnostics_privacy"><summary>' + ACP.escapeHtml(ACP.tr("What's included and redacted?")) + '</summary><p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsMessage", "Downloads a structured troubleshooting bundle with health checks, state-file validity and permissions, runtime locks, PHP limits, scan timing, quarantine health, current UI state, and bounded support-log excerpts.")) + '</p><p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsPrivacyNote", "The export uses allowlisted state summaries and export-only aliases. App names, template filenames, full paths, search text, stable row IDs, hosts, network addresses, credentials, and tokens are removed or redacted. Review before sharing.")) + '</p></details></section>',
+      '<section class="acp-tools-card acp-tools-mappings"><h3>' + ACP.escapeHtml(ACP.tr("ZFS path mappings")) + '</h3><p class="acp-tools-description">' + ACP.escapeHtml(ACP.tr("Map the user-share appdata root to the dataset mount root so scan results can resolve exact ZFS datasets safely.")) + '</p>',
+      '<p class="acp-tools-mapping-status">' + (state.scanToken ? ACP.escapeHtml(ACP.tr("Configured mappings")) + ' <strong class="acp-tools-mapping-count">' + ACP.escapeHtml(ACP.formatCount(mappings.length)) + '</strong>' : ACP.escapeHtml(ACP.tr("Mapping status unavailable"))) + '</p>',
+      '<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings"' + primaryDisabled + '>' + ACP.escapeHtml(ACP.tr("Manage mappings")) + '</button></section></div>',
+      '<details class="acp-tools-advanced acp-fixture-card" data-tools-section="test_data"><summary><span class="acp-tools-advanced-title">' + ACP.escapeHtml(ACP.tr("Test data (advanced)")) + '</span><span class="acp-tools-advanced-description">' + ACP.escapeHtml(ACP.tr("Optional folders for testing scan and cleanup workflows.")) + '</span></summary>',
+      '<div class="acp-tools-fixture-content"><p>' + ACP.escapeHtml(ACP.tr("Use these reserved test folders only for testing; do not store needed data in them.")) + '</p>',
+      '<div class="acp-fixture-status"><div class="acp-fixture-root"><span>' + ACP.escapeHtml(ACP.tr("Test data location")) + '</span><code class="acp-modal-path">' + ACP.escapeHtml(fixtureRoot) + '</code></div>',
+      (fixtureStatus.rootReasonCode ? '<div class="acp-tools-root-reason' + (rootUnavailable ? ' is-error' : '') + '"><span>' + ACP.escapeHtml(ACP.tr("Test data location check")) + '</span> <code>' + ACP.escapeHtml(fixtureStatus.rootReasonCode) + '</code></div>' : ''),
+      (fixtureStatus.rootMessage ? '<p class="acp-modal-hint' + (rootUnavailable ? ' is-error' : '') + '">' + ACP.escapeHtml(fixtureStatus.rootMessage) + '</p>' : ''),
+      '<div class="acp-tools-created-count"><span>' + ACP.escapeHtml(ACP.tr("Created folders")) + '</span> <strong>' + ACP.escapeHtml(createdCount) + '</strong></div>',
+      (fixtureRows.length ? '<div class="acp-fixture-list">' + fixtureRows.join('') + '</div>' : '<p class="acp-modal-hint">' + ACP.escapeHtml(ACP.tr("Refresh status to check the test data location and folders.")) + '</p>'),
+      '<div class="acp-tools-template-status"><span>' + ACP.escapeHtml(ACP.tr("Saved test template")) + '</span><span class="acp-modal-stat ' + (fixtureStatus.templateExists === true ? 'is-safe' : 'acp-tools-not-created') + '">' + ACP.escapeHtml(templateState) + '</span>' + (fixtureStatus.templatePath ? '<code class="acp-modal-path">' + ACP.escapeHtml(fixtureStatus.templatePath) + '</code>' : '') + '</div>',
+      (fixtureStatus.zfsNote ? '<p class="acp-modal-hint">' + ACP.escapeHtml(fixtureStatus.zfsNote) + '</p>' : ''),
+      '</div>',
+      (fixtureTools.message ? '<div class="acp-modal-feedback ' + (fixtureTools.ok === false ? 'is-error' : (fixtureTools.ok === true && fixtureStatus.rootReasonCode === "ready" && !!fixtureStatus.root ? 'is-success' : '')) + '" role="status">' + ACP.escapeHtml(fixtureTools.message) + '</div>' : ''),
+      '<p class="acp-tools-remove-note">' + ACP.escapeHtml(ACP.tr("Remove test data deletes the listed test folders and their contents, plus the saved test template.")) + '</p>',
+      '<div class="acp-tools-fixture-actions"><button type="button" class="acp-button acp-button-secondary" data-action="create-test-fixtures"' + fixtureMutationDisabled + '>' + ACP.escapeHtml(ACP.tr("Create test data")) + '</button><button type="button" class="acp-button acp-button-secondary acp-tools-remove" data-action="remove-test-fixtures"' + fixtureMutationDisabled + '>' + ACP.escapeHtml(ACP.tr("Remove test data")) + '</button><button type="button" class="acp-button acp-button-secondary" data-action="refresh-test-fixtures"' + fixtureDisabled + '>' + ACP.escapeHtml(ACP.tr("Refresh status")) + '</button></div>',
+      '</div></details></div></div>'
+    ].join('');
   };
-
   ACP.buildRowDetailsModalHtml = function(context, row) {
     var strings = context.strings || {};
     var settings = (context.state && context.state.settings) || {};

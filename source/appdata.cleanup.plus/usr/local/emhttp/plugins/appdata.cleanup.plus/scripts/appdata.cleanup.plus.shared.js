@@ -271,8 +271,8 @@
 
     // Flex sizing keeps compact dialog content scrollable without moving the footer.
     // Preserve SweetAlert's inline display:none when closing or reusing a dialog.
-    if ($modal[0].style.display !== "none" && /acp-(?:template-manager|appdata-sources|operation-recovery|row-details|help)-modal/.test(String($modal.attr("class")) + " " + String(className))) {
-      $modal.css("display", /acp-(?:template-manager|appdata-sources|operation-recovery|row-details|help)-modal/.test(String(className)) ? "flex" : "block");
+    if ($modal[0].style.display !== "none" && /acp-(?:template-manager|appdata-sources|operation-recovery|row-details|help|tools)-modal/.test(String($modal.attr("class")) + " " + String(className))) {
+      $modal.css("display", /acp-(?:template-manager|appdata-sources|operation-recovery|row-details|help|tools)-modal/.test(String(className)) ? "flex" : "block");
     }
 
     $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-delete-progress-running acp-delete-progress-ready acp-quarantine-manager-modal acp-audit-history-modal acp-appdata-sources-modal acp-zfs-path-mappings-modal acp-tools-modal acp-template-manager-modal acp-operation-recovery-modal acp-help-modal acp-row-details-modal");
@@ -314,9 +314,9 @@
   };
 
   // Native SweetAlert traps Tab among its original buttons, including hidden
-  // Cancel. Details and Help also have disclosures and additional controls.
+  // Cancel. Details, Help and Tools also have disclosures and additional controls.
   if (document.addEventListener) document.addEventListener("keydown", function(event) {
-    var $modal = $(".sweet-alert.acp-row-details-modal:visible, .sweet-alert.acp-help-modal:visible").last();
+    var $modal = $(".sweet-alert.acp-row-details-modal:visible, .sweet-alert.acp-help-modal:visible, .sweet-alert.acp-tools-modal:visible").last();
     var controls;
     var index;
     var next;

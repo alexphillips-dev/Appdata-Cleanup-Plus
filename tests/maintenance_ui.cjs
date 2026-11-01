@@ -40,6 +40,10 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     const hook = 'window.maintenance={buildOperationContext,buildOperationPreviewHtml,buildOperationResultsHtml,buildQuarantineManagerResultsHtml,showOperationResultsFromResponse,selectAllQuarantineEntries,getSelectedQuarantineEntryIds,startScanStatHydration,stopScanStatHydration,requestNextScanStatBatch,pauseScanStatHydrationForUserRequest,exportDiagnostics,recordDiagnosticsFailure,installDiagnosticsErrorCapture,state,openToolsModal,renderToolsModal,buildRowHtml,renderSummaryCards,renderResults,applyLocalSafetyStateToRow,buildLocalNotices,renderNotices,updateActionBar,buildEmptyStateMessage,buildHelpModalHtml}; cacheElements(); bindEvents(); loadScan=function(){window.scanRefreshes=(window.scanRefreshes||0)+1;}; state.fixtureTools.status={};';
     await page.addScriptTag({content:main.replace('$(init);',hook)});
     await page.evaluate(()=>maintenance.openToolsModal());
+    await page.evaluate(()=>{
+      requests.at(-1).deferred.resolve({ok:true,status:{root:'/mnt/synthetic-fixture-root',rootReasonCode:'ready',fixtures:[],createdCount:0,templateExists:false}});
+      requests=[];
+    });
     assert.equal(await page.locator('[data-action="copy-diagnostics-text"], [data-action="copy-support-summary"], .sweet-alert [data-action="review-templates"]').count(),0);
     assert.equal(await page.locator('[data-action="export-diagnostics"]').count(),1);
     await page.evaluate(()=>{
@@ -75,9 +79,13 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     await closeModal();
     await page.locator('[data-action="open-template-manager"]').click();
     assert.equal(await page.evaluate(()=>requests.at(-1).options.data.managerAction),'status');
+    await page.evaluate(()=>{window.lateTemplateStatusRequest=requests.at(-1);});
     await closeModal();
     await page.locator('[data-action="open-tools"]').click();
-    await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,templateManager:{templates:[],backups:[]}}));
+    await page.evaluate(()=>{
+      requests.at(-1).deferred.resolve({ok:true,status:{root:'/mnt/synthetic-fixture-root',rootReasonCode:'ready',fixtures:[],createdCount:0,templateExists:false}});
+      lateTemplateStatusRequest.deferred.resolve({ok:true,templateManager:{templates:[],backups:[]}});
+    });
     assert.equal(await page.locator('.sweet-alert.acp-tools-modal').count(),1,'Late template responses must not replace Tools');
     // Exercise the remaining diagnostics action through the actual download code.
     await page.evaluate(()=>{
@@ -101,6 +109,10 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,status:{root:'',rootReasonCode:'unsafe_symlink',rootMessage:'Fixture root was rejected.'}}));
     assert.match(await page.locator('.acp-fixture-root').textContent(),/No usable fixture root/);
     assert.match(await page.locator('.acp-fixture-status').textContent(),/Fixture root was rejected/);
+    await page.locator('[data-tools-section="test_data"] > summary').click();
+    assert.equal(await page.locator('[data-action="create-test-fixtures"]').isDisabled(),true,'An unavailable test root blocks mutations');
+    await page.locator('[data-action="refresh-test-fixtures"]').click();
+    await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,status:{root:'/mnt/synthetic-fixture-root',rootReasonCode:'ready',fixtures:[],createdCount:0,templateExists:false}}));
     await page.locator('[data-action="create-test-fixtures"]').click();
     await page.evaluate(()=>{requests.at(-1).deferred.reject({status:500,responseJSON:{ok:false,message:'Fixture creation failed.',status:{root:'',rootReasonCode:'missing',rootMessage:'Storage is unavailable.',privateCanary:'fixture-private-canary'}},responseText:'fixture-private-canary'});});
     assert.match(await page.locator('.acp-fixture-status').textContent(),/Storage is unavailable/,'Failed fixture responses must refresh root status');

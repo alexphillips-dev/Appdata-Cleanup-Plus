@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.11.01.05">
-<!ENTITY md5 "e5267e4f395dd04a15cc02236b4a018d">
+<!ENTITY version "2026.11.01.06">
+<!ENTITY md5 "c78580ab4641ae47c1dcd71604e6e748">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,12 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.11.01.06
+- Redesign Tools with a wider responsive layout, fixed Done footer, diagnostics and ZFS mapping cards, and optional test data in a collapsed advanced section.
+- Clarify test-folder and saved-template status, use neutral not-created labels, explain removal scope, and preserve reading position during refreshes.
+- Refresh the test location when Tools opens, reject stale status responses, and keep fixture mutations unavailable until status is usable without duplicating pending operations.
+- Refresh all 42 language catalogs and expand native-theme, keyboard, diagnostics, and fixture-action regression coverage.
+
 ###2026.11.01.05
 - Redesign Help as a wider responsive guide with a fixed title and Done button, one scrolling body, three workflow steps, and clear status explanations.
 - Show confirmed cleanup-mode guidance, visible safety and ZFS notes, and expandable troubleshooting with Appdata sources and Tools links. Show mode as unavailable until scan data confirms it.

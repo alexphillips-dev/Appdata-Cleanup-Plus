@@ -9,6 +9,8 @@
   var summaryInfoHideTimer = null;
   var summaryInfoPinnedId = "";
   var selectedRowFeedback = { rowId: "", expiresAt: 0, timer: null };
+  var fixtureToolsRequestVersion = 0;
+  var fixtureToolsPendingAction = "";
   var state = {
     rows: [],
     summary: { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 },
@@ -1493,11 +1495,42 @@
     );
   }
 
-  function renderToolsModal() {
+  function renderToolsModal(allowOpen) {
+    var $modal = getActiveSweetAlertModal();
+    if (!$modal.length || (allowOpen !== true && !$modal.hasClass("acp-tools-modal"))) return;
+    var preserve = allowOpen !== true && $modal.hasClass("acp-tools-modal");
+    var body = preserve && $modal.find(".acp-tools-body")[0];
+    var scrollTop = body ? body.scrollTop : 0;
+    var expanded = {};
+    var focusedSection = "";
+    var focusedAction = "";
+    if (preserve) {
+      $modal.find("details[data-tools-section]").each(function() {
+        var key = this.getAttribute("data-tools-section");
+        expanded[key] = this.open;
+        if (this.querySelector("summary") === document.activeElement) focusedSection = key;
+      });
+      if ($modal[0].contains(document.activeElement)) focusedAction = document.activeElement.getAttribute("data-action") || "";
+    }
     ACP.applyDeleteModalClass(
       "acp-delete-modal acp-delete-results-modal acp-tools-modal",
       ACP.buildToolsModalHtml(buildContext())
     );
+    if (preserve) {
+      var focusTarget = null;
+      $modal.find("details[data-tools-section]").each(function() {
+        var key = this.getAttribute("data-tools-section");
+        if (Object.prototype.hasOwnProperty.call(expanded, key)) this.open = expanded[key];
+        if (key === focusedSection) focusTarget = this.querySelector("summary");
+      });
+      if (focusedAction) $modal.find("[data-action]").each(function() {
+        if (this.getAttribute("data-action") === focusedAction && !this.disabled) focusTarget = this;
+      });
+      if (!focusTarget && (focusedAction || focusedSection)) focusTarget = $modal.find("button.confirm")[0];
+      if (focusTarget) focusTarget.focus({preventScroll: true});
+      body = $modal.find(".acp-tools-body")[0];
+      if (body) body.scrollTop = scrollTop;
+    }
   }
 
   function renderTemplateManagerModal() {
@@ -1684,10 +1717,14 @@
       return;
     }
 
+    var mutationPending = isFixtureMutationPending();
+    if (mutationPending) state.fixtureTools.loading = true;
     ensureToolsModal();
     renderPanels();
-    renderToolsModal();
-    if (!state.fixtureTools.status && !state.fixtureTools.loading) {
+    renderToolsModal(true);
+    // Recheck the target when reopening Tools; cached status may describe an
+    // earlier appdata source. Never overlap an in-flight create/remove action.
+    if (!mutationPending) {
       runFixtureManagerAction("status");
     }
   }
@@ -4027,7 +4064,14 @@
     });
   }
 
+  function isFixtureMutationPending() {
+    return fixtureToolsPendingAction === "create" || fixtureToolsPendingAction === "remove";
+  }
+
   function runFixtureManagerAction(managerAction) {
+    if (isFixtureMutationPending()) return;
+    var requestVersion = ++fixtureToolsRequestVersion;
+    fixtureToolsPendingAction = managerAction;
     state.fixtureTools = $.extend({}, state.fixtureTools || {}, {
       loading: true,
       message: ACP.t(strings, "toolsFixtureWorkingMessage", "Working on test fixtures.")
@@ -4038,14 +4082,20 @@
       action: "fixtureManagerAction",
       managerAction: managerAction
     }).done(function(response) {
+      if (requestVersion !== fixtureToolsRequestVersion) return;
+      fixtureToolsPendingAction = "";
       updateFixtureToolsFromResponse(response, ACP.t(strings, "toolsFixtureDoneMessage", "Test fixture action completed."), true);
+      if (managerAction === "status" && !(response && response.status)) state.fixtureTools.status = null;
       if (isToolsModalVisible()) renderToolsModal();
 
       if (managerAction === "create" || managerAction === "remove") {
         loadScan();
       }
     }).fail(function(xhr) {
+      if (requestVersion !== fixtureToolsRequestVersion) return;
+      fixtureToolsPendingAction = "";
       updateFixtureToolsFromResponse(xhr && xhr.responseJSON, ACP.extractErrorMessage(xhr, ACP.t(strings, "toolsFixtureFailedMessage", "The test fixture action could not be completed right now.")), false);
+      if (managerAction === "status" && !(xhr && xhr.responseJSON && xhr.responseJSON.status)) state.fixtureTools.status = null;
       if (isToolsModalVisible()) renderToolsModal();
     });
   }
