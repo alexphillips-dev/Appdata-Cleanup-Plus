@@ -110,6 +110,18 @@ async function checkActionLayout(page, locale, width) {
         assert.ok(initial.scroll <= width + 2, `${locale} ${width}px: page overflow ${initial.scroll}`);
         assert.equal(initial.direction, direction);
         assert.equal(await page.locator('#acp-results .acp-mount-evidence').count(),0,`${locale}: broad access stays out of Source`);
+        for (const state of ['mounted','verification','delete-mode']) {
+          await page.evaluate(state=>{
+            const F=window.i18nLayoutFlows;
+            const base={id:'example',name:'Example',path:'/mnt/user/appdata/Example',displayPath:'/mnt/user/appdata/Example',sourceKind:'filesystem',sourceNames:[],targetPaths:[],canDelete:false,risk:'blocked',policyLocked:true};
+            F.state.settings.enablePermanentDelete=false;
+            F.state.rows=[state==='mounted' ? {...base,mountEvidence:[{name:'Container Example',paths:['/mnt/user/appdata']}]} : state==='verification' ? {...base,scanVerificationLocked:true} : {...base,risk:'safe',storageKind:'zfs',policyReasonCode:'permanent_delete'}];
+            F.renderAll();
+          },state);
+          assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),`${locale} ${width}px ${state}: status and next-step text fit the page`);
+          assert.equal(await page.locator('.acp-row-checkbox').isDisabled(),true,`${locale}: unavailable rows remain unselectable`);
+          assert.equal(await page.locator('.acp-row-next-step').count(),1);
+        }
         await page.evaluate(() => {
           const ACP = window.AppdataCleanupPlus;
           const host = document.createElement('div');
@@ -150,7 +162,7 @@ async function checkActionLayout(page, locale, width) {
               html = ACP.buildTemplateManagerModalHtml(context);
               modalClass = 'acp-template-manager-modal';
             } else if (flow === 'mounts') {
-              html = ACP.buildMountEvidenceHtml([{name:'Container Example',paths:['/mnt/user/appdata/Example-long-mount-path']}]).replace('<details ', '<details open ') + ACP.buildMountEvidenceHtml([{name:'Broad viewer',paths:['/mnt/user']}],true).replace('<details ', '<details open ');
+              html = ACP.buildRowDetailsModalHtml(context,{id:'mounted',name:'Example',path:'/mnt/user/appdata/Example-long-mount-path',displayPath:'/mnt/user/appdata/Example-long-mount-path',sourceKind:'filesystem',canDelete:false,risk:'blocked',policyLocked:true,mountEvidence:[{name:'Container Example',paths:['/mnt/user/appdata']}],broadMountEvidence:[{name:'Broad viewer',paths:['/mnt/user']}]});
               modalClass = 'acp-row-details-modal';
             } else if (flow === 'quarantine') {
               context.state.quarantine = {summary:{count:21,sizeLabel:'0 B'},entries:[{id:'example',sourcePath:'/mnt/user/appdata/Delete',purgeBadgeLabel:ACP.plural('Purges in {count} days',21)}]};
@@ -174,6 +186,10 @@ async function checkActionLayout(page, locale, width) {
           assert.ok(result.scroll <= width + 2, `${locale} ${width}px ${flow}: overflow ${result.scroll}`);
           assert.equal(result.dir, direction);
           assert.equal(await page.locator('.sweet-alert button.cancel').isVisible(), false, `${locale} ${flow}: hidden Cancel must stay hidden`);
+          if (flow === 'mounts') {
+            assert.equal(await page.locator('.sweet-alert .acp-mount-evidence').first().evaluate(node=>node.open),true,`${locale}: blocking evidence is visible by default`);
+            assert.equal(await page.locator('.sweet-alert [data-action="row-detail-select"]').count(),0);
+          }
           if (flow === 'templates' && width <= 760) {
             const refresh = await page.locator('.acp-simple-modal-card-actions button').first().evaluate(node => {
               const range = document.createRange(); range.selectNodeContents(node);

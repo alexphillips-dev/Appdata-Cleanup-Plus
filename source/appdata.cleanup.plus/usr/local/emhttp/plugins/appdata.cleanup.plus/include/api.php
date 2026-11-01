@@ -1704,7 +1704,7 @@ function buildDashboardPayload() {
   }
 
   if ( ! empty($filesystemDiscoveryMeta["rootMounted"]) ) {
-    $scanWarningMessage = acpJoinMessages(array("Filesystem discovery was skipped because a live container mounts the configured appdata root. Template-based rows are still shown when safe.", $scanWarningMessage));
+    $scanWarningMessage = acpJoinMessages(array("Folder discovery was skipped because an installed container maps the configured appdata root. Review its Docker path mappings; keep required mappings. Saved-template results may still appear. Stopped containers are checked too.", $scanWarningMessage));
   }
 
   if ( ! empty($composeMeta["uncertain"]) ) {

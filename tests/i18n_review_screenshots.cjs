@@ -49,7 +49,7 @@ if (!locales[locale] || !output) throw Error('Expected a supported locale and ou
         F.state.rows=[{id:'synthetic-row',name:'Example app',path:'/mnt/user/appdata/example',displayPath:'/mnt/user/appdata/example',sourceKind:'filesystem',sourceNames:[],targetPaths:[],templateRefs:[],canDelete:true,storageKind:'filesystem',risk:'safe',status:'orphaned',sizeLabel:'1 MB'}];
         F.state.summary={total:1,safe:1,review:0,blocked:0,deletable:1,ignored:0}; F.renderAll();
       });
-      for (const screen of ['dashboard','quarantine','delete','purge','restore-conflicts','recovery','backups']) {
+      for (const screen of ['dashboard','quarantine','delete','purge','restore-conflicts','recovery','backups','guidance','verification','ignored','purge-timers']) {
         await page.evaluate(screen => {
           const F=reviewFlows, ACP=AppdataCleanupPlus;
           const host=document.querySelector('.sweet-alert');
@@ -57,7 +57,16 @@ if (!locales[locale] || !output) throw Error('Expected a supported locale and ou
           if (screen==='dashboard') return;
           if (screen==='recovery') { F.openRecoveredOperation('synthetic-operation'); return; }
           let content='',title='';
-          if (screen==='delete' || screen==='quarantine') {
+          if (['guidance','verification','ignored'].includes(screen)) {
+            const row={...F.state.rows[0],canDelete:false,risk:'blocked',policyLocked:true,mountEvidence:[{name:'Example container',paths:['/mnt/user/appdata']}]};
+            if (screen==='verification') { row.scanVerificationLocked=true; row.policyReason=ACP.tr('Docker ownership verification is incomplete. Results are unverified and cleanup is blocked, even with Safe Mode disabled. Rescan; if the problem persists, export diagnostics from Tools.'); }
+            if (screen==='ignored') row.ignored=true;
+            title=ACP.tr('Folder details');
+            content=ACP.buildRowDetailsModalHtml({strings:appdataCleanupPlusConfig.strings,state:F.state},row);
+          } else if (screen==='purge-timers') {
+            title=ACP.tr('Quarantine');
+            content=ACP.buildQuarantineManagerModalHtml({strings:appdataCleanupPlusConfig.strings,state:{settings:{defaultQuarantinePurgeDays:30},quarantine:{entries:[],summary:{count:0}}}});
+          } else if (screen==='delete' || screen==='quarantine') {
             const context=F.buildOperationContext(screen==='delete' ? 'delete' : 'quarantine',F.state.rows);
             title=context.confirmTitle; content=F.buildOperationPreviewHtml(F.state.rows,context,{showConfirmationCheckbox:screen==='delete'});
           } else if (screen==='purge') { title=ACP.tr('Purge selected quarantined folders?');content=F.buildQuarantineActionConfirmHtml([{sourcePath:'/mnt/user/appdata/example'}],'purge'); }
@@ -69,6 +78,7 @@ if (!locales[locale] || !output) throw Error('Expected a supported locale and ou
           }
           swal({title,text:'',showCancelButton:true,confirmButtonText:ACP.tr('OK')});
           ACP.applyDeleteModalClass('acp-delete-modal acp-delete-results-modal',content);
+          if (screen==='purge-timers') document.querySelector('.sweet-alert .acp-simple-disclosure').open=true;
         }, screen);
         const locator=screen==='dashboard' ? page.locator('#acp-app') : page.locator('.sweet-alert');
         await locator.screenshot({path:path.join(output,`${screen}-${size}.png`)});

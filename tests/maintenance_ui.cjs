@@ -37,7 +37,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     });
     for (const file of ['appdata.cleanup.plus.shared.js','appdata.cleanup.plus.panels.js']) await page.addScriptTag({path:path.join(plugin,'scripts',file)});
     const main = fs.readFileSync(path.join(plugin,'scripts/appdata.cleanup.plus.js'),'utf8');
-    const hook = 'window.maintenance={buildOperationContext,buildOperationPreviewHtml,buildOperationResultsHtml,buildQuarantineManagerResultsHtml,showOperationResultsFromResponse,selectAllQuarantineEntries,getSelectedQuarantineEntryIds,startScanStatHydration,stopScanStatHydration,requestNextScanStatBatch,pauseScanStatHydrationForUserRequest,exportDiagnostics,recordDiagnosticsFailure,installDiagnosticsErrorCapture,state,openToolsModal,renderToolsModal,buildRowHtml,renderSummaryCards,renderResults,applyLocalSafetyStateToRow}; cacheElements(); bindEvents(); loadScan=function(){window.scanRefreshes=(window.scanRefreshes||0)+1;}; state.fixtureTools.status={};';
+    const hook = 'window.maintenance={buildOperationContext,buildOperationPreviewHtml,buildOperationResultsHtml,buildQuarantineManagerResultsHtml,showOperationResultsFromResponse,selectAllQuarantineEntries,getSelectedQuarantineEntryIds,startScanStatHydration,stopScanStatHydration,requestNextScanStatBatch,pauseScanStatHydrationForUserRequest,exportDiagnostics,recordDiagnosticsFailure,installDiagnosticsErrorCapture,state,openToolsModal,renderToolsModal,buildRowHtml,renderSummaryCards,renderResults,applyLocalSafetyStateToRow,buildLocalNotices,renderNotices,updateActionBar,buildEmptyStateMessage,buildHelpModalHtml}; cacheElements(); bindEvents(); loadScan=function(){window.scanRefreshes=(window.scanRefreshes||0)+1;}; state.fixtureTools.status={};';
     await page.addScriptTag({content:main.replace('$(init);',hook)});
     await page.evaluate(()=>maintenance.openToolsModal());
     assert.equal(await page.locator('[data-action="copy-diagnostics-text"], [data-action="copy-support-summary"], .sweet-alert [data-action="review-templates"]').count(),0);
@@ -336,6 +336,54 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     const locked=await page.evaluate(()=>maintenance.applyLocalSafetyStateToRow({id:'unverified',scanVerificationLocked:true,canDelete:true,policyReason:'Ownership verification is incomplete.'}));
     assert.equal(locked.canDelete,false);
     assert.equal(locked.policyLocked,true);
+    // The reported appdata-root mapping has an obvious reason and a read-only
+    // route from its scan warning to the same evidence shown in row Details.
+    await closeModal();
+    await page.evaluate(()=>{
+      const M=maintenance;
+      M.state.busy=false;
+      M.state.scanToken='synthetic-scan-token';
+      M.state.scanVerification='verified';
+      M.state.scanWarningMessage='Installed container maps the appdata root.';
+      M.state.scanMetrics={phases:[{name:'filesystem_discovery',rootMounted:true}]};
+      M.state.rows=[{id:'root-mounted',name:'Example',path:'/mnt/user/appdata/Example',displayPath:'/mnt/user/appdata/Example',sourceKind:'template',risk:'blocked',policyLocked:true,canDelete:false,securityLockReason:'Related container mapping',mountEvidence:[{name:'Root mapper',paths:['/mnt/user/appdata']}]}];
+      M.state.summary={total:1,blocked:1};
+      M.state.selected={};
+      M.renderResults(); M.renderNotices(M.buildLocalNotices()); M.updateActionBar();
+    });
+    assert.equal(await page.locator('.acp-badge-kind-actionability').textContent(),'Protected');
+    assert.match(await page.locator('.acp-row-next-step').textContent(),/Keep required mappings/);
+    assert.match(await page.locator('#acp-selection-detail').textContent(),/Select ready rows/,'The bottom bar must display its calculated action guidance');
+    assert.equal(await page.locator('.acp-notice-title').first().textContent(),'Scan warning','A valid snapshot with a discovery warning is not a read-only scan');
+    const beforeMountReview=await page.evaluate(()=>requests.length);
+    await page.locator('[data-action="review-container-mounts"]').click();
+    assert.equal(await page.locator('.sweet-alert .acp-mount-evidence').first().evaluate(node=>node.open),true);
+    assert.match(await page.locator('.sweet-alert').textContent(),/Why cleanup is unavailable.*What to check next/s);
+    assert.match(await page.locator('.sweet-alert').textContent(),/Root mapper/);
+    assert.equal(await page.locator('.sweet-alert [data-action="row-detail-select"]').count(),0);
+    assert.equal(await page.evaluate(()=>requests.length),beforeMountReview,'Reviewing folder evidence must not submit an action');
+    await closeModal();
+    await page.locator('[data-row-action="details"]').click();
+    assert.equal(await page.locator('.sweet-alert .acp-mount-evidence').first().evaluate(node=>node.open),true,'Reopening Details preserves visible evidence');
+    await closeModal();
+    await page.evaluate(()=>{
+      maintenance.state.rows=[];
+      maintenance.state.summary={total:0};
+      maintenance.renderResults();
+    });
+    assert.match(await page.locator('#acp-results').textContent(),/Scan incomplete/);
+    assert.ok(!(await page.locator('#acp-results').textContent()).includes('No orphaned appdata found'));
+    assert.ok(!(await page.locator('#acp-results').textContent()).includes('Locations scanned'));
+    await page.locator('[data-action="review-container-mounts"]').click();
+    assert.match(await page.locator('.sweet-alert').textContent(),/Docker tab/,'Zero-row warnings still lead to useful container configuration guidance');
+    await closeModal();
+    // The existing mapping dialog is now reachable through a real Tools click.
+    await page.evaluate(()=>{maintenance.state.fixtureTools.status={};maintenance.openToolsModal();});
+    await page.locator('.sweet-alert [data-action="open-zfs-path-mappings"]').click();
+    assert.equal(await page.locator('.sweet-alert.acp-zfs-path-mappings-modal').count(),1);
+    assert.equal(await page.evaluate(()=>requests.at(-1).options.data.action),'browseAppdataSourcePath');
+    await page.evaluate(()=>requests.at(-1).deferred.resolve({ok:true,browser:{path:'/mnt',entries:[],breadcrumbs:[]}}));
+    await closeModal();
     assert.deepEqual(errors,[]);
     console.log('maintenance_ui: OK (confirm/cancel, server IDs, archive refresh, restore collision, mount disclosure keyboard and selection)');
   } finally { await browser.close(); }

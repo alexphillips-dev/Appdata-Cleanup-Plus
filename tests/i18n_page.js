@@ -14,6 +14,10 @@ for (const [locale, definition] of Object.entries(locales)) {
   assert.equal(config.strings.deleteConfirmButton, config.catalog.Delete, locale + ' delete translation');
   assert.equal(config.strings.quarantineConfirmButton, config.catalog.Quarantine);
   assert.equal(config.strings.helpTitle, config.catalog.Help);
+  assert.equal(config.strings.restoreActionLabel,config.catalog['Stop ignoring'],'Ignore visibility has its own translated action');
+  assert.equal(config.strings.quarantineRestoreActionLabel,config.catalog.Restore,'File recovery keeps its Restore action');
+  assert.equal(config.strings.resultBlockedLabel,config.catalog.Blocked,'Result status matches the blocked state');
+  assert.equal(config.strings.protectedSectionMessage,config.catalog['Cleanup is unavailable for these items. Open Details to see the reason and what to check next.']);
   assert.ok(config.csrfToken, 'rendering retains CSRF configuration');
   assert.equal(config.apiUrl, '/plugins/appdata.cleanup.plus/include/exec.php');
   if (locale !== 'en_US') assert.notEqual(config.strings.deleteConfirmTitle, 'Delete selected folders?');

@@ -4,7 +4,7 @@ All 42 locales have bundled translations and automated coverage. Native-speaker 
 
 ## Scope and reference glossary
 
-`scripts/i18n_review_scopes.json` identifies safety phrases, their full English source, UI context, screenshot scene, and a reference glossary. It covers Safe Mode, recoverable quarantine, irreversible deletion/purge, restore conflicts, cancellation, interrupted operations, and private recovery backups. Translate these concepts consistently. Keep paths, names, identifiers, technical product names, and named placeholders literal. Do not translate “quarantine” as antivirus scanning or imply that moving data frees disk space. Do not imply that an interrupted operation rolled back.
+`scripts/i18n_review_scopes.json` identifies safety phrases, their full English source, UI context, screenshot scene, and a reference glossary. It covers Safe Mode, recoverable quarantine, irreversible deletion/purge, restore conflicts, cancellation, interrupted operations, and private recovery backups. It also covers container protection, incomplete verification, ignore-list visibility, and default purge timers for existing entries. The matching synthetic scenes show the actual Details guidance and expanded timer help. Translate these concepts consistently. Keep paths, names, identifiers, technical product names, and named placeholders literal. Do not translate “quarantine” as antivirus scanning or imply that moving data frees disk space. Do not imply that an interrupted operation rolled back.
 
 ## Create a review packet
 

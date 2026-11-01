@@ -27,7 +27,7 @@ Quick links: [Install](#install) | [Features](#features) | [Getting Started](#ge
 
 Unraid appdata shares can collect folders long after containers are removed. Manually deciding what is safe to clean means comparing Docker templates, live container mappings, appdata share contents, filesystem paths, and old folder sizes. Appdata Cleanup Plus brings that review into one Settings page with a safer action flow: scan, review, select, dry run, quarantine, restore, purge, or permanently delete with confirmation.
 
-The plugin is intentionally conservative around filesystem operations. Actions use server-side scan snapshots and candidate IDs instead of trusting paths posted from the browser, and protected locations such as share roots, mount points, symlinked paths, quarantine roots, live container mappings, and VM Manager storage paths are guarded before cleanup runs.
+The plugin is intentionally conservative around filesystem operations. Actions use server-side scan snapshots and candidate IDs instead of trusting paths posted from the browser. Share roots, mount points, symlinked paths, quarantine roots, mappings of installed containers (including stopped containers), and VM Manager storage paths are guarded before cleanup runs.
 
 ## Features
 
@@ -104,7 +104,7 @@ Appdata Cleanup Plus is designed to make cleanup understandable before it become
 - Actions run against server-side scan snapshots.
 - Browser requests submit candidate IDs, not arbitrary filesystem paths.
 - CSRF validation is required for action requests.
-- Share roots, mount points, symlinked path segments, VM Manager managed paths, quarantine roots, and active live container mappings are protected.
+- Share roots, mount points, symlinked path segments, VM Manager managed paths, quarantine roots, and related mappings of installed containers, including stopped containers, are protected.
 - Restore operations preflight collisions before moving folders back out of quarantine.
 - ZFS-backed rows require permanent delete and exact dataset mountpoint resolution.
 
@@ -169,6 +169,10 @@ After a refresh or connection loss, **Recent operations** offers **Review operat
 
 Expand **Specific container mounts** to see mappings that block cleanup, including stopped containers. Mounts strictly above the configured appdata source, such as `/mnt` or `/mnt/user`, appear separately as **Broad container access** and do not establish ownership or block cleanup. Mappings to the appdata source itself, an app folder, or its contents remain protective. The disclosures work with keyboard, mouse, and touch; Escape closes them. Diagnostics retain both evidence categories with export-scoped container and path aliases.
 
+The dev interface distinguishes **Protected**, **Verification incomplete**, **Requires permanent delete**, and **Ignored**. Open **Details** for **Why cleanup is unavailable** and **What to check next**. Blocking container mappings are expanded there. Keep required mappings; correct obsolete configuration only after reviewing what the container needs, then rescan. Stopping the container or disabling Safe Mode does not override safety protection. **Ready** means the current checks allow cleanup, so confirm that you no longer need the data before selecting it.
+
+If a container maps the appdata root itself, discovery under that root is skipped. The warning explains this even when no rows appear; an incomplete empty scan does not confirm that all appdata is in use. Review container host paths on the Docker tab when there are no rows with mount details. The dev interface uses **Stop ignoring** to show an ignored item again; that action does not move or restore files. **Restore** in quarantine still recovers files to their reviewed destination.
+
 If Docker or Compose ownership cannot be verified, remaining candidates are labeled **Unverified**, and cleanup stays blocked even with Safe Mode disabled. Rescan, then export diagnostics from Tools if the warning remains. The export distinguishes failed requests from rejected inventory records and reports recovery attempts and filter counts without exposing raw container configuration.
 
 Diagnostics downloads include browser/server version and scan freshness checks, read-only snapshot validity, structured candidate decision evidence, and locale/layout capabilities. Each collection section reports missing or limited evidence, with included/omitted counts where available. If the server request fails or times out, a partial browser-only export is still downloaded. The browser keeps the most recent 20 classified plugin request/JavaScript failures since page load; response bodies, error messages, URLs, and stack traces are not retained in that buffer. Exports remain sanitized, and collecting diagnostics does not clean up expired snapshots.
@@ -178,6 +182,8 @@ Normal log/history limits and unavailable optional logs remain visible in diagno
 Dry runs distinguish folders to quarantine, folders to delete, selected dataset roots to destroy, and items that will remain unchanged. Quarantine normally does not reclaim space; folder sizes and ZFS usage are not promises of space reclaimed by deletion. Action results group completed, skipped/blocked, and failed items, with next steps. Failed cleanup items remain selected for review; every retry still runs the existing safety checks.
 
 The quarantine manager shows restore readiness, destination conflicts, protected restore paths, missing storage, and recovery from markers or folder layout. Missing records remain available for review when storage is offline and cannot be selected for actions. Restore checks run again before changing files, and existing destinations are never silently overwritten.
+
+The default purge timer applies to new entries and eligible existing entries that follow the default. Age is measured from the original quarantine time, so changing or enabling a default can make older entries immediately due. Zero disables default timers; explicitly set individual timers are preserved. **Set purge** schedules permanent deletion for selected entries, and **Clear purge timer** removes those entries' schedules. Quarantine normally does not free space; purge is permanent.
 
 | Tool | What it is for |
 |---|---|
@@ -192,6 +198,7 @@ The quarantine manager shows restore readiness, destination conflicts, protected
 
 - [CA Store Readiness](docs/ca-store-readiness.md)
 - [Validation status and test packages](docs/validation.md)
+- [Cleanup wording and guidance review](docs/ux-guidance-review.md)
 - [Bug report](https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues/new?template=bug_report.yml)
 - [Feature request](https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues/new?template=feature_request.yml)
 - [Release / update problem](https://github.com/alexphillips-dev/Appdata-Cleanup-Plus/issues/new?template=release_update_problem.yml)

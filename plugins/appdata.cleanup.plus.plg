@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.10.15.07">
-<!ENTITY md5 "d26e64c276bfb18d59341289f3fbfafe">
+<!ENTITY version "2026.11.01.01">
+<!ENTITY md5 "1a5a80f74e17c4b0ce823a99f36ef730">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.11.01.01
+Clarify cleanup status labels and reason-specific next steps throughout rows, Details, Help, Safe Mode, and results. Show blocking container mappings immediately in Details and explain stopped-container protection. Distinguish partial discovery from a complete empty scan, separate Stop ignoring from file restore, expose ZFS mappings in Tools, and explain purge timers for existing entries. Refresh all 42 language catalogs and expand behavior, layout, and translation-review coverage. Cleanup safeguards and stored settings are unchanged.
+
 ###2026.10.15.07
 Includes all changes since stable 2026.10.06.09.
 

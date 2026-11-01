@@ -1780,8 +1780,8 @@ function buildCandidateRows($availableVolumes, $dockerRunning, $settings, $inclu
         $row["ignoredAt"] = ! empty($ignoredEntry["ignoredAt"]) ? (string)$ignoredEntry["ignoredAt"] : "";
         $row["ignoredAtLabel"] = $ignoredAt ? formatDateTimeLabel($ignoredAt) : "";
         $row["ignoredReason"] = $row["ignoredAtLabel"]
-          ? acpMessage("Ignored on {date}. Restore it to include this folder in cleanup scans again.", array("date" => $row["ignoredAtLabel"]))
-          : "This folder is hidden by your ignore list. Restore it to include this folder in cleanup scans again.";
+          ? acpMessage("Ignored on {date}. Use Stop ignoring to include this folder in scan results again. This does not move or restore files.", array("date" => $row["ignoredAtLabel"]))
+          : "Use Stop ignoring to include this folder in scan results again. This does not move or restore files.";
         $row["status"] = "ignored";
         $row["statusLabel"] = "Ignored";
         $row["canDelete"] = false;

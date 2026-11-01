@@ -56,6 +56,7 @@
       '<div class="acp-mode-card-copy">',
       '<div class="acp-mode-card-title"><span>' + safeModeTitle + '</span><strong>' + ACP.escapeHtml(safeModeLabel) + "</strong></div>",
       '<div class="acp-mode-card-message">' + ACP.escapeHtml(leftMessage) + "</div>",
+      '<div class="acp-mode-card-message">' + ACP.escapeHtml(ACP.tr("Safe Mode changes the cleanup action. It does not bypass safety protection or incomplete ownership checks.")) + "</div>",
       '<button type="button" class="acp-mode-link" data-action="toggle-safe-mode">' + ACP.escapeHtml(safeModeActionLabel) + "</button>",
       "</div>",
       "</article>"
@@ -173,10 +174,11 @@
         subtitle,
         '<span class="acp-simple-pill acp-quarantine-selected-summary">' + ACP.escapeHtml(selectedSummary) + "</span>"
       ),
+      '<p class="acp-simple-modal-copyline">' + ACP.escapeHtml(ACP.tr("Restore moves folders back. Purge permanently deletes them. Quarantine normally does not free space.")) + "</p>",
       buildSimpleModalCard(
         ACP.t(strings, "quarantineActionsTitle", "Actions"),
         '<div class="acp-simple-modal-actions">' + bulkActions + "</div>" +
-        '<details class="acp-simple-disclosure"><summary>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeTimerTitle", "Purge timer")) + '</summary><div class="acp-simple-modal-form-row">' + scheduleHtml + "</div></details>",
+        '<details class="acp-simple-disclosure"><summary>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeTimerTitle", "Purge timer")) + '</summary><p>' + ACP.escapeHtml(ACP.tr("The default applies to new folders and existing folders that follow the default, measured from when each folder entered quarantine. Older folders may already be due for permanent deletion. Zero disables default timers; manually set timers remain unchanged.")) + '</p><div class="acp-simple-modal-form-row">' + scheduleHtml + '</div><p>' + ACP.escapeHtml(ACP.tr("Set purge schedules permanent deletion for the selected folders. Clear purge timer removes their schedules.")) + "</p></details>",
         "",
         "acp-simple-modal-card-compact"
       ),
@@ -496,6 +498,14 @@
       return row.ignoredReason || ACP.t(strings, "rowExplainIgnored", "This row is hidden by the ignore list.");
     }
 
+    if (row.scanVerificationLocked || row.status === "unverified") {
+      return row.policyReason || row.riskReason || ACP.getRowDetectionReason(row);
+    }
+
+    if ((row.mountEvidence || []).length) {
+      return ACP.getRowDetectionReason(row);
+    }
+
     if (row.securityLockReason) {
       return row.securityLockReason;
     }
@@ -504,12 +514,16 @@
       return row.riskReason || row.policyReason || ACP.t(strings, "rowExplainBlocked", "This path is protected by a safety rule.");
     }
 
-    if (row.storageKind === "zfs" && row.policyLocked) {
+    if (row.storageKind === "zfs" && (row.policyLocked || !row.enablePermanentDelete)) {
       return row.policyReason || ACP.t(strings, "selectionHintZfsMode", "ZFS dataset-backed rows require permanent delete mode and cannot be quarantined.");
     }
 
     if (row.policyLocked) {
       return row.policyReason || row.riskReason || ACP.t(strings, "rowExplainPolicyLocked", "This row is blocked by the current cleanup options.");
+    }
+
+    if (!row.canDelete) {
+      return row.reason || row.riskReason || ACP.tr("Cleanup is unavailable for this item under the current scan.");
     }
 
     if (row.zfsMappingMatched && row.storageKind !== "zfs") {
@@ -524,12 +538,16 @@
   }
 
   function getRowExplanationUnlockability(strings, row) {
+    if (row.ignored) {
+      return getRowDetailsNextStep(strings, row);
+    }
+
     if (ACP.getRowBlockType(row) === "safety") {
-      return ACP.t(strings, "rowUnlockabilityNever", "Cannot be unlocked here. Safety locks protect managed paths, root paths, symlinks, mount points, and other unsafe targets.");
+      return ACP.tr("Safety protection cannot be overridden by cleanup settings.");
     }
 
     if (ACP.getRowBlockType(row) === "options") {
-      return ACP.t(strings, "rowUnlockabilitySettings", "Not unlockable per scan. Change Safe Mode if this row requires permanent delete.");
+      return getRowDetailsNextStep(strings, row);
     }
 
     return row.canDelete
@@ -566,7 +584,19 @@
     var settings = (context && context.state && context.state.settings) || {};
     var detailRow = $.extend({}, row || {}, settings);
     var blockType = ACP.getRowBlockType(detailRow);
-    var isProtected = !!blockType;
+    var isProtected = !!blockType || !!detailRow.scanVerificationLocked || detailRow.status === "unverified" || !!(detailRow.mountEvidence || []).length || !detailRow.canDelete || (detailRow.storageKind === "zfs" && !detailRow.enablePermanentDelete);
+    var label;
+    if (detailRow.ignored) {
+      label = ACP.t(strings, "ignoredLabel", "Ignored");
+    } else if (detailRow.scanVerificationLocked || detailRow.status === "unverified") {
+      label = ACP.tr("Verification incomplete");
+    } else if (detailRow.securityLockReason || detailRow.risk === "blocked" || (detailRow.mountEvidence || []).length) {
+      label = ACP.tr("Protected");
+    } else if (detailRow.storageKind === "zfs" && !detailRow.enablePermanentDelete) {
+      label = ACP.tr("Requires permanent delete");
+    } else {
+      label = isProtected ? ACP.t(strings, "cardBlocked", "Blocked") : ACP.t(strings, "cardDeletable", "Ready");
+    }
     var why = getRowExplanationBase(strings, detailRow);
     var how = getRowDetailsNextStep(strings, detailRow);
     var evidence = $.grep([
@@ -579,6 +609,7 @@
 
     return {
       state: isProtected ? "protected" : "ready",
+      label: label,
       title: isProtected
         ? (blockType === "options"
           ? ACP.t(strings, "rowDetailsOptionsBlockedExplanationTitle", "Why this row needs permanent delete mode")
@@ -594,14 +625,18 @@
 
   function getRowDetailsOutcome(strings, row) {
     if (row.ignored) {
-      return ACP.t(strings, "rowDetailsOutcomeIgnored", "Ignored until restored");
+      return ACP.t(strings, "rowDetailsOutcomeIgnored", "Ignored until you stop ignoring it");
     }
 
-    if (row.securityLockReason || row.risk === "blocked") {
+    if (row.scanVerificationLocked || row.status === "unverified") {
+      return ACP.tr("Verification incomplete");
+    }
+
+    if (row.securityLockReason || row.risk === "blocked" || (row.mountEvidence || []).length) {
       return ACP.t(strings, "rowDetailsOutcomeHardLocked", "Protected by safety rules");
     }
 
-    if (row.storageKind === "zfs" && row.policyLocked) {
+    if (row.storageKind === "zfs" && (row.policyLocked || !row.enablePermanentDelete)) {
       if (!row.enablePermanentDelete) {
         return ACP.t(strings, "rowDetailsOutcomePermanentDeleteRequired", "Blocked until permanent delete mode is enabled");
       }
@@ -609,6 +644,10 @@
 
     if (row.zfsMappingMatched && row.storageKind !== "zfs") {
       return ACP.t(strings, "rowDetailsOutcomeMappedNoExactDataset", "Mapped share path did not resolve to an exact dataset");
+    }
+
+    if (!row.canDelete || row.policyLocked) {
+      return ACP.tr("Cleanup is unavailable for this item under the current scan.");
     }
 
     if (row.storageKind === "zfs") {
@@ -620,19 +659,40 @@
 
   function getRowDetailsNextStep(strings, row) {
     if (row.ignored) {
-      return ACP.t(strings, "rowDetailsNextStepIgnored", "Use Restore if you want this path to appear in cleanup scans again.");
+      return ACP.t(strings, "rowDetailsNextStepIgnored", "Use Stop ignoring to include this folder in scan results again. This does not move or restore files.");
+    }
+
+    if (row.scanVerificationLocked || row.status === "unverified") {
+      return ACP.tr("Rescan to repeat the ownership checks. If verification still fails, download diagnostics from Tools. Changing Safe Mode does not complete these checks.");
+    }
+
+    if ((row.mountEvidence || []).length) {
+      return ACP.tr("Review Specific container mounts in Details. Keep required mappings. Correct obsolete mappings in the container configuration, then rescan. Stopping the container or changing Safe Mode does not remove this protection.");
     }
 
     if (row.securityLockReason || row.risk === "blocked") {
-      return ACP.t(strings, "rowDetailsNextStepHardLocked", "No action is available here. The path resolves to a managed or unsafe target.");
+      if (row.securityReasonCode === "symlink") {
+        return ACP.tr("This path includes a symbolic link. Review its actual storage location; the plugin will not clean through linked paths.");
+      }
+      if (row.securityReasonCode === "mount_point" || row.securityReasonCode === "root_path") {
+        return ACP.tr("This path is a mount point or storage root. Leave it protected and review the intended appdata folder.");
+      }
+      if (row.securityReasonCode === "unsafe_path") {
+        return ACP.tr("The storage path could not be verified safely. Check that the expected storage is mounted and available, then rescan.");
+      }
+      return ACP.tr("Review the safety reason above. If it appears incorrect, rescan and download diagnostics from Tools. Changing Safe Mode does not override safety protection.");
     }
 
     if (row.storageKind === "zfs" && !row.enablePermanentDelete) {
-      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Disable Safe Mode to use permanent delete. ZFS-backed rows cannot be quarantined.");
+      return ACP.t(strings, "rowDetailsNextStepEnablePermanentDelete", "Disable Safe Mode only if you intend to permanently destroy this ZFS dataset. Review child datasets and snapshots first. This does not bypass safety protection.");
     }
 
     if (row.zfsMappingMatched && row.storageKind !== "zfs") {
       return ACP.t(strings, "rowDetailsNextStepMappedNoExactDataset", "Correct the ZFS mapping so the dataset mount root matches exactly, or continue as a normal folder.");
+    }
+
+    if (!row.canDelete || row.policyLocked) {
+      return ACP.tr("Rescan and review the updated reason before selecting this item. If cleanup remains unavailable, download diagnostics from Tools.");
     }
 
     if (row.storageKind === "zfs") {
@@ -709,11 +769,11 @@
     return reason;
   };
 
-  ACP.buildMountEvidenceHtml = function(evidence, broadAccess) {
+  ACP.buildMountEvidenceHtml = function(evidence, broadAccess, expanded) {
     if (!$.isArray(evidence) || !evidence.length) return '';
     var title = broadAccess ? ACP.tr("Broad container access") : ACP.tr("Specific container mounts");
     var explanation = broadAccess ? ACP.tr("These containers can access this folder through a mount above the appdata source. This does not establish ownership and does not block cleanup.") : ACP.tr("These containers mount this folder or a related path within an appdata source. Cleanup is blocked, including when the containers are stopped.");
-    var html = ['<details class="acp-mount-evidence"><summary>' + ACP.escapeHtml(title) + '</summary><p>' + ACP.escapeHtml(explanation) + '</p>'];
+    var html = ['<details class="acp-mount-evidence"' + (expanded ? ' open' : '') + '><summary>' + ACP.escapeHtml(title) + '</summary><p>' + ACP.escapeHtml(explanation) + '</p>'];
     $.each(evidence, function(_, entry) {
       html.push('<div><strong>' + ACP.escapeHtml(entry.name || ACP.tr("Unnamed Docker entry")) + '</strong>');
       $.each(entry.paths || [], function(_, path) { html.push('<code class="acp-modal-path">' + ACP.escapeHtml(path) + '</code>'); });
@@ -767,6 +827,12 @@
         ""
       ),
       buildSimpleModalCard(
+        ACP.t(strings, "zfsPathMappingsTitle", "ZFS path mappings"),
+        '<p>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsLead", "Map the user-share appdata root to the dataset mount root so scan results can resolve exact ZFS datasets safely.")) + "</p>",
+        '<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings"' + (state.busy ? " disabled" : "") + '>' + ACP.escapeHtml(ACP.t(strings, "zfsPathMappingsOpenLabel", "ZFS mappings")) + "</button>",
+        ""
+      ),
+      buildSimpleModalCard(
         ACP.t(strings, "toolsFixtureTitle", "Test fixtures"),
         '<p>' + ACP.escapeHtml(ACP.t(strings, "toolsFixtureSimpleMessage", "Create safe, namespaced appdata test folders so scan, selection, dry run, quarantine, and delete can be validated.")) + "</p>" +
         '<div class="acp-fixture-status">' +
@@ -800,12 +866,8 @@
     var name = row.name || (row.displayPath || row.path || "").split("/").pop() || ACP.t(strings, "rowDetailsUnknownName", "Unknown folder");
     var sourceLabel = row.sourceLabel || (row.sourceKind === "filesystem" ? ACP.t(strings, "discoveryLabel", "Discovery") : ACP.t(strings, "templateLabel", "Template"));
     var sourceTone = row.sourceKind === "filesystem" ? "discovery" : "template";
-    var statusTone = row.ignored ? "neutral" : ((row.policyLocked || row.risk === "blocked" || !row.canDelete) ? "locked" : "ready");
-    var statusLabel = row.ignored
-      ? ACP.t(strings, "ignoredLabel", "Ignored")
-      : ((row.policyLocked || row.risk === "blocked" || !row.canDelete)
-        ? ACP.t(strings, "cardBlocked", "Blocked")
-        : ACP.t(strings, "cardDeletable", "Ready"));
+    var statusTone = row.ignored ? "neutral" : (explanation.state === "protected" ? "locked" : "ready");
+    var statusLabel = explanation.label;
     var sourceExplanation = ACP.getRowDetectionReason(row);
     var actionExplanation = "";
     var actionButtons = [];
@@ -846,9 +908,9 @@
     ];
 
     if (row.ignored) {
-      actionExplanation = ACP.t(strings, "rowDetailsActionIgnored", "This folder is hidden. Restore it if you want it to appear in cleanup scans again.");
-    } else if (!row.canDelete || row.policyLocked || row.risk === "blocked") {
-      actionExplanation = nextStepMessage || ACP.t(strings, "rowDetailsActionBlocked", "No cleanup action is available for this folder right now.");
+      actionExplanation = ACP.tr("Ignoring hides this folder from normal results. It does not move or restore files.");
+    } else if (explanation.state === "protected") {
+      actionExplanation = ACP.t(strings, "rowDetailsActionBlocked", "No cleanup action is available for this folder right now.");
     } else if (row.storageKind === "zfs") {
       actionExplanation = ACP.t(strings, "rowDetailsActionZfs", "Cleanup will destroy the matching ZFS dataset. ZFS rows cannot be moved to quarantine.");
     } else if (settings.enablePermanentDelete) {
@@ -860,18 +922,22 @@
     html.push(
       '<div class="acp-row-details-grid">',
       '<section class="acp-row-details-card">',
-      '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsWhyLabel", "Why")) + "</div>",
+      '<div class="acp-row-details-card-title">' + ACP.escapeHtml(explanation.state === "protected" && !row.ignored ? ACP.tr("Why cleanup is unavailable") : ACP.t(strings, "rowDetailsWhyLabel", "Why")) + "</div>",
       '<p>' + ACP.escapeHtml(summaryMessage || sourceExplanation) + "</p>",
-      '<p class="acp-row-details-muted">' + ACP.escapeHtml(sourceExplanation) + "</p>",
+      (summaryMessage !== sourceExplanation ? '<p class="acp-row-details-muted">' + ACP.escapeHtml(sourceExplanation) + "</p>" : ""),
       "</section>",
       '<section class="acp-row-details-card">',
+      '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.tr("What to check next")) + "</div>",
+      '<p>' + ACP.escapeHtml(nextStepMessage) + "</p>",
+      "</section>",
+      '<section class="acp-row-details-card acp-row-details-card-full">',
       '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsCleanupTitle", "What cleanup will do")) + "</div>",
       '<p>' + ACP.escapeHtml(actionExplanation) + "</p>",
       "</section>",
       "</div>"
     );
 
-    html.push(ACP.buildMountEvidenceHtml(row.mountEvidence));
+    html.push(ACP.buildMountEvidenceHtml(row.mountEvidence, false, true));
     html.push(ACP.buildMountEvidenceHtml(row.broadMountEvidence, true));
     if (row.storageKind === "zfs") {
       html.push(
@@ -898,8 +964,7 @@
         { label: ACP.t(strings, "sizeLabel", "Size"), value: row.sizeLabel || "" },
         { label: ACP.tr("Last modified"), value: row.lastModifiedExact || row.lastModifiedLabel || "" },
         { label: ACP.tr("Timestamp meaning"), value: ACP.tr("Filesystem modification time does not show when a container last used this folder.") },
-        { label: ACP.t(strings, "sourceLabel", "Source"), value: row.sourceDisplay || row.sourceSummary || sourceLabel },
-        { label: ACP.t(strings, "rowDetailsResolveLabel", "How to resolve"), value: nextStepMessage }
+        { label: ACP.t(strings, "sourceLabel", "Source"), value: row.sourceDisplay || row.sourceSummary || sourceLabel }
       ]),
       "</section>"
     );
@@ -909,7 +974,7 @@
     }
 
     if (row.ignored) {
-      actionButtons.push('<button type="button" class="acp-button acp-button-secondary" data-action="row-detail-restore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "restoreActionLabel", "Restore")) + "</button>");
+      actionButtons.push('<button type="button" class="acp-button acp-button-secondary" data-action="row-detail-restore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "restoreActionLabel", "Stop ignoring")) + "</button>");
     } else {
       actionButtons.push('<button type="button" class="acp-button acp-button-secondary" data-action="row-detail-ignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "ignoreActionLabel", "Ignore")) + "</button>");
     }

@@ -431,7 +431,7 @@
       }
     });
 
-    els.$app.on("click", "[data-action='open-zfs-path-mappings']", function() {
+    $(document).on("click.acpZfsMappings", "#acp-app [data-action='open-zfs-path-mappings'], .sweet-alert [data-action='open-zfs-path-mappings']", function() {
       if (!state.busy) {
         openZfsPathMappingsModal();
       }
@@ -455,6 +455,15 @@
       if (!state.busy) {
         openToolsModal();
       }
+    });
+
+    els.$app.on("click", "[data-action='review-container-mounts']", function() {
+      if (state.busy) return;
+      var row = $.grep(state.rows || [], function(candidate) {
+        return (candidate.mountEvidence || []).length > 0;
+      })[0];
+      if (row) openRowDetailsModal(row);
+      else openHelpModal();
     });
 
     els.$app.on("click", "[data-action='toggle-ignored-visibility']", function() {
@@ -1580,7 +1589,7 @@
       {
         marker: "1",
         title: ACP.t(strings, "helpStepReviewTitle", "Review"),
-        body: ACP.t(strings, "helpStepReviewBody", "Ready rows look unused. Open Details only when a folder name, path, or source badge is unclear.")
+        body: ACP.t(strings, "helpStepReviewBody", "Ready means the current checks allow cleanup. Confirm that you no longer need the folder. Details explains its source, restrictions, and next step.")
       },
       {
         marker: "2",
@@ -1595,16 +1604,28 @@
     ];
     var cards = [
       {
+        title: ACP.t(strings, "helpStatesTitle", "Result states"),
+        body: ACP.t(strings, "helpStatesBody", "Ready items can be selected for review. Protected items failed a safety check. Verification incomplete means ownership could not be checked. Requires permanent delete applies to ZFS datasets. Ignored items are hidden; Stop ignoring shows them again without moving files.")
+      },
+      {
         title: ACP.t(strings, "helpSafeModeSimpleTitle", "Safe Mode"),
         body: ACP.t(strings, "helpSafeModeSimpleBody", "Safe Mode moves folders to quarantine. Disable it only when you intentionally want permanent delete.")
       },
       {
         title: ACP.t(strings, "helpZfsSimpleTitle", "ZFS datasets"),
-        body: ACP.t(strings, "helpZfsSimpleBody", "Exact ZFS dataset rows cannot be quarantined. Disable Safe Mode before acting on those rows.")
+        body: ACP.t(strings, "helpZfsSimpleBody", "ZFS datasets cannot be quarantined. Permanent deletion can also remove child datasets and snapshots. Review the destroy impact in Details before choosing this action.")
       },
       {
         title: ACP.t(strings, "helpDetailsSimpleTitle", "Need more info?"),
-        body: ACP.t(strings, "helpDetailsSimpleBody", "Use a row's Details button for the short reason it appeared and what the cleanup action will do.")
+        body: ACP.t(strings, "helpDetailsSimpleBody", "Open Details for the reason, What to check next, and any Specific container mounts. Required container mappings should stay in place.")
+      },
+      {
+        title: ACP.tr("Specific container mounts"),
+        body: ACP.tr("A container mapping to the appdata root protects folders inside it, including when the container is stopped. If discovery was skipped and no rows appear, review host path mappings on the Docker tab. Keep required mappings; correct obsolete ones and rescan.")
+      },
+      {
+        title: ACP.t(strings, "helpTroubleshootingTitle", "Common questions"),
+        body: ACP.t(strings, "helpTroubleshootingBody", "For unavailable cleanup, open Details and read Why cleanup is unavailable and What to check next. If no rows appear, review scan warnings and Appdata sources. After updating the plugin, reload the page and verify the installed version.")
       }
     ];
     var html = [
@@ -2529,8 +2550,11 @@
     if (state.scanWarningMessage) {
       notices.push({
         type: "warning",
-        title: ACP.t(strings, "scanReadOnlyTitle", "Read-only scan"),
-        message: state.scanWarningMessage || ACP.t(strings, "scanReadOnlyMessage", "Scan results loaded, but actions are disabled because a secure snapshot could not be created right now.")
+        title: !state.scanToken ? ACP.t(strings, "scanReadOnlyTitle", "Read-only scan")
+          : (state.scanVerification === "incomplete" ? ACP.tr("Verification incomplete") : ACP.tr("Scan warning")),
+        message: state.scanWarningMessage,
+        action: $.grep((state.scanMetrics || {}).phases || [], function(phase) { return phase.name === "filesystem_discovery" && phase.rootMounted; }).length ? "review-container-mounts" : "",
+        actionLabel: ACP.tr("Review container mounts")
       });
     }
 
@@ -2538,7 +2562,7 @@
       notices.push({
         type: "warning",
         title: ACP.t(strings, "noticeLockedPathsTitle", "Protected paths stay blocked"),
-        message: ACP.t(strings, "noticeLockedPathsMessage", "Any path that resolves to a share root, mount point, symlinked location, managed Docker/VM path, or other unsafe target cannot be unlocked here.")
+        message: ACP.t(strings, "noticeLockedPathsMessage", "Permanent delete mode does not bypass safety protection or incomplete ownership checks. Open Details on a blocked item for the reason and next step.")
       });
     }
 
@@ -2718,9 +2742,19 @@
     updateActionBar();
   }
 
+  function hasPartialDiscovery() {
+    return $.grep((state.scanMetrics || {}).phases || [], function(phase) {
+      return phase.name === "filesystem_discovery" && (phase.rootMounted || phase.truncated);
+    }).length > 0;
+  }
+
   function buildEmptyStateMessage() {
     var insights = buildScanInsights();
     var parts = [];
+
+    if (hasPartialDiscovery()) {
+      return ACP.tr("Folder discovery was incomplete. An empty result does not confirm that all appdata is in use. Review the scan warning before rescanning.") + (state.scanWarningMessage ? " " + state.scanWarningMessage : "");
+    }
 
     parts.push(ACP.t(strings, "emptyNoUnusedFoundMessage", "No unused appdata folders were found under the current scan paths."));
 
@@ -2740,7 +2774,7 @@
       parts.push(ACP.t(strings, "emptyTemplateEducationMessage", "Saved Docker templates can still reference appdata after a container is removed, so they are included in the scan evidence."));
     }
 
-    parts.push(ACP.t(strings, "emptyNextStepsMessage", "If you expected orphaned folders, confirm the full appdata root in Appdata sources, remove the container first, and rescan."));
+    parts.push(ACP.t(strings, "emptyNextStepsMessage", "If you expected unused folders, review Appdata sources and installed container mappings, then rescan. Keep mappings that your containers still need."));
 
     return parts.join(" ");
   }
@@ -2753,8 +2787,8 @@
     var selectedIcon = '<svg viewBox="0 0 24 24" focusable="false"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>';
     var cards = [
       { label: state.scanVerification === "incomplete" ? ACP.tr("Unverified") : ACP.t(strings, "cardTotal", "Detected"), value: state.summary.total || 0, subtitle: state.scanVerification === "incomplete" ? ACP.tr("Ownership check incomplete") : ACP.t(strings, "cardTotalSubtitle", "Total orphaned"), tone: "is-detected", iconHtml: detectedIcon },
-      { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, subtitle: ACP.t(strings, "cardDeletableSubtitle", "Safe to clean"), tone: "is-safe", iconHtml: readyIcon },
-      { label: ACP.t(strings, "cardBlocked", "Blocked"), value: state.summary.blocked || 0, subtitle: ACP.t(strings, "cardBlockedSubtitle", "Locked or in use"), tone: "is-blocked", iconHtml: blockedIcon },
+      { label: ACP.t(strings, "cardDeletable", "Ready"), value: state.summary.deletable || 0, subtitle: ACP.t(strings, "cardDeletableSubtitle", "Review before cleanup"), tone: "is-safe", iconHtml: readyIcon },
+      { label: ACP.t(strings, "cardBlocked", "Blocked"), value: state.summary.blocked || 0, subtitle: ACP.t(strings, "cardBlockedSubtitle", "Review the reason in Details"), tone: "is-blocked", iconHtml: blockedIcon },
       { label: ACP.t(strings, "cardSelected", "Selected"), value: selectedCount, subtitle: ACP.t(strings, "cardSelectedSubtitle", "Marked this scan"), tone: "is-selected", iconHtml: selectedIcon }
     ];
     var html = [];
@@ -4212,7 +4246,7 @@
     }
 
     if (row.ignored) {
-      actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "restoreActionLabel", "Restore")) + "</button>");
+      actions.push('<button type="button" class="acp-button acp-button-secondary acp-row-action" data-row-action="unignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "restoreActionLabel", "Stop ignoring")) + "</button>");
       return '<div class="acp-row-actions">' + actions.join("") + "</div>";
     }
 
@@ -4256,7 +4290,7 @@
       {
         key: "ready",
         title: ACP.t(strings, "readySectionTitle", "Ready to clean"),
-        message: ACP.t(strings, "readySectionMessage", "These look like orphaned appdata folders inside configured appdata roots. Quarantine is the recommended action.")
+        message: ACP.t(strings, "readySectionMessage", "Current checks allow cleanup of these folders. Confirm that you no longer need them, then use Dry run. Quarantine is recommended for folders.")
       },
       {
         key: "zfs",
@@ -4266,12 +4300,12 @@
       {
         key: "locked",
         title: ACP.t(strings, "protectedSectionTitle", "Blocked"),
-        message: ACP.t(strings, "protectedSectionMessage", "Safety-blocked rows cannot be unlocked here.")
+        message: ACP.t(strings, "protectedSectionMessage", "Cleanup is unavailable for these items. Open Details to see the reason and what to check next.")
       },
       {
         key: "ignored",
         title: ACP.t(strings, "ignoredSectionTitle", "Ignored"),
-        message: ACP.t(strings, "ignoredSectionMessage", "Hidden by your ignore list. Restore them to include them in cleanup results again.")
+        message: ACP.t(strings, "ignoredSectionMessage", "Hidden by your ignore list. Stop ignoring includes them in scan results again without moving or restoring files.")
       }
     ];
   }
@@ -4321,7 +4355,7 @@
   }
 
   function getRowActionabilityDescriptor(row) {
-    var blockType = ACP.getRowBlockType ? ACP.getRowBlockType(row) : "";
+    var explanation = ACP.buildRowReviewExplanation(buildContext(), row);
 
     if (row.ignored) {
       return {
@@ -4335,13 +4369,11 @@
       };
     }
 
-    if (row.policyLocked || row.risk === "blocked") {
+    if (explanation.state === "protected") {
       return {
         kind: "actionability",
         value: "locked",
-        label: blockType === "options"
-          ? ACP.t(strings, "cardBlockedOptions", "Blocked by options")
-          : ACP.t(strings, "cardBlockedSafety", "Blocked for safety"),
+        label: explanation.label,
         tone: "locked",
         title: row.policyReason || row.securityLockReason || row.riskReason || "",
         kindClass: "actionability",
@@ -4533,7 +4565,7 @@
   }
 
   function getRowBadgeDescriptors(row) {
-    var descriptors = [getRowSourceDescriptor(row)];
+    var descriptors = [getRowActionabilityDescriptor(row), getRowSourceDescriptor(row)];
     pushBadgeDescriptor(descriptors, getRowStorageDescriptor(row));
     return descriptors;
   }
@@ -4626,6 +4658,10 @@
     }).join("");
     var sourceText = row.sourceDisplay || row.sourceSummary || row.name || "";
     var targetText = row.targetSummary || "";
+    var explanation = ACP.buildRowReviewExplanation(buildContext(), row);
+    var nextStepHtml = !row.ignored && explanation.state === "protected"
+      ? '<div class="acp-row-next-step"><strong>' + ACP.escapeHtml(ACP.tr("What to check next")) + ':</strong> ' + ACP.escapeHtml(explanation.how) + '</div>'
+      : "";
 
     if (isSelected) {
       rowClass += " is-selected";
@@ -4663,7 +4699,7 @@
             '<div class="acp-row-size">' + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || ACP.tr("Unknown"))) + "</div>" +
             '<code class="acp-row-path">' + ACP.escapeHtml(row.displayPath || "") + "</code>" +
             '<div class="acp-row-badges">' + badgeHtml + ACP.buildMountEvidenceHtml(row.mountEvidence) + "</div>" +
-            '<div class="acp-row-detection-reason"><span class="acp-row-detection-label">' + ACP.escapeHtml(ACP.tr("Detection reason")) + '</span>' + ACP.escapeHtml(ACP.getRowDetectionReason(row)) + "</div>" +
+            '<div class="acp-row-detection-reason"><span class="acp-row-detection-label">' + ACP.escapeHtml(ACP.tr("Detection reason")) + '</span>' + ACP.escapeHtml(explanation.blockType ? explanation.why : ACP.getRowDetectionReason(row)) + nextStepHtml + "</div>" +
             '<div class="acp-row-side">' +
               rowActionHtml +
             "</div>" +
@@ -4680,7 +4716,7 @@
 
     if (!state.rows.length) {
       renderStateMessage(
-        state.scanVerification === "incomplete" ? ACP.tr("Ownership check incomplete") : ACP.t(strings, "emptyTitle", "No orphaned appdata found"),
+        state.scanVerification === "incomplete" ? ACP.tr("Ownership check incomplete") : (hasPartialDiscovery() ? ACP.tr("Scan incomplete") : ACP.t(strings, "emptyTitle", "No orphaned appdata found")),
         state.scanVerification === "incomplete" ? state.scanWarningMessage : (buildEmptyStateMessage() || ACP.t(strings, "emptyMessage", "Nothing currently looks safe to clean up from the configured appdata sources or saved Docker templates.")),
         "rescan",
         ACP.t(strings, "rescanLabel", "Rescan")
@@ -4692,7 +4728,7 @@
       if (Number(state.summary.total || 0) === 0 && Number(state.summary.ignored || 0) > 0) {
         renderStateMessage(
           ACP.t(strings, "ignoredOnlyTitle", "Only ignored paths remain"),
-          ACP.t(strings, "ignoredOnlyMessage", "Every detected candidate is hidden by your ignore list. Turn on Show ignored to review or restore hidden paths."),
+          ACP.t(strings, "ignoredOnlyMessage", "Every detected item is hidden by your ignore list. Choose Show ignored to review them, then Stop ignoring to include an item again."),
           null,
           null
         );
@@ -4868,7 +4904,7 @@
     }
 
     els.$selectionSummary.text(summaryText);
-    els.$selectionDetail.text(totalText);
+    els.$selectionDetail.text(totalText + " · " + detailText);
     if (els.$actionToolbar && els.$actionToolbar.length) {
       els.$actionToolbar.find(".acp-action-toolbar-copy span").text(selectedRows.length ? summaryText : ACP.t(strings, "noItemsSelectedLabel", "No items selected"));
     }
@@ -5124,7 +5160,7 @@
         nextRow.ignored = true;
         nextRow.ignoredAt = "";
         nextRow.ignoredAtLabel = "";
-        nextRow.ignoredReason = ACP.tr("This folder is hidden by your ignore list. Restore it to include this folder in cleanup scans again.");
+        nextRow.ignoredReason = ACP.tr("Use Stop ignoring to include this folder in scan results again. This does not move or restore files.");
         nextRow.status = "ignored";
         nextRow.statusLabel = ACP.tr("Ignored");
       } else if (intent === "unignore") {
@@ -5205,7 +5241,7 @@
 
     postCandidateStateIntent([rowId], intent, {
       failureTitle: action === "unignore"
-        ? ACP.t(strings, "restoreFailedTitle", "Restore failed")
+        ? ACP.t(strings, "restoreFailedTitle", "Ignore list update failed")
         : ACP.t(strings, "ignoreFailedTitle", "Ignore failed"),
       failureMessage: action === "unignore"
         ? ACP.t(strings, "restoreFailedMessage", "The ignore list could not be updated right now.")
@@ -5436,7 +5472,8 @@
 
   function resultNextStep(result) {
     if (result.status === "conflict") return ACP.tr("Resolve the destination conflict, then restore again.");
-    if (result.status === "blocked" || result.status === "missing") return ACP.tr("Rescan or refresh the list, review the reason, and select the item again if it becomes available.");
+    if (result.status === "blocked") return ACP.tr("Review the reason above before retrying. Rescan for current ownership and safety checks; changing Safe Mode does not bypass protection.");
+    if (result.status === "missing") return ACP.tr("Check that the storage is mounted and the folder still exists, then rescan or refresh. Do not recreate a folder just to retry cleanup.");
     if (result.status === "error") return ACP.tr("Review the error and check storage access, then retry. Safety checks run again before any changes.");
     if (result.status === "skipped") return ACP.tr("Review why this item was skipped before trying again.");
     return "";

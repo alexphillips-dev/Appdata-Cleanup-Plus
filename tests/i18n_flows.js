@@ -28,6 +28,7 @@ for (const [locale, definition] of Object.entries(locales)) {
   flow.state.dockerRunning = true;
   flow.state.rows = [{id:'unverified',risk:'deletable',scanVerificationLocked:true,policyReason:'verification failure',status:'unverified',canDelete:false}];
   flow.applyLocalCandidateState(['unverified'],'ignore');
+  assert.equal(flow.state.rows[0].ignoredReason,ACP.tr('Use Stop ignoring to include this folder in scan results again. This does not move or restore files.'),'Immediate ignore guidance describes visibility only');
   flow.applyLocalCandidateState(['unverified'],'unignore');
   assert.equal(flow.state.rows[0].canDelete,false,'Safe Mode disabled must not override failed verification');
   assert.equal(flow.state.rows[0].risk,'blocked','Restoring an ignored row must not count it as ready during an incomplete scan');
@@ -115,6 +116,52 @@ for (const [locale, definition] of Object.entries(locales)) {
   const broadHtml = ACP.buildMountEvidenceHtml([{name:'<b>Viewer</b>',paths:['/mnt/user']}],true);
   assert.ok(broadHtml.includes(ACP.escapeHtml(ACP.tr('Broad container access'))) && !broadHtml.includes('<b>Viewer</b>'));
   assert.ok(broadHtml.includes(ACP.escapeHtml(ACP.tr('These containers can access this folder through a mount above the appdata source. This does not establish ownership and does not block cleanup.'))));
+  // Render the same guidance in every locale, using machine evidence rather
+  // than matching translated error prose. Presentation must not mutate safety.
+  const mountEvidence = [{name:'<img src=x onerror=alert(1)>',paths:['/mnt/user/appdata/<b>Example</b>']}];
+  const base = {id:'guidance',name:'Example',sourceKind:'filesystem',path:'/mnt/user/appdata/Example',canDelete:true};
+  const guidanceCases = [
+    [{...base}, true, 'Ready'],
+    [{...base,broadMountEvidence:mountEvidence}, true, 'Ready'],
+    [{...base,canDelete:false,risk:'blocked',securityLockReason:'literal reason',mountEvidence}, true, 'Protected'],
+    [{...base,canDelete:false,risk:'blocked',scanVerificationLocked:true,policyReason:'literal verification reason',mountEvidence}, true, 'Verification incomplete'],
+    [{...base,canDelete:false,risk:'blocked',securityLockReason:'literal reason',securityReasonCode:'symlink'}, true, 'Protected'],
+    [{...base,canDelete:false,risk:'blocked',securityReasonCode:'root_path'}, true, 'Protected'],
+    [{...base,canDelete:false,risk:'blocked',securityReasonCode:'unsafe_path'}, true, 'Protected'],
+    [{...base,canDelete:false,risk:'blocked'}, true, 'Protected'],
+    [{...base,canDelete:false,storageKind:'zfs',policyLocked:true,policyReasonCode:'permanent_delete'}, false, 'Requires permanent delete'],
+    [{...base,storageKind:'zfs'}, true, 'Ready'],
+    [{...base,canDelete:false,risk:'blocked',ignored:true,mountEvidence}, true, 'Ignored'],
+    [{...base,canDelete:false}, true, 'Blocked']
+  ];
+  for (const [row, enablePermanentDelete, label] of guidanceCases) {
+    const before = JSON.stringify(row);
+    const ctx = {strings:{},state:{settings:{enablePermanentDelete}}};
+    const explanation = ACP.buildRowReviewExplanation(ctx,row);
+    const html = ACP.buildRowDetailsModalHtml(ctx,row);
+    assert.equal(explanation.label,ACP.tr(label),`${locale}: evidence-specific status ${label}`);
+    assert.ok(html.includes(ACP.escapeHtml(explanation.label)) && html.includes(ACP.escapeHtml(explanation.how)),`${locale}: Details shares status and next step`);
+    assert.ok(html.includes(ACP.escapeHtml(ACP.tr('What to check next'))));
+    assert.equal(JSON.stringify(row),before,'Presentation must leave server eligibility and original evidence unchanged');
+    assert.ok(!html.includes('<img src=x') && !html.includes('<b>Example</b>'),'All mount evidence must be escaped');
+    if (row.scanVerificationLocked) {
+      assert.equal(explanation.why,row.policyReason,'Incomplete verification takes precedence over mount advice');
+      assert.ok(!explanation.how.includes(ACP.tr('Disable Safe Mode')));
+    }
+    if (row.mountEvidence) {
+      assert.ok(html.includes('<details class="acp-mount-evidence" open>'),'Specific evidence is visible immediately in Details');
+    }
+    if (row.ignored) {
+      assert.ok(html.includes(ACP.escapeHtml(ACP.tr('Stop ignoring'))));
+      assert.ok(!html.includes('data-action="row-detail-select"'));
+    }
+    if (label === 'Protected' || label === 'Verification incomplete' || label === 'Requires permanent delete' || label === 'Blocked') {
+      assert.ok(!html.includes('data-action="row-detail-select"'),'Unavailable items must not offer selection');
+    }
+    if (locale !== 'en_US') assert.notEqual(explanation.label,label,`${locale}: status translated`);
+  }
+  assert.ok(!mountHtml.includes(' open>'),'Compact row disclosures remain collapsed');
+  assert.equal(ACP.formatOperationResultStatus({},'blocked').label,ACP.tr('Blocked'));
   if (locale !== 'en_US') {
     for (const key of ['scanWarningMessage','reason','zfsNote','storageLabel','rootMessage']) assert.notEqual(payload[key],fixture.original[key],`${locale}: ${key}`);
     assert.ok(!payload.scanWarningMessage.includes('Filesystem discovery') && !payload.scanWarningMessage.includes('Scan results loaded'));
