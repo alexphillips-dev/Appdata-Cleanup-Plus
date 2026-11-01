@@ -98,7 +98,7 @@ async function checkActionLayout(page, locale, width) {
         }
         const main = fs.readFileSync(path.join(plugin, 'scripts/appdata.cleanup.plus.js'), 'utf8');
         assert.equal(main.split('$(init);').length, 2);
-        await page.addScriptTag({content:main.replace('$(init);', 'window.i18nLayoutFlows = {state,cacheElements,renderAll,installActionBarLayout,conflicts:buildRestoreConflictDialogHtml, operation:buildOperationContext, preview:buildOperationPreviewHtml};')});
+        await page.addScriptTag({content:main.replace('$(init);', 'window.i18nLayoutFlows = {state,cacheElements,renderAll,buildHelpModalHtml,installActionBarLayout,conflicts:buildRestoreConflictDialogHtml, operation:buildOperationContext, preview:buildOperationPreviewHtml};')});
         await page.evaluate(() => {
           const F = window.i18nLayoutFlows;
           F.cacheElements(); F.installActionBarLayout(); F.renderAll();
@@ -161,12 +161,17 @@ async function checkActionLayout(page, locale, width) {
         assert.ok(modal.text.includes('/mnt/user/appdata/Delete'));
         assert.equal(await page.locator('.sweet-alert button.cancel').isVisible(), false, `${locale}: hidden Cancel must stay hidden`);
         assert.equal(await page.locator('.sweet-alert button.cancel').textContent(), await page.evaluate(() => window.AppdataCleanupPlus.tr('Cancel')), `${locale}: Cancel must use the locale`);
-        for (const flow of ['quarantine', 'conflicts', 'confirmation', 'history', 'templates', 'mounts', 'unverified']) {
+        for (const flow of ['help', 'quarantine', 'conflicts', 'confirmation', 'history', 'templates', 'mounts', 'unverified']) {
           await page.evaluate(flow => {
             const ACP = window.AppdataCleanupPlus;
             const context = {strings:window.appdataCleanupPlusConfig.strings,state:{settings:ACP.defaultSafetySettings()}};
             let html, modalClass;
-            if (flow === 'unverified') {
+            if (flow === 'help') {
+              window.i18nLayoutFlows.state.scanToken = 'synthetic-scan';
+              window.i18nLayoutFlows.state.settings.enablePermanentDelete = false;
+              html = window.i18nLayoutFlows.buildHelpModalHtml();
+              modalClass = 'acp-help-modal';
+            } else if (flow === 'unverified') {
               const row = {name:'Example',path:'/mnt/user/appdata/Example',displayPath:'/mnt/user/appdata/Example',sourceKind:'filesystem',sourceNames:[],targetPaths:[],templateRefs:[],canDelete:false,storageKind:'filesystem',scanVerificationLocked:true,policyLocked:true,policyReason:ACP.tr('Docker ownership verification is incomplete. Results are unverified and cleanup is blocked, even with Safe Mode disabled. Rescan; if the problem persists, export diagnostics from Tools.')};
               html = ACP.buildRowDetailsModalHtml(context,row);
               modalClass = 'acp-row-details-modal';
@@ -194,11 +199,24 @@ async function checkActionLayout(page, locale, width) {
               modalClass = 'acp-delete-modal-review';
             }
             ACP.applyDeleteModalClass('acp-delete-modal ' + modalClass, html);
+            if (flow === 'help') document.querySelectorAll('.acp-help-question').forEach(node => { node.open = true; });
           }, flow);
           const result = await page.evaluate(() => ({scroll:document.documentElement.scrollWidth,dir:document.querySelector('.sweet-alert').dir}));
           assert.ok(result.scroll <= width + 2, `${locale} ${width}px ${flow}: overflow ${result.scroll}`);
           assert.equal(result.dir, direction);
           assert.equal(await page.locator('.sweet-alert button.cancel').isVisible(), false, `${locale} ${flow}: hidden Cancel must stay hidden`);
+          if (flow === 'help') {
+            const help = await page.locator('.sweet-alert').evaluate(modal => {
+              const body=modal.querySelector('.acp-help-body'),footer=modal.querySelector('.sa-button-container');
+              const scrolls=[modal,...modal.querySelectorAll('*')].filter(node=>/auto|scroll/.test(getComputedStyle(node).overflowY)&&node.scrollHeight>node.clientHeight+2);
+              return {onlyBody:scrolls.every(node=>node===body),widthFits:body.scrollWidth<=body.clientWidth+2,footerBottom:footer.getBoundingClientRect().bottom,viewportHeight:innerHeight,
+                statuses:body.querySelectorAll('.acp-help-status dt').length,steps:body.querySelectorAll('.acp-help-step').length,dir:modal.dir};
+            });
+            assert.equal(help.onlyBody,true,`${locale}: expanded Help has one scrolling body`);
+            assert.equal(help.widthFits,true,`${locale}: Help text fits its body`);
+            assert.ok(help.footerBottom<=help.viewportHeight,`${locale}: Help Done stays within the viewport`);
+            assert.equal(help.statuses,5); assert.equal(help.steps,3); assert.equal(help.dir,direction);
+          }
           if (flow === 'mounts') {
             assert.equal(await page.locator('.sweet-alert .acp-mount-evidence').first().evaluate(node=>node.open),true,`${locale}: blocking evidence is visible by default`);
             assert.equal(await page.locator('.sweet-alert [data-action="row-detail-select"]').count(),0);
@@ -224,7 +242,7 @@ async function checkActionLayout(page, locale, width) {
         assert.deepEqual(errors, []);
         await page.close();
       }
-      console.log(`${locale}: desktop/mobile page, Details, quarantine, conflicts, confirmation, history, RTL and light theme passed`);
+      console.log(`${locale}: desktop/mobile page, Details, Help, quarantine, conflicts, confirmation, history, RTL and light theme passed`);
     }
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

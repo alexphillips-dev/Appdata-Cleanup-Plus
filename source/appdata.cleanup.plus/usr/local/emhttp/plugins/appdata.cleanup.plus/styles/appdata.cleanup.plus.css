@@ -1500,7 +1500,7 @@
 }
 
 .sweet-alert.acp-help-modal {
-  max-width: 720px !important;
+  max-width: 1100px !important;
 }
 
 .sweet-alert.acp-row-details-modal {
@@ -1934,6 +1934,7 @@
   padding: 10px 12px;
 }
 
+.sweet-alert.acp-help-modal,
 .sweet-alert.acp-row-details-modal {
   background: var(--acp-panel) !important;
   border: 1px solid var(--acp-border-strong) !important;
@@ -1946,6 +1947,7 @@
   overflow: hidden !important;
 }
 
+.sweet-alert.acp-help-modal .acp-modal-host,
 .sweet-alert.acp-row-details-modal .acp-modal-host {
   display: flex;
   flex: 1 1 auto;
@@ -1954,17 +1956,21 @@
   overflow: hidden !important;
 }
 
+.sweet-alert.acp-help-modal > h2,
+.sweet-alert.acp-help-modal > .sa-button-container,
 .sweet-alert.acp-row-details-modal > h2,
 .sweet-alert.acp-row-details-modal > .sa-button-container {
   flex: 0 0 auto;
 }
 
+.sweet-alert.acp-help-modal > .sa-button-container,
 .sweet-alert.acp-row-details-modal > .sa-button-container {
   border-top: 1px solid var(--acp-border);
   justify-content: flex-end !important;
   padding-top: 12px;
 }
 
+.sweet-alert.acp-help-modal h2,
 .sweet-alert.acp-row-details-modal h2 {
   color: var(--acp-heading) !important;
   font-size: 18px !important;
@@ -1973,6 +1979,7 @@
   text-align: start !important;
 }
 
+.sweet-alert.acp-help-modal p,
 .sweet-alert.acp-row-details-modal p {
   color: var(--acp-text) !important;
   text-align: start !important;
@@ -2565,35 +2572,89 @@
   }
 }
 
-.acp-help-grid {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.acp-help-section {
-  background: var(--acp-panel);
-  border: 1px solid var(--acp-border);
-  border-radius: 8px;
-  display: grid;
-  gap: 6px;
-  padding: 10px 12px;
-}
-
-.acp-help-section-copy {
-  color: var(--acp-text);
-  font-size: 12px;
-  line-height: 1.45;
+.acp-help-shell {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
   text-align: start;
 }
 
-.acp-help-shell {
-  gap: 10px;
+.acp-help-body {
+  align-content: start;
+  display: grid;
+  flex: 1 1 auto;
+  gap: 16px;
+  min-height: 0;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-inline-end: 4px;
+  scrollbar-gutter: stable;
+}
+
+.sweet-alert.acp-help-modal .acp-help-body p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.acp-help-body h3,
+.acp-help-body h4 {
+  color: var(--acp-heading);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
+  margin: 0 0 10px;
+  text-align: start;
+}
+
+.acp-help-intro {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  padding: 2px;
+}
+
+.acp-help-intro svg {
+  color: var(--acp-accent);
+  fill: none;
+  height: 30px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  width: 30px;
+}
+
+.acp-help-intro h3 { font-size: 16px; margin-bottom: 4px; }
+
+.acp-help-reference-grid {
+  align-items: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+
+.acp-help-reference-grid > section,
+.acp-help-faq {
+  background: var(--acp-card);
+  border: 1px solid var(--acp-border);
+  border-radius: 8px;
+  min-width: 0;
+  padding: 14px;
 }
 
 .acp-help-step-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .acp-help-step {
@@ -2635,21 +2696,53 @@
   line-height: 1.2;
 }
 
-.acp-help-step-copy p,
-.acp-help-card .acp-simple-modal-card-body {
-  color: var(--acp-muted);
-  font-size: 12px;
-  line-height: 1.45;
-  margin: 0;
-}
+.acp-help-step-copy .acp-help-step-title { margin: 0; }
 
-.acp-help-card-grid {
+.acp-help-status-list { display: block; margin: 0; padding: 0; }
+.acp-help-status {
+  align-items: start;
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: minmax(100px, .7fr) minmax(0, 1fr);
+  padding: 10px 0;
+}
+.acp-help-status + .acp-help-status { border-top: 1px solid var(--acp-border-faint); }
+.acp-help-status dt,
+.acp-help-status dd { float: none; font-size: 13px; line-height: 1.5; margin: 0; min-width: 0; overflow-wrap: anywhere; text-align: start; white-space: normal; width: auto; }
+.acp-help-status .acp-badge { font-size: 10px; line-height: 1.4; max-width: 100%; white-space: normal; }
+.acp-help-mode-state { border: 1px solid currentColor; border-radius: 999px; color: var(--acp-safe-text); display: inline-block; font-size: 11px; font-weight: 800; margin-inline-start: 8px; padding: 2px 7px; }
+.acp-help-mode-card.is-delete-mode .acp-help-mode-state { color: var(--acp-locked-text); }
+.acp-help-mode-card.is-unknown-mode .acp-help-mode-state { color: var(--acp-muted); }
+.acp-help-mode-card > p + p { margin-top: 10px !important; }
+.acp-help-mode-notes { display: grid; font-size: 13px; gap: 8px; line-height: 1.5; margin: 0; padding-inline-start: 18px; }
+.acp-help-safety-note { border-inline-start: 3px solid var(--acp-review-text); padding-inline-start: 10px; }
+.acp-help-zfs-note {
+  border-top: 1px solid var(--acp-border);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.acp-help-zfs-note h4 { margin-bottom: 6px; }
+.acp-help-zfs-note > strong { color: var(--acp-heading); display: block; font-size: 13px; margin-bottom: 6px; }
+.acp-help-question { border-top: 1px solid var(--acp-border-faint); padding: 12px 0; }
+.acp-help-question:last-child { padding-bottom: 0; }
+.acp-help-question summary { color: var(--acp-heading); cursor: pointer; font-size: 13px; font-weight: 700; line-height: 1.5; list-style-position: inside; }
+.acp-help-question summary:focus-visible { border-radius: 4px; outline: 2px solid var(--acp-accent); outline-offset: 3px; }
+.acp-help-question[open] > :not(summary) { margin-top: 10px !important; }
+.acp-help-question .acp-button { min-height: 36px; }
+
+@media (max-width: 760px) {
+  .acp-help-step-list,
+  .acp-help-reference-grid { grid-template-columns: 1fr; }
+  .sweet-alert.acp-help-modal { padding: 12px !important; }
+  .sweet-alert.acp-help-modal .sa-button-container button { min-height: 40px !important; }
 }
 
-.acp-help-card {
+@media (max-width: 480px) {
+  .acp-help-status { grid-template-columns: 1fr; gap: 5px; }
+}
+
+.acp-help-mode-card {
+  align-content: start;
   display: grid;
   gap: 8px;
 }
@@ -3397,10 +3490,6 @@
     min-height: 34px;
     min-width: 0;
     padding: 0 11px;
-  }
-
-  .acp-help-grid {
-    grid-template-columns: 1fr;
   }
 
   .acp-modal-actions-row,

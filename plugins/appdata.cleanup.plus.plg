@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.11.01.04">
-<!ENTITY md5 "dca63ba8de4292503bb403e723d8741f">
+<!ENTITY version "2026.11.01.05">
+<!ENTITY md5 "e5267e4f395dd04a15cc02236b4a018d">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.11.01.05
+- Redesign Help as a wider responsive guide with a fixed title and Done button, one scrolling body, three workflow steps, and clear status explanations.
+- Show confirmed cleanup-mode guidance, visible safety and ZFS notes, and expandable troubleshooting with Appdata sources and Tools links. Show mode as unavailable until scan data confirms it.
+- Keep Help visible when delayed Quarantine responses arrive, improve keyboard navigation, and refresh all 42 language catalogs.
+
 ###2026.11.01.04
 - Use the same folder and dataset SVG icons in Details and scan results.
 - Select folder now closes Details, brings the selected row into view, focuses its checkbox, and outlines the row for three seconds.

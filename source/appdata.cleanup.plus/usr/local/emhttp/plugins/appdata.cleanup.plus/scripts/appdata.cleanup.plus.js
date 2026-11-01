@@ -518,6 +518,14 @@
       }
     });
 
+    $(document).on("click.acpHelpLinks", ".sweet-alert.acp-help-modal [data-action='help-open-sources'], .sweet-alert.acp-help-modal [data-action='help-open-tools']", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (state.busy) return;
+      if ($(this).attr("data-action") === "help-open-sources") openAppdataSourcesModal();
+      else openToolsModal();
+    });
+
     els.$app.on("click", "[data-action='toggle-safe-mode']", function() {
       if (!state.busy) {
         saveSafetySettings({
@@ -1450,11 +1458,13 @@
       }
     }).fail(function(xhr) {
       state.quarantine.loading = false;
-      swal(
-        ACP.t(strings, "quarantineFailedTitle", "Quarantine failed"),
-        ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineLoadFailedMessage", "The quarantine manager could not be loaded right now.")),
-        "error"
-      );
+      if (isQuarantineManagerModalVisible()) {
+        swal(
+          ACP.t(strings, "quarantineFailedTitle", "Quarantine failed"),
+          ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineLoadFailedMessage", "The quarantine manager could not be loaded right now.")),
+          "error"
+        );
+      }
       renderPanels();
     });
   }
@@ -1651,7 +1661,7 @@
     renderPanels();
     renderQuarantineManagerModal(true);
     loadQuarantineManager(true, function() {
-      renderQuarantineManagerModal(false);
+      if (isQuarantineManagerModalVisible()) renderQuarantineManagerModal(false);
     });
   }
 
@@ -1683,96 +1693,127 @@
   }
 
   function buildHelpModalHtml() {
+    var modeKnown = !!state.scanToken;
+    var isDeleteMode = !!(state.settings && state.settings.enablePermanentDelete);
     var steps = [
       {
-        marker: "1",
         title: ACP.t(strings, "helpStepReviewTitle", "Review"),
-        body: ACP.t(strings, "helpStepReviewBody", "Ready means the current checks allow cleanup. Confirm that you no longer need the folder. Details explains its source, restrictions, and next step.")
+        body: ACP.tr("Check the folder path and Details. The scan compares appdata sources, saved templates, and installed container mappings.")
       },
       {
-        marker: "2",
         title: ACP.t(strings, "helpStepPreviewTitle", "Preview"),
-        body: ACP.t(strings, "helpStepPreviewBody", "Use Dry run to see what would happen before anything is changed.")
+        body: ACP.tr("Use Dry run to see what would happen before anything is changed.")
       },
       {
-        marker: "3",
         title: ACP.t(strings, "helpStepCleanTitle", "Clean"),
-        body: ACP.t(strings, "helpStepCleanBody", "Select ready rows, then quarantine or delete them depending on Safe Mode.")
+        body: ACP.tr("Select ready items, review the proposed action, and confirm only when you no longer need the data.")
       }
     ];
-    var cards = [
+    var statuses = [
       {
-        title: ACP.t(strings, "helpStatesTitle", "Result states"),
-        body: ACP.t(strings, "helpStatesBody", "Ready items can be selected for review. Protected items failed a safety check. Verification incomplete means ownership could not be checked. Requires permanent delete applies to ZFS datasets. Ignored items are hidden; Stop ignoring shows them again without moving files.")
+        label: ACP.t(strings, "cardDeletable", "Ready"), tone: "ready",
+        body: ACP.tr("Current checks allow selection. Confirm you no longer need the data before acting.")
       },
       {
-        title: ACP.t(strings, "helpSafeModeSimpleTitle", "Safe Mode"),
-        body: ACP.t(strings, "helpSafeModeSimpleBody", "Safe Mode moves folders to quarantine. Disable it only when you intentionally want permanent delete.")
+        label: ACP.tr("Protected"), tone: "locked",
+        body: ACP.tr("A safety check prevents cleanup. Open Details for the reason and next step.")
       },
       {
-        title: ACP.t(strings, "helpZfsSimpleTitle", "ZFS datasets"),
-        body: ACP.t(strings, "helpZfsSimpleBody", "ZFS datasets cannot be quarantined. Permanent deletion can also remove child datasets and snapshots. Review the destroy impact in Details before choosing this action.")
+        label: ACP.tr("Verification incomplete"), tone: "review",
+        body: ACP.tr("Ownership checks did not complete. Rescan; if the warning remains, download diagnostics from Tools.")
       },
       {
-        title: ACP.t(strings, "helpDetailsSimpleTitle", "Need more info?"),
-        body: ACP.t(strings, "helpDetailsSimpleBody", "Open Details for the reason, What to check next, and any Specific container mounts. Required container mappings should stay in place.")
+        label: ACP.tr("Requires permanent delete"), tone: "review",
+        body: ACP.tr("ZFS dataset-backed rows require permanent delete mode and cannot be quarantined.")
       },
       {
-        title: ACP.tr("Specific container mounts"),
-        body: ACP.tr("A container mapping to the appdata root protects folders inside it, including when the container is stopped. If discovery was skipped and no rows appear, review host path mappings on the Docker tab. Keep required mappings; correct obsolete ones and rescan.")
-      },
-      {
-        title: ACP.t(strings, "helpTroubleshootingTitle", "Common questions"),
-        body: ACP.t(strings, "helpTroubleshootingBody", "For unavailable cleanup, open Details and read Why cleanup is unavailable and What to check next. If no rows appear, review scan warnings and Appdata sources. After updating the plugin, reload the page and verify the installed version.")
+        label: ACP.t(strings, "ignoredSectionTitle", "Ignored"), tone: "neutral",
+        body: ACP.tr("Hidden from normal results. Stop ignoring shows the item again without moving files.")
       }
     ];
+    var questions = [
+      {
+        topic: "blocked", title: ACP.tr("Why is cleanup blocked?"),
+        paragraphs: [
+          ACP.tr("Open Details for Why cleanup is unavailable and What to check next. Safety protections have no override; keep required container mappings."),
+          ACP.tr("If verification still fails after rescanning, download diagnostics from Tools and review them before sharing.")
+        ],
+        action: "help-open-tools", actionLabel: ACP.t(strings, "toolsOpenLabel", "Tools")
+      },
+      {
+        topic: "no_results", title: ACP.tr("Why are there no results?"),
+        paragraphs: [
+          ACP.tr("Read scan warnings and check search and Show ignored before rescanning. If you expected more folders, review Appdata sources and installed container mappings."),
+          ACP.tr("Skipped discovery or incomplete ownership checks can leave results empty. An empty partial scan does not confirm that all appdata is in use.")
+        ],
+        action: "help-open-sources", actionLabel: ACP.t(strings, "appdataSourcesOpenLabel", "Appdata sources")
+      },
+      {
+        topic: "stopped_containers", title: ACP.tr("Why does a stopped container still block cleanup?"),
+        paragraphs: [
+          ACP.tr("Installed container mappings remain protected when a container is stopped. A mapping to the whole appdata root protects folders inside it and can prevent discovery. Keep required mappings; correct obsolete ones on the Docker tab and rescan."),
+          ACP.tr("Other containers with access lists broad access above the appdata source; this alone does not block cleanup."),
+          ACP.tr("Turning off Docker does not establish that appdata is unused. Ownership checks must complete before cleanup.")
+        ]
+      },
+      {
+        topic: "quarantine", title: ACP.tr("What do Restore and Purge do?"),
+        paragraphs: [
+          ACP.tr("Restore returns quarantined folders without overwriting an existing destination. Conflicts can be skipped or restored with another name. Purge permanently deletes quarantined data, including when a scheduled timer expires."),
+          ACP.tr("Review purge timers in Quarantine. Changing the default also updates folders that follow that default; manually set timers remain unchanged.")
+        ]
+      },
+      {
+        topic: "updates", title: ACP.tr("What should I do after updating?"),
+        paragraphs: [
+          ACP.tr("Verify the installed plugin version, reload the page, and reopen the dialog. If the old interface remains, hard-refresh the browser. For persistent problems, download diagnostics from Tools and review them before sharing.")
+        ]
+      }
+    ];
+    var modeState = modeKnown
+      ? (isDeleteMode ? ACP.t(strings, "offLabel", "OFF") : ACP.t(strings, "onLabel", "ON"))
+      : ACP.tr("Mode unavailable");
+    var currentAction = !modeKnown
+      ? ACP.tr("Run a successful scan to confirm the current cleanup mode.")
+      : (isDeleteMode
+        ? ACP.tr("Selected folders will be permanently deleted after confirmation.")
+        : ACP.tr("Selected folders will be quarantined instead of permanently deleted."));
     var html = [
-      '<div class="acp-simple-modal-shell acp-help-shell">',
-        '<section class="acp-simple-modal-intro">',
-          '<div class="acp-simple-modal-icon" aria-hidden="true">?</div>',
-          '<div class="acp-simple-modal-intro-copy">',
-            '<div class="acp-simple-modal-title">' + ACP.escapeHtml(ACP.t(strings, "helpIntroTitle", "Clean up appdata safely")) + "</div>",
-            '<p class="acp-simple-modal-message">' + ACP.escapeHtml(ACP.t(strings, "helpSubtitle", "A quick guide for reviewing and cleaning unused appdata without digging through technical details.")) + "</p>",
-          "</div>",
-        "</section>",
-        '<section class="acp-simple-modal-card">',
-          '<div class="acp-simple-modal-card-head">',
-            '<div class="acp-simple-modal-card-title">' + ACP.escapeHtml(ACP.t(strings, "helpFlowTitle", "Simple workflow")) + "</div>",
-          "</div>",
-          '<div class="acp-help-step-list">'
+      '<div class="acp-help-shell"><div class="acp-help-body">',
+      '<section class="acp-help-intro">',
+      '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M9.75 9.25a2.35 2.35 0 0 1 4.5 1c0 1.7-2.25 1.9-2.25 3.45"></path><path d="M12 16.8h.01"></path></svg>',
+      '<div><h3>' + ACP.escapeHtml(ACP.t(strings, "helpIntroTitle", "Clean up appdata safely")) + '</h3><p>' + ACP.escapeHtml(ACP.tr("Review scan evidence, preview the action, then clean up only what you no longer need.")) + '</p></div>',
+      '</section>',
+      '<section class="acp-help-workflow"><h3>' + ACP.escapeHtml(ACP.t(strings, "helpFlowTitle", "Simple workflow")) + '</h3><ol class="acp-help-step-list">'
     ];
 
-    $.each(steps, function(_, step) {
-      html.push(
-        '<article class="acp-help-step">' +
-          '<div class="acp-help-step-marker">' + ACP.escapeHtml(step.marker || "") + "</div>" +
-          '<div class="acp-help-step-copy">' +
-            '<div class="acp-help-step-title">' + ACP.escapeHtml(step.title || "") + "</div>" +
-            '<p>' + ACP.escapeHtml(step.body || "") + "</p>" +
-          "</div>" +
-        "</article>"
-      );
+    $.each(steps, function(index, step) {
+      html.push('<li class="acp-help-step"><span class="acp-help-step-marker">' + ACP.escapeHtml(ACP.formatCount(index + 1)) + '</span><div class="acp-help-step-copy"><h4 class="acp-help-step-title">' + ACP.escapeHtml(step.title) + '</h4><p>' + ACP.escapeHtml(step.body) + '</p></div></li>');
     });
-
+    html.push('</ol></section><div class="acp-help-reference-grid"><section class="acp-help-reference-card"><h3>' + ACP.escapeHtml(ACP.t(strings, "helpStatesTitle", "Result states")) + '</h3><dl class="acp-help-status-list">');
+    $.each(statuses, function(_, status) {
+      html.push('<div class="acp-help-status"><dt><span class="acp-badge acp-badge-tone-' + ACP.escapeHtml(status.tone) + '">' + ACP.escapeHtml(status.label) + '</span></dt><dd>' + ACP.escapeHtml(status.body) + '</dd></div>');
+    });
     html.push(
-          "</div>",
-        "</section>",
-        '<div class="acp-help-card-grid">'
+      '</dl></section>',
+      '<section class="acp-help-mode-card ' + (!modeKnown ? 'is-unknown-mode' : (isDeleteMode ? 'is-delete-mode' : 'is-safe-mode')) + '">',
+      '<h3>' + ACP.escapeHtml(ACP.t(strings, "helpSafeModeSimpleTitle", "Safe Mode")) + ' <span class="acp-help-mode-state">' + ACP.escapeHtml(modeState) + '</span></h3>',
+      '<p class="' + (modeKnown ? 'acp-help-current-action' : 'acp-help-mode-unavailable') + '">' + ACP.escapeHtml(currentAction) + '</p>',
+      '<ul class="acp-help-mode-notes"><li>' + ACP.escapeHtml(ACP.tr("Quarantine normally does not free space. Restore can recover quarantined folders.")) + '</li><li>' + ACP.escapeHtml(ACP.tr("Purge permanently deletes quarantined folders. Safe Mode does not prevent manual or scheduled purge.")) + '</li><li>' + ACP.escapeHtml(ACP.tr("Permanent deletion cannot be undone by this plugin.")) + '</li></ul>',
+      '<p class="acp-help-safety-note">' + ACP.escapeHtml(ACP.tr("Safe Mode changes the cleanup action. It does not bypass safety protection or incomplete ownership checks.")) + '</p>',
+      '<div class="acp-help-zfs-note"><strong>' + ACP.escapeHtml(ACP.t(strings, "helpZfsSimpleTitle", "ZFS datasets")) + '</strong><p>' + ACP.escapeHtml(ACP.tr("ZFS datasets cannot be quarantined. Permanent deletion can also remove child datasets and snapshots. Review the destroy impact in Details before choosing this action.")) + '</p></div>',
+      '</section></div>',
+      '<section class="acp-help-faq"><h3>' + ACP.escapeHtml(ACP.t(strings, "helpTroubleshootingTitle", "Common questions")) + '</h3>'
     );
-
-    $.each(cards, function(_, card) {
-      html.push(
-        '<article class="acp-simple-modal-card acp-help-card">' +
-          '<div class="acp-simple-modal-card-title">' + ACP.escapeHtml(card.title || "") + "</div>" +
-          '<p class="acp-simple-modal-card-body">' + ACP.escapeHtml(card.body || "") + "</p>" +
-        "</article>"
-      );
+    $.each(questions, function(_, question) {
+      html.push('<details class="acp-help-question" data-help-topic="' + ACP.escapeHtml(question.topic) + '"><summary>' + ACP.escapeHtml(question.title) + '</summary>');
+      $.each(question.paragraphs, function(_, paragraph) { html.push('<p>' + ACP.escapeHtml(paragraph) + '</p>'); });
+      if (question.action) html.push('<button type="button" class="acp-button acp-button-secondary" data-action="' + ACP.escapeHtml(question.action) + '"' + (state.busy ? ' disabled' : '') + '>' + ACP.escapeHtml(question.actionLabel) + '</button>');
+      html.push('</details>');
     });
-
-    html.push("</div>", "</div>");
+    html.push('</section></div></div>');
     return html.join("");
   }
-
   function openHelpModal() {
     swal({
       title: ACP.t(strings, "helpTitle", "Appdata Cleanup Plus Help"),
@@ -1787,7 +1828,7 @@
         ACP.releaseModalScrollLock(false);
       }, 180);
     });
-    ACP.applyDeleteModalClass("acp-help-modal", buildHelpModalHtml());
+    ACP.applyDeleteModalClass("acp-delete-modal acp-help-modal", buildHelpModalHtml());
   }
 
   function isToolsModalVisible() {
