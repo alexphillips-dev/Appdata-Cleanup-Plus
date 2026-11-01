@@ -116,6 +116,29 @@
       .replace(/'/g, "&#39;");
   };
 
+  ACP.buildRowFolderIconHtml = function(row) {
+    if (row && row.storageKind === "zfs") {
+      return (
+        '<span class="acp-row-folder-icon acp-row-dataset-icon" aria-hidden="true">' +
+          '<svg viewBox="0 0 24 24" focusable="false">' +
+            '<path d="M5 6.75c0-1.24 3.13-2.25 7-2.25s7 1.01 7 2.25v10.5c0 1.24-3.13 2.25-7 2.25s-7-1.01-7-2.25Z"></path>' +
+            '<path d="M5 6.75c0 1.24 3.13 2.25 7 2.25s7-1.01 7-2.25"></path>' +
+            '<path d="M5 12c0 1.24 3.13 2.25 7 2.25s7-1.01 7-2.25"></path>' +
+            '<path d="M5 17.25c0 1.24 3.13 2.25 7 2.25s7-1.01 7-2.25"></path>' +
+          "</svg>" +
+        "</span>"
+      );
+    }
+
+    return (
+      '<span class="acp-row-folder-icon" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" focusable="false">' +
+          '<path d="M3.75 6.75a2 2 0 0 1 2-2h4.15l2.1 2h6.25a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2Z"></path>' +
+        "</svg>" +
+      "</span>"
+    );
+  };
+
   ACP.extractErrorMessage = function(xhr, fallback) {
     var responseJSON = xhr && xhr.responseJSON;
     var plainText;

@@ -955,7 +955,7 @@
     var html = [
       '<div class="acp-row-details-shell" data-row-id="' + ACP.escapeHtml(row.id || "") + '">',
       '<div class="acp-row-details-hero">',
-      '<div class="acp-row-details-icon" aria-hidden="true"></div>',
+      '<div class="acp-row-details-icon" aria-hidden="true">' + ACP.buildRowFolderIconHtml(row) + '</div>',
       '<div class="acp-row-details-titleblock">',
       '<div class="acp-row-details-title">' + ACP.escapeHtml(name) + "</div>",
       '<code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code>",

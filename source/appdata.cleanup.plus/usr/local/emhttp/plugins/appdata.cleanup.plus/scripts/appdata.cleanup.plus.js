@@ -8,6 +8,7 @@
   var auroraHeaderObserver = null;
   var summaryInfoHideTimer = null;
   var summaryInfoPinnedId = "";
+  var selectedRowFeedback = { rowId: "", expiresAt: 0, timer: null };
   var state = {
     rows: [],
     summary: { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 },
@@ -932,10 +933,13 @@
       }
 
       state.selected[rowId] = true;
+      swal.close();
+      state.rowDetails.activeRowId = "";
+      state.rowDetails.requestToken = "";
       renderResults();
       renderSummaryCards();
       updateActionBar();
-      renderOpenRowDetailsModal();
+      revealSelectedRow(rowId);
     });
 
     $(document).on("click.acpRowDetails", ".sweet-alert [data-action='row-detail-ignore'], .sweet-alert [data-action='row-detail-restore']", function(event) {
@@ -4413,27 +4417,34 @@
     return "";
   }
 
-  function buildRowFolderIconHtml(row) {
-    if (row && row.storageKind === "zfs") {
-      return (
-        '<span class="acp-row-folder-icon acp-row-dataset-icon" aria-hidden="true">' +
-          '<svg viewBox="0 0 24 24" focusable="false">' +
-            '<path d="M5 6.75c0-1.24 3.13-2.25 7-2.25s7 1.01 7 2.25v10.5c0 1.24-3.13 2.25-7 2.25s-7-1.01-7-2.25Z"></path>' +
-            '<path d="M5 6.75c0 1.24 3.13 2.25 7 2.25s7-1.01 7-2.25"></path>' +
-            '<path d="M5 12c0 1.24 3.13 2.25 7 2.25s7-1.01 7-2.25"></path>' +
-            '<path d="M5 17.25c0 1.24 3.13 2.25 7 2.25s7-1.01 7-2.25"></path>' +
-          "</svg>" +
-        "</span>"
-      );
-    }
+  function revealSelectedRow(rowId) {
+    window.clearTimeout(selectedRowFeedback.timer);
+    selectedRowFeedback.rowId = "";
+    selectedRowFeedback.expiresAt = 0;
+    els.$results.find(".acp-row.is-selection-highlight").removeClass("is-selection-highlight");
+    // Wait for the native close animation before restoring page focus/scroll.
+    selectedRowFeedback.timer = window.setTimeout(function() {
+      selectedRowFeedback.timer = null;
+      ACP.releaseModalScrollLock(false);
+      if (getActiveSweetAlertModal().length) return;
+      var $row = els.$results.find(".acp-row").filter(function() {
+        return this.getAttribute("data-row-id") === rowId;
+      }).first();
+      if (!$row.length || !state.selected[rowId]) return;
 
-    return (
-      '<span class="acp-row-folder-icon" aria-hidden="true">' +
-        '<svg viewBox="0 0 24 24" focusable="false">' +
-          '<path d="M3.75 6.75a2 2 0 0 1 2-2h4.15l2.1 2h6.25a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2Z"></path>' +
-        "</svg>" +
-      "</span>"
-    );
+      selectedRowFeedback.rowId = rowId;
+      selectedRowFeedback.expiresAt = Date.now() + 3000;
+      $row.addClass("is-selection-highlight");
+      $row[0].scrollIntoView({behavior: "instant", block: "start", inline: "nearest"});
+      var checkbox = $row.find(".acp-row-checkbox")[0];
+      if (checkbox) checkbox.focus({preventScroll: true});
+      selectedRowFeedback.timer = window.setTimeout(function() {
+        selectedRowFeedback.rowId = "";
+        selectedRowFeedback.expiresAt = 0;
+        selectedRowFeedback.timer = null;
+        els.$results.find(".acp-row.is-selection-highlight").removeClass("is-selection-highlight");
+      }, 3000);
+    }, 180);
   }
 
   function buildResultsSectionDefinitions() {
@@ -4817,6 +4828,9 @@
     if (isSelected) {
       rowClass += " is-selected";
     }
+    if (isSelected && row.id === selectedRowFeedback.rowId && Date.now() < selectedRowFeedback.expiresAt) {
+      rowClass += " is-selection-highlight";
+    }
     if (row.ignored) {
       rowClass += " is-ignored";
     }
@@ -4829,13 +4843,13 @@
     return (
       '<article class="' + rowClass + '" data-row-id="' + ACP.escapeHtml(row.id) + '">' +
         '<div class="acp-row-check">' +
-          '<input type="checkbox" class="acp-row-checkbox" data-row-id="' + ACP.escapeHtml(row.id) + '"' + (isSelected ? " checked" : "") + (selectable ? "" : " disabled") + ">" +
+          '<input type="checkbox" class="acp-row-checkbox" data-row-id="' + ACP.escapeHtml(row.id) + '" aria-label="' + ACP.escapeHtml(row.displayPath || row.path || row.name || ACP.tr("Unknown folder")) + '"' + (isSelected ? " checked" : "") + (selectable ? "" : " disabled") + ">" +
         "</div>" +
         '<div class="acp-row-main">' +
           '<div class="acp-row-primary">' +
             '<div class="acp-row-title-wrap">' +
               '<div class="acp-row-title-line">' +
-                buildRowFolderIconHtml(row) +
+                ACP.buildRowFolderIconHtml(row) +
                 '<h3 class="acp-row-title">' + ACP.escapeHtml(row.name || row.displayPath || "") + "</h3>" +
               "</div>" +
               '<div class="acp-row-meta">' +
