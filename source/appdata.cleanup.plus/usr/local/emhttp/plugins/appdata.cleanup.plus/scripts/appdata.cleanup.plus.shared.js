@@ -242,11 +242,14 @@
 
     $baseText = $modal.children("p").first();
     $existingHost = $modal.children(".acp-modal-host");
+    // Details actions live beside SweetAlert's own Done button. Remove only
+    // that owned block when replacing/reusing a dialog; preserve native controls.
+    $modal.find(".acp-row-details-footer-actions").remove();
 
     // Flex sizing keeps compact dialog content scrollable without moving the footer.
     // Preserve SweetAlert's inline display:none when closing or reusing a dialog.
-    if ($modal[0].style.display !== "none" && /acp-(?:template-manager|appdata-sources|operation-recovery)-modal/.test(String($modal.attr("class")) + " " + String(className))) {
-      $modal.css("display", /acp-(?:template-manager|appdata-sources|operation-recovery)-modal/.test(String(className)) ? "flex" : "block");
+    if ($modal[0].style.display !== "none" && /acp-(?:template-manager|appdata-sources|operation-recovery|row-details)-modal/.test(String($modal.attr("class")) + " " + String(className))) {
+      $modal.css("display", /acp-(?:template-manager|appdata-sources|operation-recovery|row-details)-modal/.test(String(className)) ? "flex" : "block");
     }
 
     $modal.removeClass("acp-delete-modal acp-delete-modal-review acp-delete-results-modal acp-delete-progress-running acp-delete-progress-ready acp-quarantine-manager-modal acp-audit-history-modal acp-appdata-sources-modal acp-zfs-path-mappings-modal acp-tools-modal acp-template-manager-modal acp-operation-recovery-modal acp-help-modal acp-row-details-modal");
@@ -276,8 +279,40 @@
       $baseText.removeClass("acp-modal-hidden");
     }
 
+    if ($modal.hasClass("acp-row-details-modal")) {
+      $buttonContainer = $modal.children(".sa-button-container, .sa-confirm-button-container").first();
+      if ($buttonContainer.length) {
+        $modal.children(".acp-modal-host").find(".acp-row-details-actions").first()
+          .addClass("acp-row-details-footer-actions").prependTo($buttonContainer);
+      }
+    }
+
     ACP.syncDeleteModalThemeTokens($modal);
   };
+
+  // Native SweetAlert traps Tab among its original buttons, including hidden
+  // Cancel. Details also has disclosures and injected footer actions.
+  if (document.addEventListener) document.addEventListener("keydown", function(event) {
+    var $modal = $(".sweet-alert.acp-row-details-modal:visible").last();
+    var controls;
+    var index;
+    var next;
+    if (!$modal.length) return;
+    if (event.key === "Tab" || event.keyCode === 9) {
+      controls = $modal.find("a[href], button, input, select, textarea, summary, [tabindex]").filter(function() {
+        return !this.disabled && this.tabIndex >= 0 && this.getClientRects().length && window.getComputedStyle(this).visibility !== "hidden";
+      }).get();
+      if (!controls.length) return;
+      index = controls.indexOf(document.activeElement);
+      next = index < 0 ? (event.shiftKey ? controls.length - 1 : 0) : (index + (event.shiftKey ? -1 : 1) + controls.length) % controls.length;
+      event.preventDefault();
+      event.stopPropagation();
+      controls[next].focus();
+    } else if ((event.key === "Enter" || event.key === " " || event.keyCode === 13 || event.keyCode === 32) && $modal[0].contains(event.target)) {
+      // Let the focused button or summary perform its browser-native action.
+      event.stopPropagation();
+    }
+  }, true);
 
   ACP.releaseModalScrollLock = function(forceUnlock) {
     var hasVisibleModal = $(".sweet-alert:visible, .sweet-alert.showSweetAlert").length > 0;

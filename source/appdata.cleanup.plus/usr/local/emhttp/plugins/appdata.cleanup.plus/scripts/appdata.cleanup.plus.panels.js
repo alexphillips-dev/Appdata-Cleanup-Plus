@@ -372,7 +372,7 @@
 
     return (
       '<div class="acp-detail-item">' +
-        '<div class="acp-detail-label">' + ACP.escapeHtml(label || "") + "</div>" +
+        '<div class="acp-detail-label">' + ACP.escapeHtml(label || "") + (typeof settings.count === "number" && isFinite(settings.count) && settings.count >= 0 ? ' <span class="acp-detail-count">' + ACP.escapeHtml(ACP.formatCount(settings.count)) + '</span>' : '') + "</div>" +
         (
           settings.code
             ? ('<code class="acp-modal-path' + (settings.secondary ? ' acp-modal-path-secondary' : '') + '">' + ACP.escapeHtml(text) + "</code>")
@@ -404,7 +404,7 @@
 
         html.push(
           '<div class="acp-detail-item">' +
-            '<div class="acp-detail-label">' + ACP.escapeHtml(item.label || "") + "</div>" +
+            '<div class="acp-detail-label">' + ACP.escapeHtml(item.label || "") + (typeof item.count === "number" && isFinite(item.count) && item.count >= 0 ? ' <span class="acp-detail-count">' + ACP.escapeHtml(ACP.formatCount(item.count)) + '</span>' : '') + "</div>" +
             '<div class="acp-detail-stack">' +
               $.map(values, function(value) {
                 return item.code
@@ -699,7 +699,9 @@
       return ACP.t(strings, "rowDetailsNextStepZfsReady", "Only permanent delete mode is supported for ZFS-backed rows. Review the destroy impact below before proceeding.");
     }
 
-    return ACP.t(strings, "rowDetailsNextStepReady", "You can quarantine it now, or permanently delete it if that mode is enabled.");
+    return row.enablePermanentDelete
+      ? ACP.tr("Review this folder, then choose Select folder to include it in the permanent delete review.")
+      : ACP.tr("Review this folder, then choose Select folder to include it in the quarantine review.");
   }
 
   ACP.selectedTemplateBackupIds = function(manager) {
@@ -769,14 +771,18 @@
     return reason;
   };
 
-  ACP.buildMountEvidenceHtml = function(evidence, broadAccess, expanded) {
+  ACP.buildMountEvidenceHtml = function(evidence, broadAccess, expanded, detailLayout) {
     if (!$.isArray(evidence) || !evidence.length) return '';
-    var title = broadAccess ? ACP.tr("Broad container access") : ACP.tr("Specific container mounts");
+    var title = broadAccess
+      ? (detailLayout ? ACP.tr("Other containers with access") : ACP.tr("Broad container access"))
+      : ACP.tr("Specific container mounts");
     var explanation = broadAccess ? ACP.tr("These containers can access this folder through a mount above the appdata source. This does not establish ownership and does not block cleanup.") : ACP.tr("These containers mount this folder or a related path within an appdata source. Cleanup is blocked, including when the containers are stopped.");
-    var html = ['<details class="acp-mount-evidence"' + (expanded ? ' open' : '') + '><summary>' + ACP.escapeHtml(title) + '</summary><p>' + ACP.escapeHtml(explanation) + '</p>'];
+    var html = ['<details class="acp-mount-evidence' + (detailLayout ? ' acp-mount-evidence-detail' : '') + '"' + (detailLayout ? ' data-detail-section="' + (broadAccess ? 'broad_access' : 'specific_mounts') + '"' : '') + (expanded ? ' open' : '') + '><summary>' + ACP.escapeHtml(title) + (detailLayout ? ' <span class="acp-mount-count">' + ACP.escapeHtml(ACP.formatCount(evidence.length)) + '</span>' : '') + '</summary><p>' + ACP.escapeHtml(explanation) + '</p>'];
     $.each(evidence, function(_, entry) {
-      html.push('<div><strong>' + ACP.escapeHtml(entry.name || ACP.tr("Unnamed Docker entry")) + '</strong>');
+      html.push('<div' + (detailLayout ? ' class="acp-mount-entry"' : '') + '><strong' + (detailLayout ? ' class="acp-mount-name"' : '') + '>' + ACP.escapeHtml(entry.name || ACP.tr("Unnamed Docker entry")) + '</strong>');
+      if (detailLayout) html.push('<div class="acp-mount-paths">');
       $.each(entry.paths || [], function(_, path) { html.push('<code class="acp-modal-path">' + ACP.escapeHtml(path) + '</code>'); });
+      if (detailLayout) html.push('</div>');
       html.push('</div>');
     });
     return html.join('') + '</details>';
@@ -854,6 +860,7 @@
   ACP.buildRowDetailsModalHtml = function(context, row) {
     var strings = context.strings || {};
     var settings = (context.state && context.state.settings) || {};
+    var detailRow = $.extend({}, row, settings);
     var templateRefs = $.isArray(row.templateRefs) ? row.templateRefs : [];
     var sourceNames = $.isArray(row.sourceNames) ? row.sourceNames : [];
     var targetPaths = $.isArray(row.targetPaths) ? row.targetPaths : [];
@@ -861,57 +868,83 @@
     var snapshots = $.isArray(row.zfsSnapshots) ? row.zfsSnapshots : [];
     var resolutionVariants = $.isArray(row.zfsResolutionVariants) ? row.zfsResolutionVariants : [];
     var explanation = ACP.buildRowReviewExplanation(context, row);
-    var summaryMessage = explanation.why || row.policyReason || row.securityLockReason || row.riskReason || row.reason || "";
-    var nextStepMessage = explanation.how || getRowDetailsNextStep(strings, $.extend({}, row, settings));
+    var sourceExplanation = ACP.getRowDetectionReason(row);
+    var summaryMessage = explanation.state === "ready" ? sourceExplanation : (explanation.why || sourceExplanation);
+    var nextStepMessage = explanation.how || getRowDetailsNextStep(strings, detailRow);
     var name = row.name || (row.displayPath || row.path || "").split("/").pop() || ACP.t(strings, "rowDetailsUnknownName", "Unknown folder");
     var sourceLabel = row.sourceLabel || (row.sourceKind === "filesystem" ? ACP.t(strings, "discoveryLabel", "Discovery") : ACP.t(strings, "templateLabel", "Template"));
     var sourceTone = row.sourceKind === "filesystem" ? "discovery" : "template";
     var statusTone = row.ignored ? "neutral" : (explanation.state === "protected" ? "locked" : "ready");
-    var statusLabel = explanation.label;
-    var sourceExplanation = ACP.getRowDetectionReason(row);
-    var actionExplanation = "";
+    var unavailable = ACP.tr("Unavailable");
+    var unknown = ACP.tr("Unknown");
+    var isDataset = row.storageKind === "zfs";
+    var resolutionKind = String(row.zfsResolutionKind || "");
+    var hasZfsEvidence = isDataset || row.zfsMappingMatched || row.datasetName || row.datasetMountpoint || row.zfsMatchedShareRoot || row.zfsMatchedDatasetRoot || row.zfsResolutionDetail || row.zfsResolutionMessage || row.zfsPreviewLoaded || row.zfsRecursiveDestroy || row.zfsPreviewError || row.zfsImpactSummary || childDatasets.length || snapshots.length || Number(row.zfsChildDatasetCount || 0) > 0 || Number(row.zfsSnapshotCount || 0) > 0 || (resolutionKind && resolutionKind !== "filesystem");
+    var ordinaryFilesystem = (row.storageKind === "filesystem" || row.storageKind === "folder") && !hasZfsEvidence && !row.detailLoading && !row.detailError;
+    var impactMessage = row.zfsImpactSummary || unavailable;
+    var actionExplanation;
     var actionButtons = [];
-    var technicalItems = [
-      { label: ACP.t(strings, "rowDetailsOutcomeLabel", "Current outcome"), value: getRowDetailsOutcome(strings, $.extend({}, row, settings)) },
-      { label: ACP.t(strings, "rowDetailsPolicyLabel", "Policy"), value: row.policyReason || "" },
-      { label: ACP.t(strings, "rowDetailsSecurityLabel", "Security"), value: row.securityLockReason || row.riskReason || "" },
-      { label: ACP.t(strings, "rowDetailsRealPathLabel", "Canonical path"), value: row.realPath || "", code: true },
-      { label: ACP.t(strings, "rowDetailsSourceRootLabel", "Matched source root"), value: row.sourceRoot || "", code: true },
-      { label: ACP.t(strings, "rowDetailsSourceNamesLabel", "Source names"), value: sourceNames.join(", ") },
-      { label: ACP.t(strings, "rowDetailsTargetsLabel", "Targets"), value: targetPaths.join(", ") },
-      { label: ACP.t(strings, "rowDetailsTemplateRefsLabel", "Template refs"), value: templateRefs.length ? $.map(templateRefs, function(ref) { return (ref && ref.name ? ref.name : "") + (ref && ref.target ? " -> " + ref.target : ""); }).join(", ") : "" },
-      { label: ACP.t(strings, "rowDetailsInsideSourceLabel", "Inside configured source"), value: row.insideConfiguredSource ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No") },
-      { label: ACP.t(strings, "rowDetailsShareLabel", "Share"), value: row.shareName || "" },
-      { label: ACP.t(strings, "rowDetailsStorageKindLabel", "Storage kind"), value: row.storageLabel || row.storageKind || "" },
-      { label: ACP.t(strings, "rowDetailsDatasetLabel", "Dataset"), value: row.datasetName || "" },
-      { label: ACP.t(strings, "rowDetailsMountpointLabel", "Mountpoint"), value: row.datasetMountpoint || "", code: true },
-      { label: ACP.t(strings, "rowDetailsMatchedShareRootLabel", "Matched share root"), value: row.zfsMatchedShareRoot || "", code: true },
-      { label: ACP.t(strings, "rowDetailsMatchedDatasetRootLabel", "Matched dataset root"), value: row.zfsMatchedDatasetRoot || "", code: true },
-      { label: ACP.t(strings, "rowDetailsResolutionLabel", "Resolution"), value: row.zfsResolutionDetail || row.zfsResolutionMessage || (row.zfsMappingMatched ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No")) },
-      { label: ACP.t(strings, "rowDetailsCheckedPathsLabel", "Checked paths"), values: resolutionVariants, code: true },
-      { label: ACP.t(strings, "zfsChildDatasetsLabel", "Child datasets"), values: childDatasets, code: true },
-      { label: ACP.t(strings, "zfsSnapshotsLabel", "Snapshots"), values: snapshots, code: true }
+    var locationItems = [
+      { label: ACP.t(strings, "rowDetailsCurrentPathLabel", "Current path"), value: row.path || row.displayPath || unavailable, code: true },
+      { label: ACP.t(strings, "rowDetailsRealPathLabel", "Canonical path"), value: row.realPath || unavailable, code: true },
+      { label: ACP.t(strings, "rowDetailsSourceRootLabel", "Matched source root"), value: row.sourceRoot || (row.insideConfiguredSource === false ? ACP.t(strings, "rowDetailsNoneLabel", "None") : unknown), code: true },
+      { label: ACP.t(strings, "rowDetailsInsideSourceLabel", "Inside configured source"), value: typeof row.insideConfiguredSource === "boolean" ? (row.insideConfiguredSource ? ACP.t(strings, "rowDetailsYesLabel", "Yes") : ACP.t(strings, "rowDetailsNoLabel", "No")) : unknown },
+      { label: ACP.t(strings, "rowDetailsOutcomeLabel", "Current outcome"), value: getRowDetailsOutcome(strings, detailRow) }
     ];
-    var html = [
-      '<div class="acp-row-details-shell">',
-      '<div class="acp-row-details-hero">',
-      '<div class="acp-row-details-icon" aria-hidden="true"></div>',
-      '<div class="acp-row-details-titleblock">',
-      '<div class="acp-row-details-title">' + ACP.escapeHtml(name) + "</div>",
-      '<code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code>",
-      "</div>",
-      '<div class="acp-row-details-badges">',
-      '<span class="acp-badge acp-badge-tone-' + ACP.escapeHtml(statusTone) + '">' + ACP.escapeHtml(statusLabel) + "</span>",
-      '<span class="acp-badge acp-badge-tone-' + ACP.escapeHtml(sourceTone) + '">' + ACP.escapeHtml(sourceLabel) + "</span>",
-      "</div>",
-      "</div>"
+    var sourceItems = [
+      { label: ACP.t(strings, "sourceLabel", "Source"), value: row.sourceDisplay || row.sourceSummary || sourceLabel }
     ];
+    var zfsItems = [];
+    var visibleErrors = [];
+
+    if (row.shareName) locationItems.push({ label: ACP.t(strings, "rowDetailsShareLabel", "Share"), value: row.shareName });
+    if (typeof row.depth === "number") locationItems.push({ label: ACP.t(strings, "rowDetailsDepthLabel", "Depth"), value: ACP.formatCount(row.depth) });
+    if (row.policyReason) locationItems.push({ label: ACP.t(strings, "rowDetailsPolicyLabel", "Policy"), value: row.policyReason });
+    if (row.securityLockReason) locationItems.push({ label: ACP.t(strings, "rowDetailsSecurityLabel", "Security"), value: row.securityLockReason });
+    if (row.riskReason && row.riskReason !== row.policyReason && row.riskReason !== row.securityLockReason) locationItems.push({ label: ACP.t(strings, "rowDetailsRiskLabel", "Risk"), value: row.riskReason });
+    if (row.storageDetail) locationItems.push({ label: ACP.tr("Storage detail"), value: row.storageDetail });
+    if (resolutionVariants.length) locationItems.push({ label: ACP.t(strings, "rowDetailsCheckedPathsLabel", "Checked paths"), values: resolutionVariants, code: true });
+    if (sourceExplanation !== summaryMessage) sourceItems.push({ label: ACP.tr("Detection reason"), value: sourceExplanation });
+    if (row.reason && row.reason !== summaryMessage && row.reason !== sourceExplanation) sourceItems.push({ label: ACP.tr("Scan evidence"), value: row.reason });
+    if (sourceNames.length) sourceItems.push({ label: ACP.t(strings, "rowDetailsSourceNamesLabel", "Source names"), values: sourceNames });
+    if (targetPaths.length) sourceItems.push({ label: ACP.t(strings, "rowDetailsTargetsLabel", "Targets"), values: targetPaths, code: true });
+    if (templateRefs.length) sourceItems.push({ label: ACP.t(strings, "rowDetailsTemplateRefsLabel", "Template refs"), values: $.map(templateRefs, function(ref) { return (ref && ref.name ? ref.name : "") + (ref && ref.target ? " -> " + ref.target : ""); }), code: true });
+
+    if (row.detailError) visibleErrors.push(row.detailError);
+    if (row.zfsPreviewError && $.inArray(row.zfsPreviewError, visibleErrors) === -1) visibleErrors.push(row.zfsPreviewError);
+    if ((row.storageKind === "zfs_unavailable" || resolutionKind === "zfs_unavailable") && (row.zfsResolutionDetail || row.zfsResolutionMessage)) {
+      var resolutionError = row.zfsResolutionDetail || row.zfsResolutionMessage;
+      if ($.inArray(resolutionError, visibleErrors) === -1) visibleErrors.push(resolutionError);
+    }
+
+    if (row.detailLoading) {
+      impactMessage = ACP.t(strings, "rowDetailsLoadingLabel", "Loading latest ZFS detail...");
+    } else if (row.zfsPreviewLoaded && !row.zfsImpactSummary && !row.zfsPreviewError && !childDatasets.length && !snapshots.length && !Number(row.zfsChildDatasetCount || 0) && !Number(row.zfsSnapshotCount || 0)) {
+      impactMessage = ACP.t(strings, "rowDetailsNoImpactLabel", "No descendant datasets or snapshots are currently expected.");
+    }
+
+    if (!ordinaryFilesystem) {
+      zfsItems.push({ label: ACP.t(strings, "rowDetailsStorageKindLabel", "Storage kind"), value: row.storageLabel || row.storageKind || unknown });
+      if (isDataset || row.datasetName) zfsItems.push({ label: ACP.t(strings, "rowDetailsDatasetLabel", "Dataset"), value: row.datasetName || unavailable });
+      if (isDataset || row.datasetMountpoint) zfsItems.push({ label: ACP.t(strings, "rowDetailsMountpointLabel", "Mountpoint"), value: row.datasetMountpoint || unavailable, code: true });
+      zfsItems.push({ label: ACP.tr("Resolution type"), value: resolutionKind || unavailable, code: true });
+      if (row.zfsMatchedShareRoot) zfsItems.push({ label: ACP.t(strings, "rowDetailsMatchedShareRootLabel", "Matched share root"), value: row.zfsMatchedShareRoot, code: true });
+      if (row.zfsMatchedDatasetRoot) zfsItems.push({ label: ACP.t(strings, "rowDetailsMatchedDatasetRootLabel", "Matched dataset root"), value: row.zfsMatchedDatasetRoot, code: true });
+      if (row.zfsResolutionDetail) zfsItems.push({ label: ACP.t(strings, "rowDetailsResolutionLabel", "Resolution"), value: row.zfsResolutionDetail });
+      if (row.zfsResolutionMessage && row.zfsResolutionMessage !== row.zfsResolutionDetail) zfsItems.push({ label: ACP.tr("Mapping note"), value: row.zfsResolutionMessage });
+      if (isDataset || row.zfsPreviewLoaded || row.zfsRecursiveDestroy || row.zfsImpactSummary || row.zfsPreviewError) {
+        zfsItems.push({ label: ACP.t(strings, "rowDetailsImpactLabel", "Destroy impact"), value: impactMessage });
+        zfsItems.push({ label: ACP.t(strings, "zfsRecursiveDestroyLabel", "Destroy mode"), value: row.zfsPreviewLoaded ? (row.zfsRecursiveDestroy ? ACP.t(strings, "zfsRecursiveDestroyValue", "Recursive destroy") : ACP.t(strings, "zfsStandardDestroyValue", "Standard destroy")) : unavailable });
+      }
+      if (isDataset || childDatasets.length || Number(row.zfsChildDatasetCount || 0) > 0) zfsItems.push({ label: ACP.t(strings, "zfsChildDatasetsLabel", "Child datasets"), count: row.zfsChildDatasetCount, values: childDatasets.length ? childDatasets : null, value: Number(row.zfsChildDatasetCount || 0) > 0 ? ACP.tr("Reported count: {count}; names unavailable.", {count: ACP.formatCount(row.zfsChildDatasetCount)}) : (row.zfsPreviewLoaded ? ACP.t(strings, "rowDetailsNoneLabel", "None") : unavailable), code: true });
+      if (isDataset || snapshots.length || Number(row.zfsSnapshotCount || 0) > 0) zfsItems.push({ label: ACP.t(strings, "zfsSnapshotsLabel", "Snapshots"), count: row.zfsSnapshotCount, values: snapshots.length ? snapshots : null, value: Number(row.zfsSnapshotCount || 0) > 0 ? ACP.tr("Reported count: {count}; names unavailable.", {count: ACP.formatCount(row.zfsSnapshotCount)}) : (row.zfsPreviewLoaded ? ACP.t(strings, "rowDetailsNoneLabel", "None") : unavailable), code: true });
+    }
 
     if (row.ignored) {
       actionExplanation = ACP.tr("Ignoring hides this folder from normal results. It does not move or restore files.");
     } else if (explanation.state === "protected") {
       actionExplanation = ACP.t(strings, "rowDetailsActionBlocked", "No cleanup action is available for this folder right now.");
-    } else if (row.storageKind === "zfs") {
+    } else if (isDataset) {
       actionExplanation = ACP.t(strings, "rowDetailsActionZfs", "Cleanup will destroy the matching ZFS dataset. ZFS rows cannot be moved to quarantine.");
     } else if (settings.enablePermanentDelete) {
       actionExplanation = ACP.t(strings, "rowDetailsActionDelete", "Cleanup will permanently delete this folder.");
@@ -919,80 +952,65 @@
       actionExplanation = ACP.t(strings, "rowDetailsActionQuarantine", "Safe Mode will move this folder to quarantine so it can be restored later.");
     }
 
+    var html = [
+      '<div class="acp-row-details-shell" data-row-id="' + ACP.escapeHtml(row.id || "") + '">',
+      '<div class="acp-row-details-hero">',
+      '<div class="acp-row-details-icon" aria-hidden="true"></div>',
+      '<div class="acp-row-details-titleblock">',
+      '<div class="acp-row-details-title">' + ACP.escapeHtml(name) + "</div>",
+      '<code class="acp-modal-path">' + ACP.escapeHtml(row.displayPath || row.path || "") + "</code>",
+      "</div>",
+      '<div class="acp-row-details-badges">',
+      '<span class="acp-badge acp-badge-tone-' + ACP.escapeHtml(statusTone) + '">' + ACP.escapeHtml(explanation.label) + "</span>",
+      '<span class="acp-badge acp-badge-tone-' + ACP.escapeHtml(sourceTone) + '">' + ACP.escapeHtml(sourceLabel) + "</span>",
+      "</div></div>",
+      '<div class="acp-row-details-body">'
+    ];
+
+    if (row.detailLoading) html.push('<div class="acp-row-details-status" role="status">' + ACP.escapeHtml(ACP.tr("Loading current folder and storage details...")) + '</div>');
+    $.each(visibleErrors, function(_, message) { html.push('<div class="acp-row-details-status is-error" role="status">' + ACP.escapeHtml(message) + '</div>'); });
     html.push(
       '<div class="acp-row-details-grid">',
       '<section class="acp-row-details-card">',
       '<div class="acp-row-details-card-title">' + ACP.escapeHtml(explanation.state === "protected" && !row.ignored ? ACP.tr("Why cleanup is unavailable") : ACP.t(strings, "rowDetailsWhyLabel", "Why")) + "</div>",
-      '<p>' + ACP.escapeHtml(summaryMessage || sourceExplanation) + "</p>",
-      (summaryMessage !== sourceExplanation ? '<p class="acp-row-details-muted">' + ACP.escapeHtml(sourceExplanation) + "</p>" : ""),
-      "</section>",
+      '<p>' + ACP.escapeHtml(summaryMessage) + "</p></section>",
       '<section class="acp-row-details-card">',
-      '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.tr("What to check next")) + "</div>",
-      '<p>' + ACP.escapeHtml(nextStepMessage) + "</p>",
-      "</section>",
-      '<section class="acp-row-details-card acp-row-details-card-full">',
-      '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsCleanupTitle", "What cleanup will do")) + "</div>",
+      '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.tr("Current cleanup action")) + "</div>",
       '<p>' + ACP.escapeHtml(actionExplanation) + "</p>",
+      '<div class="acp-row-details-next-step"><strong>' + ACP.escapeHtml(ACP.tr("What to check next")) + '</strong><p>' + ACP.escapeHtml(nextStepMessage) + "</p></div>",
+      "</section></div>",
+      '<section class="acp-row-details-card acp-row-details-facts">',
+      buildModalFieldHtml(ACP.t(strings, "sizeLabel", "Size"), row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || unavailable)),
+      '<div class="acp-detail-item"><div class="acp-detail-label acp-detail-label-with-help">' + ACP.escapeHtml(ACP.tr("Last modified")) +
+        '<details class="acp-timestamp-help" data-detail-section="timestamp"><summary aria-label="' + ACP.escapeHtml(ACP.tr("Timestamp meaning")) + '"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 10.5v6M12 7.5h.01"></path></svg></summary><p>' + ACP.escapeHtml(ACP.tr("Filesystem modification time does not show when a container last used this folder.")) + '</p></details></div><div class="acp-detail-value">' + ACP.escapeHtml(row.lastModifiedExact || row.lastModifiedLabel || unavailable) + '</div></div>',
+      buildModalFieldHtml(ACP.t(strings, "sourceLabel", "Source"), sourceLabel),
+      buildModalFieldHtml(ACP.t(strings, "storageLabel", "Storage"), row.storageLabel || row.storageKind || unknown),
       "</section>",
-      "</div>"
+      ACP.buildMountEvidenceHtml(row.mountEvidence, false, true, true),
+      ACP.buildMountEvidenceHtml(row.broadMountEvidence, true, false, true)
     );
 
-    html.push(ACP.buildMountEvidenceHtml(row.mountEvidence, false, true));
-    html.push(ACP.buildMountEvidenceHtml(row.broadMountEvidence, true));
-    if (row.storageKind === "zfs") {
-      html.push(
-        '<section class="acp-row-details-card acp-row-details-card-full">',
-        '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsStorageTitle", "Storage")) + "</div>",
-        buildModalFieldListHtml([
-          { label: ACP.t(strings, "rowDetailsDatasetLabel", "Dataset"), value: row.datasetName || "" },
-          { label: ACP.t(strings, "rowDetailsMountpointLabel", "Mountpoint"), value: row.datasetMountpoint || "", code: true },
-          {
-            label: ACP.t(strings, "rowDetailsImpactLabel", "Destroy impact"),
-            value: row.detailLoading
-              ? ACP.t(strings, "rowDetailsLoadingLabel", "Loading latest ZFS detail...")
-              : (row.zfsPreviewError || row.zfsImpactSummary || (row.zfsPreviewLoaded ? ACP.t(strings, "rowDetailsNoImpactLabel", "No descendant datasets or snapshots are currently expected.") : ""))
-          }
-        ]),
-        "</section>"
-      );
-    }
-
+    if (isDataset) html.push('<section class="acp-row-details-card acp-row-details-zfs-impact"><div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsImpactLabel", "Destroy impact")) + '</div><p>' + ACP.escapeHtml(impactMessage) + '</p></section>');
     html.push(
-      '<section class="acp-row-details-card acp-row-details-card-full">',
-      '<div class="acp-row-details-card-title">' + ACP.escapeHtml(ACP.t(strings, "rowDetailsInfoTitle", "Folder info")) + "</div>",
-      buildModalFieldListHtml([
-        { label: ACP.t(strings, "sizeLabel", "Size"), value: row.sizeLabel || "" },
-        { label: ACP.tr("Last modified"), value: row.lastModifiedExact || row.lastModifiedLabel || "" },
-        { label: ACP.tr("Timestamp meaning"), value: ACP.tr("Filesystem modification time does not show when a container last used this folder.") },
-        { label: ACP.t(strings, "sourceLabel", "Source"), value: row.sourceDisplay || row.sourceSummary || sourceLabel }
-      ]),
-      "</section>"
+      '<details class="acp-row-details-technical" data-detail-section="technical">',
+      '<summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>",
+      '<section class="acp-row-details-technical-group"><h4>' + ACP.escapeHtml(ACP.tr("Location")) + '</h4>' + buildModalFieldListHtml(locationItems) + "</section>",
+      '<section class="acp-row-details-technical-group"><h4>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsSourceTitle", "Source evidence")) + '</h4>' + buildModalFieldListHtml(sourceItems) + "</section>",
+      '<section class="acp-row-details-technical-group"><h4>' + ACP.escapeHtml(ACP.tr("ZFS details")) + '</h4>' + (ordinaryFilesystem ? '<p>' + ACP.escapeHtml(ACP.tr("Not applicable to this folder.")) + '</p>' : buildModalFieldListHtml(zfsItems)) + "</section>",
+      "</details></div>"
     );
 
     if (row.canDelete && !row.ignored) {
       actionButtons.push('<button type="button" class="acp-button acp-button-primary" data-action="row-detail-select" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "selectFolderLabel", "Select folder")) + "</button>");
     }
-
     if (row.ignored) {
       actionButtons.push('<button type="button" class="acp-button acp-button-secondary" data-action="row-detail-restore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "restoreActionLabel", "Stop ignoring")) + "</button>");
     } else {
       actionButtons.push('<button type="button" class="acp-button acp-button-secondary" data-action="row-detail-ignore" data-row-id="' + ACP.escapeHtml(row.id || "") + '">' + ACP.escapeHtml(ACP.t(strings, "ignoreActionLabel", "Ignore")) + "</button>");
     }
-
-    html.push('<div class="acp-row-details-actions">' + actionButtons.join("") + "</div>");
-
-    html.push(
-      '<details class="acp-row-details-technical">',
-      '<summary>' + ACP.escapeHtml(ACP.t(strings, "rowDetailsTechnicalTitle", "Technical details")) + "</summary>",
-      buildModalFieldListHtml(technicalItems),
-      "</details>"
-    );
-
-    html.push("</div>");
-
+    html.push('<div class="acp-row-details-actions">' + actionButtons.join("") + "</div></div>");
     return html.join("");
   };
-
   ACP.buildAppdataSourcesModalHtml = function(context) {
     var state = context.state || {};
     var strings = context.strings || {};

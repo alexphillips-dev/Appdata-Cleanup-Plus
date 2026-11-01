@@ -1814,7 +1814,7 @@
       }, 180);
     });
 
-    renderOpenRowDetailsModal();
+    renderOpenRowDetailsModal(true);
     window.setTimeout(renderOpenRowDetailsModal, 0);
     loadCandidateDetails(row);
   }
@@ -2115,18 +2115,49 @@
     return $.extend(true, {}, row, getRowDetailsCacheEntry(rowId));
   }
 
-  function renderOpenRowDetailsModal() {
+  function renderOpenRowDetailsModal(allowOpen) {
     var row = getRowDetailsModalRow();
     var $modal = getActiveSweetAlertModal();
 
-    if (!row || !$modal.length) {
+    if (!row || !$modal.length || (allowOpen !== true && !$modal.hasClass("acp-row-details-modal"))) {
       return;
+    }
+
+    var shell = $modal.find(".acp-row-details-shell")[0];
+    var sameRow = !!row.id && shell && shell.getAttribute("data-row-id") === String(row.id);
+    var body = sameRow && shell.querySelector(".acp-row-details-body");
+    var scrollTop = body ? body.scrollTop : 0;
+    var expanded = {};
+    var focusedSection = "";
+    var focusedAction = "";
+    if (sameRow) {
+      Array.prototype.forEach.call(shell.querySelectorAll("details[data-detail-section]"), function(section) {
+        expanded[section.getAttribute("data-detail-section")] = section.open;
+        if (section.querySelector("summary") === document.activeElement) focusedSection = section.getAttribute("data-detail-section");
+      });
+      var focused = document.activeElement;
+      if (focused && $modal[0].contains(focused)) focusedAction = focused.getAttribute("data-action") || "";
     }
 
     ACP.applyDeleteModalClass(
       "acp-delete-modal acp-delete-results-modal acp-row-details-modal",
       ACP.buildRowDetailsModalHtml(buildContext(), row)
     );
+
+    if (sameRow) {
+      var focusTarget = null;
+      $modal.find("details[data-detail-section]").each(function() {
+        var key = this.getAttribute("data-detail-section");
+        if (Object.prototype.hasOwnProperty.call(expanded, key)) this.open = expanded[key];
+        if (key === focusedSection) focusTarget = this.querySelector("summary");
+      });
+      if (focusedAction) $modal.find(".acp-row-details-footer-actions [data-action]").each(function() {
+        if (this.getAttribute("data-action") === focusedAction) focusTarget = this;
+      });
+      if (focusTarget) focusTarget.focus({preventScroll: true});
+      body = $modal.find(".acp-row-details-body")[0];
+      if (body) body.scrollTop = scrollTop;
+    }
   }
 
   function shouldLoadCandidateDetails(row) {

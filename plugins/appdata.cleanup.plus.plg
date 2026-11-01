@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.11.01.02">
-<!ENTITY md5 "8799595f90058f575f0d78c842d75e81">
+<!ENTITY version "2026.11.01.03">
+<!ENTITY md5 "71b1704d7295b16ff7f71d74ea756513">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.11.01.03
+- Redesigned folder Details with a wider responsive window, fixed folder header and action footer, and one scrolling body.
+- Clarified the current cleanup action and next step, compacted folder facts and container access, and grouped technical evidence without hiding mapping failures or ZFS impact.
+- Preserved reading position, expanded sections and keyboard focus during detail refreshes; prevented late details from replacing another dialog.
+
 ###2026.11.01.02
 Remove cleanup-status badges from the Source column. Align summary cards with Safe Mode, add useful count descriptions, and provide accessible Info tooltips for hover, keyboard, and touch. Hide only the duplicate heading from active Aurora enhancements while preserving native headings and actions. Refresh all 42 language catalogs and add pinned Aurora and dashboard regression coverage. Cleanup checks, counts, and stored settings are unchanged.
 

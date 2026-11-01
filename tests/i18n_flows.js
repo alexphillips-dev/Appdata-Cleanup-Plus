@@ -149,7 +149,7 @@ for (const [locale, definition] of Object.entries(locales)) {
       assert.ok(!explanation.how.includes(ACP.tr('Disable Safe Mode')));
     }
     if (row.mountEvidence) {
-      assert.ok(html.includes('<details class="acp-mount-evidence" open>'),'Specific evidence is visible immediately in Details');
+      assert.ok(/<details[^>]*data-detail-section="specific_mounts"[^>]* open>/.test(html),'Specific evidence is visible immediately in Details');
     }
     if (row.ignored) {
       assert.ok(html.includes(ACP.escapeHtml(ACP.tr('Stop ignoring'))));

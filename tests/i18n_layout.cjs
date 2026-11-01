@@ -147,7 +147,7 @@ async function checkActionLayout(page, locale, width) {
           ACP.applyDeleteModalClass('acp-delete-modal acp-row-details-modal', ACP.buildRowDetailsModalHtml(context, row));
         });
         const broad=page.locator('.sweet-alert .acp-mount-evidence');
-        assert.equal(await broad.locator('summary').textContent(),await page.evaluate(()=>AppdataCleanupPlus.tr('Broad container access')));
+        assert.equal(await broad.locator('summary').textContent(),await page.evaluate(()=>AppdataCleanupPlus.tr('Other containers with access') + ' ' + AppdataCleanupPlus.formatCount(1)));
         await broad.locator('summary').click();
         assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),`${locale}: expanded Details evidence fits`);
         assert.equal(await broad.locator('code').evaluate(el=>getComputedStyle(el).direction),'ltr','Mount paths stay LTR');

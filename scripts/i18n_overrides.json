@@ -313,7 +313,8 @@
     "Quarantine": "Quarantaine",
     "Restore": "Herstellen",
     "Purge": "Definitief verwijderen",
-    "ZFS dataset mount root": "Hoofdkoppelpunt van de ZFS-dataset"
+    "ZFS dataset mount root": "Hoofdkoppelpunt van de ZFS-dataset",
+    "ZFS details": "ZFS-gegevens"
   },
   "no_NO": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus finner ubrukte Docker appdata-mapper og nøyaktig samsvarende ZFS-datasett som kandidater for opprydding. Fra oppryddingspanelet kan du gjennomgå dem, simulere handlinger uten endringer, sette dem i karantene, gjenopprette dem, se historikken eller slette dem permanent.",

@@ -301,7 +301,7 @@ const plugin = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local
     assert.equal(await page.locator('#acp-results .acp-mount-evidence').count(),0,'Broad access must not expand the Source column');
     assert.ok(!(await page.locator('.acp-row-detection-reason').textContent()).includes('Broad container access'), 'Broad access explanation stays in Details');
     const details=await page.evaluate(()=>AppdataCleanupPlus.buildRowDetailsModalHtml({strings:appdataCleanupPlusConfig.strings,state:maintenance.state},maintenance.state.rows[0]));
-    assert.match(details,/Broad container access/);
+    assert.match(details,/Other containers with access/);
     assert.match(details,/does not block cleanup/);
     assert.equal(await page.locator('.acp-row-checkbox').isDisabled(),false,'Broad access must leave the candidate selectable');
     assert.equal(await page.locator('.acp-row-checkbox').isChecked(),false);

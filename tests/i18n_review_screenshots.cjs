@@ -77,7 +77,7 @@ if (!locales[locale] || !output) throw Error('Expected a supported locale and ou
             content+='<p>'+ACP.escapeHtml(ACP.tr('This permanently removes the listed recovery backups. Export them first if needed. Saved templates and appdata will not change.'))+'</p>'+F.buildDeleteConfirmationHtml(ACP.tr('I understand these template backups will be permanently removed.'));
           }
           swal({title,text:'',showCancelButton:true,confirmButtonText:ACP.tr('OK')});
-          ACP.applyDeleteModalClass('acp-delete-modal acp-delete-results-modal',content);
+          ACP.applyDeleteModalClass('acp-delete-modal acp-delete-results-modal' + (['guidance','verification','ignored'].includes(screen) ? ' acp-row-details-modal' : ''),content);
           if (screen==='purge-timers') document.querySelector('.sweet-alert .acp-simple-disclosure').open=true;
         }, screen);
         const locator=screen==='dashboard' ? page.locator('#acp-app') : page.locator('.sweet-alert');

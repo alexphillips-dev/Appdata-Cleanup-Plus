@@ -150,7 +150,7 @@ async function nativeCss(version, theme) {
         assert.equal(result.kind,expectedClass);
         if (flow==='details') {
           const broad=page.locator('.sweet-alert .acp-mount-evidence');
-          assert.equal(await broad.locator('summary').textContent(),'Broad container access');
+          assert.match(await broad.locator('summary').textContent(),/^Other containers with access\s*1$/);
           await broad.locator('summary').click();
           assert.equal(await broad.evaluate(el=>el.open),true,'Broad access remains expandable in Details');
           assert.ok(await broad.evaluate(el=>el.getBoundingClientRect().right<=innerWidth+2),'Details evidence fits the viewport');
