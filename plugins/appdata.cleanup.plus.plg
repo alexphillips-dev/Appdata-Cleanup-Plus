@@ -2,8 +2,8 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.11.01.06">
-<!ENTITY md5 "c78580ab4641ae47c1dcd71604e6e748">
+<!ENTITY version "2026.11.01.07">
+<!ENTITY md5 "902f0c5d478e99705b8878e3c82d0520">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
@@ -13,6 +13,13 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.11.01.07
+- Add a readable export summary in Tools and the downloaded file, with health findings, version and scan comparisons, collection limits, and next steps.
+- Include up to 100 recent activity events from the current page session, using fixed action codes and export-only request aliases without storing raw messages or request data.
+- Strengthen diagnostics privacy for private boot, home, and other filesystem paths, including object keys and omitted scan rows, while preserving useful fixed support codes.
+- Bound JSON reads and scan-row exports, disclose malformed or omitted records, align audit validation with the exported history, and order snapshot summaries by recorded time.
+- Keep Tools responsive during export, preserve other dialogs and keyboard focus, retain partial exports when collection fails, and distinguish unavailable ZFS evidence from verified folder results.
+
 ###2026.11.01.06
 - Redesign Tools with a wider responsive layout, fixed Done footer, diagnostics and ZFS mapping cards, and optional test data in a collapsed advanced section.
 - Clarify test-folder and saved-template status, use neutral not-created labels, explain removal scope, and preserve reading position during refreshes.

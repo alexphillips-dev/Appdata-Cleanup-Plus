@@ -697,7 +697,7 @@ behaviorSmokeAssertTrue(is_file($diagnosticSnapshotFile), "Diagnostics must not 
 behaviorSmokeAssertSame($snapshotHash, hash_file("sha256", $diagnosticSnapshotFile), "Snapshot inspection must not mutate state.");
 behaviorSmokeAssertNotContains($diagnosticSnapshot["token"], json_encode($expiredDiagnostic), "Snapshot tokens must never enter diagnostics.");
 behaviorSmokeAssertNotContains("private", json_encode($expiredDiagnostic), "Snapshot candidates must not enter freshness metadata.");
-behaviorSmokeAssertSame(2, isset($diagnosticsBundle["redaction"]["version"]) ? (int)$diagnosticsBundle["redaction"]["version"] : 0, "Diagnostics bundle should declare the redaction version.");
+behaviorSmokeAssertSame(3, isset($diagnosticsBundle["redaction"]["version"]) ? (int)$diagnosticsBundle["redaction"]["version"] : 0, "Diagnostics bundle should declare the redaction version.");
 behaviorSmokeAssertTrue(isset($diagnosticsBundle["troubleshooting"]["overview"]["status"]), "Diagnostics bundle should include an overall troubleshooting status.");
 behaviorSmokeAssertTrue(count(isset($diagnosticsBundle["troubleshooting"]["checks"]) ? $diagnosticsBundle["troubleshooting"]["checks"] : array()) >= 6, "Diagnostics bundle should include actionable health checks.");
 behaviorSmokeAssertSame("valid", isset($diagnosticsBundle["troubleshooting"]["stateFiles"][0]["validation"]) ? $diagnosticsBundle["troubleshooting"]["stateFiles"][0]["validation"] : "", "Diagnostics bundle should validate readable JSON state files.");

@@ -311,6 +311,7 @@
     }
 
     ACP.syncDeleteModalThemeTokens($modal);
+    if (typeof ACP.noteDiagnosticsModal === "function") ACP.noteDiagnosticsModal(className);
   };
 
   // Native SweetAlert traps Tab among its original buttons, including hidden
@@ -344,6 +345,8 @@
     if (!forceUnlock && hasVisibleModal) {
       return;
     }
+
+    if (typeof ACP.noteDiagnosticsModal === "function") ACP.noteDiagnosticsModal("");
 
     $(".sweet-overlay").hide().removeClass("showSweetOverlay");
     $("body, html").removeClass("stop-scrolling swal2-shown");

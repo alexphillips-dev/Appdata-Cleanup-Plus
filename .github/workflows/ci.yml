@@ -68,6 +68,7 @@ jobs:
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/details_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/help_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/tools_ui.cjs
+          ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/diagnostics_export_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/theme_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/maintenance_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/recovery_ui.cjs
@@ -84,6 +85,7 @@ jobs:
           php tests/ownership_templates.php
           php tests/recovery_backups.php
           php tests/runtime_safety.php
+          php tests/diagnostics_server.php
 
       - name: Check diagnostics privacy guards
         run: bash scripts/test_diagnostics_privacy.sh

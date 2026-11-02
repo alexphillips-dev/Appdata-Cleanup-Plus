@@ -170,6 +170,7 @@ async function checkActionLayout(page, locale, width) {
               context.state.scanToken = 'synthetic-scan';
               context.state.settings.zfsPathMappings = [{shareRoot:'/mnt/user/appdata',datasetRoot:'/mnt/synthetic-pool/appdata'}];
               context.state.fixtureTools = {status:{root:'/mnt/synthetic-pool/appdata/a-long-synthetic-root-for-layout-validation',rootReasonCode:'ready',createdCount:1,templateExists:false,templatePath:'/synthetic/templates/acp-test-template.xml',fixtures:Array.from({length:3},(_,index)=>({key:'fixture-'+index,name:'Synthetic fixture '+index,type:'Folder',path:'/mnt/synthetic-pool/appdata/a-long-synthetic-root-for-layout-validation/fixture-'+index,exists:index===0}))}};
+              context.diagnosticsExport = {loading:false,result:'downloaded',summary:{status:'partial',health:'warning',headline:'Review the diagnostic findings before acting.',generatedAt:'2026-11-01T12:00:00.000Z',completedAt:'2026-11-01T12:00:01.000Z',versions:{browser:'2026.11.01.07',server:'2026.11.01.07',match:true},freshness:{scanMatch:false,currentSnapshot:true},counts:{detected:501,visible:500,selected:1,blocked:2,reportedRows:500,omittedRows:1,failedRequests:1,activityEvents:100,omittedEvents:12},findings:[{id:'scanMatch',severity:'warning',summary:'Review the diagnostic findings before acting.',nextStep:'rescan'}],limitations:[{section:'rows',reason:'record_limit'},{section:'runtime',reason:'source_unavailable'}]}};
               html = ACP.buildToolsModalHtml(context);
               modalClass = 'acp-tools-modal';
             } else if (flow === 'help') {
@@ -223,6 +224,7 @@ async function checkActionLayout(page, locale, width) {
             assert.equal(tools.widthFits,true,`${locale}: Tools copy and paths fit`);
             assert.ok(tools.footerBottom<=tools.viewportHeight,`${locale}: Tools Done remains visible`);
             assert.equal(tools.cards,2); assert.equal(tools.notCreated,3);
+            assert.equal(await page.locator('.acp-diagnostics-summary[open]').count(),1,`${locale}: readable export summary remains available in expanded Tools`);
           }
           if (flow === 'help') {
             const help = await page.locator('.sweet-alert').evaluate(modal => {

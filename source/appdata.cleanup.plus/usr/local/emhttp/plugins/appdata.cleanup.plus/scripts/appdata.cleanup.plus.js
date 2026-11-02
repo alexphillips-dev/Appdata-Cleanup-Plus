@@ -11,6 +11,14 @@
   var selectedRowFeedback = { rowId: "", expiresAt: 0, timer: null };
   var fixtureToolsRequestVersion = 0;
   var fixtureToolsPendingAction = "";
+  var diagnosticsExportState = {loading: false, result: "idle", summary: null};
+  var diagnosticsActivity = [];
+  var diagnosticsActivityTotal = 0;
+  var diagnosticsRequestSerial = 0;
+  var diagnosticsActivityStartedAt = new Date().toISOString();
+  var diagnosticsActivityClock = Date.now();
+  var diagnosticsLastModal = "none";
+  var diagnosticsExportRedactor = null;
   var state = {
     rows: [],
     summary: { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 },
@@ -943,6 +951,7 @@
       }
 
       state.selected[rowId] = true;
+      recordDiagnosticsActivity("selection_changed", {selectedCount:getSelectedRows().length});
       swal.close();
       state.rowDetails.activeRowId = "";
       state.rowDetails.requestToken = "";
@@ -1100,13 +1109,16 @@
     return {
       state: state,
       els: els,
-      strings: strings
+      strings: strings,
+      diagnosticsExport: diagnosticsExportState
     };
   }
 
   function apiPost(data) {
     var requestHeaders = {};
     var requestStarted = Date.now();
+    var activityRequest = ++diagnosticsRequestSerial;
+    recordDiagnosticsActivity("request_started", {action: data && data.action, request: activityRequest, fixtureAction: data && data.managerAction});
 
     if (config.csrfToken) {
       requestHeaders["X-Appdata-Cleanup-Plus-CSRF"] = String(config.csrfToken);
@@ -1123,9 +1135,11 @@
       data: ACP.buildApiRequestData(config, data)
     });
     request.fail(function(xhr, status) {
+      recordDiagnosticsActivity("request_failed", {action: data && data.action, request: activityRequest, httpStatus: xhr && xhr.status, durationMs: Date.now() - requestStarted});
       recordDiagnosticsFailure(data && data.action, xhr && xhr.status, status, Date.now() - requestStarted, data, xhr && xhr.responseJSON);
     });
     request.done(function(response) {
+      recordDiagnosticsActivity(response && response.ok === false ? "request_failed" : "request_completed", {action: data && data.action, request: activityRequest, httpStatus: 200, durationMs: Date.now() - requestStarted});
       if (response && response.ok === false) recordDiagnosticsFailure(data && data.action, 200, "application", Date.now() - requestStarted, data, response);
     });
     return request;
@@ -2276,6 +2290,7 @@
       var detailRow = $.isPlainObject(response && response.row) ? response.row : {};
 
       if (state.rowDetails.requestToken !== requestToken) {
+        recordDiagnosticsActivity("response_ignored", {action:"getCandidateDetails",reason:"superseded"});
         return;
       }
 
@@ -2290,6 +2305,7 @@
       renderResults();
     }).fail(function(xhr) {
       if (state.rowDetails.requestToken !== requestToken) {
+        recordDiagnosticsActivity("response_ignored", {action:"getCandidateDetails",reason:"superseded"});
         return;
       }
 
@@ -2326,6 +2342,7 @@
       path: requestedPath
     }).done(function(response) {
       if (requestToken !== String(state.appdataSourceBrowser.requestToken || "")) {
+        recordDiagnosticsActivity("response_ignored", {action:"browseAppdataSourcePath",reason:"superseded"});
         return;
       }
 
@@ -2337,6 +2354,7 @@
       }
     }).fail(function(xhr) {
       if (requestToken !== String(state.appdataSourceBrowser.requestToken || "")) {
+        recordDiagnosticsActivity("response_ignored", {action:"browseAppdataSourcePath",reason:"superseded"});
         return;
       }
 
@@ -3154,6 +3172,94 @@
   var diagnosticsFailureTotal = 0;
   var diagnosticsCaptureInstalled = false;
 
+  function diagnosticsBoundedNumber(value, maximum) {
+    value = Number(value);
+    return isFinite(value) ? Math.max(0, Math.min(maximum, Math.floor(value))) : 0;
+  }
+
+  function diagnosticsAction(value) {
+    var actions = "getOrphanAppdata getAuditHistory getQuarantineSummary hydrateCandidateStats getCandidateDetails saveSafetySettings browseAppdataSourcePath updateCandidateState executeCandidateAction fixtureManagerAction getOperationProgress getRecentOperations acknowledgeOperation getQuarantineEntries updateQuarantinePurgeSchedule inspectQuarantineRestore quarantineManagerAction templateManagerAction getDiagnosticsBundle javascript".split(" ");
+    return actions.indexOf(value) !== -1 ? value : "unknown";
+  }
+
+  function recordDiagnosticsActivity(event, details) {
+    if ("modal_open modal_close request_started request_completed request_failed response_ignored export_started export_collected export_completed export_failed export_ignored javascript_error selection_changed".split(" ").indexOf(event) === -1) return;
+    details = details || {};
+    var entry = {event: event, elapsedMs: diagnosticsBoundedNumber(Date.now() - diagnosticsActivityClock, 604800000)};
+    if (details.action) entry.action = diagnosticsAction(details.action);
+    if (details.request) entry.request = diagnosticsBoundedNumber(details.request, 2147483647);
+    if ("none tools help details sources mappings templates quarantine audit recovery review progress results other".split(" ").indexOf(details.modal) !== -1) entry.modal = details.modal;
+    if ("status create remove".split(" ").indexOf(details.fixtureAction) !== -1) entry.fixtureAction = details.fixtureAction;
+    if ("superseded inactive already_running collection_failed download_failed request_failed invalid_response".split(" ").indexOf(details.reason) !== -1) entry.reason = details.reason;
+    if (details.httpStatus !== undefined) entry.httpStatus = diagnosticsBoundedNumber(details.httpStatus, 599);
+    if (details.durationMs !== undefined) entry.durationMs = diagnosticsBoundedNumber(details.durationMs, 86400000);
+    if (["main", "shared", "panels"].indexOf(details.module) !== -1) entry.module = details.module;
+    if (details.line !== undefined) entry.line = diagnosticsBoundedNumber(details.line, 1000000);
+    if (details.column !== undefined) entry.column = diagnosticsBoundedNumber(details.column, 1000000);
+    if (details.selectedCount !== undefined) entry.selectedCount = diagnosticsBoundedNumber(details.selectedCount, 1000000);
+    diagnosticsActivityTotal++;
+    diagnosticsActivity.push(entry);
+    if (diagnosticsActivity.length > 100) diagnosticsActivity.shift();
+  }
+
+  function buildDiagnosticsActivity() {
+    var requests = {};
+    var requestCount = 0;
+    var events = diagnosticsActivity.map(function(entry) {
+      var copy = $.extend({}, entry);
+      if (copy.request) {
+        if (!requests[copy.request]) requests[copy.request] = "request-" + (++requestCount);
+        copy.request = requests[copy.request];
+      }
+      return copy;
+    });
+    return {status:diagnosticsActivityTotal > events.length ? "partial" : "complete",captureStartedAt:diagnosticsActivityStartedAt,
+      limit:100,totalCount:diagnosticsActivityTotal,includedCount:events.length,omittedCount:diagnosticsActivityTotal-events.length,events:events};
+  }
+
+  function diagnosticsModalKind(className) {
+    var kind = "none";
+    var kinds = {"acp-tools-modal":"tools","acp-help-modal":"help","acp-row-details-modal":"details","acp-appdata-sources-modal":"sources","acp-zfs-path-mappings-modal":"mappings","acp-template-manager-modal":"templates","acp-quarantine-manager-modal":"quarantine","acp-audit-history-modal":"audit","acp-operation-recovery-modal":"recovery","acp-delete-modal-review":"review","acp-delete-progress-running":"progress","acp-delete-results-modal":"results"};
+    Object.keys(kinds).some(function(key) { if (String(className || "").split(/\s+/).indexOf(key) !== -1) { kind = kinds[key]; return true; } return false; });
+    return kind;
+  }
+
+  ACP.noteDiagnosticsModal = function(className) {
+    var kind = diagnosticsModalKind(className);
+    if (kind === diagnosticsLastModal) return;
+    if (kind !== "none") recordDiagnosticsActivity("modal_open", {modal:kind});
+    else if (diagnosticsLastModal !== "none") recordDiagnosticsActivity("modal_close", {modal:diagnosticsLastModal});
+    diagnosticsLastModal = kind;
+  };
+
+  function captureDiagnosticsUi() {
+    var $modal = getActiveSweetAlertModal();
+    var body = $modal.find(".acp-tools-body, .acp-help-body, .acp-row-details-body")[0] || $modal.find(".acp-modal-host")[0];
+    var focused = document.activeElement;
+    var action = focused && $modal.length && $modal[0].contains(focused) ? focused.getAttribute("data-action") : "";
+    var actions = "export-diagnostics create-test-fixtures remove-test-fixtures refresh-test-fixtures open-zfs-path-mappings help-open-tools help-open-sources row-detail-select row-detail-ignore row-detail-restore".split(" ");
+    var sections = [];
+    $modal.find("details[open]").each(function() {
+      var key = this.getAttribute("data-tools-section") || this.getAttribute("data-detail-section") || this.getAttribute("data-help-topic");
+      if ("diagnostics_privacy test_data export_summary technical broad_access specific_mounts timestamp blocked no_results stopped_containers quarantine updates".split(" ").indexOf(key) !== -1 && sections.indexOf(key) === -1) sections.push(key);
+    });
+    return {modal:$modal.length ? diagnosticsModalKind($modal.attr("class")) : "none",openSections:sections,
+      focus:action && actions.indexOf(action) !== -1 ? action : (focused && $modal.length && $modal[0].contains(focused) ? (focused.tagName === "SUMMARY" ? "summary" : (focused.classList.contains("confirm") ? "done" : "other")) : "outside"),
+      scroll:{top:diagnosticsBoundedNumber(body && body.scrollTop,10000000),clientHeight:diagnosticsBoundedNumber(body && body.clientHeight,20000),scrollHeight:diagnosticsBoundedNumber(body && body.scrollHeight,10000000),horizontalOverflow:!!body && body.scrollWidth > body.clientWidth + 2},
+      fixtureOperation:{pending:isFixtureMutationPending(),action:["status","create","remove"].indexOf(fixtureToolsPendingAction) !== -1 ? fixtureToolsPendingAction : "none"}};
+  }
+
+  function captureDiagnosticsBrowser() {
+    var ua = String((window.navigator || {}).userAgent || "");
+    var match;
+    var family = /Edg\//.test(ua) ? "edge" : (/Firefox\//.test(ua) ? "firefox" : (/Chrome\//.test(ua) ? "chromium" : (/Safari\//.test(ua) ? "safari" : "unknown")));
+    match = (family === "edge" ? /Edg\/(\d+)/ : (family === "firefox" ? /Firefox\/(\d+)/ : (family === "chromium" ? /Chrome\/(\d+)/ : /Version\/(\d+)/))).exec(ua);
+    return {family:family,majorVersion:diagnosticsBoundedNumber(match && match[1],9999),
+      auroraEnhanced:!!document.documentElement && document.documentElement.classList.contains("tp-enhance"),
+      reducedMotion:!!window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      coarsePointer:!!window.matchMedia && window.matchMedia("(pointer: coarse)").matches};
+  }
+
   function recordDiagnosticsFailure(action, httpStatus, category, durationMs, requestData, response) {
     var actions = "getOrphanAppdata getAuditHistory getQuarantineSummary hydrateCandidateStats getCandidateDetails saveSafetySettings browseAppdataSourcePath updateCandidateState executeCandidateAction fixtureManagerAction getOperationProgress getQuarantineEntries updateQuarantinePurgeSchedule inspectQuarantineRestore quarantineManagerAction templateManagerAction getDiagnosticsBundle javascript".split(" ");
     var categories = "timeout abort parsererror error application TypeError ReferenceError RangeError SyntaxError URIError EvalError rejection".split(" ");
@@ -3180,22 +3286,28 @@
     diagnosticsCaptureInstalled = true;
     var ownedScript = /\/plugins\/appdata\.cleanup\.plus\/scripts\/appdata\.cleanup\.plus(?:\.(?:shared|panels))?\.js(?:[?:\s]|$)/;
     window.addEventListener("error", function(event) {
-      if (ownedScript.test(String(event.filename || ""))) recordDiagnosticsFailure("javascript", 0, event.error && event.error.name, 0);
+      if (ownedScript.test(String(event.filename || ""))) {
+        recordDiagnosticsFailure("javascript", 0, event.error && event.error.name, 0);
+        recordDiagnosticsActivity("javascript_error", {action:"javascript",module:/\.shared\.js/.test(event.filename) ? "shared" : (/\.panels\.js/.test(event.filename) ? "panels" : "main"),line:event.lineno,column:event.colno});
+      }
     });
     window.addEventListener("unhandledrejection", function(event) {
-      if (event.reason && ownedScript.test(String(event.reason.stack || ""))) recordDiagnosticsFailure("javascript", 0, "rejection", 0);
+      if (event.reason && ownedScript.test(String(event.reason.stack || ""))) {
+        recordDiagnosticsFailure("javascript", 0, "rejection", 0);
+        recordDiagnosticsActivity("javascript_error", {action:"javascript"});
+      }
     });
   }
 
   function buildDiagnosticsRedactor() {
     return {
       aliases: {
-        name: {},
-        template: {},
-        mount: {},
-        share: {},
-        segment: {},
-        row: {}
+        name: Object.create(null),
+        template: Object.create(null),
+        mount: Object.create(null),
+        share: Object.create(null),
+        segment: Object.create(null),
+        row: Object.create(null)
       },
       counters: {
         name: 0,
@@ -3220,11 +3332,11 @@
     }
 
     if (!redactor.aliases[kind]) {
-      redactor.aliases[kind] = {};
+      redactor.aliases[kind] = Object.create(null);
       redactor.counters[kind] = 0;
     }
 
-    if (redactor.aliases[kind][value]) {
+    if (Object.prototype.hasOwnProperty.call(redactor.aliases[kind], value)) {
       return redactor.aliases[kind][value];
     }
 
@@ -3261,10 +3373,31 @@
   }
 
   function sanitizeDiagnosticsFreeText(value, redactor) {
-    var text = String(value || "");
+    var text = String(value || "").replace(/\\\//g, "/");
+    var paths = [];
+    var protectPath = function(path) {
+      paths.push(sanitizeDiagnosticsPath(path, redactor));
+      return "<diagnosticspath-" + String(paths.length) + ">";
+    };
     // Redact URLs before path/name replacement can consume their scheme.
     // Also handle scheme fragments from older server-side diagnostic scrubs.
-    text = text.replace(/(?:\b(?:https?|wss?):|<path(?:-\d+)?>:)\/\/[^\s<>"']+/gi, "<url>");
+    text = text.replace(/(?:\b(?:https?|wss?|ftp|file):|<path(?:-\d+)?>:)\/\/[^\s<>"']+/gi, "<url>");
+    // Scrub paths before registered names can replace a root or an interior
+    // component. Quoted paths may contain spaces and punctuation; unquoted
+    // paths stop at log delimiters, retaining canonical failure reasons.
+    text = text.replace(/(['"])((?:\/|[A-Za-z]:[\\/]|\\)(?:\\.|(?!\1)[^\r\n])*?)\1/g, function(_, quote, path) {
+      return quote + protectPath(path) + quote;
+    });
+    var alias = "<(?:audit-)?(?:path|mount|share|app|name|container|dataset|snapshot|row|template)(?:-\\d+)?>(?:\\.xml)?";
+    var first = "(?:" + alias + "|[^\\s/\\\\'\"<>\\[\\]{}(),;:])";
+    var rest = "(?:" + alias + "|[^\\r\\n'\"<>\\[\\]{}(),;:])";
+    var absolutePath = new RegExp("(^|[^A-Za-z0-9_./\\\\-])((?:/+|[A-Za-z]:[\\\\/]|\\\\+)" + first + rest + "*)", "g");
+    text = text.replace(absolutePath, function(_, prefix, candidate) {
+      var reason = candidate.match(/(\s+(?:Permission denied|No such file or directory|Input\/output error|Read-only file system|Operation not permitted|No space left on device|Device or resource busy|File exists|Directory not empty|Not a directory|Is a directory|Too many open files|Connection timed out|is missing|is unavailable|was not found|could not be read|failed)[.!?]?)\s*$/i);
+      var suffix = reason ? reason[0] : ((candidate.match(/\s+$/) || [""])[0]);
+      var path = candidate.slice(0, candidate.length - suffix.length);
+      return prefix + protectPath(path) + suffix;
+    });
     var replacements = (redactor && $.isArray(redactor.replacements) ? redactor.replacements.slice(0) : []).sort(function(left, right) {
       return String(right.raw || "").length - String(left.raw || "").length;
     });
@@ -3286,12 +3419,6 @@
       }).join("");
     });
 
-    text = text.replace(/(['"])(\/(?:mnt|boot|var|tmp|etc|usr|config|data|downloads|media|cache|temp|transcode|movies|tv|music|backup|backups)\/[^\r\n]*?)\1/g, function(_, quote, path) {
-      return quote + sanitizeDiagnosticsPath(path, redactor) + quote;
-    });
-    text = text.replace(/\/(?:mnt|boot|var|tmp|etc|usr|config|data|downloads|media|cache|temp|transcode|movies|tv|music|backup|backups)(?:\/[^\r\n'"<>\[\](),;:]+)+/g, function(path) {
-      return sanitizeDiagnosticsPath(path, redactor);
-    });
     text = text.replace(/(\b(?:authorization|proxy-authorization)\s*[:=]\s*)(?:bearer\s+)?[^\s,;]+/gi, "$1<redacted>");
     text = text.replace(/(\b(?:cookie|set-cookie)\s*:\s*)[^\r\n]+/gi, "$1<redacted>");
     text = text.replace(/([?&](?:csrf|token|key|password|passwd|pass|secret|session|auth|api[_-]?key|access[_-]?token|refresh[_-]?token)[^=\s]*=)[^\s&]+/gi, "$1<redacted>");
@@ -3312,7 +3439,7 @@
     text = text.replace(/(\b(?:host|hostname|server[_-]?name|tower[_-]?name)\b\s*[:=]\s*)[^\s,;]+/gi, "$1<host>");
     text = text.replace(/\b[A-Z0-9][A-Z0-9.-]*\.(?:local|lan|home|internal)\b/gi, "<host>");
 
-    return text;
+    return text.replace(/<diagnosticspath-(\d+)>/g, function(token, index) { return paths[Number(index) - 1] || token; });
   }
 
   function sanitizeDiagnosticsRowId(value, redactor) {
@@ -3328,27 +3455,138 @@
     return /(?:path|root|directory|dir|mountpoint|destination|source|target)$/i.test(String(key || ""));
   }
 
+  function diagnosticsMetadataValueIsPublic(value, keyName) {
+    if (typeof value !== "string") return false;
+    var codes = "";
+    switch (keyName) {
+      case "event":
+        codes = "modal_open modal_close request_started request_completed request_failed response_ignored export_started export_collected export_completed export_failed export_ignored javascript_error selection_changed";
+        break;
+      case "modal":
+        codes = "none tools help details sources mappings templates quarantine audit recovery review progress results other";
+        break;
+      case "module":
+        codes = "main shared panels";
+        break;
+      case "action":
+        codes = "getOrphanAppdata getAuditHistory getQuarantineSummary hydrateCandidateStats getCandidateDetails saveSafetySettings browseAppdataSourcePath updateCandidateState executeCandidateAction fixtureManagerAction getOperationProgress getRecentOperations acknowledgeOperation getQuarantineEntries updateQuarantinePurgeSchedule inspectQuarantineRestore quarantineManagerAction templateManagerAction getDiagnosticsBundle javascript status create remove none unknown";
+        break;
+      case "fixtureAction":
+        codes = "status create remove none";
+        break;
+      case "fixtureRootReason":
+      case "rootReason":
+        codes = "ready missing not_writable unsafe_symlink unsafe_path no_sources unknown";
+        break;
+      case "reason":
+        codes = "superseded inactive already_running collection_failed download_failed request_failed invalid_response bounded_collection record_limit byte_limit size_limit invalid_records source_unavailable not_loaded unknown";
+        break;
+      case "category":
+        codes = "timeout abort parsererror error application TypeError ReferenceError RangeError SyntaxError URIError EvalError rejection collection_failed request_failed invalid_response none unknown";
+        break;
+      case "omissionReason":
+        codes = "bounded_collection record_limit byte_limit size_limit invalid_records source_unavailable collection_failed request_failed invalid_response not_loaded unknown missing unreadable inspection_refused unsafe_path unsafe_symlink unsafe_hardlink unsafe_owner unsafe_permissions invalid_type invalid_json required_source_missing";
+        break;
+      case "sourceStatus":
+        codes = "complete partial unavailable failed";
+        break;
+      case "reasonCode":
+        codes = "invalid_records bounded_collection required_source_missing";
+        break;
+      case "sourceReasonCode":
+        codes = "verified missing unreadable inspection_refused unsafe_path unsafe_symlink unsafe_hardlink unsafe_owner unsafe_permissions invalid_type invalid_json size_limit";
+        break;
+      case "timestampSource":
+        codes = "issued_at file_modified_at";
+        break;
+      case "selectionScope":
+        codes = "newest_among_inspected_files all_snapshot_files";
+        break;
+      case "evidenceScope":
+        codes = "latest_persisted_scan";
+        break;
+      case "family":
+        codes = "edge firefox chromium safari unknown";
+        break;
+      case "openSections":
+        codes = "diagnostics_privacy test_data export_summary technical broad_access specific_mounts timestamp blocked no_results stopped_containers quarantine updates";
+        break;
+      case "focus":
+        codes = "export-diagnostics create-test-fixtures remove-test-fixtures refresh-test-fixtures open-zfs-path-mappings help-open-tools help-open-sources row-detail-select row-detail-ignore row-detail-restore summary done other outside";
+        break;
+      case "health":
+        codes = "ok warning error unknown";
+        break;
+      case "severity":
+        codes = "warning error info";
+        break;
+      case "nextStep":
+        codes = "reload rescan review_collection review_diagnostics";
+        break;
+      case "section":
+        if (/^log-(?:[1-9]|10)$/.test(value)) return true;
+        codes = "browser rows visibleRows selectedRows auditHistory recentFailures activity server runtime currentSnapshot troubleshooting fixtureRoot safetySettings quarantineRegistry ignoredCandidates runtimeLocks statsCache mountInventoryCurrent latestScanMetrics snapshots other";
+        break;
+      case "id":
+        codes = "check versionMatch scanMatch current-snapshot collection config-directory state-files runtime-locks runtime-safety stats-cache mount-inventory-current quarantine-state docker-runtime command-execution support-logs latest-scan docker-ownership config runtime snapshot-storage quarantine-root safety-settings quarantine-registry ignored-candidates audit-history latest-scan-metrics";
+        break;
+      case "match":
+      case "versionMatch":
+      case "scanMatch":
+        codes = "match mismatch unknown";
+        break;
+      case "currentSnapshot":
+        codes = "unavailable expired invalid missing unreadable empty valid unknown";
+        break;
+      case "pluginVersion":
+      case "browserVersion":
+      case "serverVersion":
+      case "browser":
+      case "server":
+        return value === "unknown" || /^\d{4}\.\d{2}\.\d{2}\.\d{2}$/.test(value);
+      case "generatedAt":
+      case "browserCapturedAt":
+      case "completedAt":
+      case "captureStartedAt":
+      case "occurredAt":
+      case "startedAt":
+      case "collectedAt":
+      case "issuedAt":
+      case "expiresAt":
+      case "modifiedAt":
+        return /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{3})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(value) && isFinite(Date.parse(value));
+      case "request":
+        return /^request-(?:[1-9]\d?|100)$/.test(value);
+    }
+    return !!codes && codes.split(" ").indexOf(value) !== -1;
+  }
+
   function sanitizeDiagnosticsValue(value, redactor, keyName) {
     var sanitized = {};
 
+    // Only fixed key/value pairs bypass name replacement. Containers and
+    // free-text summaries still recurse, even when their key is public.
+    if (diagnosticsMetadataValueIsPublic(value, keyName)) return value;
     if (keyName === "mountInspection") return sanitizeDiagnosticsMountInspection(value);
     if (keyName === "mountReasonCode") return diagnosticsMountReasonCode(value);
-    if (keyName === "status" && "complete partial unavailable failed verified incomplete not_checked".split(" ").indexOf(value) !== -1) return value;
+    if (keyName === "status" && "complete partial unavailable failed verified incomplete not_checked ok info warning error unknown expired invalid missing unreadable empty valid".split(" ").indexOf(value) !== -1) return value;
     if (keyName === "validation" && "valid invalid missing unreadable inspection_refused skipped-large-file".split(" ").indexOf(value) !== -1) return value;
     if (keyName === "reasonCode" || keyName === "inspectionStatus") {
       var healthCodes = "verified verified_empty missing inspection_refused unsafe_path unsafe_symlink unsafe_hardlink unsafe_owner unsafe_permissions invalid_type unreadable invalid_json size_limit ready not_writable no_sources unknown not_checked mount_inventory_unavailable mount_inventory_empty mount_inventory_invalid filesystem_metadata_failed".split(" ");
       if (healthCodes.indexOf(value) !== -1) return value;
     }
     if (keyName === "reasonCounts") {
-      "verified missing inspection_refused unsafe_path unsafe_symlink unsafe_hardlink unsafe_owner unsafe_permissions invalid_type unreadable ready not_writable no_sources directory mount mount_inventory_unavailable mount_inventory_empty mount_inventory_invalid filesystem_metadata_failed".split(" ").forEach(function(code) {
+      "verified missing inspection_refused unsafe_path unsafe_symlink unsafe_hardlink unsafe_owner unsafe_permissions invalid_type unreadable invalid_json size_limit invalid_records ready not_writable no_sources directory mount mount_inventory_unavailable mount_inventory_empty mount_inventory_invalid filesystem_metadata_failed".split(" ").forEach(function(code) {
         if (value && Object.prototype.hasOwnProperty.call(value, code)) sanitized[code] = Math.max(0, Math.min(100000000, Math.floor(Number(value[code]) || 0)));
       });
       return sanitized;
     }
     if (keyName === "storage" && value === "runtime") return value;
+    if (keyName === "storageKind" && "filesystem folder zfs zfs_unavailable".split(" ").indexOf(value) !== -1) return value;
+    if (keyName === "zfsResolutionKind" && "filesystem exact_dataset mapped_no_exact_mountpoint zfs_unavailable".split(" ").indexOf(value) !== -1) return value;
     if (keyName === "dockerInventory" || keyName === "ownershipDiagnostics") return sanitizeDiagnosticsDockerInventory(value);
     if (keyName === "decision") {
-      var codes = "discovery template unknown exact_dataset folder mapping_without_exact_dataset specific_mount broad_access ownership_unverified symlink mount_point root_path unsafe_path protected_path permanent_delete zfs_disabled policy_lock not_actionable none mount_inventory_unavailable mount_inventory_empty mount_inventory_invalid filesystem_metadata_failed".split(" ");
+      var codes = "discovery template unknown unavailable exact_dataset folder storage_unknown zfs_unavailable mapping_without_exact_dataset specific_mount broad_access ownership_unverified symlink mount_point root_path unsafe_path protected_path permanent_delete zfs_disabled policy_lock not_actionable none mount_inventory_unavailable mount_inventory_empty mount_inventory_invalid filesystem_metadata_failed".split(" ");
       var safeCode = function(code) { return codes.indexOf(code) !== -1 ? code : "unknown"; };
       var safeDecision = value || {};
       return {source:safeCode(safeDecision.source),storage:safeCode(safeDecision.storage),evidence:$.map((safeDecision.evidence || []).slice(0,10),safeCode),blockers:$.map((safeDecision.blockers || []).slice(0,10),safeCode),primaryBlocker:safeCode(safeDecision.primaryBlocker),specificMountCount:Math.max(0,Number(safeDecision.specificMountCount)||0),broadAccessCount:Math.max(0,Number(safeDecision.broadAccessCount)||0),ignored:!!safeDecision.ignored};
@@ -3387,6 +3625,8 @@
 
 
   function diagnosticsSchemaKey(key) {
+    if ("invalidRecordCount inspectedLineCount scannedByteCount scannedByteLimit recordLimit inspectionLimit recentLimit readByteLimitPerFile inspectedCount uninspectedCount selectionScope timestampSource modifiedAt readByteCount readByteLimit sourceStatus sourceReasonCode evidenceScope unknownCount missingCount auditValidationWindow jsonReadByteLimitPerFile snapshotInspectionLimit".split(" ").indexOf(String(key)) !== -1) return true;
+    if ("activity events event elapsedMs request modal module line column durationMs httpStatus action fixtureAction reason captureStartedAt limit totalCount includedCount omittedCount browser family majorVersion auroraEnhanced reducedMotion coarsePointer dialog openSections focus scroll top clientHeight scrollHeight horizontalOverflow fixtureOperation pending exportCompletion supportSummary health headline versions match freshness counts reportedRows omittedRows failedRequests activityEvents omittedEvents findings severity nextStep limitations section completedAt browserCapturedAt selectedCount fixtureTools statusLoaded loading requestFailed rootAvailable rootReason fixtureRootReason detected visible selected server visibleRows selectedRows fixtureRoot safetySettings quarantineRegistry ignoredCandidates latestScanMetrics snapshots statusCounts info warning error".split(" ").indexOf(String(key)) !== -1) return true;
     if ("mountInspection mountInventoryCurrent mountReasonCode inspectionStatus reasonCounts refusedCount ttlSeconds entryCount validEntryCount expiredEntryCount invalidEntryCount checkCount failedCheckCount mountCount validation valid modifiedAt sizeBytes runtimeLocks statsCache".split(" ").indexOf(String(key)) !== -1) return true;
     if ("collection sections status includedCount omittedCount omissionReason freshness browserVersion serverVersion versionMatch scanMatch currentSnapshot collectedAt issuedAt expiresAt candidateCount localization locale languageTag direction viewport width height capabilities numberFormat pluralRules relativeTimeFormat dateTimeFormat recentFailures occurredAt action httpStatus category totalCount decision evidence blockers primaryBlocker source storage specificMountCount broadAccessCount ignored captureStartedAt".split(" ").indexOf(String(key)) !== -1) return true;
     if (["mountEvidence", "broadMountEvidence", "paths"].indexOf(String(key)) !== -1) return true;
@@ -3483,64 +3723,32 @@
       return "";
     }
 
+    if (/^(?:[A-Za-z]:[\\/]|\\)/.test(raw)) {
+      sanitized = getDiagnosticsAlias(redactor, "segment", raw, "path");
+      registerDiagnosticsReplacement(redactor, raw, sanitized);
+      return sanitized;
+    }
+
     if (raw.charAt(0) !== "/") {
       return sanitizeDiagnosticsFreeText(raw, redactor);
     }
 
-    if (/^\/(config|data|downloads|media|cache|tmp|temp|transcode|movies|tv|music|backup|backups)(\/|$)/i.test(raw)) {
-      segments = raw.split("/");
-      sanitizedSegments = segments.slice(0);
-      $.each(sanitizedSegments, function(index, segment) {
-        if (index >= 2 && segment && !/^<[^>]+>$/.test(segment)) {
-          sanitizedSegments[index] = getDiagnosticsAlias(redactor, "segment", segment, "path");
-          registerDiagnosticsReplacement(redactor, segment, sanitizedSegments[index]);
-        }
-      });
-      sanitized = sanitizedSegments.join("/");
-      registerDiagnosticsReplacement(redactor, raw, sanitized);
-      return sanitized;
-    }
-
     segments = raw.split("/");
     sanitizedSegments = segments.slice(0);
-
-    if (raw.indexOf("/mnt/") === 0) {
-      if (segments[2] && !/^<[^>]+>$/.test(segments[2]) && !/^(user|user0|cache|disk\d+)$/i.test(segments[2])) {
-        sanitizedSegments[2] = getDiagnosticsAlias(redactor, "mount", segments[2], "mount");
-        registerDiagnosticsReplacement(redactor, segments[2], sanitizedSegments[2]);
-      }
-
-      if (segments[3] && !/^<[^>]+>$/.test(segments[3]) && !/^(appdata|system|domains|isos)$/i.test(segments[3])) {
-        sanitizedSegments[3] = getDiagnosticsAlias(redactor, "share", segments[3], "share");
-        registerDiagnosticsReplacement(redactor, segments[3], sanitizedSegments[3]);
-      }
-
-      $.each(sanitizedSegments, function(index, segment) {
-        if (index >= 4 && segment && !/^<[^>]+>$/.test(segment)) {
-          sanitizedSegments[index] = getDiagnosticsAlias(redactor, "segment", segment, "path");
-          registerDiagnosticsReplacement(redactor, segment, sanitizedSegments[index]);
-        }
-      });
-
-      sanitized = sanitizedSegments.join("/");
-      registerDiagnosticsReplacement(redactor, raw, sanitized);
-      return sanitized;
-    }
-
-    if (raw.indexOf("/boot/") === 0) {
-      $.each(sanitizedSegments, function(index, segment) {
-        if (index >= 4 && segment && !/^<[^>]+>$/.test(segment)) {
-          sanitizedSegments[index] = getDiagnosticsAlias(redactor, "segment", segment, "path");
-          registerDiagnosticsReplacement(redactor, segment, sanitizedSegments[index]);
-        }
-      });
-
-      sanitized = sanitizedSegments.join("/");
-      registerDiagnosticsReplacement(redactor, raw, sanitized);
-      return sanitized;
-    }
-
-    sanitized = getDiagnosticsAlias(redactor, "segment", raw, "path");
+    var root = String(segments[1] || "").toLowerCase();
+    var safeRoot = /^(mnt|boot|config|data|downloads|media|cache|tmp|temp|transcode|movies|tv|music|backup|backups|home|root|srv|opt|var|etc|usr)$/.test(root);
+    $.each(segments, function(index, segment) {
+      if (!segment || /^<(?:audit-)?(?:path|mount|share|app|name|container|dataset|snapshot|row|template)(?:-\d+)?>(?:\.xml)?$/.test(segment)) return;
+      if (index === 1 && safeRoot) return;
+      if (root === "mnt" && index === 2 && /^(user|user0|cache|disk\d+)$/i.test(segment)) return;
+      if (root === "mnt" && index === 3 && /^(appdata|system|domains|isos)$/i.test(segment)) return;
+      if (root === "boot" && index === 2 && segment === "config") return;
+      if (root === "boot" && index === 3 && segments[2] === "config" && segment === "plugins") return;
+      var kind = root === "mnt" && index === 2 ? "mount" : (root === "mnt" && index === 3 ? "share" : "segment");
+      sanitizedSegments[index] = getDiagnosticsAlias(redactor, kind, segment, kind === "segment" ? "path" : kind);
+      registerDiagnosticsReplacement(redactor, segment, sanitizedSegments[index]);
+    });
+    sanitized = sanitizedSegments.join("/");
     registerDiagnosticsReplacement(redactor, raw, sanitized);
     return sanitized;
   }
@@ -3574,9 +3782,12 @@
     var specific = $.isArray(row.mountEvidence) ? row.mountEvidence.length : 0;
     var broad = $.isArray(row.broadMountEvidence) ? row.broadMountEvidence.length : 0;
     var source = row.sourceKind === "filesystem" ? "discovery" : (row.sourceKind === "template" ? "template" : "unknown");
-    var storage = row.storageKind === "zfs" ? "exact_dataset" : "folder";
+    var zfsUnavailable = row.storageKind === "zfs_unavailable" || row.zfsResolutionKind === "zfs_unavailable";
+    var storage = zfsUnavailable ? "unavailable" : (row.storageKind === "zfs" ? "exact_dataset" : (["filesystem", "folder"].indexOf(row.storageKind) !== -1 ? "folder" : "unknown"));
     evidence.push(source, storage);
-    if (row.zfsMappingMatched && storage === "folder") evidence.push("mapping_without_exact_dataset");
+    if (zfsUnavailable) { evidence.push("zfs_unavailable"); blockers.push("zfs_unavailable"); }
+    if (storage === "unknown") evidence.push("storage_unknown");
+    if (row.zfsMappingMatched && row.zfsResolutionKind === "mapped_no_exact_mountpoint" && storage === "folder") evidence.push("mapping_without_exact_dataset");
     if (specific) { evidence.push("specific_mount"); blockers.push("specific_mount"); }
     if (broad) evidence.push("broad_access");
     if (row.scanVerificationLocked) blockers.unshift("ownership_unverified");
@@ -3585,6 +3796,7 @@
       blockers.push(["mount_inventory_unavailable", "mount_inventory_empty", "mount_inventory_invalid", "filesystem_metadata_failed"].indexOf(mountReason) !== -1 ? mountReason : (["symlink", "mount_point", "root_path", "unsafe_path"].indexOf(row.securityReasonCode) !== -1 ? row.securityReasonCode : "protected_path"));
     }
     if (row.policyLocked) blockers.push(["permanent_delete", "zfs_disabled"].indexOf(row.policyReasonCode) !== -1 ? row.policyReasonCode : "policy_lock");
+    if (storage === "unknown" && !row.canDelete) blockers.push("storage_unknown");
     if (!row.canDelete && !blockers.length) blockers.push("not_actionable");
     return {source:source, storage:storage, evidence:evidence, blockers:blockers, primaryBlocker:blockers[0] || "none", specificMountCount:specific, broadAccessCount:broad, ignored:!!row.ignored};
   }
@@ -3741,9 +3953,15 @@
     var selectedRows = getSelectedRows();
     var notices = buildLocalNotices();
     var redactor = buildDiagnosticsRedactor();
+    diagnosticsExportRedactor = redactor;
     var sanitizedInsights = $.extend(true, {}, buildScanInsights());
-    var sanitizedRows = $.map(state.rows || [], function(row) {
-      return sanitizeDiagnosticsRow(row, redactor);
+    var rowLimit = 500;
+    var sanitizedRows = [];
+    $.each(state.rows || [], function(index, row) {
+      // Register identifiers from omitted rows too, so their names cannot
+      // survive in other evidence while the exported row list stays bounded.
+      var sanitizedRow = sanitizeDiagnosticsRow(row, redactor);
+      if (index < rowLimit) sanitizedRows.push(sanitizedRow);
     });
     var sanitizedSettings = sanitizeDiagnosticsSettings(state.settings || {}, redactor);
     var sanitizedSourceInfo = sanitizeDiagnosticsSourceInfo(state.appdataSources || {}, redactor);
@@ -3759,13 +3977,15 @@
       pluginVersion: String(config.pluginVersion || ""),
       redaction: {
         sanitized: true,
-        version: 2,
+        version: 3,
         strategy: "Sensitive values are scrubbed recursively; paths, names, template filenames, and row identifiers use export-scoped aliases."
       },
       hostTheme: {
         name: ACP.resolveHostThemeName ? ACP.resolveHostThemeName() : "",
         themeClass: ACP.inferThemeClass ? ACP.inferThemeClass(ACP.resolveHostThemeName ? ACP.resolveHostThemeName() : "") : ""
       },
+      browser: captureDiagnosticsBrowser(),
+      activity: buildDiagnosticsActivity(),
       localization: {
         locale: /^[a-z]{2}_[A-Z]{2}$/.test(config.locale || "") ? config.locale : "unknown",
         languageTag: /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,2}$/.test(config.languageTag || "") ? config.languageTag : "unknown",
@@ -3774,8 +3994,9 @@
         capabilities: {numberFormat:!!(window.Intl && window.Intl.NumberFormat), pluralRules:!!(window.Intl && window.Intl.PluralRules), relativeTimeFormat:!!(window.Intl && window.Intl.RelativeTimeFormat), dateTimeFormat:!!(window.Intl && window.Intl.DateTimeFormat)}
       },
       recentFailures: {status:diagnosticsFailureTotal > diagnosticsFailures.length ? "partial" : "complete", totalCount:diagnosticsFailureTotal, includedCount:diagnosticsFailures.length, omittedCount:diagnosticsFailureTotal - diagnosticsFailures.length, data:diagnosticsFailures.slice()},
-      collection: {status:"complete", sections:{browser:{status:"complete"}, rows:{status:"complete",includedCount:sanitizedRows.length,omittedCount:0}, auditHistory:{status:(state.auditHistory || []).length > 25 ? "partial" : "complete",includedCount:sanitizedAuditHistory.length,omittedCount:Math.max(0,(state.auditHistory || []).length - sanitizedAuditHistory.length)}}},
+      collection: {status:"complete", sections:{browser:{status:"complete"}, rows:{status:(state.rows || []).length > rowLimit ? "partial" : "complete",limit:rowLimit,includedCount:sanitizedRows.length,omittedCount:Math.max(0,(state.rows || []).length-sanitizedRows.length)}, auditHistory:{status:(state.auditHistory || []).length > 25 ? "partial" : "complete",includedCount:sanitizedAuditHistory.length,omittedCount:Math.max(0,(state.auditHistory || []).length - sanitizedAuditHistory.length)}}},
       uiState: {
+        dialog: captureDiagnosticsUi(),
         fixtureTools: {
           statusLoaded: !!state.fixtureTools.status,
           loading: !!state.fixtureTools.loading,
@@ -3820,10 +4041,10 @@
       }),
       auditHistory: sanitizedAuditHistory,
       rows: sanitizedRows,
-      visibleRowIds: $.map(visibleRows, function(row) {
+      visibleRowIds: $.map(visibleRows.slice(0, rowLimit), function(row) {
         return row && row.id ? sanitizeDiagnosticsRowId(row.id, redactor) : null;
       }),
-      selectedRowIds: $.map(selectedRows, function(row) {
+      selectedRowIds: $.map(selectedRows.slice(0, rowLimit), function(row) {
         return row && row.id ? sanitizeDiagnosticsRowId(row.id, redactor) : null;
       })
     };
@@ -3832,6 +4053,10 @@
     else if (state.auditHistoryHasMore) { payload.collection.sections.auditHistory.status = "partial"; payload.collection.sections.auditHistory.omittedCount = null; }
     if (!state.scanToken && !(state.scanMetrics && state.scanMetrics.startedAt)) payload.collection.sections.rows.status = "unavailable";
     payload.collection.sections.recentFailures = {status:payload.recentFailures.status,includedCount:payload.recentFailures.includedCount,omittedCount:payload.recentFailures.omittedCount};
+    payload.collection.sections.activity = {status:payload.activity.status,includedCount:payload.activity.includedCount,omittedCount:payload.activity.omittedCount};
+    payload.collection.sections.visibleRows = {status:visibleRows.length > rowLimit ? "partial" : "complete",includedCount:payload.visibleRowIds.length,omittedCount:Math.max(0,visibleRows.length-payload.visibleRowIds.length)};
+    payload.collection.sections.selectedRows = {status:selectedRows.length > rowLimit ? "partial" : "complete",includedCount:payload.selectedRowIds.length,omittedCount:Math.max(0,selectedRows.length-payload.selectedRowIds.length)};
+    payload.browserCapturedAt = generatedAt.toISOString();
     return sanitizeDiagnosticsValue(payload, redactor, "");
   }
 
@@ -3953,9 +4178,50 @@
     return /^\d{4}\.\d{2}\.\d{2}\.\d{2}$/.test(String(value || "")) ? String(value) : "unknown";
   }
 
-  function completeDiagnosticsExport(payload, serverBundle, failure) {
+  function buildDiagnosticsSupportSummary(payload) {
+    var overview = payload.troubleshooting || {};
+    var health = ["ok","warning","error","unknown"].indexOf(overview.status) !== -1 ? overview.status : "unknown";
+    var limitations = [];
+    var sectionNames = "browser rows visibleRows selectedRows auditHistory recentFailures activity server runtime currentSnapshot troubleshooting fixtureRoot safetySettings quarantineRegistry ignoredCandidates runtimeLocks statsCache mountInventoryCurrent latestScanMetrics snapshots".split(" ");
+    function addLimits(sections) {
+      Object.keys(sections || {}).slice(0, 50).forEach(function(key) {
+        var section = sections[key] || {};
+        if (section.status === "complete") return;
+        var name = sectionNames.indexOf(key) !== -1 || /^log-(?:[1-9]|10)$/.test(key) ? key : "other";
+        var reason = section.omissionReason || section.category || (section.status === "partial" ? "bounded_collection" : "source_unavailable");
+        if ("bounded_collection record_limit byte_limit size_limit invalid_records source_unavailable collection_failed request_failed invalid_response not_loaded".split(" ").indexOf(reason) === -1) reason = "unknown";
+        limitations.push({section:name,reason:reason});
+      });
+    }
+    addLimits((payload.collection || {}).sections);
+    addLimits(((payload.serverDiagnostics || {}).collection || {}).sections);
+    var findings = (overview.findings || []).slice(0, 20).map(function(finding) {
+      var id = /^[a-zA-Z0-9_-]{1,64}$/.test(String(finding.id || "")) ? String(finding.id) : "check";
+      var nextStep = id === "versionMatch" ? "reload" : (["scanMatch","current-snapshot","latest-scan"].indexOf(id) !== -1 ? "rescan" : (id === "collection" || id === "state-files" ? "review_collection" : "review_diagnostics"));
+      return {id:id,severity:["warning","error","info"].indexOf(finding.status) !== -1 ? finding.status : "info",summary:String(finding.summary || ""),nextStep:nextStep};
+    });
+    var counts = (payload.scan || {}).summary || {};
+    var rows = (payload.collection || {}).sections && payload.collection.sections.rows || {};
+    function knownCount(value) { return typeof value === "number" && isFinite(value) && value >= 0 ? diagnosticsBoundedNumber(value,1000000) : null; }
+    return {status:(payload.collection || {}).status === "complete" ? "complete" : "partial",health:health,
+      headline:health === "error" || health === "warning" ? "Review the diagnostic findings before acting." : "Diagnostic evidence is ready for review.",
+      generatedAt:payload.browserCapturedAt || payload.generatedAt,completedAt:payload.completedAt,
+      versions:{browser:(payload.freshness || {}).browserVersion || "unknown",server:(payload.freshness || {}).serverVersion || "unknown",match:(payload.freshness || {}).versionMatch || "unknown"},
+      freshness:{scanMatch:(payload.freshness || {}).scanMatch || "unknown",currentSnapshot:((payload.freshness || {}).currentSnapshot || {}).status || "unknown"},
+      counts:{detected:knownCount(counts.total),visible:knownCount((payload.scan || {}).visibleRowCount),selected:knownCount((payload.scan || {}).selectedRowCount),blocked:knownCount(counts.blocked),reportedRows:(payload.rows || []).length,omittedRows:knownCount(rows.omittedCount),failedRequests:knownCount((payload.recentFailures || {}).totalCount),activityEvents:knownCount((payload.activity || {}).includedCount),omittedEvents:knownCount((payload.activity || {}).omittedCount)},
+      findings:findings,limitations:limitations.slice(0, 30)};
+  }
+
+  function refreshDiagnosticsExportUi() {
+    if (isToolsModalVisible()) {
+      try { renderToolsModal(); }
+      catch (_error) { recordDiagnosticsActivity("javascript_error", {module:"main"}); }
+    }
+  }
+
+  function prepareDiagnosticsExport(payload, serverBundle, failure) {
     var serverAvailable = !!(serverBundle && typeof serverBundle === "object" && [4,5].indexOf(serverBundle.schemaVersion) !== -1);
-    var serverRedactor = buildDiagnosticsRedactor();
+    var serverRedactor = diagnosticsExportRedactor || buildDiagnosticsRedactor();
     var serverCopy = serverAvailable ? $.extend(true, {}, serverBundle) : {};
     if (serverCopy.state && $.isArray(serverCopy.state.auditHistory)) serverCopy.state.auditHistory = sanitizeDiagnosticsAuditHistory(serverCopy.state.auditHistory, serverRedactor);
     payload.serverDiagnostics = sanitizeDiagnosticsValue(serverCopy, serverRedactor, "");
@@ -3988,7 +4254,8 @@
     });
     var serverSections = (payload.serverDiagnostics.collection || {}).sections || {};
     collectionProblem = collectionProblem || Object.keys(serverSections).some(function(key) {
-      return serverSections[key].status === "failed" || (["runtime", "currentSnapshot", "latestScanMetrics", "troubleshooting"].indexOf(key) !== -1 && ["partial", "unavailable"].indexOf(serverSections[key].status) !== -1);
+      var section = serverSections[key];
+      return section.status === "failed" || Number(section.invalidRecordCount || 0) > 0 || ["invalid_records","size_limit"].indexOf(section.omissionReason) !== -1 || (["runtime", "currentSnapshot", "latestScanMetrics", "troubleshooting"].indexOf(key) !== -1 && ["partial", "unavailable"].indexOf(section.status) !== -1);
     });
     if (collectionProblem) payload.troubleshooting.findings.push({id:"collection",status:"warning",summary:"Required diagnostics evidence is missing or a collector failed; inspect collection status."});
     payload.troubleshooting.statusCounts.warning += payload.troubleshooting.findings.length - serverFindingCount;
@@ -3996,21 +4263,55 @@
       payload.troubleshooting.status = "warning";
       payload.troubleshooting.headline = "Diagnostics contain incomplete evidence or conditions worth reviewing.";
     }
-    payload = sanitizeDiagnosticsValue(payload, buildDiagnosticsRedactor(), "");
+    recordDiagnosticsActivity("export_collected", {action:"getDiagnosticsBundle"});
+    payload.completedAt = new Date().toISOString();
+    payload.activity = buildDiagnosticsActivity();
+    payload.collection.sections.activity = {status:payload.activity.status,includedCount:payload.activity.includedCount,omittedCount:payload.activity.omittedCount};
+    if (payload.activity.status === "partial") payload.collection.status = "partial";
+    payload.uiState = payload.uiState || {};
+    payload.uiState.exportCompletion = captureDiagnosticsUi();
+    payload = sanitizeDiagnosticsValue(payload, serverRedactor, "");
+    payload.supportSummary = buildDiagnosticsSupportSummary(payload);
+    payload = sanitizeDiagnosticsValue(payload, serverRedactor, "");
+    return payload;
+  }
+
+  function completeDiagnosticsExport(payload, serverBundle, failure) {
+    try { payload = prepareDiagnosticsExport(payload, serverBundle, failure); }
+    catch (_error) {
+      recordDiagnosticsActivity("export_failed", {reason:"invalid_response"});
+      try { payload = prepareDiagnosticsExport(payload, null, "invalid_response"); }
+      catch (_fallbackError) {
+        diagnosticsExportState = {loading:false,result:"failed",summary:null};
+        diagnosticsExportRedactor = null;
+        refreshDiagnosticsExportUi();
+        return;
+      }
+    }
     try {
       downloadJsonFile(buildDiagnosticsFilename(), payload);
-      var needsReview = collectionProblem || payload.troubleshooting.status === "warning" || payload.troubleshooting.status === "error";
-      swal(collectionProblem ? ACP.tr("Partial diagnostics exported") : ACP.t(strings, "toolsDiagnosticsDoneTitle", "Diagnostics exported"),
-        collectionProblem ? ACP.tr("A partial diagnostics file has been downloaded. Check collection status for missing or limited sections.") : (partial ? ACP.tr("Diagnostics downloaded; some history and logs were limited or unavailable.") : ACP.t(strings, "toolsDiagnosticsDoneMessage", "The diagnostics JSON has been downloaded.")), needsReview ? "warning" : "success");
+      recordDiagnosticsActivity("export_completed", {action:"getDiagnosticsBundle"});
+      diagnosticsExportState = {loading:false,result:"downloaded",summary:payload.supportSummary};
     } catch (_error) {
-      swal(ACP.t(strings, "toolsDiagnosticsFailedTitle", "Diagnostics export failed"), ACP.t(strings, "toolsDiagnosticsFailedMessage", "The diagnostics file could not be created right now."), "error");
+      recordDiagnosticsActivity("export_failed", {reason:"download_failed"});
+      diagnosticsExportState = {loading:false,result:"failed",summary:payload.supportSummary};
     }
+    diagnosticsExportRedactor = null;
+    refreshDiagnosticsExportUi();
   }
 
   function exportDiagnostics() {
+    if (diagnosticsExportState.loading) {
+      recordDiagnosticsActivity("export_ignored", {reason:"already_running"});
+      return;
+    }
+    diagnosticsExportState = {loading:true,result:diagnosticsExportState.result,summary:diagnosticsExportState.summary};
+    diagnosticsExportRedactor = null;
+    recordDiagnosticsActivity("export_started", {action:"getDiagnosticsBundle"});
+    refreshDiagnosticsExportUi();
     var payload;
     try { payload = buildDiagnosticsPayload(); }
-    catch (_error) { payload = {schemaVersion:5,generatedAt:new Date().toISOString(),pluginVersion:diagnosticsVersion(config.pluginVersion),redaction:{sanitized:true,version:2},collection:{status:"partial",sections:{browser:{status:"failed",category:"collection_failed"}}},scan:{},rows:[]}; }
+    catch (_error) { payload = {schemaVersion:5,generatedAt:new Date().toISOString(),pluginVersion:diagnosticsVersion(config.pluginVersion),redaction:{sanitized:true,version:3},collection:{status:"partial",sections:{browser:{status:"failed",category:"collection_failed"}}},scan:{},rows:[]}; }
     var request;
     try { request = apiPostForUserAction({
       action: "getDiagnosticsBundle",
@@ -4082,7 +4383,10 @@
       action: "fixtureManagerAction",
       managerAction: managerAction
     }).done(function(response) {
-      if (requestVersion !== fixtureToolsRequestVersion) return;
+      if (requestVersion !== fixtureToolsRequestVersion) {
+        recordDiagnosticsActivity("response_ignored", {action:"fixtureManagerAction",fixtureAction:managerAction,reason:"superseded"});
+        return;
+      }
       fixtureToolsPendingAction = "";
       updateFixtureToolsFromResponse(response, ACP.t(strings, "toolsFixtureDoneMessage", "Test fixture action completed."), true);
       if (managerAction === "status" && !(response && response.status)) state.fixtureTools.status = null;
@@ -4092,7 +4396,10 @@
         loadScan();
       }
     }).fail(function(xhr) {
-      if (requestVersion !== fixtureToolsRequestVersion) return;
+      if (requestVersion !== fixtureToolsRequestVersion) {
+        recordDiagnosticsActivity("response_ignored", {action:"fixtureManagerAction",fixtureAction:managerAction,reason:"superseded"});
+        return;
+      }
       fixtureToolsPendingAction = "";
       updateFixtureToolsFromResponse(xhr && xhr.responseJSON, ACP.extractErrorMessage(xhr, ACP.t(strings, "toolsFixtureFailedMessage", "The test fixture action could not be completed right now.")), false);
       if (managerAction === "status" && !(xhr && xhr.responseJSON && xhr.responseJSON.status)) state.fixtureTools.status = null;

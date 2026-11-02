@@ -798,6 +798,94 @@
     ) + '</div>';
   };
 
+  ACP.buildDiagnosticsExportSummaryHtml = function(context) {
+    var exported = context.diagnosticsExport || {};
+    var summary = exported.summary;
+    if (!summary || typeof summary !== "object") return '';
+    var counts = summary.counts || {};
+    var versions = summary.versions || {};
+    var freshness = summary.freshness || {};
+    var unavailable = ACP.tr("Unavailable");
+    var findings = $.isArray(summary.findings) ? summary.findings.slice(0, 10) : [];
+    var limitations = $.isArray(summary.limitations) ? summary.limitations.slice(0, 10) : [];
+    var healthLabels = {ok: ACP.tr("No issues reported"), warning: ACP.tr("Needs review"), error: ACP.tr("Errors reported"), unknown: ACP.tr("Unknown")};
+    var nextSteps = {
+      reload: ACP.tr("Reload the page and verify the installed version."),
+      rescan: ACP.tr("Run a new scan before acting."),
+      review_details: ACP.tr("Open Details to review the reason and next step."),
+      review_collection: ACP.tr("Review missing or limited sections before sharing."),
+      review_diagnostics: ACP.tr("Review the diagnostic evidence before sharing.")
+    };
+    var sections = {
+      browser: ACP.tr("Browser information"), server: ACP.tr("Server information"),
+      rows: ACP.tr("Scan rows"), visibleRows: ACP.tr("Visible rows"), selectedRows: ACP.tr("Selected rows"), activity: ACP.tr("Activity history"),
+      recentFailures: ACP.tr("Recent failed requests"),
+      auditHistory: ACP.tr("Audit history"), logs: ACP.tr("Support logs"), supportLogs: ACP.tr("Support logs"),
+      runtime: ACP.tr("Runtime information"), currentSnapshot: ACP.tr("Current scan snapshot"),
+      latestScanMetrics: ACP.tr("Latest scan metrics"), troubleshooting: ACP.tr("Health checks"),
+      snapshots: ACP.tr("Recent snapshots"), mountInventoryCurrent: ACP.tr("Current mount inventory"),
+      quarantineRegistry: ACP.tr("Quarantine registry"), ignoredCandidates: ACP.tr("Ignored items"), fixtureRoot: ACP.tr("Test data location"),
+      safetySettings: ACP.tr("Safety settings"), runtimeLocks: ACP.tr("Runtime locks"), statsCache: ACP.tr("Statistics cache")
+    };
+    var reasons = {
+      bounded_collection: ACP.tr("Collection limit reached"), record_limit: ACP.tr("Record limit reached"),
+      byte_limit: ACP.tr("Byte limit reached"), size_limit: ACP.tr("Input size limit reached"),
+      source_unavailable: ACP.tr("Source unavailable"), collection_failed: ACP.tr("Collection failed"),
+      invalid_records: ACP.tr("Some records could not be read"), invalid_response: ACP.tr("Invalid server response"),
+      not_loaded: ACP.tr("Not collected in this session"), request_failed: ACP.tr("Server request failed"), unknown: ACP.tr("Limited or unavailable")
+    };
+    function count(value) {
+      return typeof value === "number" && isFinite(value) && value >= 0 ? ACP.formatCount(value) : unavailable;
+    }
+    function field(label, value) {
+      return '<div class="acp-diagnostics-field"><span>' + ACP.escapeHtml(label) + '</span><strong>' + ACP.escapeHtml(value) + '</strong></div>';
+    }
+    function match(value) {
+      return value === "match" || value === true ? ACP.tr("Matched") : (value === "mismatch" || value === false ? ACP.tr("Different") : ACP.tr("Unknown"));
+    }
+    var snapshotLabels = {valid: ACP.tr("Valid"), empty: ACP.tr("No scan candidates"), expired: ACP.tr("Expired"), missing: ACP.tr("Unavailable"), unreadable: ACP.tr("Unreadable"), unavailable: ACP.tr("Unavailable"), invalid: ACP.tr("Invalid"), unknown: ACP.tr("Unknown")};
+    var partial = summary.status !== "complete";
+    var health = Object.prototype.hasOwnProperty.call(healthLabels, summary.health) ? summary.health : "unknown";
+    var html = [
+      '<details class="acp-diagnostics-summary" data-tools-section="export_summary" open><summary>' + ACP.escapeHtml(ACP.tr("Latest export")) + '</summary>',
+      '<div class="acp-diagnostics-summary-body"><div class="acp-diagnostics-badges"><span class="acp-modal-stat acp-diagnostics-collection">' + ACP.escapeHtml(partial ? ACP.tr("Partial collection") : ACP.tr("Complete collection")) + '</span><span class="acp-modal-stat' + (health === "warning" || health === "error" ? ' is-review' : '') + '">' + ACP.escapeHtml(ACP.tr("Health")) + ': ' + ACP.escapeHtml(healthLabels[health]) + '</span></div>',
+      (summary.headline ? '<p class="acp-diagnostics-headline">' + ACP.escapeHtml(ACP.tr(String(summary.headline))) + '</p>' : ''),
+      '<div class="acp-diagnostics-counts">' + field(ACP.tr("Detected"), count(counts.detected)) + field(ACP.tr("Selected"), count(counts.selected)) + field(ACP.tr("Blocked"), count(counts.blocked)) + '</div>',
+      '<div class="acp-diagnostics-fields">' +
+        field(ACP.tr("Export time"), summary.completedAt || summary.generatedAt || unavailable) +
+        field(ACP.tr("Browser version"), versions.browser || unavailable) +
+        field(ACP.tr("Server version"), versions.server || unavailable) +
+        field(ACP.tr("Version comparison"), match(versions.match)) +
+        field(ACP.tr("Scan comparison"), match(freshness.scanMatch)) +
+        field(ACP.tr("Current scan snapshot"), Object.prototype.hasOwnProperty.call(snapshotLabels, freshness.currentSnapshot) ? snapshotLabels[freshness.currentSnapshot] : ACP.tr("Unknown")) +
+        field(ACP.tr("Included rows"), count(counts.reportedRows)) +
+        field(ACP.tr("Omitted rows"), count(counts.omittedRows)) +
+        field(ACP.tr("Activity events"), count(counts.activityEvents)) +
+        field(ACP.tr("Earlier events omitted"), count(counts.omittedEvents)) +
+      '</div>'
+    ];
+    if (findings.length) {
+      html.push('<div class="acp-diagnostics-findings"><h4>' + ACP.escapeHtml(ACP.tr("Findings and next steps")) + '</h4><ul>');
+      $.each(findings, function(_, finding) {
+        if (!finding || typeof finding !== "object") return;
+        html.push('<li><p>' + ACP.escapeHtml(ACP.tr(String(finding.summary || ACP.tr("Review the diagnostic evidence before sharing.")))) + '</p><p class="acp-diagnostics-next-step">' + ACP.escapeHtml(Object.prototype.hasOwnProperty.call(nextSteps, finding.nextStep) ? nextSteps[finding.nextStep] : nextSteps.review_diagnostics) + '</p></li>');
+      });
+      html.push('</ul></div>');
+    }
+    if (limitations.length) {
+      html.push('<div class="acp-diagnostics-limitations"><h4>' + ACP.escapeHtml(ACP.tr("Collection limits")) + '</h4><p>' + ACP.escapeHtml(ACP.tr("Some sections are limited or unavailable. The export retains the evidence that could be collected.")) + '</p><ul>');
+      $.each(limitations, function(_, limitation) {
+        if (!limitation || typeof limitation !== "object") return;
+        var section = Object.prototype.hasOwnProperty.call(sections, limitation.section) ? sections[limitation.section] : (/^log-(?:[1-9]|10)$/.test(String(limitation.section)) ? ACP.tr("Support logs") : ACP.tr("Other evidence"));
+        var reason = Object.prototype.hasOwnProperty.call(reasons, limitation.reason) ? reasons[limitation.reason] : ACP.tr("Limited or unavailable");
+        html.push('<li><strong>' + ACP.escapeHtml(section) + '</strong>: ' + ACP.escapeHtml(reason) + '</li>');
+      });
+      html.push('</ul></div>');
+    }
+    html.push('</div></details>');
+    return html.join('');
+  };
+
   ACP.buildToolsModalHtml = function(context) {
     var state = context.state || {};
     var strings = context.strings || {};
@@ -810,6 +898,8 @@
     var mappings = $.isArray(settings.zfsPathMappings) ? settings.zfsPathMappings : [];
     var fixtureDisabled = state.busy || fixtureTools.loading ? ' disabled' : '';
     var primaryDisabled = state.busy ? ' disabled' : '';
+    var diagnosticsExport = context.diagnosticsExport || {};
+    var exportDisabled = state.busy || diagnosticsExport.loading ? ' disabled' : '';
     var fixtureRows = [];
     var rootUnavailable = !!fixtureStatus.rootReasonCode && fixtureStatus.rootReasonCode !== "ready";
     var fixtureMutationDisabled = fixtureDisabled || !fixtureStatus.root || rootUnavailable ? ' disabled' : '';
@@ -834,9 +924,11 @@
       '<section class="acp-tools-intro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.7 6.3a4 4 0 0 0-5 5L4 17v3h3l5.7-5.7a4 4 0 0 0 5-5l-2.6 2.6-2.9-2.9Z"></path></svg><div><h3>' + ACP.escapeHtml(ACP.tr("Support and advanced tools")) + '</h3><p>' + ACP.escapeHtml(ACP.tr("Download support information, configure ZFS mappings, or manage optional test data.")) + '</p></div></section>',
       '<div class="acp-tools-primary-grid">',
       '<section class="acp-tools-card acp-tools-diagnostics"><h3>' + ACP.escapeHtml(ACP.tr("Diagnostics")) + '</h3><p class="acp-tools-description">' + ACP.escapeHtml(ACP.tr("Download a redacted troubleshooting bundle for support.")) + '</p>',
-      '<button type="button" class="acp-button acp-button-primary" data-action="export-diagnostics"' + primaryDisabled + '>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsExportLabel", "Download diagnostics")) + '</button>',
+      '<button type="button" class="acp-button acp-button-primary" data-action="export-diagnostics"' + exportDisabled + '>' + ACP.escapeHtml(diagnosticsExport.loading ? ACP.tr("Collecting diagnostics...") : ACP.t(strings, "toolsDiagnosticsExportLabel", "Download diagnostics")) + '</button>',
+      (diagnosticsExport.loading ? '<p class="acp-diagnostics-export-status" role="status">' + ACP.escapeHtml(ACP.tr("Collecting diagnostics...")) + '</p>' : (diagnosticsExport.result === "failed" ? '<p class="acp-diagnostics-export-status is-error" role="status">' + ACP.escapeHtml(ACP.tr("The diagnostics file could not be created. Try downloading it again.")) + '</p>' : (diagnosticsExport.result === "downloaded" ? '<p class="acp-diagnostics-export-status" role="status">' + ACP.escapeHtml(ACP.tr("Diagnostics file created. Review it before sharing.")) + '</p>' : ''))),
       '<p class="acp-tools-review-note">' + ACP.escapeHtml(ACP.tr("Review before sharing.")) + '</p>',
-      '<details class="acp-tools-disclosure" data-tools-section="diagnostics_privacy"><summary>' + ACP.escapeHtml(ACP.tr("What's included and redacted?")) + '</summary><p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsMessage", "Downloads a structured troubleshooting bundle with health checks, state-file validity and permissions, runtime locks, PHP limits, scan timing, quarantine health, current UI state, and bounded support-log excerpts.")) + '</p><p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsPrivacyNote", "The export uses allowlisted state summaries and export-only aliases. App names, template filenames, full paths, search text, stable row IDs, hosts, network addresses, credentials, and tokens are removed or redacted. Review before sharing.")) + '</p></details></section>',
+      '<details class="acp-tools-disclosure" data-tools-section="diagnostics_privacy"><summary>' + ACP.escapeHtml(ACP.tr("What's included and redacted?")) + '</summary><p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsMessage", "Downloads a structured troubleshooting bundle with health checks, state-file validity and permissions, runtime locks, PHP limits, scan timing, quarantine health, current UI state, and bounded support-log excerpts.")) + '</p><p>' + ACP.escapeHtml(ACP.t(strings, "toolsDiagnosticsPrivacyNote", "The export uses allowlisted state summaries and export-only aliases. App names, template filenames, full paths, search text, stable row IDs, hosts, network addresses, credentials, and tokens are removed or redacted. Review before sharing.")) + '</p></details>',
+      ACP.buildDiagnosticsExportSummaryHtml(context) + '</section>',
       '<section class="acp-tools-card acp-tools-mappings"><h3>' + ACP.escapeHtml(ACP.tr("ZFS path mappings")) + '</h3><p class="acp-tools-description">' + ACP.escapeHtml(ACP.tr("Map the user-share appdata root to the dataset mount root so scan results can resolve exact ZFS datasets safely.")) + '</p>',
       '<p class="acp-tools-mapping-status">' + (state.scanToken ? ACP.escapeHtml(ACP.tr("Configured mappings")) + ' <strong class="acp-tools-mapping-count">' + ACP.escapeHtml(ACP.formatCount(mappings.length)) + '</strong>' : ACP.escapeHtml(ACP.tr("Mapping status unavailable"))) + '</p>',
       '<button type="button" class="acp-button acp-button-secondary" data-action="open-zfs-path-mappings"' + primaryDisabled + '>' + ACP.escapeHtml(ACP.tr("Manage mappings")) + '</button></section></div>',

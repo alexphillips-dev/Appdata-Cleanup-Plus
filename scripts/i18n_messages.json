@@ -71,6 +71,8 @@
   "{count} month ago",
   "{count} months ago",
   "{count} more",
+  "Review the diagnostic findings before acting.",
+  "Diagnostic evidence is ready for review.",
   "{count} year ago",
   "{count} years ago",
   "{message} '{path}' is a symlink and is locked for safety.",
