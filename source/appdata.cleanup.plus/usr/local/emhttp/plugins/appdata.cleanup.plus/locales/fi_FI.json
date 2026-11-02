@@ -1022,6 +1022,7 @@
   "Would permanently delete.": "Poistaisi pysyvästi.",
   "Yes": "Kyllä",
   "You can quarantine it now, or permanently delete it when Safe Mode is off.": "Voit asettaa sen karanteeniin nyt tai poistaa sen pysyvästi, kun vikasietotila on pois päältä.",
+  "ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.": "ZFS tukea ei voitu vahvistaa. Tarkista tai lisää polkukartoitus kohdassa Työkalut > ZFS polkukartoitukset ja skannaa sitten uudelleen.",
   "ZFS dataset": "ZFS tietojoukko",
   "ZFS dataset destroy can take a moment to validate and complete.": "ZFS-tietojoukon tuhoaminen voi kestää hetken, ennen kuin sen vahvistaminen ja loppuun saattaminen onnistuu.",
   "ZFS dataset fixture creation is intentionally manual. Existing exact ZFS dataset rows are still detected and can be tested from the scan results.": "ZFS-tietojoukon kiinnittimen luominen on tarkoituksella manuaalista. Olemassa olevat tarkat ZFS-tietojoukon rivit havaitaan edelleen, ja ne voidaan testata skannaustuloksista.",

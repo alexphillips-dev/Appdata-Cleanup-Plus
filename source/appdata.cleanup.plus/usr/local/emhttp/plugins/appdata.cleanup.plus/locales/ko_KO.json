@@ -1022,6 +1022,7 @@
   "Would permanently delete.": "영구적으로 삭제됩니다.",
   "Yes": "예",
   "You can quarantine it now, or permanently delete it when Safe Mode is off.": "지금 격리하거나 안전 모드가 꺼지면 영구적으로 삭제할 수 있습니다.",
+  "ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.": "ZFS 지원 여부를 확인할 수 없습니다. 도구 > ZFS 경로 매핑에서 경로 매핑을 검토하거나 추가한 후 다시 검색하세요.",
   "ZFS dataset": "ZFS 데이터세트",
   "ZFS dataset destroy can take a moment to validate and complete.": "ZFS 데이터 세트 삭제는 검증하고 완료하는 데 시간이 걸릴 수 있습니다.",
   "ZFS dataset fixture creation is intentionally manual. Existing exact ZFS dataset rows are still detected and can be tested from the scan results.": "ZFS 데이터 세트 픽스쳐 생성은 의도적으로 수동입니다. 기존의 정확한 ZFS 데이터 세트 행은 계속 감지되며 스캔 결과에서 테스트할 수 있습니다.",

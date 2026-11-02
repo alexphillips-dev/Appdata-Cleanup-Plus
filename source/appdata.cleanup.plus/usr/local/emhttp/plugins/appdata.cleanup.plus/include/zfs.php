@@ -541,7 +541,7 @@ function appdataCleanupPlusResolveStorageForPath($path, $settings=null, $refresh
         $cache[$cacheKey]["kind"] = "zfs_unavailable";
         $cache[$cacheKey]["resolutionKind"] = "zfs_unavailable";
         $cache[$cacheKey]["label"] = "ZFS unavailable";
-        $cache[$cacheKey]["lockReason"] = "ZFS dataset mapping changed since the last scan. Rescan before continuing.";
+        $cache[$cacheKey]["lockReason"] = "ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.";
         $cache[$cacheKey]["resolutionDetail"] = $cache[$cacheKey]["lockReason"];
         break;
       }

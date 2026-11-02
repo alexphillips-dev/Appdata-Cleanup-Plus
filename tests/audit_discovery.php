@@ -89,8 +89,18 @@ try {
   $writeMap(array('/mnt/audit-pool/appdata/db'=>'audit-pool/appdata/db'));
   $unknown = appdataCleanupPlusResolveStorageForPath('/mnt/user/appdata/db', $settings, true);
   discoveryCheck($unknown['kind'] === 'zfs_unavailable' && $unknown['lockReason'] !== '', 'An unresolved FUSE alias must be locked, never actionable filesystem fallback.');
+  $missingMappingReason = 'ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.';
+  foreach (array('/mnt/user/appdata/db', '/mnt/user0/appdata/db') as $unmappedPath) {
+    $unmapped = appdataCleanupPlusResolveStorageForPath($unmappedPath, $settings, true);
+    discoveryCheck($unmapped['lockReason'] === $missingMappingReason && $unmapped['resolutionDetail'] === $missingMappingReason, 'Fresh unresolved share paths explain the mapping requirement in both row and Details fields.');
+    discoveryCheck(appdataCleanupPlusResolveStorageForPath($unmappedPath, $settings)['lockReason'] === $missingMappingReason, 'Cached resolution retains actionable mapping guidance.');
+  }
+  $shareMapped = $settings;
+  $shareMapped['zfsPathMappings'] = array(array('shareRoot'=>'/mnt/user/appdata', 'datasetRoot'=>'/mnt/audit-pool/appdata'));
+  $resolvedShare = appdataCleanupPlusResolveStorageForPath('/mnt/user/appdata/db', $shareMapped, true);
+  discoveryCheck($resolvedShare['kind'] === 'zfs' && $resolvedShare['datasetName'] === 'audit-pool/appdata/db' && $resolvedShare['lockReason'] === '', 'Saving the matching mapping resolves the same previously blocked share path.');
   $writeMap(array('/mnt/audit-pool/appdata/db/child'=>'audit-pool/appdata/db/child'));
-  discoveryCheck(appdataCleanupPlusResolveStorageForPath('/mnt/user/appdata/db', $settings, true)['lockReason'] !== '', 'A FUSE parent cannot bypass an unresolved possible child dataset.');
+  discoveryCheck(appdataCleanupPlusResolveStorageForPath('/mnt/user/appdata/db', $settings, true)['lockReason'] === $missingMappingReason, 'A FUSE parent cannot bypass an unresolved possible child dataset and receives mapping guidance.');
   discoveryCheck(appdataCleanupPlusResolveStorageForPath('/mnt/user/appdata/db/child/ordinary', $settings, true)['kind'] === 'filesystem', 'Ordinary child folders inside a dataset do not gain dataset identity.');
   $ambiguous = $mapped;
   $ambiguous['zfsPathMappings'][] = array('shareRoot'=>$root . '/source', 'datasetRoot'=>$root . '/poolA');
@@ -107,6 +117,7 @@ try {
   ), $settings, 'delete');
   discoveryCheck(($result['results'][0]['status'] ?? '') === 'deleted', 'Unchanged first batch identity must dispatch: ' . json_encode($result));
   discoveryCheck(($result['results'][1]['status'] ?? '') !== 'deleted', 'AUD-02: stale second identity must not dispatch.');
+  discoveryCheck(strpos($result['results'][1]['message'] ?? '', 'ZFS dataset mapping changed since the last scan.') !== false, 'Actual stale deletion targets retain the distinct rescan warning.');
   discoveryCheck(trim(file_get_contents($root . '/destroy.log')) === 'pool/warm', 'Only the freshly authorized dataset may reach the fake CLI.');
   $writeMap($map);
   discoveryCheck(appdataCleanupPlusDestroyZfsDataset('pool/db', false, $settings, $root . '/source/db', $root . '/source/db')['ok'], 'An unchanged fresh identity must still dispatch.');

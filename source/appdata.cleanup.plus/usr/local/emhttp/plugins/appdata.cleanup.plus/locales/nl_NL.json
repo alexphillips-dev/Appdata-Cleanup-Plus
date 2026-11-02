@@ -1022,6 +1022,7 @@
   "Would permanently delete.": "Zou definitief verwijderen.",
   "Yes": "Ja",
   "You can quarantine it now, or permanently delete it when Safe Mode is off.": "U kunt het nu in quarantaine plaatsen of permanent verwijderen als de Veilige modus is uitgeschakeld.",
+  "ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.": "ZFS-ondersteuning kon niet worden geverifieerd. Controleer of voeg een padtoewijzing toe in Extra > ZFS padtoewijzingen en scan vervolgens opnieuw.",
   "ZFS dataset": "ZFS-gegevensset",
   "ZFS dataset destroy can take a moment to validate and complete.": "Het kan even duren om de ZFS-gegevensset te vernietigen om te valideren en te voltooien.",
   "ZFS dataset fixture creation is intentionally manual. Existing exact ZFS dataset rows are still detected and can be tested from the scan results.": "Het maken van ZFS-gegevenssets voor het maken van armaturen gebeurt opzettelijk handmatig. Bestaande exacte ZFS-gegevenssetrijen worden nog steeds gedetecteerd en kunnen worden getest op basis van de scanresultaten.",

@@ -1022,6 +1022,7 @@
   "Would permanently delete.": "Ville slettet permanent.",
   "Yes": "Ja",
   "You can quarantine it now, or permanently delete it when Safe Mode is off.": "Du kan sette den i karantene nå, eller slette den permanent når sikkermodus er av.",
+  "ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.": "ZFS støtte kunne ikke bekreftes. Se gjennom eller legg til en banetilordning i Verktøy > ZFS banetilordninger, og skann deretter på nytt.",
   "ZFS dataset": "ZFS datasett",
   "ZFS dataset destroy can take a moment to validate and complete.": "ZFS datasettødeleggelse kan ta et øyeblikk å validere og fullføre.",
   "ZFS dataset fixture creation is intentionally manual. Existing exact ZFS dataset rows are still detected and can be tested from the scan results.": "Oppretting av ZFS datasett er manuell med vilje. Eksisterende eksakte ZFS-datasettrader er fortsatt oppdaget og kan testes fra skanneresultatene.",

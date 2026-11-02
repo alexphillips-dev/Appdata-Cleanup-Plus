@@ -29,6 +29,12 @@ foreach (acpLocales() as $locale => $definition) {
   expectI18n($payload['message'] === $message, 'Response localization cannot mutate stored audit input');
   $reasonPayload = acpLocalizeResponse(array('securityLockReason'=>'Symlinked paths are locked for safety.', 'policyReason'=>'ZFS dataset-backed rows require permanent delete mode and cannot be quarantined.'));
   expectI18n($reasonPayload['securityReasonCode'] === 'symlink' && $reasonPayload['policyReasonCode'] === 'permanent_delete', 'Presentation classifications are independent of language: ' . $locale);
+  $mappingReason = 'ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.';
+  $mappingPayload = acpLocalizeResponse(array('securityLockReason'=>$mappingReason, 'policyReason'=>$mappingReason, 'zfsResolutionDetail'=>$mappingReason));
+  foreach (array('securityLockReason', 'policyReason', 'zfsResolutionDetail') as $field) {
+    expectI18n($mappingPayload[$field] === acpT($mappingReason), 'Missing ZFS mapping guidance reaches localized scan and Details fields: ' . $locale . ' ' . $field);
+    expectI18n($locale === 'en_US' || $mappingPayload[$field] !== $mappingReason, 'Missing ZFS mapping guidance is translated: ' . $locale);
+  }
   if ($locale !== 'en_US') {
     expectI18n($translated['message'] !== $message, 'Dynamic result translated: ' . $locale);
     $reason = buildCandidateReason('filesystem', array(), array(), false, '/mnt/user/Delete');

@@ -1022,6 +1022,7 @@
   "Would permanently delete.": "ימחק לצמיתות.",
   "Yes": "כן",
   "You can quarantine it now, or permanently delete it when Safe Mode is off.": "אתה יכול להסגר אותו כעת, או למחוק אותו לצמיתות כאשר מצב בטוח כבוי.",
+  "ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.": "לא ניתן היה לאמת גיבוי ZFS. סקור או הוסף מיפוי נתיב בכלים > ZFS מיפוי נתיבים, ולאחר מכן סרוק מחדש.",
   "ZFS dataset": "מערך נתונים של ZFS",
   "ZFS dataset destroy can take a moment to validate and complete.": "הרס הנתונים של ZFS יכול לקחת רגע לאימות והשלמה.",
   "ZFS dataset fixture creation is intentionally manual. Existing exact ZFS dataset rows are still detected and can be tested from the scan results.": "יצירת מתקן נתונים של ZFS היא ידנית בכוונה. שורות נתונים מדויקות קיימות של ZFS עדיין מזוהות וניתן לבדוק אותן מתוצאות הסריקה.",

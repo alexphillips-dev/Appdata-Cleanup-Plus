@@ -1022,6 +1022,7 @@
   "Would permanently delete.": "स्थायी रूप से हटा देंगे.",
   "Yes": "हाँ",
   "You can quarantine it now, or permanently delete it when Safe Mode is off.": "आप इसे अभी क्वारंटाइन कर सकते हैं, या सुरक्षित मोड बंद होने पर इसे स्थायी रूप से हटा सकते हैं।",
+  "ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.": "ZFS समर्थन सत्यापित नहीं किया जा सका. टूल्स > ZFS पथ मैपिंग में पथ मैपिंग की समीक्षा करें या जोड़ें, फिर पुनः स्कैन करें।",
   "ZFS dataset": "ZFS डेटासेट",
   "ZFS dataset destroy can take a moment to validate and complete.": "ZFS डेटासेट नष्ट होने को सत्यापित करने और पूरा होने में कुछ समय लग सकता है।",
   "ZFS dataset fixture creation is intentionally manual. Existing exact ZFS dataset rows are still detected and can be tested from the scan results.": "ZFS डेटासेट फिक्स्चर निर्माण जानबूझकर मैन्युअल है। मौजूदा सटीक ZFS डेटासेट पंक्तियों का अभी भी पता लगाया जाता है और स्कैन परिणामों से उनका परीक्षण किया जा सकता है।",

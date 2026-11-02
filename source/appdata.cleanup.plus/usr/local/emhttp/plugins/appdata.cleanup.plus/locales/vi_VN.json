@@ -1022,6 +1022,7 @@
   "Would permanently delete.": "Sẽ xóa vĩnh viễn.",
   "Yes": "Có",
   "You can quarantine it now, or permanently delete it when Safe Mode is off.": "Bạn có thể cách ly nó ngay bây giờ hoặc xóa nó vĩnh viễn khi Chế độ an toàn tắt.",
+  "ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.": "ZFS không thể xác minh được sự ủng hộ. Xem lại hoặc thêm ánh xạ đường dẫn trong Công cụ > ZFS ánh xạ đường dẫn, sau đó quét lại.",
   "ZFS dataset": "Tập dữ liệu ZFS",
   "ZFS dataset destroy can take a moment to validate and complete.": "Việc hủy tập dữ liệu ZFS có thể mất một chút thời gian để xác thực và hoàn tất.",
   "ZFS dataset fixture creation is intentionally manual. Existing exact ZFS dataset rows are still detected and can be tested from the scan results.": "Việc tạo lịch thi đấu tập dữ liệu ZFS được thực hiện thủ công một cách có chủ đích. Các hàng tập dữ liệu ZFS chính xác hiện tại vẫn được phát hiện và có thể được kiểm tra từ kết quả quét.",

@@ -1022,6 +1022,7 @@
   "Would permanently delete.": "Supprimerait définitivement.",
   "Yes": "Oui",
   "You can quarantine it now, or permanently delete it when Safe Mode is off.": "Vous pouvez le mettre en quarantaine maintenant ou le supprimer définitivement lorsque le mode sans échec est désactivé.",
+  "ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.": "Le support ZFS n'a pas pu être vérifié. Vérifiez ou ajoutez un mappage de chemin dans Outils > ZFS mappages de chemin, puis réanalysez.",
   "ZFS dataset": "Ensemble de données ZFS",
   "ZFS dataset destroy can take a moment to validate and complete.": "La destruction de l’ensemble de données ZFS peut prendre un moment pour être validée et terminée.",
   "ZFS dataset fixture creation is intentionally manual. Existing exact ZFS dataset rows are still detected and can be tested from the scan results.": "La création de luminaires du jeu de données ZFS est intentionnellement manuelle. Les lignes exactes existantes de l'ensemble de données ZFS sont toujours détectées et peuvent être testées à partir des résultats de l'analyse.",

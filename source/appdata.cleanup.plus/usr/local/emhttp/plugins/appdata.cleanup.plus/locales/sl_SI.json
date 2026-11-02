@@ -1022,6 +1022,7 @@
   "Would permanently delete.": "Bi trajno izbrisal.",
   "Yes": "ja",
   "You can quarantine it now, or permanently delete it when Safe Mode is off.": "Zdaj ga lahko postavite v karanteno ali ga trajno izbrišete, ko je varni način izklopljen.",
+  "ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.": "Podpore ZFS ni bilo mogoče preveriti. Preglejte ali dodajte preslikavo poti v Orodja > ZFS preslikave poti, nato znova skenirajte.",
   "ZFS dataset": "Nabor podatkov ZFS",
   "ZFS dataset destroy can take a moment to validate and complete.": "Uničenje nabora podatkov ZFS lahko traja nekaj časa, da se potrdi in dokonča.",
   "ZFS dataset fixture creation is intentionally manual. Existing exact ZFS dataset rows are still detected and can be tested from the scan results.": "Ustvarjanje nabora podatkov ZFS je namerno ročno. Obstoječe natančne vrstice nabora podatkov ZFS so še vedno zaznane in jih je mogoče preizkusiti iz rezultatov skeniranja.",

@@ -1022,6 +1022,7 @@
   "Would permanently delete.": "Tiks neatgriezeniski izdzēsts.",
   "Yes": "Jā",
   "You can quarantine it now, or permanently delete it when Safe Mode is off.": "Varat to ievietot karantīnā tūlīt vai neatgriezeniski izdzēst, kad drošais režīms ir izslēgts.",
+  "ZFS backing could not be verified. Review or add a path mapping in Tools > ZFS path mappings, then rescan.": "ZFS atbalstu nevarēja pārbaudīt. Pārskatiet vai pievienojiet ceļa kartējumu sadaļā Rīki > ZFS ceļu kartējumi, pēc tam skenējiet vēlreiz.",
   "ZFS dataset": "ZFS datu kopa",
   "ZFS dataset destroy can take a moment to validate and complete.": "ZFS datu kopas iznīcināšana var ilgt kādu brīdi, lai apstiprinātu un pabeigtu.",
   "ZFS dataset fixture creation is intentionally manual. Existing exact ZFS dataset rows are still detected and can be tested from the scan results.": "ZFS datu kopas stiprinājuma izveide ir apzināti manuāla. Esošās precīzās ZFS datu kopas rindas joprojām tiek noteiktas, un tās var pārbaudīt, izmantojot skenēšanas rezultātus.",
