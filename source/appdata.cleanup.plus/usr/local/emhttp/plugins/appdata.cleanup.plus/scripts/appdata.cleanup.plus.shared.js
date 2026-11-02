@@ -244,6 +244,13 @@
     }
   };
 
+  // SweetAlert reuses one native element. Clear our previous content before
+  // constructing any next dialog, including ordinary native error messages.
+  ACP.showModal = function() {
+    ACP.applyDeleteModalClass("");
+    return window.swal.apply(window, arguments);
+  };
+
   ACP.applyDeleteModalClass = function(className, htmlContent) {
     var $modal = $(".sweet-alert:visible").last();
     var $baseText;
@@ -253,6 +260,10 @@
 
     if (!$modal.length) {
       $modal = $(".sweet-alert.showSweetAlert").last();
+    }
+
+    if (!$modal.length && !className) {
+      $modal = $(".sweet-alert").last();
     }
 
     if (!$modal.length) {

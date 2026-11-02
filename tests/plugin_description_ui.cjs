@@ -36,9 +36,10 @@ function packageSnapshot(directory) {
     for (const channel of ['main', 'dev']) {
       const build = path.join(fixture, channel);
       fs.mkdirSync(path.join(build, 'plugins'), {recursive:true});
-      for (const file of ['pkg_build.sh', 'appdata.cleanup.plus.xml', 'plugins/appdata.cleanup.plus.plg']) fs.copyFileSync(path.join(root, file), path.join(build, file));
+      fs.mkdirSync(path.join(build, 'scripts'), {recursive:true});
+      for (const file of ['pkg_build.sh', 'appdata.cleanup.plus.xml', 'plugins/appdata.cleanup.plus.plg', 'scripts/ensure_plg_changes_entry.sh']) fs.copyFileSync(path.join(root, file), path.join(build, file));
       fs.cpSync(path.join(root, 'source'), path.join(build, 'source'), {recursive:true});
-      execFileSync(bash, ['pkg_build.sh', '--branch', channel, '--no-validate'], {cwd:build});
+      execFileSync(bash, ['pkg_build.sh', '--branch', channel, '--no-validate'], {cwd:build, env:{...process.env, APPDATA_CLEANUP_PLUS_CHANGE_NOTES:'Synthetic plugin-description channel build.'}});
       const archive = path.join(build, 'archive', fs.readdirSync(path.join(build, 'archive'))[0]);
       const unpacked = path.join(build, 'package'); fs.mkdirSync(unpacked);
       execFileSync('tar', ['-xf', archive, '-C', unpacked]);

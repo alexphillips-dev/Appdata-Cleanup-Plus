@@ -186,6 +186,30 @@ function appdataCleanupPlusValidateZfsPathMapping($mapping) {
     }
   }
 
+  if (appdataCleanupPlusPathMatchesZfsRoot($normalizedMapping["shareRoot"], $normalizedMapping["datasetRoot"]) || appdataCleanupPlusPathMatchesZfsRoot($normalizedMapping["datasetRoot"], $normalizedMapping["shareRoot"])) {
+    return "ZFS path mappings cannot use overlapping roots.";
+  }
+
+  return "";
+}
+
+// Distinct roots must be disjoint. Equal endpoints permit finite multi-hop
+// aliases; proper overlaps can create expanding cycles across several rules.
+function appdataCleanupPlusValidateZfsPathMappings($mappings) {
+  $mappings = appdataCleanupPlusNormalizeZfsPathMappings($mappings);
+  if (count($mappings) > 64) return "ZFS path mappings exceed the safe resolution limit.";
+  $roots = array();
+  foreach ($mappings as $mapping) {
+    $reason = appdataCleanupPlusValidateZfsPathMapping($mapping);
+    if ($reason !== "") return $reason;
+    foreach (array($mapping["shareRoot"], $mapping["datasetRoot"]) as $root) {
+      if (strlen($root) > 4096) return "ZFS path mappings exceed the safe resolution limit.";
+      foreach ($roots as $other) {
+        if ($root !== $other && (appdataCleanupPlusPathMatchesZfsRoot($root, $other) || appdataCleanupPlusPathMatchesZfsRoot($other, $root))) return "ZFS path mappings cannot use overlapping roots.";
+      }
+      $roots[$root] = $root;
+    }
+  }
   return "";
 }
 
@@ -213,19 +237,27 @@ function appdataCleanupPlusExpandZfsMappedPathVariants($path, $settings=null) {
   return array_values(array_keys($variants));
 }
 
-function appdataCleanupPlusBuildZfsResolutionPathVariants($path, $settings=null) {
+function appdataCleanupPlusBuildZfsResolutionPathVariants($path, $settings=null, $includeProtectionAliases=false) {
   $variants = array();
   $pending = array();
   $normalizedPath = appdataCleanupPlusCanonicalizeZfsPath($path);
+  if ($normalizedPath !== "") clearstatcache(true, $normalizedPath);
   $realPath = $normalizedPath !== "" ? @realpath($normalizedPath) : false;
 
   if ( $normalizedPath === "" ) {
     return array();
   }
 
+  $reason = appdataCleanupPlusValidateZfsPathMappings(appdataCleanupPlusGetConfiguredZfsPathMappings($settings));
+  if ($reason !== "") throw new RuntimeException($reason);
+  if (strlen($normalizedPath) > 4096) throw new RuntimeException("ZFS path mappings exceed the safe resolution limit.");
+
   $variants[$normalizedPath] = true;
   if ( $realPath ) {
     $variants[appdataCleanupPlusCanonicalizeZfsPath($realPath)] = true;
+  }
+  if ($includeProtectionAliases) {
+    foreach (array_keys($variants) as $variant) $variants[appdataCleanupPlusShareLikeComparisonPath($variant)] = true;
   }
 
   $pending = array_keys($variants);
@@ -237,7 +269,11 @@ function appdataCleanupPlusBuildZfsResolutionPathVariants($path, $settings=null)
         continue;
       }
 
+      if (strlen($variant) > 4096 || count($variants) >= 128) throw new RuntimeException("ZFS path mappings exceed the safe resolution limit.");
+
       $variants[$variant] = true;
+      if ($includeProtectionAliases) $variants[appdataCleanupPlusShareLikeComparisonPath($variant)] = true;
+      if (count($variants) > 128) throw new RuntimeException("ZFS path mappings exceed the safe resolution limit.");
       $pending[] = $variant;
     }
   }
@@ -280,12 +316,12 @@ function appdataCleanupPlusRunZfsCommand($arguments) {
   );
 }
 
-function appdataCleanupPlusGetZfsDatasetMountMap() {
+function appdataCleanupPlusGetZfsDatasetMountMap($refresh=false) {
   static $cache = null;
   $commandResult = array();
   $mountMap = array();
 
-  if ( $cache !== null ) {
+  if ( ! $refresh && $cache !== null ) {
     return $cache;
   }
 
@@ -390,7 +426,7 @@ function appdataCleanupPlusBuildZfsResolutionDetail($kind, $matchedMapping=array
   return "";
 }
 
-function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
+function appdataCleanupPlusResolveStorageForPath($path, $settings=null, $refresh=false) {
   static $cache = array();
   $normalizedPath = appdataCleanupPlusCanonicalizeZfsPath($path);
   $cacheKey = md5($normalizedPath . "|" . json_encode(appdataCleanupPlusGetConfiguredZfsPathMappings($settings)));
@@ -400,7 +436,7 @@ function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
   $matchedMappings = array();
   $matchedMapping = array();
 
-  if ( isset($cache[$cacheKey]) ) {
+  if ( ! $refresh && isset($cache[$cacheKey]) ) {
     return $cache[$cacheKey];
   }
 
@@ -442,7 +478,7 @@ function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
     );
   }
 
-  $datasetMap = appdataCleanupPlusGetZfsDatasetMountMap();
+  $datasetMap = appdataCleanupPlusGetZfsDatasetMountMap($refresh);
   if ( ! $datasetMap["ok"] ) {
     if ( $mappingMatched ) {
       $cache[$cacheKey] = array(
@@ -461,6 +497,16 @@ function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
       );
     }
 
+    return $cache[$cacheKey];
+  }
+
+  $matchedMounts = array_intersect_key($datasetMap["mountMap"], array_fill_keys($variants, true));
+  if (count(array_unique(array_values($matchedMounts))) > 1) {
+    $cache[$cacheKey]["kind"] = "zfs_unavailable";
+    $cache[$cacheKey]["resolutionKind"] = "zfs_unavailable";
+    $cache[$cacheKey]["label"] = "ZFS unavailable";
+    $cache[$cacheKey]["lockReason"] = "ZFS dataset mapping changed since the last scan. Rescan before continuing.";
+    $cache[$cacheKey]["resolutionDetail"] = $cache[$cacheKey]["lockReason"];
     return $cache[$cacheKey];
   }
 
@@ -486,30 +532,18 @@ function appdataCleanupPlusResolveStorageForPath($path, $settings=null) {
     return $cache[$cacheKey];
   }
 
-  if ( function_exists("appdataCleanupPlusPathsEquivalent") ) {
+  // A share-relative spelling is protection evidence, never physical identity.
+  // Explicit pool paths must not inherit a different pool's dataset. FUSE share
+  // paths with a possible dataset backing remain locked until mapped explicitly.
+  if ( preg_match('#^/mnt/(?:user|user0)/#', $normalizedPath) ) {
     foreach ( $datasetMap["mountMap"] as $mountpoint => $datasetName ) {
-      $normalizedMountpoint = appdataCleanupPlusCanonicalizeZfsPath($mountpoint);
-
-      foreach ( $variants as $variant ) {
-        if ( ! appdataCleanupPlusPathsEquivalent($variant, $normalizedMountpoint) ) {
-          continue;
-        }
-
-        $cache[$cacheKey] = array(
-          "kind" => "zfs",
-          "label" => "ZFS dataset",
-          "detail" => (string)$datasetName,
-          "datasetName" => (string)$datasetName,
-          "datasetMountpoint" => $normalizedMountpoint,
-          "mappingMatched" => $mappingMatched,
-          "matchedMapping" => $matchedMapping,
-          "matchedMappings" => $matchedMappings,
-          "resolutionKind" => "exact_dataset",
-          "resolutionDetail" => appdataCleanupPlusBuildZfsResolutionDetail("exact_dataset", $matchedMapping, $variants),
-          "resolutionVariants" => array_values(array_unique(array_merge($variants, array($normalizedMountpoint)))),
-          "lockReason" => ""
-        );
-        return $cache[$cacheKey];
+      if (appdataCleanupPlusPathMatchesZfsRoot(appdataCleanupPlusShareLikeComparisonPath($mountpoint), appdataCleanupPlusShareLikeComparisonPath($normalizedPath))) {
+        $cache[$cacheKey]["kind"] = "zfs_unavailable";
+        $cache[$cacheKey]["resolutionKind"] = "zfs_unavailable";
+        $cache[$cacheKey]["label"] = "ZFS unavailable";
+        $cache[$cacheKey]["lockReason"] = "ZFS dataset mapping changed since the last scan. Rescan before continuing.";
+        $cache[$cacheKey]["resolutionDetail"] = $cache[$cacheKey]["lockReason"];
+        break;
       }
     }
   }
@@ -720,7 +754,7 @@ function appdataCleanupPlusDescribeZfsDatasetDestroyImpact($datasetName, $recurs
   );
 }
 
-function appdataCleanupPlusDestroyZfsDataset($datasetName, $recursive=false, $settings=null) {
+function appdataCleanupPlusDestroyZfsDataset($datasetName, $recursive=false, $settings=null, $candidatePath="", $expectedMountpoint="") {
   $normalizedDatasetName = trim((string)$datasetName);
   $arguments = array("destroy");
   $result = array();
@@ -730,6 +764,19 @@ function appdataCleanupPlusDestroyZfsDataset($datasetName, $recursive=false, $se
       "ok" => false,
       "message" => "The ZFS dataset name was missing."
     );
+  }
+
+  $failure = "ZFS dataset mapping changed since the last scan. Rescan before continuing.";
+  if ($candidatePath === "" || $expectedMountpoint === "") return array("ok" => false, "message" => $failure);
+  if ($settings === null) $settings = getAppdataCleanupPlusSafetySettings();
+  // Discovery caches are useful for display only. Refresh after preview and
+  // independently for every batch item immediately before destructive dispatch.
+  $storage = appdataCleanupPlusResolveStorageForPath($candidatePath, $settings, true);
+  if ($storage["kind"] !== "zfs" || $storage["datasetName"] !== $normalizedDatasetName || $storage["datasetMountpoint"] !== appdataCleanupPlusCanonicalizeZfsPath($expectedMountpoint)) return array("ok" => false, "message" => $failure);
+  foreach (array_unique(array($candidatePath, $storage["datasetMountpoint"])) as $path) {
+    $reason = appdataCleanupPlusCurrentOwnershipLockReason($path, $settings);
+    if ($reason === "") $reason = buildPathSecurityLockReason($path, $settings, $storage);
+    if ($reason !== "") return array("ok" => false, "message" => $reason);
   }
 
   if ( $recursive ) {

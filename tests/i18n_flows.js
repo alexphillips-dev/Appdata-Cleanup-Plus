@@ -10,7 +10,7 @@ const cases = JSON.parse(execFileSync('php', [path.join(__dirname, 'i18n_cases.p
 const source = name => fs.readFileSync(path.join(root, 'scripts', name), 'utf8');
 const main = source('appdata.cleanup.plus.js');
 assert.equal(main.split('$(init);').length, 2, 'Test harness must intercept only page initialization');
-const hook = 'window.flow = {state:state, buildSectionMetaHtml:buildSectionMetaHtml, buildOperationContext:buildOperationContext, buildActionConfirmButtonText:buildActionConfirmButtonText, buildRestoreConflictDialogHtml:buildRestoreConflictDialogHtml, buildQuarantineSelectionSummaryText:buildQuarantineSelectionSummaryText, applyLocalCandidateState:applyLocalCandidateState, getRowStateDescriptor:getRowStateDescriptor, buildOperationPreviewHtml:buildOperationPreviewHtml, buildOperationProgressHtml:buildOperationProgressHtml, buildTemplateActionLockReason:buildTemplateActionLockReason};';
+const hook = 'window.flow = {state:state, buildSectionMetaHtml:buildSectionMetaHtml, buildOperationContext:buildOperationContext, buildActionConfirmButtonText:buildActionConfirmButtonText, buildRestoreConflictDialogHtml:buildRestoreConflictDialogHtml, buildQuarantineSelectionSummaryText:buildQuarantineSelectionSummaryText, applyLocalCandidateState:applyLocalCandidateState, buildOperationPreviewHtml:buildOperationPreviewHtml, buildOperationProgressHtml:buildOperationProgressHtml};';
 for (const [locale, definition] of Object.entries(locales)) {
   const fixture = cases[locale];
   const catalog = JSON.parse(fs.readFileSync(path.join(root, 'locales', locale + '.json'), 'utf8'));
@@ -90,11 +90,11 @@ for (const [locale, definition] of Object.entries(locales)) {
   assert.ok(filteredHistory.includes(ACP.escapeHtml(ACP.plural('Showing {shown} of {count} history entries.',2,{shown:ACP.formatCount(1)}))), `${locale}: filtered History counts`);
   flow.state.rows = [{id:'example',sourceKind:'filesystem',canDelete:true,risk:'deletable'}];
   assert.equal(flow.applyLocalCandidateState(['example'],'ignore'),true);
-  assert.equal(flow.getRowStateDescriptor(flow.state.rows[0]).label,catalog.Ignored);
-  const evidenceRow = {sourceNames:['Delete','<b>Example</b>'],targetPaths:['/mnt/user/Delete']};
-  const evidence = flow.buildTemplateActionLockReason(evidenceRow);
+  assert.equal(ACP.buildRowReviewExplanation({state:flow.state},flow.state.rows[0]).label,catalog.Ignored);
+  const evidenceRow = {name:'Example',sourceNames:['Delete','<b>Example</b>'],targetPaths:['/mnt/user/Delete'],sourceKind:'template',canDelete:true};
+  const evidence = ACP.buildRowDetailsModalHtml({state:flow.state},evidenceRow);
   assert.ok(evidence.includes('Delete') && evidence.includes('/mnt/user/Delete'));
-  assert.ok(!evidence.includes('tracked container paths') && !evidence.includes('+2 more'));
+  assert.ok(!evidence.includes('<b>Example</b>') && evidence.includes('&lt;b&gt;Example&lt;/b&gt;'));
   const payload = fixture.payload;
   assert.deepEqual(payload.bundle, fixture.original.bundle);
   assert.deepEqual(payload.settings, fixture.original.settings);

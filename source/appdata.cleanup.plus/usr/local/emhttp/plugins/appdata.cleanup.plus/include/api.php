@@ -1986,6 +1986,14 @@ function handleGetCandidateDetails() {
 
 function handleSaveSafetySettings() {
   $currentSettings = getAppdataCleanupPlusSafetySettings();
+  $defaultDays = (int)$currentSettings["defaultQuarantinePurgeDays"];
+  if (isset($_POST["defaultQuarantinePurgeDays"])) {
+    $rawDefaultDays = getPostedString("defaultQuarantinePurgeDays");
+    if ($rawDefaultDays !== "" && (!preg_match('/^\d+$/D', $rawDefaultDays) || strlen($rawDefaultDays) > 10 || (float)$rawDefaultDays > 3650)) {
+      jsonResponse(array("ok" => false, "message" => "Enter a whole number of days from 0 to 3650."), 400);
+    }
+    $defaultDays = $rawDefaultDays === "" ? 0 : (int)$rawDefaultDays;
+  }
   $manualAppdataSources = isset($_POST["manualAppdataSources"])
     ? preg_split('/\r\n|\r|\n/', getPostedString("manualAppdataSources"))
     : (isset($currentSettings["manualAppdataSources"]) ? $currentSettings["manualAppdataSources"] : array());
@@ -2026,15 +2034,16 @@ function handleSaveSafetySettings() {
     }
   }
 
+  $validationMessage = appdataCleanupPlusValidateZfsPathMappings($zfsPathMappings);
+  if ($validationMessage !== "") jsonResponse(array("ok" => false, "message" => $validationMessage), 400);
+
   $settings = array(
-    "enablePermanentDelete" => getPostedBoolean("enablePermanentDelete"),
+    "enablePermanentDelete" => isset($_POST["enablePermanentDelete"]) ? getPostedBoolean("enablePermanentDelete") : !empty($currentSettings["enablePermanentDelete"]),
     "enableZfsDatasetDelete" => true,
     "quarantineRoot" => isset($_POST["quarantineRoot"])
       ? getPostedString("quarantineRoot")
       : (isset($currentSettings["quarantineRoot"]) ? $currentSettings["quarantineRoot"] : getDefaultAppdataCleanupPlusQuarantineRoot()),
-    "defaultQuarantinePurgeDays" => isset($_POST["defaultQuarantinePurgeDays"])
-      ? (int)getPostedString("defaultQuarantinePurgeDays")
-      : (int)(isset($currentSettings["defaultQuarantinePurgeDays"]) ? $currentSettings["defaultQuarantinePurgeDays"] : 0),
+    "defaultQuarantinePurgeDays" => $defaultDays,
     "manualAppdataSources" => $manualAppdataSources,
     "zfsPathMappings" => is_array($zfsPathMappings) ? $zfsPathMappings : array()
   );
@@ -2048,8 +2057,12 @@ function handleSaveSafetySettings() {
 
   $nextSettings = getAppdataCleanupPlusSafetySettings();
 
-  if ( (int)$currentSettings["defaultQuarantinePurgeDays"] !== (int)$nextSettings["defaultQuarantinePurgeDays"] ) {
-    syncTrackedQuarantineEntriesToDefaultPurgeSchedule($nextSettings, $currentSettings);
+  if ( isset($_POST["defaultQuarantinePurgeDays"]) || (int)$currentSettings["defaultQuarantinePurgeDays"] !== (int)$nextSettings["defaultQuarantinePurgeDays"] ) {
+    $synchronized = syncTrackedQuarantineEntriesToDefaultPurgeSchedule($nextSettings, $currentSettings);
+    if (empty($synchronized["ok"])) {
+      jsonResponse(array("ok" => false, "settings" => $nextSettings,
+        "message" => "Safety settings were saved, but quarantine purge schedules could not be synchronized. Existing timers may still be active."), 500);
+    }
   }
 
   jsonResponse(array(

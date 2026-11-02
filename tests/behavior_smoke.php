@@ -143,6 +143,30 @@ session_save_path($sessionRoot);
 session_id("acp-behavior-primary");
 session_start();
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusConfigDir(), "State root should be created.");
+// Purge revalidates current ownership too. Establish a real, verified synthetic
+// inventory and final managed-path configuration before its early lifecycle cases.
+ensureAppdataCleanupPlusDirectory($stateRoot . "/docker-runtime");
+ensureAppdataCleanupPlusDirectory(dirname($dockerConfigFixture));
+ensureAppdataCleanupPlusDirectory($shareConfigFixtureDir);
+file_put_contents($dockerConfigFixture, "DOCKER_APP_CONFIG_PATH=\"" . $appdataShareRoot . "\"\nDOCKER_IMAGE_FILE=\"" . $appdataShareRoot . "/docker-system/docker.img\"\n");
+file_put_contents($vmConfigFixture, "DOMAINDIR=\"" . $appdataShareRoot . "/vm-domains/\"\nMEDIADIR=\"" . $appdataShareRoot . "/vm-isos/\"\nIMAGE_FILE=\"" . $appdataShareRoot . "/system/libvirt/libvirt.img\"\n");
+file_put_contents($shareConfigFixtureDir . "/" . $appdataShareName . ".cfg", "shareUseCache=\"yes\"\n");
+$GLOBALS["acpTestDockerRecords"] = array();
+$earlyDockerClientFixture = $stateRoot . "/DockerClient.php";
+file_put_contents($earlyDockerClientFixture, <<<'PHP'
+<?php
+class DockerClient {
+  public function getDockerJSON($path, $method='GET', &$success=null, $callback=null, $unchunk=false) {
+    $success = $GLOBALS['acpTestDockerSuccess'] ?? true;
+    if ($path !== '/containers/json?all=1') throw new Exception('Unexpected inventory endpoint');
+    if ($callback) $callback(json_encode($GLOBALS['acpTestDockerRecords'] ?? array()));
+    return $GLOBALS['acpTestDockerRecords'] ?? array();
+  }
+}
+PHP
+);
+putenv("APPDATA_CLEANUP_PLUS_DOCKER_RUNTIME_PATH=" . $stateRoot . "/docker-runtime");
+putenv("APPDATA_CLEANUP_PLUS_DOCKER_CLIENT_PATH=" . $earlyDockerClientFixture);
 $defaultSafetySettings = getAppdataCleanupPlusSafetySettings();
 behaviorSmokeAssertSame(false, ! empty($defaultSafetySettings["enablePermanentDelete"]), "Fresh safety settings should start in quarantine-first Safe Mode.");
 behaviorSmokeAssertSame(0, (int)$defaultSafetySettings["defaultQuarantinePurgeDays"], "Default safety settings should start with no quarantine purge timer.");
@@ -830,13 +854,14 @@ if ( function_exists("symlink") && @symlink("../../archive/npm-1/cert18.pem", $s
     "sourceSummary" => "scheduled-purge-symlink",
     "targetSummary" => "/config"
   ));
+  writeAppdataCleanupPlusQuarantineEntryMarker(getAppdataCleanupPlusQuarantineRegistry()["scheduled-purge-symlink-entry"]);
   $scheduledPurgeSymlinkExecution = sweepExpiredAppdataCleanupPlusQuarantineEntries();
   behaviorSmokeAssertSame(1, isset($scheduledPurgeSymlinkExecution["summary"]["purged"]) ? (int)$scheduledPurgeSymlinkExecution["summary"]["purged"] : 0, "Scheduled purge should unlink symlink entries inside quarantined folders without following them.");
   behaviorSmokeAssertTrue(! is_dir($scheduledPurgeSymlinkDestination), "Scheduled purge should remove quarantined folders that contain symlink entries.");
 }
 
 $scheduledPurgeMountRoot = $stateRoot . "/scheduled-purge-mount-quarantine";
-$scheduledPurgeMountDestination = $scheduledPurgeMountRoot . "/20260330-122000/mnt/user/appdata/scheduled-purge-mount";
+$scheduledPurgeMountDestination = $scheduledPurgeMountRoot . "/20260330-122000/mnt/user/appdata/scheduled-purge-failed";
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($scheduledPurgeMountDestination), "Scheduled purge failure fixture should be created.");
 registerAppdataCleanupPlusQuarantineRecord(array(
   "id" => "scheduled-purge-failed-entry",
@@ -849,6 +874,7 @@ registerAppdataCleanupPlusQuarantineRecord(array(
   "sourceSummary" => "scheduled-purge-failed",
   "targetSummary" => "/config"
 ));
+writeAppdataCleanupPlusQuarantineEntryMarker(getAppdataCleanupPlusQuarantineRegistry()["scheduled-purge-failed-entry"]);
 $GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"] = array($scheduledPurgeMountDestination => true);
 $scheduledPurgeFailureExecution = sweepExpiredAppdataCleanupPlusQuarantineEntries();
 unset($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNT_POINTS"]);
@@ -868,7 +894,7 @@ unset($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNTINFO"]);
 
 $workerPurgeRoot = $stateRoot . "/worker-purge-quarantine";
 $workerPurgeSource = $stateRoot . "/worker-purge-source";
-$workerPurgeDestination = $workerPurgeRoot . "/20260330-123000/mnt/user/appdata/worker-purge";
+$workerPurgeDestination = $workerPurgeRoot . "/20260330-123000/" . trim($workerPurgeSource, "/");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($workerPurgeDestination), "Scheduled purge worker fixture should be created.");
 behaviorSmokeAssertTrue(registerAppdataCleanupPlusQuarantineRecord(array(
   "id" => "worker-purge-entry",
@@ -881,6 +907,7 @@ behaviorSmokeAssertTrue(registerAppdataCleanupPlusQuarantineRecord(array(
   "sourceSummary" => "worker-purge",
   "targetSummary" => "/config"
 )), "Scheduled purge worker record should be registered.");
+writeAppdataCleanupPlusQuarantineEntryMarker(getAppdataCleanupPlusQuarantineRegistry()["worker-purge-entry"]);
 $scheduledPurgeWorker = $repoRoot . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/scheduled-purge.php";
 behaviorSmokeAssertTrue(acquireAppdataCleanupPlusRuntimeLock("cleanup-operation", array("action" => "worker-lock-test")), "Cleanup lock should be held for the worker contention test.");
 $workerLockedOutput = array();
@@ -950,7 +977,7 @@ $libvirtParentPath = $appdataShareRoot . "/system";
 $recycleBinPath = $appdataShareRoot . "/.Recycle.Bin";
 $lostFoundPath = $appdataShareRoot . "/lost+found";
 $quarantinePath = $appdataShareRoot . "/.appdata-cleanup-plus-quarantine";
-mkdir($dockerRuntimeFixture, 0777, true);
+behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($dockerRuntimeFixture), "Docker runtime fixture should remain available.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory(dirname($dockerConfigFixture)), "Docker config fixture directory should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($shareConfigFixtureDir), "Share config fixture directory should be created.");
 behaviorSmokeAssertTrue(ensureAppdataCleanupPlusDirectory($templateFixtureDir), "Template fixture directory should be created.");
@@ -1051,8 +1078,9 @@ $autoZfsStorage = appdataCleanupPlusResolveStorageForPath($templatedOrphanPath, 
   "manualAppdataSources" => array(),
   "zfsPathMappings" => array()
 ));
-behaviorSmokeAssertSame("zfs", $autoZfsStorage["kind"], "ZFS dataset rows should resolve through Unraid user-share aliases without a saved ZFS path mapping.");
-behaviorSmokeAssertSame("docker_vm_nvme/" . $appdataShareName . "/templated-orphan", $autoZfsStorage["datasetName"], "Automatic ZFS resolution should preserve the matched physical dataset name.");
+behaviorSmokeAssertSame("zfs_unavailable", $autoZfsStorage["kind"], "A share-relative spelling alone must not authorize a physical ZFS dataset without a verified mapping.");
+behaviorSmokeAssertSame("", $autoZfsStorage["datasetName"], "Unverified share aliases must not retain a destructive dataset identity.");
+behaviorSmokeAssertTrue($autoZfsStorage["lockReason"] !== "", "Unresolved potential ZFS backing must remain locked instead of becoming an ordinary-folder candidate.");
 $appdataSourceInfo = buildAppdataCleanupPlusSourceInfo(getAppdataCleanupPlusSafetySettings());
 behaviorSmokeAssertSame(1, count($appdataSourceInfo["detected"]), "Source info should expose the detected Docker appdata root.");
 behaviorSmokeAssertSame(2, count($appdataSourceInfo["effective"]), "Source info should include the default root plus distinct manual appdata roots.");
@@ -1592,7 +1620,7 @@ foreach ($unsafeInventories as $inventory) {
     $attempt = executeCandidateOperation(array($recursiveCandidate), getAppdataCleanupPlusSafetySettings(), $operation);
     behaviorSmokeAssertSame("error", $attempt["results"][0]["status"], "Unsafe or unverifiable recursive children must block preview and deletion.");
   }
-  behaviorSmokeAssertSame(false, appdataCleanupPlusDestroyZfsDataset($recursiveDataset, true)["ok"], "The final destroy boundary must independently revalidate descendants.");
+  behaviorSmokeAssertSame(false, appdataCleanupPlusDestroyZfsDataset($recursiveDataset, true, getAppdataCleanupPlusSafetySettings(), $zfsCaseSensitivePath, $zfsDatasetRoot . "/Sonarr")["ok"], "The final destroy boundary must independently revalidate descendants.");
   behaviorSmokeAssertSame(false, is_file($destroyLog), "Blocked recursion must never invoke the destructive ZFS command.");
   behaviorSmokeAssertTrue(is_dir($zfsCaseSensitivePath), "Blocked recursion must preserve the selected dataset.");
 }
@@ -1600,7 +1628,7 @@ foreach ($unsafeInventories as $inventory) {
 file_put_contents($inventoryFile, json_encode($parentInventory));
 behaviorSmokeAssertSame(true, appdataCleanupPlusPreviewZfsDatasetDestroy($recursiveDataset)["ok"], "Verified unowned children remain previewable.");
 $GLOBALS["acpTestDockerRecords"][] = array("Id" => "late-owner", "Names" => array("/late-owner"), "Mounts" => array(array("Type" => "bind", "Source" => $zfsDatasetRoot . "/Sonarr/child-4", "Destination" => "/config")));
-behaviorSmokeAssertSame(false, appdataCleanupPlusDestroyZfsDataset($recursiveDataset, true)["ok"], "A new owner after preview must block the actual destroy.");
+behaviorSmokeAssertSame(false, appdataCleanupPlusDestroyZfsDataset($recursiveDataset, true, getAppdataCleanupPlusSafetySettings(), $zfsCaseSensitivePath, $zfsDatasetRoot . "/Sonarr")["ok"], "A new owner after preview must block the actual destroy.");
 behaviorSmokeAssertSame(false, is_file($destroyLog), "Late ownership must prevent the destructive command.");
 array_pop($GLOBALS["acpTestDockerRecords"]);
 putenv("APPDATA_CLEANUP_PLUS_TEST_ZFS_INVENTORY_FILE");
@@ -1741,13 +1769,20 @@ behaviorSmokeAssertSame($legacyRecoveredSourcePath, $legacyRecoveredEntry["sourc
 behaviorSmokeAssertSame("Recovered", $legacyRecoveredEntry["sourceLabel"], "Legacy recovery should identify entries recovered from quarantine storage.");
 behaviorSmokeAssertSame(1, (int)$legacyRecoveredPayload["summary"]["count"], "Legacy recovery should repopulate the quarantine summary.");
 $legacyRecoveredPurgeResult = purgeTrackedQuarantineEntry($legacyRecoveredEntry);
-behaviorSmokeAssertSame("purged", $legacyRecoveredPurgeResult["status"], "Recovered legacy entries should remain purgeable.");
-behaviorSmokeAssertSame(false, is_dir($legacyRecoveredDestination), "Purging a recovered legacy entry should remove the quarantined folder.");
+behaviorSmokeAssertSame("blocked", $legacyRecoveredPurgeResult["status"], "Unmarked legacy recovery must not invent purge authorization.");
+behaviorSmokeAssertTrue(is_dir($legacyRecoveredDestination), "Unverified legacy data must remain available for restore.");
+$legacyRecoveredRestoreResult = restoreTrackedQuarantineEntry($legacyRecoveredEntry);
+behaviorSmokeAssertSame("restored", $legacyRecoveredRestoreResult["status"], "Unmarked legacy data should remain restorable to its safe original path.");
 
 if ( $appdataShareUsesSymlink ) {
   behaviorSmokeAssertSame("", buildPathSecurityLockReason($templatedOrphanPath), "Configured appdata share root symlinks should not lock inside-share candidates.");
   behaviorSmokeAssertSame(false, ! empty($filesystemRow["policyLocked"]), "Configured appdata share root symlinks should leave inside-share discovery rows actionable.");
 }
+// State-reset recovery intentionally removed the saved mapping above. Heavy
+// statistics for this ZFS fixture require that explicit identity again.
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings(array_merge(getAppdataCleanupPlusSafetySettings(), array(
+  "zfsPathMappings" => array(array("shareRoot" => $appdataShareRoot, "datasetRoot" => $zfsDatasetRoot))
+))), "Restore the explicit synthetic mapping before ZFS hydration checks.");
 $hydratedCandidate = resolveSnapshotCandidates($dashboard["payload"]["scanToken"], array($templatedRow["id"]));
 behaviorSmokeAssertTrue(! empty($hydratedCandidate["ok"]), "Hydration should be able to resolve the initial snapshot candidate.");
 $hydratedStatsRow = buildHydratedCandidateStatRow($hydratedCandidate["candidates"][0]);

@@ -513,6 +513,11 @@ function appdataCleanupPlusComposeBindHosts($contents, &$uncertain, $baseDir="")
     // source (including the appdata root), so it must not mean "no owner".
     $structure = preg_replace('/"(?:\\\\.|[^"\\\\])*"|\x27[^\x27]*\x27|(?:^|\s+)#.*$/', '', $line);
     if (preg_match('/(?:^|[\s\[{,:-])[&*][^\s\[\]{},]+/', $structure)) $uncertain = true;
+    // Flow collections can hide relative binds at any nesting level. Quoted
+    // ownership keys and multiline scalars are outside this line parser's
+    // supported subset. Preserve uncertainty instead of certifying no owner.
+    $flowStructure = preg_replace('/\{\s*\}|\[\s*\]/', '', $structure);
+    if (preg_match('/[\[{]/', $flowStructure) || preg_match('/^\s*(?:-\s*)?["\x27](?:volumes|source|include|extends)["\x27]\s*:/', $line) || preg_match('/^\s*(?:source|volumes)\s*:\s*[|>]/', $line)) $uncertain = true;
     if ( preg_match('/^\s*source\s*:\s*(.+)$/', $line, $match) ) {
       $value = trim($match[1]);
       if ( preg_match('/^(["\'])(.*?)\1\s*(?:#.*)?$/', $value, $quoted) ) $value = $quoted[2];

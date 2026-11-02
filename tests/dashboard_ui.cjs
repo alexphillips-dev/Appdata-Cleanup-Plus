@@ -118,6 +118,7 @@ async function createPage(browser, {locale = 'en_US', theme = 'black', width = 1
     ACP.applyThemeState($('#acp-app'));
     ACP.watchThemeChanges(F.syncAuroraHeader);
     F.state.scanToken = 'synthetic-scan-token'; F.state.dockerRunning = true;
+    F.state.settingsLoaded = true;
     F.state.scanVerification = 'verified'; F.state.showIgnored = true;
     F.state.rows = [
       {id:'ready', name:'Available fixture', path:'/mnt/user/appdata/available', displayPath:'/mnt/user/appdata/available', sourceKind:'filesystem', sourceLabel:ACP.tr('Discovery'), sourceNames:[], targetPaths:[], templateRefs:[], canDelete:true, storageKind:'filesystem', risk:'safe', status:'orphaned', sizeLabel:'1 MB'},

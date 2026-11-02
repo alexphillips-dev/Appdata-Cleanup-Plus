@@ -1,6 +1,21 @@
 <?php
 // A separate fixture process models a request that loses its client connection.
 putenv("APPDATA_CLEANUP_PLUS_STATE_ROOT=" . $argv[1]);
+putenv("APPDATA_CLEANUP_PLUS_DOCKER_RUNTIME_PATH=" . $argv[1]);
+putenv("APPDATA_CLEANUP_PLUS_DOCKER_CONFIG_PATH=" . $argv[1] . "/docker.cfg");
+putenv("APPDATA_CLEANUP_PLUS_VM_CONFIG_PATH=" . $argv[1] . "/vm.cfg");
+putenv("APPDATA_CLEANUP_PLUS_COMPOSE_PROJECTS_DIR=" . $argv[1] . "/no-projects");
+file_put_contents($argv[1] . "/docker.cfg", "");
+file_put_contents($argv[1] . "/vm.cfg", "");
+// Model a verified empty daemon; never fall back to a real host Docker client.
+class DockerClient {
+  public function getDockerJSON($path, $method="GET", &$success=null, $callback=null, $unchunk=false) {
+    if ($method !== "GET") throw new RuntimeException("Only read-only fixture inventory is allowed.");
+    $success = true;
+    if ($callback) $callback("[]");
+    return array();
+  }
+}
 $plugin = dirname(__DIR__) . "/source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/include/";
 foreach (array("helpers.php", "pathUtils.php", "dashboard.php", "quarantine.php", "api.php") as $file) require_once $plugin . $file;
 if ( ! acquireAppdataCleanupPlusRuntimeLock("cleanup-operation", array("action" => "executeCandidateAction")) ) exit(1);
@@ -18,9 +33,15 @@ if ( in_array($mode, array("candidate-warning", "restore-warning", "purge-clean"
     $_POST += array("scanToken" => $snapshot["token"], "candidateIds" => '["blocked-fixture"]', "operation" => "quarantine");
     handleExecuteCandidateAction();
   }
-  $destination = $argv[1] . "/guarded-folder";
+  $sourcePath = $mode === "purge-clean" ? $argv[1] . "/original-folder" : "/";
+  $quarantineRoot = $argv[1] . "/.appdata-cleanup-plus-quarantine";
+  $destination = $mode === "purge-clean"
+    ? $quarantineRoot . "/20000101-000000/" . ltrim($sourcePath, "/")
+    : $argv[1] . "/guarded-folder";
   ensureAppdataCleanupPlusDirectory($destination);
-  registerAppdataCleanupPlusQuarantineRecord(array("id" => "guarded-entry", "name" => "Guarded fixture", "sourcePath" => "/", "destination" => $destination, "quarantineRoot" => $argv[1] . "/quarantine", "quarantinedAt" => date("c")));
+  $record = array("id" => "guarded-entry", "name" => "Guarded fixture", "sourcePath" => $sourcePath, "destination" => $destination, "quarantineRoot" => $quarantineRoot, "quarantinedAt" => date("c"));
+  if (!registerAppdataCleanupPlusQuarantineRecord($record)) throw new RuntimeException("Synthetic quarantine registration failed.");
+  if ($mode === "purge-clean" && !writeAppdataCleanupPlusQuarantineEntryMarker($record)) throw new RuntimeException("Synthetic quarantine marker failed.");
   $_POST += array("entryIds" => '["guarded-entry"]', "managerAction" => $mode === "restore-warning" ? "restore" : "purge");
   handleQuarantineManagerAction();
 }

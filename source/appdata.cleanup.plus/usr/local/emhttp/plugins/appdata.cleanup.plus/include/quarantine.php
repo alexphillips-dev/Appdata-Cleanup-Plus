@@ -66,52 +66,47 @@ function normalizeAppdataCleanupPlusQuarantinePurgeScheduleSource($source, $purg
 }
 
 function syncTrackedQuarantineEntriesToDefaultPurgeSchedule($settings, $previousSettings=null) {
-  $registry = getAppdataCleanupPlusQuarantineRegistry();
   $updatedCount = 0;
-  $registryDirty = false;
-
-  foreach ( $registry as $recordId => $record ) {
-    $normalized = normalizeAppdataCleanupPlusQuarantineRecord($record);
-    $quarantinedTimestamp = strtotime($normalized["quarantinedAt"]);
-    $defaultPurgeAt = buildAppdataCleanupPlusDefaultPurgeAtForTimestamp($settings, $quarantinedTimestamp);
-
-    if ( $normalized["purgeScheduleSource"] === "manual" ) {
-      continue;
-    }
-
-    if (
-      $previousSettings !== null &&
-      $normalized["purgeAt"] !== ""
-    ) {
-      $previousDefaultPurgeAt = buildAppdataCleanupPlusDefaultPurgeAtForTimestamp($previousSettings, $quarantinedTimestamp);
-
-      if ( $previousDefaultPurgeAt === "" || $normalized["purgeAt"] !== $previousDefaultPurgeAt ) {
-        if ( $normalized["purgeScheduleSource"] !== "manual" ) {
+  $pausedCount = 0;
+  $saved = mutateAppdataCleanupPlusQuarantineRegistry(function($registry) use ($settings, $previousSettings, &$updatedCount, &$pausedCount) {
+    foreach ( $registry as $recordId => $record ) {
+      if ( ! is_array($record) ) continue;
+      $normalized = normalizeAppdataCleanupPlusQuarantineRecord($record);
+      $quarantinedTimestamp = strtotime($normalized["quarantinedAt"]);
+      $defaultPurgeAt = buildAppdataCleanupPlusDefaultPurgeAtForTimestamp($settings, $quarantinedTimestamp);
+      if ( $normalized["purgeScheduleSource"] === "manual" || $normalized["recoveryOrigin"] !== "" ) continue;
+      $hasExplicitScheduleSource = isset($record["purgeScheduleSource"]) && in_array($record["purgeScheduleSource"], array("default", "manual"), true);
+      if ( !$hasExplicitScheduleSource && $previousSettings !== null && $normalized["purgeAt"] !== "" ) {
+        $previousDefaultPurgeAt = buildAppdataCleanupPlusDefaultPurgeAtForTimestamp($previousSettings, $quarantinedTimestamp);
+        if ( $previousDefaultPurgeAt === "" || $normalized["purgeAt"] !== $previousDefaultPurgeAt ) {
+          if ((int)$previousSettings["defaultQuarantinePurgeDays"] === (int)$settings["defaultQuarantinePurgeDays"]) {
+            // A retry after a partial settings save has no reliable previous
+            // default for an untyped legacy timer. Never retain it armed by
+            // guessing that it was a manual override.
+            $normalized["purgeAt"] = "";
+            $normalized["purgeErrorAt"] = date("c");
+            $normalized["purgeErrorMessage"] = "The previous purge schedule could not be verified. Review this folder before scheduling a new purge.";
+            $updatedCount++;
+            $pausedCount++;
+          }
           $normalized["purgeScheduleSource"] = "manual";
           $registry[$recordId] = $normalized;
-          $registryDirty = true;
+          continue;
         }
-        continue;
       }
+      if ( $normalized["purgeAt"] === $defaultPurgeAt ) continue;
+      $normalized["purgeAt"] = $defaultPurgeAt;
+      $normalized["purgeScheduleSource"] = $defaultPurgeAt !== "" ? "default" : "";
+      $registry[$recordId] = $normalized;
+      $updatedCount++;
     }
-
-    if ( $normalized["purgeAt"] === $defaultPurgeAt ) {
-      continue;
-    }
-
-    $normalized["purgeAt"] = $defaultPurgeAt;
-    $normalized["purgeScheduleSource"] = $defaultPurgeAt !== "" ? "default" : "";
-    $registry[$recordId] = $normalized;
-    $updatedCount++;
-    $registryDirty = true;
-  }
-
-  if ( $registryDirty ) {
-    setAppdataCleanupPlusQuarantineRegistry($registry);
-  }
+    return $registry;
+  });
 
   return array(
-    "updatedCount" => $updatedCount
+    "ok" => $saved,
+    "updatedCount" => $saved ? $updatedCount : 0,
+    "pausedCount" => $saved ? $pausedCount : 0
   );
 }
 
@@ -177,6 +172,7 @@ function buildAppdataCleanupPlusScheduledPurgeMeta($purgeAt) {
 }
 
 function normalizeAppdataCleanupPlusQuarantineRecord($record) {
+  $record = is_array($record) ? $record : array();
   $sizeBytes = null;
   $sourceNames = isset($record["sourceNames"]) && is_array($record["sourceNames"]) ? array_values($record["sourceNames"]) : array();
   $targetPaths = isset($record["targetPaths"]) && is_array($record["targetPaths"]) ? array_values($record["targetPaths"]) : array();
@@ -300,6 +296,9 @@ function getKnownAppdataCleanupPlusQuarantineRoots($registry=array()) {
     isset($settings["quarantineRoot"]) ? $settings["quarantineRoot"] : "",
     getDefaultAppdataCleanupPlusQuarantineRoot()
   );
+  foreach ( getAppdataCleanupPlusConfiguredSourceRoots($settings) as $sourceRoot ) {
+    $candidateRoots[] = rtrim($sourceRoot, "/") . "/.appdata-cleanup-plus-quarantine";
+  }
 
   foreach ( $registry as $record ) {
     if ( ! empty($record["quarantineRoot"]) ) {
@@ -310,7 +309,7 @@ function getKnownAppdataCleanupPlusQuarantineRoots($registry=array()) {
   foreach ( $candidateRoots as $candidateRoot ) {
     $normalizedRoot = rtrim(normalizeUserPath($candidateRoot), "/");
 
-    if ( $normalizedRoot && is_dir($normalizedRoot) ) {
+    if ( $normalizedRoot && count(appdataPathSegments($normalizedRoot)) >= 3 && !preg_match('/[\x00-\x1f\x7f]/', $normalizedRoot) && is_dir($normalizedRoot) ) {
       $roots[$normalizedRoot] = $normalizedRoot;
     }
   }
@@ -391,6 +390,10 @@ function appdataCleanupPlusBuildRecoveredQuarantineRecord($sourcePath, $destinat
   }
 
   $record["recoveryOrigin"] = !empty($markerRecord) ? "marker" : "layout";
+  // A surviving marker is recovery evidence, not current consent to purge.
+  // It may predate a cancelled or postponed registry schedule.
+  $record["purgeAt"] = "";
+  $record["purgeScheduleSource"] = "";
   return normalizeAppdataCleanupPlusQuarantineRecord($record);
 }
 
@@ -505,9 +508,8 @@ function appdataCleanupPlusRecoverQuarantineRecordsFromRoot($quarantineRoot, $kn
 
 function recoverMissingAppdataCleanupPlusQuarantineRecords() {
   $registry = getAppdataCleanupPlusQuarantineRegistry();
-  $nextRegistry = $registry;
   $knownDestinations = array();
-  $registryDirty = false;
+  $recoveredRecords = array();
 
   foreach ( $registry as $recordId => $record ) {
     $normalized = normalizeAppdataCleanupPlusQuarantineRecord($record);
@@ -517,10 +519,9 @@ function recoverMissingAppdataCleanupPlusQuarantineRecords() {
       $knownDestinations[$destinationKey] = true;
     }
 
-    $nextRegistry[$recordId] = $normalized;
   }
 
-  foreach ( getKnownAppdataCleanupPlusQuarantineRoots($nextRegistry) as $quarantineRoot ) {
+  foreach ( getKnownAppdataCleanupPlusQuarantineRoots($registry) as $quarantineRoot ) {
     foreach ( appdataCleanupPlusRecoverQuarantineRecordsFromRoot($quarantineRoot, $knownDestinations) as $recoveredRecord ) {
       $normalizedRecovered = normalizeAppdataCleanupPlusQuarantineRecord($recoveredRecord);
       $destinationKey = normalizeUserPath($normalizedRecovered["destination"]);
@@ -529,17 +530,28 @@ function recoverMissingAppdataCleanupPlusQuarantineRecords() {
         continue;
       }
 
-      $nextRegistry[$normalizedRecovered["id"]] = $normalizedRecovered;
+      $recoveredRecords[] = $normalizedRecovered;
       $knownDestinations[$destinationKey] = true;
-      $registryDirty = true;
     }
   }
 
-  if ( $registryDirty ) {
-    setAppdataCleanupPlusQuarantineRegistry($nextRegistry);
-  }
-
-  return $nextRegistry;
+  if ( empty($recoveredRecords) ) return $registry;
+  $saved = mutateAppdataCleanupPlusQuarantineRegistry(function($current) use ($recoveredRecords) {
+    $destinations = array();
+    foreach ( $current as $record ) {
+      if (is_array($record) && !empty($record["destination"])) $destinations[normalizeUserPath($record["destination"])] = true;
+    }
+    foreach ( $recoveredRecords as $record ) {
+      $key = normalizeUserPath($record["destination"]);
+      // A concurrent restore/purge can finish while recovery scans the tree.
+      if (isset($current[$record["id"]]) || isset($destinations[$key]) || !is_dir($record["destination"]) || is_link($record["destination"])) continue;
+      $current[$record["id"]] = $record;
+      $destinations[$key] = true;
+    }
+    return $current;
+  }, $committed);
+  // Never return uncommitted recovered records as actionable server state.
+  return $saved ? $committed : getAppdataCleanupPlusQuarantineRegistry();
 }
 
 function registerAppdataCleanupPlusQuarantineRecord($record) {
@@ -609,9 +621,8 @@ function buildQuarantineSummaryFromRegistry($registry) {
 
 function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false, $includeMissing=false) {
   $registry = recoverMissingAppdataCleanupPlusQuarantineRecords();
-  $nextRegistry = $registry;
   if (!$includeMissing) $registry = pruneMissingAppdataCleanupPlusQuarantineRecords($registry);
-  $registryDirty = false;
+  $sizeUpdates = array();
   $entries = array();
 
   foreach ( $registry as $recordId => $record ) {
@@ -660,17 +671,21 @@ function getActiveAppdataCleanupPlusQuarantineEntries($includeStats=false, $incl
       $row["sizeLabel"] = $stats["sizeLabel"];
 
       if ( $normalized["sizeBytes"] !== $stats["sizeBytes"] ) {
-        $normalized["sizeBytes"] = $stats["sizeBytes"];
-        $nextRegistry[$recordId] = $normalized;
-        $registryDirty = true;
+        $sizeUpdates[$recordId] = array("destination" => $normalized["destination"], "sizeBytes" => $stats["sizeBytes"]);
       }
     }
 
     $entries[] = $row;
   }
 
-  if ( $registryDirty ) {
-    setAppdataCleanupPlusQuarantineRegistry($nextRegistry);
+  if ( ! empty($sizeUpdates) ) {
+    mutateAppdataCleanupPlusQuarantineRegistry(function($current) use ($sizeUpdates) {
+      foreach ($sizeUpdates as $recordId => $patch) {
+        if (!isset($current[$recordId]) || !is_array($current[$recordId]) || ($current[$recordId]["destination"] ?? "") !== $patch["destination"]) continue;
+        $current[$recordId]["sizeBytes"] = $patch["sizeBytes"];
+      }
+      return $current;
+    });
   }
 
   usort($entries, function($left, $right) {
@@ -709,12 +724,10 @@ function buildQuarantinePurgeScheduleSummary($results) {
 }
 
 function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0, $purgeAt="") {
-  $registry = getAppdataCleanupPlusQuarantineRegistry();
   $results = array();
   $normalizedMode = strtolower(trim((string)$mode));
   $effectiveDays = max(0, (int)$purgeAfterDays);
   $scheduledPurgeAt = "";
-  $registryDirty = false;
 
   if ( $normalizedMode === "set" ) {
     $scheduledPurgeAt = $purgeAt !== ""
@@ -722,6 +735,7 @@ function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0
       : date("c", time() + ($effectiveDays * 86400));
   }
 
+  $saved = mutateAppdataCleanupPlusQuarantineRegistry(function($registry) use ($entries, $normalizedMode, $scheduledPurgeAt, $effectiveDays, &$results) {
   foreach ( $entries as $entry ) {
     $entryId = isset($entry["id"]) ? trim((string)$entry["id"]) : "";
     $normalized = $entryId && isset($registry[$entryId])
@@ -734,10 +748,7 @@ function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0
       "destination" => isset($normalized["destination"]) ? $normalized["destination"] : ""
     );
 
-    if ( ! $normalized["destination"] || ! is_dir($normalized["destination"]) ) {
-      if ( $entryId ) {
-        removeAppdataCleanupPlusQuarantineRecord($entryId);
-      }
+    if ( !$entryId || !isset($registry[$entryId]) || !is_array($registry[$entryId]) || ! $normalized["destination"] || ! is_dir($normalized["destination"]) ) {
       $results[] = array_merge($result, array(
         "status" => "missing",
         "message" => "Quarantine path no longer exists."
@@ -745,6 +756,8 @@ function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0
       continue;
     }
 
+    $normalized["purgeErrorAt"] = "";
+    $normalized["purgeErrorMessage"] = "";
     if ( $normalizedMode === "set" ) {
       $normalized["purgeAt"] = $scheduledPurgeAt;
       $normalized["purgeScheduleSource"] = $scheduledPurgeAt !== "" ? "manual" : "";
@@ -767,12 +780,15 @@ function updateTrackedQuarantinePurgeSchedule($entries, $mode, $purgeAfterDays=0
 
     if ( $entryId ) {
       $registry[$entryId] = $normalized;
-      $registryDirty = true;
     }
   }
-
-  if ( $registryDirty ) {
-    setAppdataCleanupPlusQuarantineRegistry($registry);
+  return $registry;
+  });
+  if ( !$saved ) {
+    $results = array_map(function($entry) {
+      return array("id" => (string)($entry["id"] ?? ""), "name" => (string)($entry["name"] ?? ""), "status" => "error",
+        "message" => "Purge schedules could not be saved. Existing timers may still be active.");
+    }, $entries);
   }
 
   return array(
@@ -957,11 +973,14 @@ function cleanupEmptyQuarantineParents($path, $quarantineRoot) {
 }
 
 function buildRestorePathSecurityReason($path) {
-  $normalized = trim((string)$path);
+  $normalized = appdataCleanupPlusCanonicalizePath($path);
 
-  if ( ! startsWith($normalized, "/mnt/user/") && ! startsWith($normalized, "/mnt/cache/") ) {
-    return "Restore targets must stay inside /mnt/user or /mnt/cache.";
+  if ( !$normalized || preg_match('/[\x00-\x1f\x7f]/', (string)$path) || !startsWith($normalized, "/mnt/") || !classifyAppdataCandidate($normalized)["canDelete"] || in_array(".appdata-cleanup-plus-quarantine", appdataPathSegments($normalized), true) ) {
+    return "The recorded restore target is not a safe appdata folder.";
   }
+
+  $managedReason = appdataCleanupPlusBuildManagedSystemLockReason($normalized);
+  if ($managedReason !== "") return $managedReason;
 
   if ( pathHasSymlinkSegment(dirname($normalized)) ) {
     return buildPathSymlinkSegmentLockReason(dirname($normalized));
@@ -987,7 +1006,7 @@ function buildRestoreSuffixDestination($sourcePath) {
       $candidatePath .= "-" . $attempt;
     }
 
-    if ( ! file_exists($candidatePath) ) {
+    if ( ! file_exists($candidatePath) && !is_link($candidatePath) ) {
       return $candidatePath;
     }
 
@@ -1038,7 +1057,7 @@ function inspectTrackedQuarantineRestoreConflicts($entries) {
 
     $summary["selected"]++;
 
-    if ( $sourcePath && file_exists($sourcePath) ) {
+    if ( $sourcePath && (file_exists($sourcePath) || is_link($sourcePath)) ) {
       $conflicts[] = array(
         "id" => isset($entry["id"]) ? (string)$entry["id"] : "",
         "name" => isset($entry["name"]) ? (string)$entry["name"] : $sourceName,
@@ -1097,6 +1116,7 @@ function buildQuarantineManagerActionSummary($results) {
         $summary["errors"]++;
         break;
     }
+    if (isset($result["metadataSaved"]) && !$result["metadataSaved"] && in_array($result["status"], array("restored", "purged"), true)) $summary["errors"]++;
   }
 
   return $summary;
@@ -1125,14 +1145,13 @@ function restoreTrackedQuarantineEntry($entry, $options=array()) {
   }
 
   if ( ! $destination || ! is_dir($destination) ) {
-    removeAppdataCleanupPlusQuarantineRecord($entry["id"]);
     return array(
       "status" => "missing",
       "message" => "Quarantine path no longer exists."
     );
   }
 
-  if ( file_exists($sourcePath) ) {
+  if ( file_exists($sourcePath) || is_link($sourcePath) ) {
     $suggestedPath = buildRestoreSuffixDestination($sourcePath);
 
     if ( $conflictMode === "skip" ) {
@@ -1166,7 +1185,7 @@ function restoreTrackedQuarantineEntry($entry, $options=array()) {
         );
       }
 
-      if ( file_exists($restorePath) ) {
+      if ( file_exists($restorePath) || is_link($restorePath) ) {
         return array(
           "status" => "conflict",
           "message" => "The edited restore destination already exists. Choose a different name or skip this folder.",
@@ -1206,6 +1225,9 @@ function restoreTrackedQuarantineEntry($entry, $options=array()) {
     );
   }
 
+  $managedReason = appdataCleanupPlusBuildManagedSystemLockReason($destination);
+  if ($managedReason !== "") return array("status" => "blocked", "message" => $managedReason);
+
   $mountReason = appdataCleanupPlusMountSafetyReason($destination);
   if ( $mountReason !== "" ) {
     return array(
@@ -1228,19 +1250,22 @@ function restoreTrackedQuarantineEntry($entry, $options=array()) {
     );
   }
 
-  deleteAppdataCleanupPlusQuarantineEntryMarker($restorePath);
+  $markerRemoved = deleteAppdataCleanupPlusQuarantineEntryMarker($restorePath);
   clearCachedAppdataCleanupPlusPathStats($destination);
   clearCachedAppdataCleanupPlusPathStats($restorePath);
-  removeAppdataCleanupPlusQuarantineRecord($entry["id"]);
+  $recordRemoved = removeAppdataCleanupPlusQuarantineRecord($entry["id"]);
   cleanupEmptyQuarantineParents($destination, $quarantineRoot);
 
   return array(
     "status" => "restored",
-    "message" => $restorePath === $sourcePath
+    "metadataSaved" => $markerRemoved && $recordRemoved,
+    "message" => (!$markerRemoved || !$recordRemoved)
+      ? "The folder was restored, but its tracking metadata could not be fully updated. Refresh the manager before retrying."
+      : ($restorePath === $sourcePath
       ? "Restored to the original location."
       : ($conflictMode === "custom"
         ? "Original path already existed, so the folder was restored to the edited destination."
-        : "Original path already existed, so the folder was restored with a suffix."),
+         : "Original path already existed, so the folder was restored with a suffix.")),
     "destination" => $restorePath,
     "restoredPath" => $restorePath
   );
@@ -1359,6 +1384,9 @@ function nativeDeleteDirectory($path, $options=array()) {
     );
   }
 
+  $managedReason = appdataCleanupPlusBuildManagedSystemLockReason($deletePath);
+  if ($managedReason !== "") return array("ok" => false, "message" => $managedReason);
+
   $mountReason = appdataCleanupPlusMountSafetyReason($deletePath);
   if ( $mountReason !== "" ) {
     return array(
@@ -1421,18 +1449,79 @@ function nativeDeleteDirectory($path, $options=array()) {
   );
 }
 
+function appdataCleanupPlusQuarantinePurgeSafetyReason($entry, $settings, &$identity=null) {
+  $identity = null;
+  $root = appdataCleanupPlusCanonicalizePath($entry["quarantineRoot"] ?? "");
+  $destination = appdataCleanupPlusCanonicalizePath($entry["destination"] ?? "");
+  $source = appdataCleanupPlusCanonicalizePath($entry["sourcePath"] ?? "");
+  $failure = "Quarantine provenance could not be verified. The folder was left in place.";
+  if (!$root || !$destination || !$source || $root[0] !== "/" || $source[0] !== "/" || count(appdataPathSegments($root)) < 3 ||
+      preg_match('/[\x00-\x1f\x7f]/', $root . $destination . $source) ||
+      strpos($destination, rtrim($root, "/") . "/") !== 0 || is_link($root) || is_link($destination) ||
+      pathHasSymlinkSegment($root) || pathHasSymlinkSegment($destination)) return $failure;
+
+  $relative = substr($destination, strlen($root) + 1);
+  $sourceRelative = trim(preg_replace('/[^A-Za-z0-9._\/-]+/', '-', trim($source, "/")), "/");
+  if (!$sourceRelative || !preg_match('#^\d{8}-\d{6}/(.+)$#D', $relative, $parts) || $parts[1] !== $sourceRelative) return $failure;
+
+  // A directory at the same recorded pathname may have been replaced. Legacy
+  // unmarked data stays available for restore, never automatic purge authority.
+  $markerFile = appdataCleanupPlusQuarantineEntryMarkerFile($destination);
+  if (!is_file($markerFile) || is_link($markerFile)) return $failure;
+  $marker = readAppdataCleanupPlusQuarantineEntryMarker($destination);
+  foreach (array("id", "sourcePath", "destination", "quarantineRoot") as $key) {
+    if (!isset($marker[$key], $entry[$key]) || !is_string($marker[$key]) || !hash_equals((string)$entry[$key], $marker[$key])) return $failure;
+  }
+
+  clearstatcache(true, $root);
+  clearstatcache(true, $destination);
+  $realRoot = @realpath($root);
+  $realDestination = @realpath($destination);
+  $rootStat = @lstat($root);
+  $destinationStat = @lstat($destination);
+  if (!$realRoot || !$realDestination || !$rootStat || !$destinationStat ||
+      strpos($realDestination, rtrim($realRoot, "/") . "/") !== 0) return $failure;
+
+  $managedReason = appdataCleanupPlusBuildManagedSystemLockReason($destination);
+  if ($managedReason !== "") return $managedReason;
+  $ownershipReason = appdataCleanupPlusCurrentOwnershipLockReason($destination, $settings, $diagnostics);
+  if ($ownershipReason !== "") return $ownershipReason;
+  clearstatcache(true, $root);
+  clearstatcache(true, $destination);
+  $currentRoot = @lstat($root);
+  $currentDestination = @lstat($destination);
+  if (!$currentRoot || !$currentDestination || $rootStat["dev"] !== $currentRoot["dev"] || $rootStat["ino"] !== $currentRoot["ino"] ||
+      $destinationStat["dev"] !== $currentDestination["dev"] || $destinationStat["ino"] !== $currentDestination["ino"] ||
+      @realpath($root) !== $realRoot || @realpath($destination) !== $realDestination) return $failure;
+  $identity = array("root" => $realRoot, "destination" => $realDestination);
+  return "";
+}
+
 function purgeTrackedQuarantineEntry($entry, $options=array()) {
+  $registry = getAppdataCleanupPlusQuarantineRegistry();
+  $entryId = (string)($entry["id"] ?? "");
+  $current = isset($registry[$entryId]) && is_array($registry[$entryId]) ? normalizeAppdataCleanupPlusQuarantineRecord($registry[$entryId]) : null;
+  if (!$current) return array("status" => "blocked", "message" => "The quarantine record changed. Refresh the manager before retrying.");
+  foreach (array("sourcePath", "destination", "quarantineRoot") as $key) {
+    if (($entry[$key] ?? "") !== $current[$key]) return array("status" => "blocked", "message" => "The quarantine record changed. Refresh the manager before retrying.");
+  }
+  if (!empty($options["scheduledPurge"]) && (!$current["purgeAt"] || strtotime($current["purgeAt"]) > time())) {
+    return array("status" => "skipped", "message" => "The purge schedule changed. The folder was left in place.");
+  }
+  $entry = $current;
   $destination = isset($entry["destination"]) ? trim((string)$entry["destination"]) : "";
   $quarantineRoot = isset($entry["quarantineRoot"]) ? trim((string)$entry["quarantineRoot"]) : "";
   $scheduledPurge = ! empty($options["scheduledPurge"]);
 
   if ( ! $destination || ! is_dir($destination) ) {
-    removeAppdataCleanupPlusQuarantineRecord($entry["id"]);
     return array(
       "status" => "missing",
       "message" => "Quarantine path no longer exists."
     );
   }
+
+  $safetyReason = appdataCleanupPlusQuarantinePurgeSafetyReason($entry, getAppdataCleanupPlusSafetySettings(), $identity);
+  if ($safetyReason !== "") return array("status" => "blocked", "message" => $safetyReason);
 
   $deleteResult = nativeDeleteDirectory($destination, array(
     "allowSymlinkEntries" => true,
@@ -1446,14 +1535,15 @@ function purgeTrackedQuarantineEntry($entry, $options=array()) {
     );
   }
 
-  removeAppdataCleanupPlusQuarantineRecord($entry["id"]);
+  $recordRemoved = removeAppdataCleanupPlusQuarantineRecord($entry["id"]);
   cleanupEmptyQuarantineParents($destination, $quarantineRoot);
 
   return array(
     "status" => "purged",
-    "message" => $scheduledPurge
+    "metadataSaved" => $recordRemoved,
+    "message" => !$recordRemoved ? "The folder was purged, but its tracking metadata could not be updated. Refresh the manager before retrying." : ($scheduledPurge
       ? "Permanently deleted from quarantine after the scheduled purge window expired."
-      : "Permanently deleted from quarantine."
+      : "Permanently deleted from quarantine.")
   );
 }
 
@@ -1536,27 +1626,28 @@ function sweepExpiredAppdataCleanupPlusQuarantineEntries() {
   ));
   $execution["action"] = "scheduled-purge";
 
-  $registry = getAppdataCleanupPlusQuarantineRegistry();
-  $registryDirty = false;
-  foreach ( $execution["results"] as $result ) {
-    if ( ! isset($result["status"], $result["id"]) || $result["status"] !== "error" ) {
-      continue;
+  $failedResults = array_filter($execution["results"], function($result) {
+    return isset($result["id"], $result["status"]) && in_array($result["status"], array("error", "blocked"), true);
+  });
+  if (!empty($failedResults)) {
+    $paused = mutateAppdataCleanupPlusQuarantineRegistry(function($registry) use ($failedResults) {
+      foreach ($failedResults as $result) {
+        $recordId = (string)$result["id"];
+        if (!isset($registry[$recordId]) || !is_array($registry[$recordId])) continue;
+        $registry[$recordId]["purgeAt"] = "";
+        $registry[$recordId]["purgeScheduleSource"] = "";
+        $registry[$recordId]["purgeErrorAt"] = date("c");
+        $registry[$recordId]["purgeErrorMessage"] = (string)($result["message"] ?? "Scheduled purge failed.");
+      }
+      return $registry;
+    });
+    if (!$paused) {
+      foreach ($execution["results"] as &$result) {
+        if (in_array($result["status"], array("error", "blocked"), true)) $result["message"] .= " " . acpMessage("Purge schedules could not be saved. Existing timers may still be active.");
+      }
+      unset($result);
+      $execution["summary"]["errors"]++;
     }
-
-    $recordId = (string)$result["id"];
-    if ( ! isset($registry[$recordId]) || ! is_array($registry[$recordId]) ) {
-      continue;
-    }
-
-    $registry[$recordId]["purgeAt"] = "";
-    $registry[$recordId]["purgeScheduleSource"] = "";
-    $registry[$recordId]["purgeErrorAt"] = date("c");
-    $registry[$recordId]["purgeErrorMessage"] = isset($result["message"]) ? (string)$result["message"] : "Scheduled purge failed.";
-    $registryDirty = true;
-  }
-
-  if ( $registryDirty ) {
-    setAppdataCleanupPlusQuarantineRegistry($registry);
   }
 
   appendAppdataCleanupPlusAuditEntry(array(
@@ -1830,13 +1921,14 @@ function quarantineCandidatePath($candidate, $displayPath, $settings) {
       "reason" => isset($candidate["reason"]) ? (string)$candidate["reason"] : "",
       "sizeBytes" => isset($candidate["sizeBytes"]) && $candidate["sizeBytes"] !== null ? (int)$candidate["sizeBytes"] : null
     );
-    registerAppdataCleanupPlusQuarantineRecord($quarantineRecord);
-    writeAppdataCleanupPlusQuarantineEntryMarker($quarantineRecord);
+    $recordSaved = registerAppdataCleanupPlusQuarantineRecord($quarantineRecord);
+    $markerSaved = writeAppdataCleanupPlusQuarantineEntryMarker($quarantineRecord);
     clearCachedAppdataCleanupPlusPathStats($displayPath);
     clearCachedAppdataCleanupPlusPathStats($destination);
     return array(
       "ok" => true,
-      "message" => "Moved to quarantine.",
+      "metadataSaved" => $recordSaved && $markerSaved,
+      "message" => $recordSaved && $markerSaved ? "Moved to quarantine." : "The folder moved to quarantine, but recovery metadata could not be fully saved. Review quarantine before retrying.",
       "destination" => $destination
     );
   }
@@ -1929,6 +2021,7 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
         "path" => $resolved["path"],
         "displayPath" => $resolved["displayPath"],
         "status" => $quarantineResult["ok"] ? "quarantined" : "error",
+        "metadataSaved" => $quarantineResult["metadataSaved"] ?? true,
         "message" => $quarantineResult["message"]
       );
 
@@ -1954,7 +2047,7 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
         ), true);
       }
       $deleteResult = $zfsPreview["ok"]
-        ? appdataCleanupPlusDestroyZfsDataset($datasetName, ! empty($zfsPreview["recursive"]), $settings)
+        ? appdataCleanupPlusDestroyZfsDataset($datasetName, ! empty($zfsPreview["recursive"]), $settings, $resolved["displayPath"], (string)$resolved["storage"]["datasetMountpoint"])
         : $zfsPreview;
 
       if ( ! empty($deleteResult["ok"]) ) {
@@ -2045,6 +2138,7 @@ function buildOperationSummary($results) {
         $summary["errors"]++;
         break;
     }
+    if (isset($result["metadataSaved"]) && !$result["metadataSaved"] && $result["status"] === "quarantined") $summary["errors"]++;
   }
 
   return $summary;

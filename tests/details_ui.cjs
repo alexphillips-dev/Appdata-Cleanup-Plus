@@ -257,6 +257,7 @@ async function assertGeometry(page, label, requireScroll) {
 async function closeDone(page) {
   await page.locator('.sweet-alert:visible .sa-button-container button.confirm').click();
   await page.waitForFunction(() => !document.querySelector('.sweet-alert.showSweetAlert'));
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.sweet-alert')).display === 'none');
   await page.waitForFunction(() => detailsFixture.state.rowDetails.activeRowId === '');
 }
 

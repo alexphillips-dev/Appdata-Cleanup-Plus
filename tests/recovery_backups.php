@@ -46,7 +46,10 @@ try {
     $clean = $mode === "purge-clean";
     recoveryCheck(($response["summary"][$clean ? "purged" : "blocked"] ?? 0) === 1 && $progress["status"] === ($clean ? "complete" : "warning") && $progress["message"] === ($clean ? "Cleanup finished." : "Cleanup finished with warnings."), $mode . ": the actual handler records accurate outcomes.");
     if ($mode === "restore-warning") recoveryCheck(is_dir($root . "/guarded-folder"), "Blocked restore must preserve guarded fixture data.");
-    if ($clean) recoveryCheck(!is_dir($root . "/guarded-folder"), "Clean purge removes only its isolated fixture folder.");
+    if ($clean) {
+      $purgeDestination = $root . "/.appdata-cleanup-plus-quarantine/20000101-000000/" . ltrim($root . "/original-folder", "/");
+      recoveryCheck(!is_dir($purgeDestination) && is_dir($root . "/guarded-folder"), "Clean purge removes only its production-shaped quarantine fixture and preserves unrelated data.");
+    }
   }
 
   for ($i = 0; $i < 105; $i++) appdataCleanupPlusInitializeOperationProgress("bounded-" . $i, "delete", 1);

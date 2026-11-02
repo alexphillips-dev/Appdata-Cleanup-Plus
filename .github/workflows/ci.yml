@@ -37,6 +37,7 @@ jobs:
           node --check source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus/scripts/appdata.cleanup.plus.js
           node --check tests/diagnostics_privacy_client.js
           node --check tests/shared_client_security.js
+          node --check tests/audit_client_ui.cjs
 
       - name: Run client security tests
         run: |
@@ -72,6 +73,7 @@ jobs:
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/theme_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/maintenance_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/recovery_ui.cjs
+          ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/audit_client_ui.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/i18n_layout.cjs
           ACP_BROWSER_MODULES="$RUNNER_TEMP/acp-browser/node_modules" node tests/plugin_description_ui.cjs
 
@@ -86,6 +88,9 @@ jobs:
           php tests/recovery_backups.php
           php tests/runtime_safety.php
           php tests/diagnostics_server.php
+          php tests/audit_discovery.php
+          php tests/audit_quarantine.php
+          php tests/audit_api.php
 
       - name: Check diagnostics privacy guards
         run: bash scripts/test_diagnostics_privacy.sh
@@ -105,6 +110,7 @@ jobs:
           bash scripts/test_release_source_ref.sh
           bash scripts/test_package_source_parity.sh
           bash scripts/test_package_line_endings.sh
+          bash scripts/test_package_atomicity.sh
 
       - name: Prepare Unraid path fixtures
         run: |

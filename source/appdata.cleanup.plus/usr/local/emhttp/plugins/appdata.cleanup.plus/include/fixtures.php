@@ -159,6 +159,33 @@ function appdataCleanupPlusGetTestFixtureStatus($settings=null) {
   );
 }
 
+function appdataCleanupPlusWriteFixtureFile($path, $contents) {
+  $parent = dirname($path);
+  clearstatcache(true, $path);
+  $existing = @lstat($path);
+  if ( pathHasSymlinkSegment($path) || ! is_dir($parent) ||
+    ($existing !== false && (($existing["mode"] & 0170000) !== 0100000 || $existing["nlink"] !== 1)) ) return false;
+  // Never truncate an existing inode. A same-directory exclusive temporary file
+  // and rename preserve every other hardlink even if the target changes later.
+  $temporary = $parent . "/.acp-fixture-" . bin2hex(random_bytes(16)) . ".tmp";
+  $handle = @fopen($temporary, "xb");
+  if ( ! is_resource($handle) ) return false;
+  try {
+    if ( @fwrite($handle, $contents) !== strlen($contents) || ! @fflush($handle) ) return false;
+    if ( function_exists("fsync") && ! @fsync($handle) ) return false;
+    @fclose($handle);
+    $handle = null;
+    clearstatcache(true, $path);
+    $current = @lstat($path);
+    if ( pathHasSymlinkSegment($path) || ! is_dir($parent) ||
+      ($current !== false && (($current["mode"] & 0170000) !== 0100000 || $current["nlink"] !== 1)) ) return false;
+    return @rename($temporary, $path);
+  } finally {
+    if ( is_resource($handle) ) @fclose($handle);
+    @unlink($temporary);
+  }
+}
+
 function appdataCleanupPlusCreateTestFixtures($settings=null) {
   $root = appdataCleanupPlusResolveFixtureRoot($settings);
   $created = array();
@@ -185,7 +212,7 @@ function appdataCleanupPlusCreateTestFixtures($settings=null) {
 
     if ( $fixture["key"] !== "empty" ) {
       $file = $fixture["path"] . ($fixture["key"] === "folder" ? "/README.txt" : "/template-fixture.txt");
-      if (@is_link($file) || (file_exists($file) && !is_file($file)) || @file_put_contents($file, "Appdata Cleanup Plus test fixture.\n") === false) {
+      if ( ! appdataCleanupPlusWriteFixtureFile($file, "Appdata Cleanup Plus test fixture.\n") ) {
         $errors[] = $fixture["name"] . ": fixture file could not be written safely";
         continue;
       }
@@ -200,7 +227,7 @@ function appdataCleanupPlusCreateTestFixtures($settings=null) {
     $errors[] = "template file: template directory could not be created";
   } else {
     $templateFixturePath = $root . "/" . appdataCleanupPlusFixtureNames()["template"];
-    if ( @is_link(appdataCleanupPlusFixtureTemplatePath()) || @file_put_contents(appdataCleanupPlusFixtureTemplatePath(), appdataCleanupPlusFixtureTemplateXml($templateFixturePath)) === false ) {
+    if ( ! appdataCleanupPlusWriteFixtureFile(appdataCleanupPlusFixtureTemplatePath(), appdataCleanupPlusFixtureTemplateXml($templateFixturePath)) ) {
       $errors[] = "template file: could not be written";
     }
   }

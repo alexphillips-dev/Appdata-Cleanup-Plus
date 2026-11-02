@@ -14,6 +14,14 @@ for (const [locale, definition] of Object.entries(locales)) {
   assert.equal(config.strings.deleteConfirmButton, config.catalog.Delete, locale + ' delete translation');
   assert.equal(config.strings.quarantineConfirmButton, config.catalog.Quarantine);
   assert.equal(config.strings.helpTitle, config.catalog.Help);
+  // AUD-24: inspect the actual serialized PHP config, alongside native Help
+  // interaction tests, so unused aliases cannot silently grow the payload back.
+  for (const key of ['helpOpenLabel','helpSubtitle','helpStepReviewBody','helpStepPreviewBody','helpStepCleanBody','helpSafeModeSimpleBody','helpZfsSimpleBody','helpDetailsSimpleTitle','helpDetailsSimpleBody','helpOverviewTitle','helpOverviewBody','helpScannedTitle','helpScannedBody','helpStatesBody','helpWhyRowsTitle','helpWhyRowsBody','helpActionsTitle','helpActionsBody','helpOptionsTitle','helpOptionsBody','helpQuarantineTitle','helpQuarantineBody','helpZfsTitle','helpZfsBody','helpSafetyTitle','helpSafetyBody','helpTroubleshootingBody','helpWorkflowTitle','helpWorkflowBody']) {
+    assert.equal(Object.hasOwn(config.strings,key),false,locale+' omits unused Help alias '+key);
+  }
+  for (const key of ['helpTitle','helpIntroTitle','helpFlowTitle','helpStepReviewTitle','helpStepPreviewTitle','helpStepCleanTitle','helpSafeModeSimpleTitle','helpZfsSimpleTitle','helpStatesTitle','helpTroubleshootingTitle']) {
+    assert.ok(typeof config.strings[key]==='string' && config.strings[key].trim(),locale+' retains current Help label '+key);
+  }
   assert.equal(config.strings.restoreActionLabel,config.catalog['Stop ignoring'],'Ignore visibility has its own translated action');
   assert.equal(config.strings.quarantineRestoreActionLabel,config.catalog.Restore,'File recovery keeps its Restore action');
   assert.equal(config.strings.resultBlockedLabel,config.catalog.Blocked,'Result status matches the blocked state');

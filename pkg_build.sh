@@ -17,11 +17,65 @@ dry_run=false
 validate_after_build=true
 replace_current=false
 tmpdir=""
+outputs_started=false
+outputs_committed=false
+archive_preexisting=false
+archive_attempted=false
+plg_attempted=false
+xml_attempted=false
+rollback_failed=false
+build_lock="$CWD/.acp-package-build.lock"
+build_lock_owned=false
+final_archive_tmp=""
+final_plg_tmp=""
+final_xml_tmp=""
+
+restore_owned_output() {
+    local destination="$1" candidate="$2" original="${3:-}"
+    if cmp -s "$destination" "$candidate"; then
+        if [ -n "$original" ]; then
+            cp -p -- "$original" "$destination" || rollback_failed=true
+        else
+            rm -f -- "$destination" || rollback_failed=true
+        fi
+    elif { [ -n "$original" ] && cmp -s "$destination" "$original"; } ||
+        { [ -z "$original" ] && [ ! -e "$destination" ] && [ ! -L "$destination" ]; }; then
+        : # The attempted rename failed before changing this output.
+    else
+        echo "ERROR: Output changed outside this build; left untouched: $destination" >&2
+        rollback_failed=true
+    fi
+}
 
 cleanup_tmpdir() {
-    if [ -n "${tmpdir:-}" ] && [ -d "${tmpdir}" ]; then
+    local result=$?
+    if [ "$outputs_started" = true ] && [ "$outputs_committed" != true ]; then
+        echo "Build failed during finalization; restoring original package outputs." >&2
+        if [ "$plg_attempted" = true ]; then restore_owned_output "$plgfile" "$candidate_plg" "$tmpdir/original.plg"; fi
+        if [ "$xml_attempted" = true ]; then restore_owned_output "$xmlfile" "$candidate_xml" "$tmpdir/original.xml"; fi
+        if [ "$archive_attempted" = true ]; then
+            if [ "$archive_preexisting" = true ]; then
+                restore_owned_output "$filename" "$candidate_archive" "$tmpdir/original.txz"
+            else
+                restore_owned_output "$filename" "$candidate_archive"
+            fi
+        fi
+    fi
+    local pending=""
+    for pending in "$final_archive_tmp" "$final_plg_tmp" "$final_xml_tmp"; do
+        if [ -n "$pending" ]; then rm -f -- "$pending" || result=1; fi
+    done
+    if [ "$build_lock_owned" = true ]; then
+        rm -f -- "$build_lock/pid" || result=1
+        rmdir -- "$build_lock" || result=1
+    fi
+    if [ "$rollback_failed" = true ]; then
+        echo "ERROR: Recovery copies retained for inspection: $tmpdir" >&2
+        result=1
+    elif [ -n "${tmpdir:-}" ] && [ -d "${tmpdir}" ]; then
         rm -rf "${tmpdir}"
     fi
+    return "$result"
 }
 
 detect_git_branch() {
@@ -299,8 +353,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 trap cleanup_tmpdir EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 ensure_repo_layout
-require_commands tar sed date awk grep sort head tail mktemp md5sum perl cp mkdir rm find
+require_commands tar sed date awk grep sort head tail mktemp md5sum perl cp mkdir rm rmdir find mv cmp
 
 if [ -n "$branch_override" ]; then
     branch="$branch_override"
@@ -316,6 +372,17 @@ fi
 if ! [[ "$branch" =~ ^[A-Za-z0-9._/-]+$ ]]; then
     echo "ERROR: Invalid branch name: $branch" >&2
     exit 1
+fi
+
+if [ "$dry_run" != true ]; then
+    # Serialize allocation and finalization without adding a platform-specific
+    # flock dependency. Never remove a lock belonging to another invocation.
+    if ! mkdir "$build_lock" 2>/dev/null; then
+        echo "ERROR: Another build owns .acp-package-build.lock. Verify an interrupted build has stopped before removing its lock directory." >&2
+        exit 1
+    fi
+    build_lock_owned=true
+    printf '%s\n' "$$" > "$build_lock/pid"
 fi
 
 if [ -n "$version_override" ]; then
@@ -357,10 +424,36 @@ if [ "$dry_run" = true ]; then
     exit 0
 fi
 
-mkdir -p "$archive_dir"
+if [ ! -f "$ensure_changes_entry_script" ]; then
+    echo "ERROR: Missing required changelog helper: $ensure_changes_entry_script" >&2
+    exit 1
+fi
+if [ "$validate_after_build" = true ] && { [ ! -f "$release_guard_script" ] || [ ! -f "$CWD/scripts/validate_plugin_xml.php" ]; }; then
+    echo "ERROR: Required package validation scripts are missing." >&2
+    exit 1
+fi
+
 tmpdir="$(mktemp -d)"
-package_root="${tmpdir}/package"
-mkdir -p "$package_root"
+candidate_root="$tmpdir/candidate"
+candidate_plg="$candidate_root/plugins/appdata.cleanup.plus.plg"
+candidate_xml="$candidate_root/appdata.cleanup.plus.xml"
+candidate_archive="$candidate_root/archive/${filename##*/}"
+package_root="$candidate_root/source/appdata.cleanup.plus"
+mkdir -p "$package_root" "$candidate_root/plugins" "$candidate_root/archive" "$candidate_root/scripts"
+cp -p -- "$plgfile" "$tmpdir/original.plg"
+cp -p -- "$xmlfile" "$tmpdir/original.xml"
+cp -p -- "$plgfile" "$candidate_plg"
+cp -p -- "$xmlfile" "$candidate_xml"
+cp -R "$CWD/scripts/." "$candidate_root/scripts/"
+
+# Resolve notes and all metadata against a private candidate before creating any
+# final archive or modifying the checkout. The notes helper retains one owner.
+sed -i "s|<!ENTITY version.*>|<!ENTITY version \"$version\">|" "$candidate_plg"
+bash "$candidate_root/scripts/ensure_plg_changes_entry.sh"
+rewrite_manifest_branch_metadata "$candidate_plg" "$branch"
+validate_manifest_branch_matrix "$candidate_plg"
+sync_ca_template_metadata "$candidate_xml" "$xml_date" "$branch"
+
 cp -R "${source_dir}/." "$package_root/"
 apply_branch_channel_messaging "$package_root" "$branch"
 normalize_packaged_text_line_endings "$package_root"
@@ -371,23 +464,65 @@ tar --sort=name \
     --group=0 \
     --numeric-owner \
     --exclude='./pkg_build.sh' \
-    -cJf "$filename" \
+    -cJf "$candidate_archive" \
     -C "$package_root" .
 
-md5="$(md5sum "$filename" | awk '{print $1}')"
+md5="$(md5sum "$candidate_archive" | awk '{print $1}')"
 
-sed -i "s|<!ENTITY version.*>|<!ENTITY version \"$version\">|" "$plgfile"
-sed -i "s|<!ENTITY md5.*>|<!ENTITY md5 \"$md5\">|" "$plgfile"
-rewrite_manifest_branch_metadata "$plgfile" "$branch"
-validate_manifest_branch_matrix "$plgfile"
-sync_ca_template_metadata "$xmlfile" "$xml_date" "$branch"
+sed -i "s|<!ENTITY md5.*>|<!ENTITY md5 \"$md5\">|" "$candidate_plg"
 
-if [ -f "$ensure_changes_entry_script" ]; then
-    bash "$ensure_changes_entry_script"
+if [ "$validate_after_build" = true ]; then
+    APPDATA_CLEANUP_PLUS_ARCHIVE_DIR="$candidate_root/archive" \
+        APPDATA_CLEANUP_PLUS_EXPECT_PLUGIN_BRANCH="$branch" \
+        bash "$candidate_root/scripts/release_guard.sh"
 fi
-if [ "$validate_after_build" = true ] && [ -f "$release_guard_script" ]; then
-    bash "$release_guard_script"
+
+# Final renames use temporary files in each destination's own filesystem.
+# Preserve replacement bytes until every rename succeeds; ordinary failures and
+# handled interruption roll back only this invocation's outputs.
+if [ -e "$filename" ] || [ -L "$filename" ]; then
+    if [ "$replace_current" != true ] || [ ! -f "$filename" ] || [ -L "$filename" ]; then
+        echo "ERROR: Archive target changed during build; refusing to overwrite it." >&2
+        exit 1
+    fi
+    cp -p -- "$filename" "$tmpdir/original.txz"
+    archive_preexisting=true
 fi
+mkdir -p "$archive_dir"
+final_archive_tmp="$(mktemp "$archive_dir/.acp-package.XXXXXX")"
+final_plg_tmp="$(mktemp "$CWD/plugins/.acp-manifest.XXXXXX")"
+final_xml_tmp="$(mktemp "$CWD/.acp-ca.XXXXXX")"
+cp -p -- "$candidate_archive" "$final_archive_tmp"
+cp -p -- "$candidate_plg" "$final_plg_tmp"
+cp -p -- "$candidate_xml" "$final_xml_tmp"
+if ! cmp -s "$plgfile" "$tmpdir/original.plg" || ! cmp -s "$xmlfile" "$tmpdir/original.xml"; then
+    echo "ERROR: Package metadata changed during build; refusing to replace it." >&2
+    exit 1
+fi
+outputs_started=true
+archive_attempted=true
+if [ "$archive_preexisting" = true ]; then
+    if ! cmp -s "$filename" "$tmpdir/original.txz"; then
+        echo "ERROR: Replacement archive changed during build; refusing to overwrite it." >&2
+        archive_attempted=false
+        exit 1
+    fi
+    mv -fT -- "$final_archive_tmp" "$filename"
+else
+    mv -nT -- "$final_archive_tmp" "$filename"
+    if [ -e "$final_archive_tmp" ]; then
+        echo "ERROR: Archive appeared during finalization; refusing to overwrite it." >&2
+        exit 1
+    fi
+fi
+final_archive_tmp=""
+plg_attempted=true
+mv -fT -- "$final_plg_tmp" "$plgfile"
+final_plg_tmp=""
+xml_attempted=true
+mv -fT -- "$final_xml_tmp" "$xmlfile"
+final_xml_tmp=""
+outputs_committed=true
 
 echo "Package created: $filename"
 echo "Version: $version"

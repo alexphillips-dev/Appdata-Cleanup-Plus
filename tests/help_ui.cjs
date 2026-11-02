@@ -395,10 +395,11 @@ async function interactionsCase(browser,options) {
     await page.evaluate(() => {requests.at(-1).deferred.reject({status:500,responseJSON:{message:'Synthetic visible quarantine load failure'}});});
     await page.waitForFunction(() => document.querySelector('.sweet-alert > h2').textContent === AppdataCleanupPlus.t(appdataCleanupPlusConfig.strings || {},'quarantineFailedTitle','Quarantine failed'));
     assert.ok((await page.locator('.sweet-alert').textContent()).includes('Synthetic visible quarantine load failure'),'An active quarantine load failure remains visible');
+    assert.equal(await page.locator('.sweet-alert > p').isVisible(),true,'Native error prose is visible after custom modal replacement');
+    assert.equal(await page.locator('.acp-modal-host').count(),0,'Failed read does not retain stale custom content');
     await closeHelp(page);
     assert.equal(await page.evaluate(() => JSON.stringify(helpFixture.state.settings)),originalSettings,'Help navigation never saves or changes settings');
-    // A scan failure resets settings to defaults. Those defaults cannot support
-    // a claim about the active cleanup mode until a valid scan is available.
+    // Without a current scan, Help does not claim an active cleanup mode.
     await page.evaluate(() => {helpFixture.state.scanToken='';});
     for(const permanentDelete of [false,true]) {
       await openHelp(page,permanentDelete);

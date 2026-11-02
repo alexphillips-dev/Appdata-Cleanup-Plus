@@ -40,6 +40,10 @@
     var els = context.els || {};
     var strings = context.strings || {};
     var isDeleteMode = !!(state.settings && state.settings.enablePermanentDelete);
+    if (state.settingsLoaded === false) {
+      els.$modeStrip.html('<article class="acp-mode-card"><div class="acp-mode-card-copy"><div class="acp-mode-card-title">' + ACP.escapeHtml(ACP.tr("Mode unavailable")) + '</div><div class="acp-mode-card-message">' + ACP.escapeHtml(ACP.tr("Run a successful scan to confirm the current cleanup mode.")) + '</div></div></article>');
+      return;
+    }
     var leftMessage = isDeleteMode
       ? ACP.t(strings, "noticeDeleteModeMessage", "Selected folders will be permanently removed after confirmation. Use this mode carefully.")
       : ACP.t(strings, "noticeSafeModeMessage", "The primary action moves selected folders into quarantine instead of permanently deleting them.");
@@ -129,6 +133,7 @@
     var quarantine = state.quarantine || {};
     var entries = $.isArray(quarantine.entries) ? quarantine.entries : [];
     var settings = state.settings || {};
+    var settingsKnown = state.settingsLoaded !== false;
     var defaultPurgeDays = Number(settings.defaultQuarantinePurgeDays || 0);
     var purgeAtInput = String(quarantine.purgeAtInput || "");
     var selected = quarantine.selected || {};
@@ -157,11 +162,12 @@
     var scheduleHtml = [
       '<label class="acp-quarantine-schedule-field">',
       '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleDaysLabel", "Purge in days")) + "</span>",
-      '<input type="number" min="0" step="1" class="acp-input acp-quarantine-default-purge-input" value="' + ACP.escapeHtml(String(defaultPurgeDays >= 0 ? defaultPurgeDays : 0)) + '"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>',
+      '<input type="number" min="0" max="3650" step="1" class="acp-input acp-quarantine-default-purge-input" value="' + ACP.escapeHtml(settingsKnown ? String(defaultPurgeDays >= 0 ? defaultPurgeDays : 0) : "") + '"' + (!settingsKnown ? ' placeholder="' + ACP.escapeHtml(ACP.tr("Unavailable")) + '"' : "") + (quarantine.loading || !settingsKnown ? ' disabled="disabled"' : "") + '>',
       "</label>",
       '<label class="acp-quarantine-schedule-field acp-quarantine-schedule-at-field">',
       '<span class="acp-modal-result-label">' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleAtLabel", "Set purge at")) + "</span>",
       '<input type="datetime-local" class="acp-input acp-quarantine-schedule-at-input" value="' + ACP.escapeHtml(purgeAtInput) + '"' + (quarantine.loading ? ' disabled="disabled"' : "") + '>',
+      '<span class="acp-modal-hint">' + ACP.escapeHtml(ACP.tr("Uses your browser's local time.")) + '</span>',
       "</label>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="set-quarantine-purge-schedule"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleSetLabel", "Set purge")) + "</button>",
       '<button type="button" class="acp-button acp-button-secondary" data-action="clear-quarantine-purge-schedule"' + (selectionDisabled ? ' disabled="disabled"' : "") + '>' + ACP.escapeHtml(ACP.t(strings, "quarantinePurgeScheduleClearLabel", "Clear purge timer")) + "</button>"

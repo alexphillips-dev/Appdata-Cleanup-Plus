@@ -106,6 +106,7 @@ async function checkActionLayout(page, locale, width) {
         assert.equal(await page.locator('#acp-bottom-bar').isVisible(), false, `${locale}: empty scan hides cleanup actions`);
         await page.evaluate(() => {
           const F = window.i18nLayoutFlows;
+          F.state.settingsLoaded = true; // This seeded row models a confirmed scan response.
           F.state.rows = [{id:'example',name:'Example',path:'/mnt/user/appdata/Example',displayPath:'/mnt/user/appdata/Example',sourceKind:'filesystem',sourceNames:[],targetPaths:[],templateRefs:[],canDelete:true,storageKind:'filesystem',risk:'safe',status:'orphaned',sizeLabel:'1 MB',broadMountEvidence:[{name:'Broad viewer',paths:['/mnt/user']}]}];
           F.state.summary = {total:1,safe:1,review:0,blocked:0,deletable:1,ignored:0};
           F.renderAll();

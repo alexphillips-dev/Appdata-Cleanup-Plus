@@ -31,6 +31,11 @@ if ( ! acquireAppdataCleanupPlusRuntimeLock("cleanup-operation", array("action" 
 try {
   $execution = sweepExpiredAppdataCleanupPlusQuarantineEntries();
   $response["summary"] = isset($execution["summary"]) ? $execution["summary"] : $response["summary"];
+  if (!empty($response["summary"]["errors"]) || !empty($response["summary"]["blocked"])) {
+    $response["ok"] = false;
+    $response["status"] = "error";
+    $response["message"] = "Scheduled quarantine purge did not complete successfully. Review the quarantine manager before retrying.";
+  }
 } catch ( Throwable $exception ) {
   $response["ok"] = false;
   $response["status"] = "error";

@@ -7,14 +7,27 @@ function appdataCleanupPlusTemplateBackupDir() {
   return appdataCleanupPlusStateFile("template-backups");
 }
 
+function appdataCleanupPlusTemplateContents($contents) {
+  if ( ! is_string($contents) || strlen($contents) > 2097152 || strpos($contents, "\0") !== false || preg_match('//u', $contents) !== 1 || preg_match('/<!DOCTYPE|<!ENTITY/i', $contents) ) return null;
+  $xml = @simplexml_load_string($contents, "SimpleXMLElement", LIBXML_NONET | LIBXML_NOCDATA);
+  if ( ! $xml || $xml->getName() !== "Container" || trim((string)$xml->Name) === "" ) return null;
+  return array("name" => trim((string)$xml->Name), "contents" => $contents, "sha256" => hash("sha256", $contents));
+}
+
 function appdataCleanupPlusTemplateRead($path) {
   if ( preg_match('/[\x00-\x1f\x7f]/', basename($path)) ) return null;
   if ( is_link($path) || pathHasSymlinkSegment($path) || ! is_file($path) || ! is_readable($path) || filesize($path) > 2097152 ) return null;
   $contents = @file_get_contents($path);
-  if ( ! is_string($contents) || strlen($contents) > 2097152 || preg_match('/<!DOCTYPE|<!ENTITY/i', $contents) ) return null;
-  $xml = @simplexml_load_string($contents, "SimpleXMLElement", LIBXML_NONET | LIBXML_NOCDATA);
-  if ( ! $xml || $xml->getName() !== "Container" || trim((string)$xml->Name) === "" ) return null;
-  return array("name" => trim((string)$xml->Name), "filename" => basename($path), "contents" => $contents, "sha256" => hash("sha256", $contents));
+  $template = appdataCleanupPlusTemplateContents($contents);
+  return $template ? array_merge($template, array("filename" => basename($path))) : null;
+}
+
+function appdataCleanupPlusRemoveCreatedTemplate($path, $createdStat) {
+  clearstatcache(true, $path);
+  $current = @lstat($path);
+  if ( ! is_array($createdStat) || ! is_array($current) || is_link($path) || pathHasSymlinkSegment($path) ||
+    $current["dev"] !== $createdStat["dev"] || $current["ino"] !== $createdStat["ino"] ) return false;
+  return @unlink($path);
 }
 
 function appdataCleanupPlusStaleTemplates($inventory) {
@@ -56,7 +69,7 @@ function appdataCleanupPlusTemplateManagerPayload() {
     $record = appdataCleanupPlusTemplateBackup(basename($path, ".json"));
     if ( ! $record ) continue;
     $target = appdataCleanupPlusDockerTemplateDir() . "/" . $record["filename"];
-    $backups[] = array("id" => $record["id"], "name" => (string)$record["name"], "filename" => $record["filename"], "archivedAt" => (string)$record["archivedAt"], "canRestore" => ! file_exists($target) && ! is_link($target));
+    $backups[] = array("id" => $record["id"], "name" => (string)$record["name"], "filename" => $record["filename"], "archivedAt" => (string)$record["archivedAt"], "canRestore" => appdataCleanupPlusTemplateContents($record["contents"]) !== null && ! file_exists($target) && ! is_link($target));
     $last = count($backups) - 1;
     $backups[$last]["timestamp"] = (string)$record["archivedAt"];
     $backups[$last]["timestampLabel"] = formatDateTimeLabel(strtotime($record["archivedAt"]));
@@ -94,12 +107,13 @@ function appdataCleanupPlusTemplateManagerAction($operation, $id) {
     $resultPath = $template["path"];
   } else {
     $record = appdataCleanupPlusTemplateBackup($id);
-    if ( ! $record ) return $failure;
+    if ( ! $record || ! appdataCleanupPlusTemplateContents($record["contents"]) ) return $failure;
     $target = $dir . "/" . $record["filename"];
     // Exclusive creation works on Unraid's flash filesystem and never replaces
     // an existing file or symlink. The verified backup remains after restore.
     $handle = @fopen($target, "xb");
     if ( ! $handle ) return array("ok" => false, "message" => "Restore was refused because the template already exists or its destination is not writable.");
+    $createdStat = @fstat($handle);
     $bytes = $record["contents"];
     $written = 0;
     while ( $written < strlen($bytes) ) {
@@ -109,13 +123,18 @@ function appdataCleanupPlusTemplateManagerAction($operation, $id) {
     }
     $complete = $written === strlen($bytes) && @fflush($handle);
     if ( $complete && function_exists("fsync") ) $complete = @fsync($handle);
-    @fclose($handle);
     if ( ! $complete ) {
-      @unlink($target); // only the file created exclusively by this operation
+      appdataCleanupPlusRemoveCreatedTemplate($target, $createdStat);
+      @fclose($handle);
       return $failure;
     }
     $restored = appdataCleanupPlusTemplateRead($target);
-    if ( ! $restored || ! hash_equals($record["sha256"], $restored["sha256"]) ) return $failure;
+    if ( ! $restored || ! hash_equals($record["sha256"], $restored["sha256"]) ) {
+      appdataCleanupPlusRemoveCreatedTemplate($target, $createdStat);
+      @fclose($handle);
+      return $failure;
+    }
+    @fclose($handle);
     $message = "The saved template was restored. The backup has been retained.";
     $resultPath = $target;
   }
@@ -168,11 +187,10 @@ function appdataCleanupPlusValidateImportedTemplateBackup($record) {
   $date = $record["archivedAt"] ?? null;
   if ( ! is_string($filename) || $filename === "" || strlen($filename) > 255 || basename($filename) !== $filename || preg_match('/[\\\\\/:\x00-\x1f\x7f]/', $filename) || substr($filename, -4) !== ".xml" ) return null;
   if ( ! is_string($contents) || strlen($contents) > 2097152 || ! is_string($checksum) || ! hash_equals(hash("sha256", $contents), $checksum) ) return null;
-  if ( strpos($contents, "\0") !== false || preg_match('//u', $contents) !== 1 ) return null;
-  if ( ! is_string($date) || strlen($date) > 64 || strtotime($date) === false || preg_match('/<!DOCTYPE|<!ENTITY/i', $contents) ) return null;
-  $xml = @simplexml_load_string($contents, "SimpleXMLElement", LIBXML_NONET | LIBXML_NOCDATA);
-  if ( ! $xml || $xml->getName() !== "Container" || trim((string)$xml->Name) === "" ) return null;
-  return array("schemaVersion" => 1, "id" => bin2hex(random_bytes(16)), "name" => trim((string)$xml->Name), "filename" => $filename, "contents" => $contents, "sha256" => $checksum, "archivedAt" => $date);
+  if ( ! is_string($date) || strlen($date) > 64 || strtotime($date) === false ) return null;
+  $template = appdataCleanupPlusTemplateContents($contents);
+  if ( ! $template ) return null;
+  return array("schemaVersion" => 1, "id" => bin2hex(random_bytes(16)), "name" => $template["name"], "filename" => $filename, "contents" => $contents, "sha256" => $checksum, "archivedAt" => $date);
 }
 
 function appdataCleanupPlusImportTemplateBackups($json) {

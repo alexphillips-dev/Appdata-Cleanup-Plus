@@ -19,6 +19,12 @@
   var diagnosticsActivityClock = Date.now();
   var diagnosticsLastModal = "none";
   var diagnosticsExportRedactor = null;
+  var scanRequestVersion = 0;
+  var settingsRequestVersion = 0;
+  var detailRequestSerial = 0;
+  var foregroundRequestCount = 0;
+  var scanStatRequestCount = 0;
+  var scanStatResumeTimer = null;
   var state = {
     rows: [],
     summary: { total: 0, deletable: 0, review: 0, blocked: 0, ignored: 0 },
@@ -45,6 +51,7 @@
     scanVerification: "not_checked",
     scanMetrics: {},
     settings: ACP.defaultSafetySettings(),
+    settingsLoaded: false,
     appdataSources: {
       detected: [],
       manual: [],
@@ -71,6 +78,7 @@
     },
     scanHydration: {
       active: false,
+      resumeRequested: false,
       queue: [],
       batchSize: 8,
       requestToken: ""
@@ -220,7 +228,7 @@
     updateActionBar();
 
     if (!matchingRows.length && value) {
-      swal(
+      ACP.showModal(
         ACP.t(strings, "selectionPresetEmptyTitle", "Nothing matched"),
         ACP.t(strings, "selectionPresetEmptyMessage", "No selectable rows matched that preset in the current scan."),
         "warning"
@@ -675,14 +683,14 @@
     });
 
     $(document).on("change.acpQuarantine", ".sweet-alert .acp-quarantine-default-purge-input", function(event) {
-      var nextDays = normalizeDefaultQuarantinePurgeDaysValue($(this).val());
+      var nextDays = this.validity && this.validity.badInput ? null : normalizeDefaultQuarantinePurgeDaysValue($(this).val());
 
       event.preventDefault();
       event.stopPropagation();
 
       if (nextDays === null) {
         $(this).val(String(state.settings.defaultQuarantinePurgeDays || 0));
-        swal(
+        ACP.showModal(
           ACP.t(strings, "quarantineDefaultPurgeDaysFailedTitle", "Default purge setting failed"),
           ACP.t(strings, "quarantineDefaultPurgeDaysInvalidMessage", "Enter a whole number of days from 0 to 3650."),
           "warning"
@@ -788,7 +796,7 @@
       var id = $(this).attr("data-template-id") || "";
       if (action === "review-templates") { runTemplateManagerAction("status", ""); return; }
       var operation = action === "archive-template" ? "archive" : "restore";
-      swal({
+      ACP.showModal({
         title: operation === "archive" ? ACP.tr("Archive this saved template?") : ACP.tr("Restore this saved template?"),
         text: operation === "archive" ? ACP.tr("The saved container configuration will be backed up before removal. Appdata, images, and containers will not change.") : ACP.tr("The backup will be restored only if no template with the same filename exists."),
         type: "warning", showCancelButton: true, closeOnConfirm: false,
@@ -837,7 +845,7 @@
       var ids = backupId ? [backupId] : ACP.selectedTemplateBackupIds(state.templateManager);
       if (!ids.length) return;
       if (action === "export-template-backups") { runTemplateManagerAction("export", "", {backupIds: JSON.stringify(ids)}); return; }
-      swal({title: ACP.tr("Remove template backups"), text: "", type: "warning", html: true,
+      ACP.showModal({title: ACP.tr("Remove template backups"), text: "", type: "warning", html: true,
         showCancelButton: true, closeOnConfirm: false, confirmButtonText: ACP.tr("Remove template backups"), cancelButtonText: ACP.tr("Cancel")}, function(confirmed) {
         if (confirmed && !requireDeleteConfirmationChecked()) return false;
         getActiveSweetAlertModal().removeClass("acp-template-manager-modal");
@@ -1169,8 +1177,18 @@
   }
 
   function apiPostForUserAction(data, options) {
+    foregroundRequestCount += 1;
     pauseScanStatHydrationForUserRequest();
-    return apiPostWithPluginBusyRetry(data, $.extend({ retries: 2 }, $.isPlainObject(options) ? options : {}));
+    try {
+      return apiPostWithPluginBusyRetry(data, $.extend({ retries: 2 }, $.isPlainObject(options) ? options : {})).always(function() {
+        foregroundRequestCount -= 1;
+        scheduleScanStatResume();
+      });
+    } catch (error) {
+      foregroundRequestCount -= 1;
+      scheduleScanStatResume();
+      throw error;
+    }
   }
 
   function isPluginBusyResponse(xhr) {
@@ -1232,6 +1250,7 @@
     els.$sort.prop("disabled", state.busy);
     syncBulkSelectionPresetControls();
     updateActionBar();
+    if (!state.busy) scheduleScanStatResume();
   }
 
   function resetDashboardState() {
@@ -1250,8 +1269,8 @@
     state.fixtureTools = { loading: false, ok: null, message: "", status: null };
     state.deferredDataRequestToken = "";
     state.scanWarningMessage = "";
-    state.settings = ACP.defaultSafetySettings();
-    state.appdataSources = { detected: [], manual: [], effective: [], zfsPathMappings: [], zfsPathMappingSuggestions: [] };
+    // A failed scan says nothing about persisted settings. Retain the last
+    // authoritative values; initial defaults remain explicitly unconfirmed.
     state.appdataSourceBrowser = defaultAppdataSourceBrowserState();
     state.zfsPathMappingBrowser = defaultZfsPathMappingBrowserState();
     state.rowDetails = { activeRowId: "", requestToken: "", cache: {} };
@@ -1263,11 +1282,13 @@
     state.quarantine.purgeAtInput = "";
     state.quarantine.restoreConflict = null;
     state.scanHydration.active = false;
+    state.scanHydration.resumeRequested = false;
     state.scanHydration.queue = [];
     state.scanHydration.requestToken = "";
   }
 
   function loadScan() {
+    var requestVersion = ++scanRequestVersion;
     var shouldHydrate = false;
     var deferredDataRequestToken = String(Date.now()) + ":" + String(Math.random());
     var previousBrowserState = $.extend(true, {}, state.appdataSourceBrowser || defaultAppdataSourceBrowserState());
@@ -1287,6 +1308,7 @@
     apiPost({
       action: "getOrphanAppdata"
     }).done(function(response) {
+      if (requestVersion !== scanRequestVersion) return;
       state.rowDetails.cache = {};
       state.rowDetails.requestToken = "";
       state.rows = $.isArray(response.rows) ? response.rows : [];
@@ -1302,6 +1324,7 @@
       state.scanVerification = response.scanVerification === "incomplete" ? "incomplete" : "verified";
       state.scanMetrics = $.extend(true, {}, response.scanMetrics || {});
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || {});
+      state.settingsLoaded = $.isPlainObject(response.settings);
       setAppdataSourceInfo(response.appdataSourceInfo || {});
       state.appdataSourceBrowser.manual = normalizeManualAppdataSourcesInput((state.settings || {}).manualAppdataSources || []);
       syncZfsPathMappingBrowserFromSettings();
@@ -1321,6 +1344,7 @@
       }
       loadDeferredDashboardData(deferredDataRequestToken);
     }).fail(function(xhr) {
+      if (requestVersion !== scanRequestVersion) return;
       var pluginBusy = isPluginBusyResponse(xhr);
 
       resetDashboardState();
@@ -1344,6 +1368,7 @@
         renderZfsPathMappingsModal();
       }
     }).always(function() {
+      if (requestVersion !== scanRequestVersion) return;
       setBusy(false);
 
       if (shouldHydrate) {
@@ -1475,7 +1500,7 @@
     }).fail(function(xhr) {
       state.quarantine.loading = false;
       if (isQuarantineManagerModalVisible()) {
-        swal(
+        ACP.showModal(
           ACP.t(strings, "quarantineFailedTitle", "Quarantine failed"),
           ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineLoadFailedMessage", "The quarantine manager could not be loaded right now.")),
           "error"
@@ -1560,7 +1585,7 @@
 
   function ensureTemplateManagerModal() {
     if (isTemplateManagerModalVisible()) return;
-    swal({
+    ACP.showModal({
       title: ACP.tr("Saved template cleanup"),
       text: "", type: "info", html: true, showCancelButton: false,
       confirmButtonText: ACP.t(strings, "doneLabel", "Done"), closeOnConfirm: true
@@ -1591,7 +1616,7 @@
       return;
     }
 
-    swal({
+    ACP.showModal({
       title: ACP.t(strings, "quarantineManagerTitle", "Quarantine manager"),
       text: "",
       type: "info",
@@ -1613,7 +1638,7 @@
     }
 
     state.auditOpen = true;
-    swal({
+    ACP.showModal({
       title: ACP.t(strings, "auditHistoryTitle", "Audit history"),
       text: "",
       type: "info",
@@ -1635,7 +1660,7 @@
       return;
     }
 
-    swal({
+    ACP.showModal({
       title: ACP.t(strings, "toolsTitle", "Tools"),
       text: "",
       type: "info",
@@ -1656,7 +1681,7 @@
       return;
     }
 
-    swal({
+    ACP.showModal({
       title: ACP.t(strings, "appdataSourcesTitle", "Appdata sources"),
       text: "",
       type: "info",
@@ -1677,7 +1702,7 @@
       return;
     }
 
-    swal({
+    ACP.showModal({
       title: ACP.t(strings, "zfsPathMappingsTitle", "ZFS path mappings"),
       text: "",
       type: "info",
@@ -1866,7 +1891,7 @@
     return html.join("");
   }
   function openHelpModal() {
-    swal({
+    ACP.showModal({
       title: ACP.t(strings, "helpTitle", "Appdata Cleanup Plus Help"),
       text: "",
       type: "info",
@@ -1893,7 +1918,7 @@
 
     state.rowDetails.activeRowId = String(row.id || "");
 
-    swal({
+    ACP.showModal({
       title: ACP.t(strings, "rowDetailsTitle", "Folder details"),
       text: "",
       type: "info",
@@ -1901,10 +1926,12 @@
       showCancelButton: false,
       confirmButtonText: ACP.t(strings, "doneLabel", "Done"),
       closeOnConfirm: true
-    }, function() {
+    }, function(_confirmed) {
+      // Native SweetAlert calls cancellation callbacks only when they accept
+      // an argument. Close identity now so delayed cleanup cannot clear a new row.
+      state.rowDetails.activeRowId = "";
+      state.rowDetails.requestToken = "";
       window.setTimeout(function() {
-        state.rowDetails.activeRowId = "";
-        state.rowDetails.requestToken = "";
         ACP.releaseModalScrollLock(false);
         renderPanels();
       }, 180);
@@ -2208,7 +2235,7 @@
       return null;
     }
 
-    return $.extend(true, {}, row, getRowDetailsCacheEntry(rowId));
+    return applyLocalSafetyStateToRow($.extend(true, {}, row, getRowDetailsCacheEntry(rowId)));
   }
 
   function renderOpenRowDetailsModal(allowOpen) {
@@ -2268,15 +2295,19 @@
     var rowId = String((row && row.id) || "");
     var cacheEntry = getRowDetailsCacheEntry(rowId);
     var requestToken;
+    var scanVersion = scanRequestVersion;
+    var settingsVersion = settingsRequestVersion;
+    var scanToken = state.scanToken;
 
     if (!shouldLoadCandidateDetails(row) || cacheEntry.detailLoaded || cacheEntry.detailLoading) {
       return;
     }
 
-    requestToken = rowId + ":" + String(Date.now());
+    requestToken = rowId + ":" + String(++detailRequestSerial);
     state.rowDetails.requestToken = requestToken;
     setRowDetailsCacheEntry(rowId, {
       detailLoading: true,
+      detailRequestToken: requestToken,
       detailLoaded: false,
       detailError: ""
     });
@@ -2284,34 +2315,40 @@
 
     apiPostWithPluginBusyRetry({
       action: "getCandidateDetails",
-      scanToken: state.scanToken,
+      scanToken: scanToken,
       candidateId: rowId
     }, { retries: 2 }).done(function(response) {
       var detailRow = $.isPlainObject(response && response.row) ? response.row : {};
 
-      if (state.rowDetails.requestToken !== requestToken) {
+      if (getRowDetailsCacheEntry(rowId).detailRequestToken !== requestToken || scanVersion !== scanRequestVersion || settingsVersion !== settingsRequestVersion || scanToken !== state.scanToken) {
         recordDiagnosticsActivity("response_ignored", {action:"getCandidateDetails",reason:"superseded"});
         return;
       }
 
-      state.rowDetails.requestToken = "";
+      if (state.rowDetails.requestToken === requestToken) state.rowDetails.requestToken = "";
       setRowDetailsCacheEntry(rowId, $.extend(true, {}, detailRow, {
         detailLoading: false,
+        detailRequestToken: "",
         detailLoaded: true,
         detailError: ""
       }));
       mergeRowDataById(rowId, detailRow);
+      applyLocalSafetyState();
+      reconcileSelection();
       renderOpenRowDetailsModal();
       renderResults();
+      renderSummaryCards();
+      updateActionBar();
     }).fail(function(xhr) {
-      if (state.rowDetails.requestToken !== requestToken) {
+      if (getRowDetailsCacheEntry(rowId).detailRequestToken !== requestToken || scanVersion !== scanRequestVersion || settingsVersion !== settingsRequestVersion || scanToken !== state.scanToken) {
         recordDiagnosticsActivity("response_ignored", {action:"getCandidateDetails",reason:"superseded"});
         return;
       }
 
-      state.rowDetails.requestToken = "";
+      if (state.rowDetails.requestToken === requestToken) state.rowDetails.requestToken = "";
       setRowDetailsCacheEntry(rowId, {
         detailLoading: false,
+        detailRequestToken: "",
         detailLoaded: false,
         detailError: ACP.extractErrorMessage(xhr, ACP.t(strings, "rowDetailsLoadFailedMessage", "The latest row details could not be loaded right now."))
       });
@@ -2617,12 +2654,6 @@
     });
   }
 
-  function buildTemplateActionLockReason(row) {
-    var parts = [ACP.tr("Saved Docker templates still reference this folder. If you clean this path, reinstalling from a saved template may expect or recreate it.")];
-    if ((row.sourceNames || []).length) parts.push(ACP.tr("Saved templates: {names}.", {names: row.sourceNames.join(", ")}));
-    if ((row.targetPaths || []).length) parts.push(ACP.tr("Container paths: {paths}.", {paths: row.targetPaths.join(", ")}));
-    return parts.join(" ");
-  }
 
   function applyLocalSafetyStateToRow(row) {
     var nextRow = $.extend({}, row);
@@ -2859,6 +2890,7 @@
 
   function stopScanStatHydration() {
     state.scanHydration.active = false;
+    state.scanHydration.resumeRequested = false;
     state.scanHydration.queue = [];
     state.scanHydration.requestToken = "";
   }
@@ -2866,7 +2898,18 @@
   function pauseScanStatHydrationForUserRequest() {
     if (state.scanHydration.active) {
       stopScanStatHydration();
+      state.scanHydration.resumeRequested = true;
     }
+  }
+
+  function scheduleScanStatResume() {
+    if (scanStatResumeTimer !== null) return;
+    scanStatResumeTimer = window.setTimeout(function() {
+      scanStatResumeTimer = null;
+      if (state.scanHydration.resumeRequested && !state.scanHydration.active && !state.busy && !foregroundRequestCount && !scanStatRequestCount) {
+        startScanStatHydration();
+      }
+    }, 0);
   }
 
   function requestNextScanStatBatch(requestToken) {
@@ -2882,6 +2925,7 @@
     }
 
     batchIds = state.scanHydration.queue.splice(0, state.scanHydration.batchSize);
+    scanStatRequestCount += 1;
 
     apiPost({
       action: "hydrateCandidateStats",
@@ -2893,6 +2937,7 @@
       }
 
       applyHydratedCandidateStats(response.rows);
+      clearPendingRowStats(batchIds);
       renderResults();
 
       if (!state.scanHydration.queue.length) {
@@ -2919,12 +2964,20 @@
       clearPendingRowStats(batchIds.concat(state.scanHydration.queue));
       stopScanStatHydration();
       renderResults();
+    }).always(function() {
+      scanStatRequestCount -= 1;
+      scheduleScanStatResume();
     });
   }
 
   function startScanStatHydration() {
     var pendingRowIds = getPendingRowStatIds();
     var requestToken;
+
+    if (foregroundRequestCount || scanStatRequestCount || state.busy) {
+      state.scanHydration.resumeRequested = !!pendingRowIds.length;
+      return;
+    }
 
     if (!state.scanToken || !pendingRowIds.length) {
       stopScanStatHydration();
@@ -2933,6 +2986,7 @@
 
     requestToken = String(state.scanToken) + ":" + String(Date.now());
     state.scanHydration.active = true;
+    state.scanHydration.resumeRequested = false;
     state.scanHydration.queue = pendingRowIds;
     state.scanHydration.requestToken = requestToken;
     requestNextScanStatBatch(requestToken);
@@ -4464,7 +4518,7 @@
         renderAuditHistoryModal();
       }
     }).fail(function() {
-      swal(
+      ACP.showModal(
         ACP.t(strings, "auditHistoryCopyFailedTitle", "Audit summary failed"),
         ACP.t(strings, "auditHistoryCopyFailedMessage", "The audit summary could not be copied right now."),
         "error"
@@ -4522,9 +4576,9 @@
 
   function normalizeDefaultQuarantinePurgeDaysValue(value) {
     var rawValue = $.trim(String(value === null || value === undefined ? "" : value));
-    var days = rawValue === "" ? 0 : parseInt(rawValue, 10);
+    var days = rawValue === "" ? 0 : Number(rawValue);
 
-    if (isNaN(days) || days < 0 || days > 3650) {
+    if (!isFinite(days) || Math.floor(days) !== days || days < 0 || days > 3650) {
       return null;
     }
 
@@ -4588,7 +4642,7 @@
     }
 
     state.quarantine.purgeAtInput = nextValue;
-    return nextValue;
+    return nextTime.toISOString();
   }
 
   function syncQuarantineManagerSelectionUi() {
@@ -4656,7 +4710,7 @@
     var purgeAt = "";
 
     if (!requestedEntryIds.length) {
-      swal(
+      ACP.showModal(
         ACP.t(strings, "deleteEmptyTitle", "Nothing selected"),
         ACP.t(strings, "quarantineManagerSelectionEmptyMessage", "Select at least one quarantined folder before continuing."),
         "warning"
@@ -4668,7 +4722,7 @@
       purgeAt = getQuarantineScheduleAtValue();
 
       if (!purgeAt) {
-        swal(
+        ACP.showModal(
           ACP.t(strings, "quarantinePurgeScheduleFailedTitle", "Purge timer update failed"),
           ACP.t(strings, "quarantinePurgeScheduleInvalidMessage", "Enter a future purge date and time."),
           "warning"
@@ -4704,7 +4758,7 @@
       setBusy(false);
       renderPanels();
 
-      swal({
+      ACP.showModal({
         title: ACP.t(strings, "quarantinePurgeScheduleFailedTitle", "Purge timer update failed"),
         text: ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantinePurgeScheduleFailedMessage", "The purge timer could not be updated right now.")),
         type: "error"
@@ -4714,86 +4768,7 @@
     });
   }
 
-  function buildRowMetaHtml(row) {
-    var facts = [];
-    var sourceLabel = row.sourceLabel || ACP.t(strings, "sourceLabel", "Source");
-    var sourceText = row.sourceDisplay || row.sourceSummary || row.name;
 
-    facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(sourceLabel) + "</strong> " + ACP.escapeHtml(sourceText || "") + "</span>");
-
-    if (row.targetSummary) {
-      facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "targetLabel", "Target")) + "</strong> " + ACP.escapeHtml(row.targetSummary) + "</span>");
-    }
-
-    if (row.storageKind === "zfs") {
-      facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "storageLabel", "Storage")) + "</strong> " + ACP.escapeHtml(row.datasetName || row.storageLabel || ACP.t(strings, "zfsDatasetLabel", "ZFS dataset")) + "</span>");
-    } else if (row.zfsMappingMatched) {
-      facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "storageLabel", "Storage")) + "</strong> " + ACP.escapeHtml(ACP.t(strings, "zfsMappingPendingLabel", "Mapped share path")) + "</span>");
-    }
-
-    facts.push('<span class="acp-row-meta-item"><strong>' + ACP.escapeHtml(ACP.t(strings, "sizeLabel", "Size")) + "</strong> " + ACP.escapeHtml(row.statsPending ? ACP.t(strings, "sizeLoadingLabel", "Loading...") : (row.sizeLabel || ACP.tr("Unknown"))) + "</span>");
-    facts.push(
-      '<span class="acp-row-meta-item"' + (row.lastModifiedExact ? ' title="' + ACP.escapeHtml(row.lastModifiedExact) + '"' : "") + '><strong>' +
-      ACP.escapeHtml(ACP.t(strings, "updatedLabel", "Updated")) +
-      "</strong> " + ACP.escapeHtml(row.lastModifiedLabel || ACP.tr("Unknown")) + "</span>"
-    );
-
-    return facts.join('<span class="acp-row-meta-separator">|</span>');
-  }
-
-  function buildRowNotesHtml(row) {
-    var notes = [];
-    var actionability = getRowActionabilityDescriptor(row).value;
-    var explanation = ACP.buildRowReviewExplanation
-      ? ACP.buildRowReviewExplanation({ state: state, strings: strings }, row)
-      : null;
-
-    if (row.reason) {
-      notes.push('<div class="acp-row-note is-primary">' + ACP.escapeHtml(row.reason) + "</div>");
-    }
-
-    if ((actionability === "review" || actionability === "locked") && explanation) {
-      if (explanation.why) {
-        notes.push(
-          '<div class="acp-row-note is-warning"><span class="acp-row-note-label">' +
-          ACP.escapeHtml(ACP.t(strings, "rowDetailsWhyLabel", "Why")) +
-          ':</span> ' + ACP.escapeHtml(explanation.why) + "</div>"
-        );
-      }
-
-      if (explanation.how) {
-        notes.push(
-          '<div class="acp-row-note"><span class="acp-row-note-label">' +
-          ACP.escapeHtml(ACP.t(strings, "rowDetailsResolveLabel", "How to resolve")) +
-          ':</span> ' + ACP.escapeHtml(explanation.how) + "</div>"
-        );
-      }
-    } else if (row.policyReason) {
-      notes.push('<div class="acp-row-note is-warning">' + ACP.escapeHtml(row.policyReason) + "</div>");
-    }
-
-    if (row.storageKind === "zfs" && row.zfsImpactSummary) {
-      notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.zfsImpactSummary) + "</div>");
-    } else if (row.storageKind === "zfs" && !row.policyReason) {
-      notes.push('<div class="acp-row-note">' + ACP.escapeHtml(ACP.t(strings, "selectionHintZfsMode", "ZFS dataset-backed rows require permanent delete mode and cannot be quarantined.")) + "</div>");
-    }
-
-    if (row.zfsMappingMatched && row.storageKind !== "zfs" && row.zfsResolutionMessage) {
-      notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.zfsResolutionMessage) + "</div>");
-    }
-
-    if (row.zfsPreviewError) {
-      notes.push('<div class="acp-row-note is-warning">' + ACP.escapeHtml(row.zfsPreviewError) + "</div>");
-    }
-
-    if (row.ignored && row.ignoredReason) {
-      notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.ignoredReason) + "</div>");
-    } else if (!explanation && !row.policyReason && row.risk !== "safe" && row.riskReason) {
-      notes.push('<div class="acp-row-note">' + ACP.escapeHtml(row.riskReason) + "</div>");
-    }
-
-    return notes.join("");
-  }
 
   function buildRowActionHtml(row) {
     var actions = [];
@@ -4907,17 +4882,6 @@
     return '<span class="' + classes.join(" ") + '"' + (title ? ' title="' + ACP.escapeHtml(title) + '"' : "") + ">" + ACP.escapeHtml(String(badge.label || "")) + "</span>";
   }
 
-  function getActionabilityLabel(actionability) {
-    if (actionability === "ignored") {
-      return ACP.t(strings, "ignoredSectionTitle", "Ignored");
-    }
-
-    if (actionability === "locked") {
-      return ACP.t(strings, "cardBlocked", "Blocked");
-    }
-
-    return ACP.t(strings, "cardDeletable", "Ready");
-  }
 
   function getRowActionabilityDescriptor(row) {
     var explanation = ACP.buildRowReviewExplanation(buildContext(), row);
@@ -4957,26 +4921,6 @@
     };
   }
 
-  function getRowStateDescriptor(row) {
-    var title = "";
-
-    if (row.ignored && row.ignoredReason) {
-      title = row.ignoredReason;
-    } else if (row.status === "docker_offline") {
-      title = row.reason || row.riskReason || "";
-    } else {
-      title = row.reason || "";
-    }
-
-    return {
-      kind: "status",
-      value: String(row.status || "orphaned"),
-      label: row.statusLabel || ACP.tr("Orphaned"),
-      tone: "neutral",
-      title: title,
-      kindClass: "status"
-    };
-  }
 
   function getRowSourceDescriptor(row) {
     return {
@@ -5020,114 +4964,6 @@
     }
   }
 
-  function getRowReasonDescriptors(row) {
-    var descriptors = [];
-    var securityReason = String(row.securityLockReason || "");
-    var policyReason = String(row.policyReason || "");
-    var riskReason = String(row.riskReason || "");
-
-    if (securityReason) {
-      if (row.securityReasonCode === "symlink") {
-        pushBadgeDescriptor(descriptors, {
-          kind: "reason",
-          value: "symlink",
-          label: ACP.t(strings, "badgeReasonSymlink", "Symlink"),
-          tone: "locked",
-          title: securityReason,
-          kindClass: "reason"
-        });
-      } else if (row.securityReasonCode === "mount_point") {
-        pushBadgeDescriptor(descriptors, {
-          kind: "reason",
-          value: "mount_point",
-          label: ACP.t(strings, "badgeReasonMountPoint", "Mount point"),
-          tone: "locked",
-          title: securityReason,
-          kindClass: "reason"
-        });
-      } else if (row.securityReasonCode === "root_path") {
-        pushBadgeDescriptor(descriptors, {
-          kind: "reason",
-          value: "root_path",
-          label: ACP.t(strings, "badgeReasonRootPath", "Root path"),
-          tone: "locked",
-          title: securityReason,
-          kindClass: "reason"
-        });
-      } else if (row.securityReasonCode === "unsafe_path") {
-        pushBadgeDescriptor(descriptors, {
-          kind: "reason",
-          value: "unsafe_path",
-          label: ACP.t(strings, "badgeReasonUnsafePath", "Unsafe path"),
-          tone: "locked",
-          title: securityReason,
-          kindClass: "reason"
-        });
-      } else {
-        pushBadgeDescriptor(descriptors, {
-          kind: "reason",
-          value: "safety_lock",
-          label: ACP.t(strings, "badgeReasonSafetyLock", "Safety lock"),
-          tone: "locked",
-          title: securityReason,
-          kindClass: "reason"
-        });
-      }
-
-      return descriptors;
-    }
-
-    if (row.sourceKind === "template" && policyReason) {
-      pushBadgeDescriptor(descriptors, {
-        kind: "reason",
-        value: "template_reference",
-        label: ACP.t(strings, "badgeReasonTemplateReference", "Template reference"),
-        tone: "review",
-        title: policyReason,
-        kindClass: "reason"
-      });
-    }
-
-    if (row.storageKind === "zfs" && row.policyReasonCode === "permanent_delete") {
-      pushBadgeDescriptor(descriptors, {
-        kind: "reason",
-        value: "delete_mode_off",
-        label: ACP.t(strings, "badgeReasonDeleteModeOff", "Delete mode off"),
-        tone: "locked",
-        title: policyReason,
-        kindClass: "reason"
-      });
-    }
-
-    if (row.zfsMappingMatched && row.storageKind !== "zfs") {
-      pushBadgeDescriptor(descriptors, {
-        kind: "reason",
-        value: "no_exact_dataset",
-        label: ACP.t(strings, "badgeReasonNoExactDataset", "No exact dataset"),
-        tone: "review",
-        title: row.zfsResolutionMessage || row.zfsResolutionDetail || "",
-        kindClass: "reason"
-      });
-    }
-
-    if (
-      row.policyLocked &&
-      !securityReason &&
-      row.policyReasonCode !== "zfs_disabled" &&
-      row.policyReasonCode !== "permanent_delete"
-    ) {
-      pushBadgeDescriptor(descriptors, {
-        kind: "reason",
-        value: "policy_lock",
-        label: ACP.t(strings, "badgeReasonPolicyLock", "Policy lock"),
-        tone: "locked",
-        title: policyReason || riskReason,
-        kindClass: "reason"
-      });
-    }
-
-    return descriptors;
-  }
 
   function getRowBadgeDescriptors(row) {
     var descriptors = [getRowSourceDescriptor(row)];
@@ -5293,7 +5129,7 @@
     }
 
     if (!visibleRows.length) {
-      if (Number(state.summary.total || 0) === 0 && Number(state.summary.ignored || 0) > 0) {
+      if (!state.showIgnored && Number(state.summary.total || 0) === 0 && Number(state.summary.ignored || 0) > 0) {
         renderStateMessage(
           ACP.t(strings, "ignoredOnlyTitle", "Only ignored paths remain"),
           ACP.t(strings, "ignoredOnlyMessage", "Every detected item is hidden by your ignore list. Choose Show ignored to review them, then Stop ignoring to include an item again."),
@@ -5361,8 +5197,8 @@
     return $.grep(state.rows || [], function(row) {
       var haystack = ((row.name || "") + " " + (row.displayPath || "") + " " + (row.sourceSummary || "") + " " + (row.targetSummary || "")).toLowerCase();
 
-      if (row.ignored) {
-        return !!state.showIgnored;
+      if (row.ignored && !state.showIgnored) {
+        return false;
       }
 
       if (term && haystack.indexOf(term) === -1) {
@@ -5504,6 +5340,13 @@
   function saveSafetySettings(overrides, options) {
     var normalizedOverrides = $.isPlainObject(overrides) ? overrides : {};
     var normalizedOptions = $.isPlainObject(options) ? options : {};
+    if (state.settingsLoaded === false && Object.prototype.hasOwnProperty.call(normalizedOverrides, "enablePermanentDelete")) {
+      return;
+    }
+    var requestVersion = ++settingsRequestVersion;
+    ++scanRequestVersion;
+    state.rowDetails.cache = {};
+    state.rowDetails.requestToken = "";
     var previousSettings = $.extend({}, ACP.defaultSafetySettings(), state.settings || {});
     var previousRows = state.rows.slice(0);
     var previousSummary = $.extend({}, state.summary || {});
@@ -5534,25 +5377,27 @@
 
     setBusy(true);
 
-    var requestData = {
-      action: "saveSafetySettings",
-      enablePermanentDelete: nextSettings.enablePermanentDelete ? "1" : "0",
-      enableZfsDatasetDelete: "1",
-      quarantineRoot: nextSettings.quarantineRoot || previousSettings.quarantineRoot || "",
-      defaultQuarantinePurgeDays: String(Number(nextSettings.defaultQuarantinePurgeDays || 0)),
-      manualAppdataSources: ($.isArray(nextSettings.manualAppdataSources) ? nextSettings.manualAppdataSources : []).join("\n"),
-      zfsPathMappings: JSON.stringify($.isArray(nextSettings.zfsPathMappings) ? nextSettings.zfsPathMappings : [])
-    };
+    // Omitted settings are merged by the API. Defaults in this browser must
+    // never replace unrelated saved sources, mappings, or purge schedules.
+    var requestData = { action: "saveSafetySettings" };
+    $.each(["enablePermanentDelete", "quarantineRoot", "defaultQuarantinePurgeDays", "manualAppdataSources", "zfsPathMappings"], function(_, key) {
+      if (!Object.prototype.hasOwnProperty.call(normalizedOverrides, key)) return;
+      if (key === "enablePermanentDelete") requestData[key] = nextSettings[key] ? "1" : "0";
+      else if (key === "manualAppdataSources") requestData[key] = ($.isArray(nextSettings[key]) ? nextSettings[key] : []).join("\n");
+      else if (key === "zfsPathMappings") requestData[key] = JSON.stringify($.isArray(nextSettings[key]) ? nextSettings[key] : []);
+      else requestData[key] = String(nextSettings[key] === undefined ? "" : nextSettings[key]);
+    });
 
     if (state.scanToken) {
       requestData.scanToken = state.scanToken;
     }
 
     apiPostForUserAction(requestData).done(function(response) {
+      if (requestVersion !== settingsRequestVersion) return;
       var quarantine = response.quarantine || null;
-      var zfsModalWasVisible = isZfsPathMappingsModalVisible();
 
       state.settings = $.extend({}, ACP.defaultSafetySettings(), response.settings || nextSettings);
+      if ($.isPlainObject(response.settings)) state.settingsLoaded = true;
       setAppdataSourceInfo(response.appdataSourceInfo || {});
       state.appdataSourceBrowser.manual = normalizeManualAppdataSourcesInput((state.settings || {}).manualAppdataSources || []);
       syncZfsPathMappingBrowserFromSettings();
@@ -5579,6 +5424,10 @@
       if (wasQuarantineManagerVisible || normalizedOptions.syncQuarantineModal) {
         renderOpenQuarantineManagerModal();
       }
+      if (getActiveSweetAlertModal().hasClass("acp-row-details-modal")) {
+        renderOpenRowDetailsModal();
+        loadCandidateDetails(findRowById(state.rowDetails.activeRowId));
+      }
       if (typeof normalizedOptions.onSuccess === "function") {
         normalizedOptions.onSuccess(response);
       }
@@ -5586,6 +5435,7 @@
         loadScan();
       }
     }).fail(function(xhr) {
+      if (requestVersion !== settingsRequestVersion) return;
       state.settings = previousSettings;
       state.rows = previousRows;
       state.summary = previousSummary;
@@ -5598,7 +5448,7 @@
       if (typeof normalizedOptions.onFailure === "function") {
         normalizedOptions.onFailure(xhr);
       } else if (wasQuarantineManagerVisible && normalizedOptions.reopenQuarantineModalOnFailure) {
-        swal({
+        ACP.showModal({
           title: normalizedOptions.failureTitle || ACP.t(strings, "settingsSaveFailedTitle", "Safety settings failed"),
           text: ACP.extractErrorMessage(xhr, normalizedOptions.failureMessage || ACP.t(strings, "settingsSaveFailedMessage", "The new safety settings could not be saved right now.")),
           type: "error"
@@ -5606,7 +5456,7 @@
           reopenQuarantineManagerModal(false);
         });
       } else {
-        swal(normalizedOptions.failureTitle || ACP.t(strings, "settingsSaveFailedTitle", "Safety settings failed"), ACP.extractErrorMessage(xhr, normalizedOptions.failureMessage || ACP.t(strings, "settingsSaveFailedMessage", "The new safety settings could not be saved right now.")), "error");
+        ACP.showModal(normalizedOptions.failureTitle || ACP.t(strings, "settingsSaveFailedTitle", "Safety settings failed"), ACP.extractErrorMessage(xhr, normalizedOptions.failureMessage || ACP.t(strings, "settingsSaveFailedMessage", "The new safety settings could not be saved right now.")), "error");
       }
       if (xhr && xhr.status === 409) {
         loadScan();
@@ -5793,7 +5643,7 @@
       renderAll();
     }).fail(function(xhr) {
       setBusy(false);
-      swal(
+      ACP.showModal(
         normalizedOptions.failureTitle || ACP.t(strings, "settingsSaveFailedTitle", "Safety settings failed"),
         ACP.extractErrorMessage(xhr, normalizedOptions.failureMessage || ACP.t(strings, "settingsSaveFailedMessage", "The new safety settings could not be saved right now.")),
         "error"
@@ -6222,7 +6072,7 @@
     state.recovery.activeId = String(id || "");
     state.recovery.terminal = false;
     state.recovery.openedAt = Date.now();
-    swal({title: ACP.tr("Recent operations"), text: ACP.tr("Checking operation status."), type: "info", html: true,
+    ACP.showModal({title: ACP.tr("Recent operations"), text: ACP.tr("Checking operation status."), type: "info", html: true,
       showCancelButton: false, confirmButtonText: ACP.tr("Close"), closeOnConfirm: true}, function() {
       state.recovery.activeId = "";
       var terminal = state.recovery.terminal;
@@ -6409,7 +6259,7 @@
     };
 
     stopOperationProgressPolling();
-    swal({
+    ACP.showModal({
       title: ACP.t(strings, "deleteProgressTitle", "Deleting files"),
       text: "",
       type: "info",
@@ -6500,7 +6350,7 @@
       state.quarantine.loaded = false;
     }
 
-    swal({
+    ACP.showModal({
       title: modalTitle,
       text: "",
       type: modalType,
@@ -6516,7 +6366,7 @@
     var selectedRows = getSelectedActionRows();
 
     if (!selectedRows.length) {
-      swal(ACP.t(strings, "deleteEmptyTitle", "Nothing selected"), ACP.t(strings, "deleteEmptyMessage", "Select at least one ready row before continuing."), "warning");
+      ACP.showModal(ACP.t(strings, "deleteEmptyTitle", "Nothing selected"), ACP.t(strings, "deleteEmptyMessage", "Select at least one ready row before continuing."), "warning");
       return;
     }
 
@@ -6529,7 +6379,7 @@
     var confirmButtonText = buildActionConfirmButtonText(context, selectedRows.length);
 
     if (!selectedRows.length) {
-      swal(ACP.t(strings, "deleteEmptyTitle", "Nothing selected"), ACP.t(strings, "deleteEmptyMessage", "Select at least one ready row before continuing."), "warning");
+      ACP.showModal(ACP.t(strings, "deleteEmptyTitle", "Nothing selected"), ACP.t(strings, "deleteEmptyMessage", "Select at least one ready row before continuing."), "warning");
       return;
     }
 
@@ -6537,7 +6387,7 @@
       if (selectionIncludesZfsRows(selectedRows)) {
         setBusy(true);
         ACP.applyDeleteModalClass("");
-        swal({
+        ACP.showModal({
           title: ACP.t(strings, "deletePreviewLoadingTitle", "Preparing delete review"),
           text: ACP.t(strings, "deletePreviewLoadingMessage", "Checking the selected items and collecting any recursive ZFS delete details."),
           type: "info",
@@ -6561,7 +6411,7 @@
           setBusy(false);
 
           if (hasWarnings) {
-            swal({
+            ACP.showModal({
               title: ACP.t(strings, "dryRunResultTitleWarning", "Dry run finished with warnings"),
               text: "",
               type: "warning",
@@ -6576,7 +6426,7 @@
             return;
           }
 
-          swal({
+          ACP.showModal({
             title: getDeleteConfirmationTitle(context),
             text: "",
             type: "warning",
@@ -6598,12 +6448,12 @@
           syncDeleteConfirmationState();
         }).fail(function(xhr) {
           setBusy(false);
-          swal(context.failureTitle, ACP.extractErrorMessage(xhr, ACP.t(strings, "deletePreviewFailedMessage", "The delete preview could not be prepared right now.")), "error");
+          ACP.showModal(context.failureTitle, ACP.extractErrorMessage(xhr, ACP.t(strings, "deletePreviewFailedMessage", "The delete preview could not be prepared right now.")), "error");
         });
         return;
       }
 
-      swal({
+      ACP.showModal({
         title: getDeleteConfirmationTitle(context),
         text: "",
         type: "warning",
@@ -6626,7 +6476,7 @@
       return;
     }
 
-    swal({
+    ACP.showModal({
       title: context.confirmTitle,
       text: "",
       type: "warning",
@@ -6655,7 +6505,7 @@
       startOperationProgressModal(operationProgressId, context);
     } else {
       ACP.applyDeleteModalClass("");
-      swal({
+      ACP.showModal({
         title: context.loadingTitle,
         text: context.loadingMessage,
         type: "info",
@@ -6710,7 +6560,7 @@
       }
 
       if (xhr && xhr.status === 409) {
-        swal({
+        ACP.showModal({
           title: context.failureTitle,
           text: fallbackMessage,
           type: "error"
@@ -6720,7 +6570,7 @@
         return;
       }
 
-      swal(context.failureTitle, fallbackMessage, "error");
+      ACP.showModal(context.failureTitle, fallbackMessage, "error");
     });
   }
 
@@ -6783,7 +6633,7 @@
   }
 
   function inspectQuarantineRestoreConflicts(entryIds, onComplete) {
-    swal({
+    ACP.showModal({
       title: ACP.t(strings, "quarantineRestoreCheckingTitle", "Checking restore paths"),
       text: ACP.t(strings, "quarantineRestoreCheckingMessage", "Checking whether the original restore paths are still available."),
       type: "info",
@@ -6803,7 +6653,7 @@
       var failureMessage = ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineManagerActionFailedMessage", "The quarantine manager action could not be completed right now."));
 
       if (xhr && xhr.status === 409) {
-        swal({
+        ACP.showModal({
           title: ACP.t(strings, "quarantineRestoreFailedTitle", "Restore failed"),
           text: failureMessage,
           type: "error"
@@ -6813,7 +6663,7 @@
         return;
       }
 
-      swal(ACP.t(strings, "quarantineRestoreFailedTitle", "Restore failed"), failureMessage, "error");
+      ACP.showModal(ACP.t(strings, "quarantineRestoreFailedTitle", "Restore failed"), failureMessage, "error");
     });
   }
 
@@ -6949,7 +6799,7 @@
       preview: preview || {}
     };
 
-    swal({
+    ACP.showModal({
       title: ACP.t(strings, "quarantineRestoreConflictTitle", "Restore conflicts found"),
       text: "",
       type: "warning",
@@ -7033,7 +6883,7 @@
       : ACP.t(strings, "quarantinePurgeActionLabel", "Purge");
 
     if (!requestedEntryIds.length) {
-      swal(
+      ACP.showModal(
         ACP.t(strings, "deleteEmptyTitle", "Nothing selected"),
         ACP.t(strings, "quarantineManagerSelectionEmptyMessage", "Select at least one quarantined folder before continuing."),
         "warning"
@@ -7047,7 +6897,7 @@
     }
 
     if (!isRestore) {
-      swal({
+      ACP.showModal({
         title: confirmTitle,
         text: "",
         type: "warning",
@@ -7076,7 +6926,7 @@
         return;
       }
 
-      swal({
+      ACP.showModal({
         title: confirmTitle,
         text: "",
         type: "warning",
@@ -7113,7 +6963,7 @@
     state.quarantine.loading = true;
     renderPanels();
     ACP.applyDeleteModalClass("");
-    swal({
+    ACP.showModal({
       title: loadingTitle,
       text: loadingMessage,
       type: "info",
@@ -7158,7 +7008,7 @@
       setBusy(false);
       renderAll();
 
-      swal({
+      ACP.showModal({
         title: hasWarnings ? warningTitle : successTitle,
         text: "",
         type: hasWarnings ? "warning" : "success",
@@ -7182,7 +7032,7 @@
       }
 
       if (xhr && xhr.status === 409) {
-        swal({
+        ACP.showModal({
           title: failureTitle,
           text: ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineManagerActionFailedMessage", "The quarantine manager action could not be completed right now.")),
           type: "error"
@@ -7192,7 +7042,7 @@
         return;
       }
 
-      swal(failureTitle, ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineManagerActionFailedMessage", "The quarantine manager action could not be completed right now.")), "error");
+      ACP.showModal(failureTitle, ACP.extractErrorMessage(xhr, ACP.t(strings, "quarantineManagerActionFailedMessage", "The quarantine manager action could not be completed right now.")), "error");
     });
   }
 })(window, document, jQuery);

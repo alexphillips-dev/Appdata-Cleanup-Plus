@@ -214,6 +214,10 @@ function getAppdataCleanupPlusDockerManagedPaths() {
 
 function appdataCleanupPlusFindManagedPathMatch($path, $managedPaths) {
   $normalizedPath = normalizeUserPath($path);
+  $pathVariants = array($normalizedPath);
+  clearstatcache(true, (string)$path);
+  $realPath = @realpath((string)$path);
+  if ($realPath !== false) $pathVariants[] = normalizeUserPath($realPath);
 
   if ( ! $normalizedPath ) {
     return null;
@@ -226,19 +230,20 @@ function appdataCleanupPlusFindManagedPathMatch($path, $managedPaths) {
       continue;
     }
 
-    if ( $normalizedPath === $managedRoot ) {
-      $managedPath["relation"] = "exact";
-      return $managedPath;
-    }
-
-    if ( startsWith($normalizedPath . "/", $managedRoot . "/") ) {
-      $managedPath["relation"] = "inside";
-      return $managedPath;
-    }
-
-    if ( startsWith($managedRoot . "/", $normalizedPath . "/") ) {
-      $managedPath["relation"] = "contains";
-      return $managedPath;
+    $managedVariants = array($managedRoot);
+    $rawManagedRoot = (string)$managedPath["path"];
+    clearstatcache(true, $rawManagedRoot);
+    $realManagedRoot = @realpath($rawManagedRoot);
+    if ($realManagedRoot !== false) $managedVariants[] = normalizeUserPath($realManagedRoot);
+    foreach (array_unique($pathVariants) as $candidateVariant) {
+      foreach (array_unique($managedVariants) as $rootVariant) {
+        if ($candidateVariant === $rootVariant) $relation = "exact";
+        elseif (startsWith($candidateVariant . "/", $rootVariant . "/")) $relation = "inside";
+        elseif (startsWith($rootVariant . "/", $candidateVariant . "/")) $relation = "contains";
+        else continue;
+        $managedPath["relation"] = $relation;
+        return $managedPath;
+      }
     }
   }
 
@@ -382,36 +387,16 @@ function appdataCleanupPlusShareLikeComparisonPath($path) {
 function appdataCleanupPlusPathComparisonVariants($path) {
   $variants = array();
   $normalized = appdataCleanupPlusCanonicalizePath($path);
-  $realPath = "";
-  $pendingVariants = array();
 
   if ( $normalized === "" ) {
     return array();
   }
 
-  $variants[$normalized] = true;
-  $variants[appdataCleanupPlusShareLikeComparisonPath($normalized)] = true;
-
-  $realPath = @realpath($normalized);
-  if ( $realPath ) {
-    $realPath = appdataCleanupPlusCanonicalizePath($realPath);
-    $variants[$realPath] = true;
-    $variants[appdataCleanupPlusShareLikeComparisonPath($realPath)] = true;
-  }
-
-  $pendingVariants = array_keys($variants);
-  while ( ! empty($pendingVariants) ) {
-    $variant = array_shift($pendingVariants);
-
-    foreach ( appdataCleanupPlusExpandZfsMappedPathVariants($variant) as $mappedVariant ) {
-      if ( $mappedVariant === "" || isset($variants[$mappedVariant]) ) {
-        continue;
-      }
-
-      $variants[$mappedVariant] = true;
-      $variants[appdataCleanupPlusShareLikeComparisonPath($mappedVariant)] = true;
-      $pendingVariants[] = $mappedVariant;
-    }
+  // Reuse bounded mapping traversal, then add the deliberately conservative
+  // share aliases used only to protect ownership and source membership.
+  foreach (appdataCleanupPlusBuildZfsResolutionPathVariants($normalized, null, true) as $variant) {
+    $variants[$variant] = true;
+    $variants[appdataCleanupPlusShareLikeComparisonPath($variant)] = true;
   }
 
   return array_values(array_filter(array_keys($variants), "strlen"));
@@ -1462,7 +1447,16 @@ function appdataCleanupPlusJsonEncode($payload, $flags=0) {
 }
 
 function appdataCleanupPlusJsonFileLockPath($path) {
+  // One permanent namespace lock serializes snapshot writes and expiry. Do not
+  // unlink old per-snapshot locks: a pre-update process may still use an inode.
+  if ( $path === appdataCleanupPlusSnapshotStorageDir() || appdataCleanupPlusIsSnapshotFile($path) ) return appdataCleanupPlusStateFile("snapshots.lock");
   return (string)$path . ".lock";
+}
+
+function appdataCleanupPlusIsSnapshotFile($path) {
+  $path = str_replace("\\", "/", (string)$path);
+  return dirname(dirname($path)) === appdataCleanupPlusSnapshotStorageDir() &&
+    substr(basename($path), -5) === ".json";
 }
 
 function appdataCleanupPlusWriteJsonFileUnlocked($path, $payload) {
@@ -1543,7 +1537,8 @@ function writeAppdataCleanupPlusJsonFile($path, $payload) {
     return false;
   }
 
-  if ( ! ensureAppdataCleanupPlusDirectory(dirname($path)) ) {
+  $snapshot = appdataCleanupPlusIsSnapshotFile($path);
+  if ( ! $snapshot && ! ensureAppdataCleanupPlusDirectory(dirname($path)) ) {
     return false;
   }
 
@@ -1553,6 +1548,7 @@ function writeAppdataCleanupPlusJsonFile($path, $payload) {
   }
 
   try {
+    if ( $snapshot && ! ensureAppdataCleanupPlusDirectory(dirname($path)) ) return false;
     return appdataCleanupPlusWriteJsonFileUnlocked($path, $payload);
   } finally {
     appdataCleanupPlusCloseJsonFileLock($lock);
@@ -1560,7 +1556,8 @@ function writeAppdataCleanupPlusJsonFile($path, $payload) {
 }
 
 function mutateAppdataCleanupPlusJsonFile($path, $default, $mutator) {
-  if ( ! is_callable($mutator) || (! appdataCleanupPlusIsRuntimePath($path) && ! ensureAppdataCleanupPlusConfigDir()) || ! ensureAppdataCleanupPlusDirectory(dirname($path)) ) {
+  $snapshot = appdataCleanupPlusIsSnapshotFile($path);
+  if ( ! is_callable($mutator) || (! appdataCleanupPlusIsRuntimePath($path) && ! ensureAppdataCleanupPlusConfigDir()) || (! $snapshot && ! ensureAppdataCleanupPlusDirectory(dirname($path))) ) {
     return false;
   }
 
@@ -1570,6 +1567,7 @@ function mutateAppdataCleanupPlusJsonFile($path, $default, $mutator) {
   }
 
   try {
+    if ( $snapshot && ! ensureAppdataCleanupPlusDirectory(dirname($path)) ) return false;
     $current = readAppdataCleanupPlusJsonFile($path, $default);
     $next = call_user_func($mutator, $current);
     return appdataCleanupPlusWriteJsonFileUnlocked($path, $next);
@@ -1611,7 +1609,11 @@ function appdataCleanupPlusStatsCacheTtlSeconds() {
 }
 
 function appdataCleanupPlusSnapshotScopeKey() {
-  if ( ! ensureAppdataCleanupPlusSession() ) {
+  static $verifiedSessionId = "";
+  $sessionId = session_id();
+  // session_id survives session_write_close. Only reuse an identity verified
+  // while active in this request, never an unstarted client-provided identity.
+  if ( session_status() !== PHP_SESSION_ACTIVE && ($verifiedSessionId === "" || $sessionId !== $verifiedSessionId) && ! ensureAppdataCleanupPlusSession() ) {
     return "";
   }
 
@@ -1620,6 +1622,7 @@ function appdataCleanupPlusSnapshotScopeKey() {
     return "";
   }
 
+  $verifiedSessionId = $sessionId;
   return hash("sha256", $sessionId);
 }
 
@@ -1732,6 +1735,7 @@ function closeAppdataCleanupPlusSession() {
     return true;
   }
 
+  appdataCleanupPlusSnapshotScopeKey();
   @session_write_close();
   return session_status() !== PHP_SESSION_ACTIVE;
 }
@@ -1953,12 +1957,26 @@ function setAppdataCleanupPlusQuarantineRegistry($registry) {
   return writeAppdataCleanupPlusJsonFile(appdataCleanupPlusQuarantineRegistryFile(), is_array($registry) ? $registry : array());
 }
 
-function mutateAppdataCleanupPlusQuarantineRegistry($mutator) {
-  return mutateAppdataCleanupPlusJsonFile(appdataCleanupPlusQuarantineRegistryFile(), array(), function($registry) use ($mutator) {
-    $registry = is_array($registry) ? $registry : array();
+function mutateAppdataCleanupPlusQuarantineRegistry($mutator, &$committedRegistry=null) {
+  $committedRegistry = null;
+  if ( ! is_callable($mutator) || ! ensureAppdataCleanupPlusConfigDir() ) return false;
+  $path = appdataCleanupPlusQuarantineRegistryFile();
+  $lock = appdataCleanupPlusOpenJsonFileLock($path);
+  if ( ! is_resource($lock) ) return false;
+  try {
+    // Missing state can be initialized; unreadable or corrupt existing state
+    // must not be replaced by a mutation based on an assumed empty registry.
+    $registry = readAppdataCleanupPlusJsonFile($path, null);
+    if ( $registry === null && ! file_exists($path) && ! is_link($path) ) $registry = array();
+    if ( ! is_array($registry) ) return false;
     $next = call_user_func($mutator, $registry);
-    return is_array($next) ? $next : $registry;
-  });
+    if ( ! is_array($next) ) return false;
+    if ( $next !== $registry && ! appdataCleanupPlusWriteJsonFileUnlocked($path, $next) ) return false;
+    $committedRegistry = $next;
+    return true;
+  } finally {
+    appdataCleanupPlusCloseJsonFileLock($lock);
+  }
 }
 
 function appdataCleanupPlusStatsCacheState($nextState=null, $replace=false) {
@@ -2081,19 +2099,24 @@ function appdataCleanupPlusSnapshotTtlSeconds() {
 }
 
 function cleanupExpiredAppdataCleanupPlusSnapshots() {
-  $snapshotFiles = glob(appdataCleanupPlusSnapshotStorageDir() . "/*/*.json");
-
-  if ( ! is_array($snapshotFiles) ) {
-    return;
-  }
-
-  foreach ( $snapshotFiles as $snapshotFile ) {
-    $snapshot = readAppdataCleanupPlusJsonFile($snapshotFile, array());
-    $expiresAt = isset($snapshot["expiresAt"]) ? strtotime((string)$snapshot["expiresAt"]) : 0;
-
-    if ( ! $expiresAt || $expiresAt < time() ) {
-      @unlink($snapshotFile);
+  $root = appdataCleanupPlusSnapshotStorageDir();
+  if ( ! is_dir($root) ) return;
+  // Lock outside removable scope directories. New writers create their scope
+  // only after taking this same lock, so expiry cannot strand a pending write.
+  $lock = appdataCleanupPlusOpenJsonFileLock($root);
+  if ( ! is_resource($lock) ) return;
+  try {
+    foreach ( (array)glob($root . "/*/*.json") as $snapshotFile ) {
+      if ( is_link($snapshotFile) || pathHasSymlinkSegment($snapshotFile) ) continue;
+      $snapshot = readAppdataCleanupPlusJsonFile($snapshotFile, array());
+      $expiresAt = isset($snapshot["expiresAt"]) ? strtotime((string)$snapshot["expiresAt"]) : 0;
+      if ( ! $expiresAt || $expiresAt < time() ) @unlink($snapshotFile);
     }
+    foreach ( (array)glob($root . "/*", GLOB_ONLYDIR) as $scopeDir ) {
+      if ( ! is_link($scopeDir) && ! pathHasSymlinkSegment($scopeDir) ) @rmdir($scopeDir);
+    }
+  } finally {
+    appdataCleanupPlusCloseJsonFileLock($lock);
   }
 }
 
