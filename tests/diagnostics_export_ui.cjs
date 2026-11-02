@@ -230,6 +230,12 @@ async function finishExport(page,kind='complete') {
         bundle.collection.status='partial';bundle.collection.sections.logs={status:'partial',omissionReason:'limit',includedCount:100,omittedCount:2};
         bundle.collection.sections.auditHistory={status:'partial',includedCount:25,omittedCount:2};
       }
+      if(kind === 'specific_log_limits') {
+        bundle.collection.status='partial';
+        bundle.collection.sections['log-1']={status:'partial',omissionReason:'bounded_collection',includedCount:42,omittedCount:null};
+        bundle.collection.sections['log-3']={status:'unavailable',omissionReason:'source_unavailable',includedCount:0,omittedCount:0};
+      }
+      if(kind === 'unexplained_partial')bundle.collection.status='partial';
       if(kind === 'required_missing') {
         bundle.collection.status='partial';bundle.collection.sections.runtime={status:'failed'};
         delete bundle.runtime;
@@ -335,10 +341,23 @@ async function lifecycleCases(browser) {
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('.acp-tools-body details[open]')].map(node => node.dataset.toolsSection)),before.open);
     assert.equal(await page.locator('[data-tools-section="diagnostics_privacy"] > summary').evaluate(node => document.activeElement === node),true,'Completion preserves disclosure focus');
     assert.ok(Math.abs(await page.locator('.acp-tools-body').evaluate(node => node.scrollTop)-before.scroll) <= 2,'Completion preserves body scroll');
+    assert.ok(!limited.supportSummary.limitations.some(item => item.section === 'server'),'Detailed collection limits replace the redundant partial server entry');
+    await beginExport(page);const logLimits=await finishExport(page,'specific_log_limits');
+    assert.deepEqual(logLimits.supportSummary.limitations,[{section:'log-1',reason:'bounded_collection'},{section:'log-3',reason:'source_unavailable'}],'Specific bounded and unavailable log reasons survive without an aggregate unknown entry');
+    assert.equal(logLimits.collection.sections.server.status,'partial','Raw collection metadata retains the aggregate status');
+    assert.equal(logLimits.supportSummary.status,'partial');assert.equal(logLimits.supportSummary.health,'ok');
+    await assertSummaryProvenance(page,logLimits);await expandSummary(page);
+    assert.equal(await page.locator('.acp-diagnostics-limitations li').count(),2,'Tools renders the two specific log limitations');
+    for(const phrase of ['Collection limit reached','Source unavailable'])assert.ok((await page.locator('.acp-diagnostics-limitations').textContent()).includes(phrase),'Tools retains each specific log reason');
+    assert.ok(!(await page.locator('.acp-diagnostics-limitations').textContent()).includes('Server information'),'Tools omits the redundant server limitation');
+    await beginExport(page);const unexplained=await finishExport(page,'unexplained_partial');
+    assert.deepEqual(unexplained.supportSummary.limitations,[{section:'server',reason:'unknown'}],'An unexplained partial server response retains its fallback limitation');
     for(const outcome of ['failed_request','invalid_response','unsupported_schema','required_missing','malformed_sections']) {
       await beginExport(page);const payload=await finishExport(page,outcome);
       assert.equal(payload.collection.status,'partial',`${outcome}: useful browser-only/partial evidence is retained`);
       assert.ok(payload.supportSummary);await assertToolsSurvives(page,title);await expandSummary(page);
+      if(outcome !== 'required_missing')assert.ok(payload.supportSummary.limitations.some(item => item.section === 'server' && item.reason === (outcome === 'failed_request' ? 'request_failed' : 'invalid_response')),'Failed or invalid server requests remain explicit in the summary');
+      else assert.ok(payload.supportSummary.limitations.some(item => item.section === 'runtime'),'A required-section failure remains explicit without the redundant server entry');
       assert.ok(!JSON.stringify(payload).includes('SyntheticPrivateMalformedValue'));
     }
     // Navigation away does not give the old export permission to replace the

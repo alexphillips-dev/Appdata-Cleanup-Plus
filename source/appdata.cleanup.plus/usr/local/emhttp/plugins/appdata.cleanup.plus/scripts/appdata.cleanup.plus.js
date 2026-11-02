@@ -4182,19 +4182,24 @@
     var overview = payload.troubleshooting || {};
     var health = ["ok","warning","error","unknown"].indexOf(overview.status) !== -1 ? overview.status : "unknown";
     var limitations = [];
+    var serverSections = ((payload.serverDiagnostics || {}).collection || {}).sections || {};
+    var hasServerLimits = Object.keys(serverSections).slice(0, 50).some(function(key) {
+      return (serverSections[key] || {}).status !== "complete";
+    });
     var sectionNames = "browser rows visibleRows selectedRows auditHistory recentFailures activity server runtime currentSnapshot troubleshooting fixtureRoot safetySettings quarantineRegistry ignoredCandidates runtimeLocks statsCache mountInventoryCurrent latestScanMetrics snapshots".split(" ");
-    function addLimits(sections) {
+    function addLimits(sections, omitServerAggregate) {
       Object.keys(sections || {}).slice(0, 50).forEach(function(key) {
         var section = sections[key] || {};
         if (section.status === "complete") return;
+        if (omitServerAggregate && key === "server" && section.status === "partial" && section.category === "none") return;
         var name = sectionNames.indexOf(key) !== -1 || /^log-(?:[1-9]|10)$/.test(key) ? key : "other";
         var reason = section.omissionReason || section.category || (section.status === "partial" ? "bounded_collection" : "source_unavailable");
         if ("bounded_collection record_limit byte_limit size_limit invalid_records source_unavailable collection_failed request_failed invalid_response not_loaded".split(" ").indexOf(reason) === -1) reason = "unknown";
         limitations.push({section:name,reason:reason});
       });
     }
-    addLimits((payload.collection || {}).sections);
-    addLimits(((payload.serverDiagnostics || {}).collection || {}).sections);
+    addLimits((payload.collection || {}).sections, hasServerLimits);
+    addLimits(serverSections);
     var findings = (overview.findings || []).slice(0, 20).map(function(finding) {
       var id = /^[a-zA-Z0-9_-]{1,64}$/.test(String(finding.id || "")) ? String(finding.id) : "check";
       var nextStep = id === "versionMatch" ? "reload" : (["scanMatch","current-snapshot","latest-scan"].indexOf(id) !== -1 ? "rescan" : (id === "collection" || id === "state-files" ? "review_collection" : "review_diagnostics"));
