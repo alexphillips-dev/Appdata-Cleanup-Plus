@@ -2,17 +2,57 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "appdata.cleanup.plus">
 <!ENTITY author    "alexphillips-dev">
-<!ENTITY version "2026.11.02.02">
-<!ENTITY md5 "50216a79c7872fa1a603f62d7071c64c">
+<!ENTITY version "2026.11.02.03">
+<!ENTITY md5 "7475836431309a726de4adfa046ede8e">
 <!ENTITY launch    "Settings/AppdataCleanupPlus">
 <!ENTITY plugdir   "/usr/local/emhttp/plugins/&name;">
 <!ENTITY github    "alexphillips-dev/Appdata-Cleanup-Plus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/dev/plugins/&name;.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&github;/main/plugins/&name;.plg">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" min="7.0.0" launch="&launch;" pluginURL="&pluginURL;" icon="appdata.cleanup.plus.png" support="https://forums.unraid.net/topic/197975-plugin-appdata-cleanup-plus/">
 
 <CHANGES>
+###2026.11.02.03
+Includes all changes since stable 2026.10.15.07.
+
+**Clearer cleanup guidance and dashboard**
+- Explain Ready, protected, verification-incomplete and permanent-delete-only states, with useful next steps and clearer Safe Mode guidance.
+- Remove the Ready badge from the Source column. Align the four count cards with Safe Mode, add short explanations and accessible information tooltips, and hide the duplicate plugin heading added by Aurora.
+- Search ignored rows consistently and restore intended error and success colors across native themes.
+
+**Details, Help and Tools**
+- Redesign Details with a wider responsive layout, persistent actions, compact folder facts and grouped technical evidence. Keep necessary ownership, mapping and ZFS impact information available without pushing Done out of reach.
+- Use the same folder SVG in Details and scan results. Selecting a folder closes Details, reveals and focuses its row, and highlights it for three seconds.
+- Redesign Help with a fixed title and Done button, one scrolling body, a clearer workflow and expandable troubleshooting.
+- Redesign Tools with persistent controls, diagnostics and ZFS mapping cards, and a collapsed advanced test-data section with clearer status and removal scope.
+- Preserve modal focus and reading position, prevent stale Details and Quarantine responses from replacing current dialogs, allow Details retries after closing pending requests, and show native error messages correctly.
+
+**Diagnostics and interface reliability**
+- Add a readable export summary in Tools and the diagnostic file, including health findings, version and scan comparisons, collection limits and next steps.
+- Include a bounded history of up to 100 page-session activity events using fixed action codes and export-only aliases.
+- Strengthen recursive privacy scrubbing, bound JSON and log collection, validate and order snapshot summaries, and retain useful partial exports without redundant aggregate limitations.
+- Preserve saved safety settings after scan failures, keep current cleanup eligibility when delayed Details arrive, and resume interrupted background size loading.
+
+**ZFS, Docker and destructive-operation safety**
+- Keep distinct physical pools separate and require exact ZFS dataset and mountpoint identity. Recheck current identity and ownership immediately before each dataset destroy, including later items in a batch.
+- Block unresolved user-share dataset backing and incomplete or unsupported Compose ownership evidence. Follow canonical paths when protecting Docker and VM-managed storage.
+- Reject unsafe or expanding ZFS mapping graphs and bound alias traversal.
+- Explain unresolved ZFS backing with instructions to review or add a mapping in Tools > ZFS path mappings, rather than repeatedly requesting a rescan. Keep the distinct warning for deletion targets that actually changed.
+
+**Quarantine, restore and scheduling**
+- Require matching quarantine provenance, strict containment, current ownership and managed-storage checks before manual or scheduled purge.
+- Preserve cancelled timers through concurrent listing and recovery. Pause recovered or unverified legacy schedules for review, reject corrupted state and report failed or partial persistence accurately.
+- Keep unmarked legacy entries visible and available for eligible restore while blocking unverified purge. Restore eligible dedicated named-pool folders with collision and path safeguards.
+- Validate whole-number retention values on both client and server, preserve browser-selected timestamp instants across timezones and daylight-saving changes, and retry failed default-timer synchronization safely.
+
+**Validation, localization and packaging**
+- Validate stored template XML before restoration and roll back only files created by that restore. Refuse hardlinked or otherwise unsafe test-fixture files.
+- Keep released PHP sessions closed during snapshot work and stop new snapshot lockfile growth without unlinking existing lock namespaces.
+- Remove obsolete private renderers and duplicate Help bootstrap aliases. Refresh all 42 bundled language catalogs; native-speaker review remains pending.
+- Stage and validate packages before finalization, serialize concurrent builds and preserve original or competing outputs on handled failures.
+- Add behavioral regressions for all 25 audit findings and the confirmed managed-path alias issue, plus broader concurrency, recovery, privacy, browser, localization and package checks. Include the audit and remediation report.
+
 ###2026.11.02.02
 - Explain unresolved ZFS backing with instructions to review or add a path mapping in Tools, instead of repeatedly requesting a rescan. Preserve all ZFS safety checks and refresh all 42 language catalogs.
 
@@ -1620,7 +1660,7 @@ rm -f $(ls /boot/config/plugins/&name;/&name;*.txz 2>/dev/null &#124; grep -v '&
 </FILE>
 
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
-<URL>https://raw.githubusercontent.com/&github;/dev/archive/&name;-&version;-x86_64-1.txz</URL>
+<URL>https://raw.githubusercontent.com/&github;/main/archive/&name;-&version;-x86_64-1.txz</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
