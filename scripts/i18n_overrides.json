@@ -8,7 +8,8 @@
     "Delete": "Verwyder",
     "Quarantine": "Kwarantyn",
     "Restore": "Herstel",
-    "Purge": "Permanent verwyder"
+    "Purge": "Permanent verwyder",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Skoonmaakskedules kon nie gestoor word nie. Bestaande aftellers kan steeds aktief wees."
   },
   "ar_AR": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "يبحث Appdata Cleanup Plus عن مجلدات Docker appdata غير المستخدمة ومرشحي مجموعات بيانات ZFS المطابقة بدقة. تتيح لك لوحة التنظيف مراجعة العناصر ومحاكاة الإجراءات دون تغيير البيانات ووضعها في الحجر واستعادتها وعرض سجل التدقيق أو حذفها نهائيًا.",
@@ -20,7 +21,8 @@
     "Quarantine": "عزل",
     "Restore": "استعادة",
     "Purge": "حذف نهائي",
-    "dataset": "مجموعة بيانات"
+    "dataset": "مجموعة بيانات",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} لا يمكن حفظ جداول التطهير. قد تظل أجهزة ضبط الوقت الموجودة نشطة."
   },
   "bn_BN": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus অব্যবহৃত Docker appdata ফোল্ডার এবং সুনির্দিষ্ট ZFS ডেটাসেটের সম্ভাব্য প্রার্থী খুঁজে বের করে। ক্লিনআপ ড্যাশবোর্ড থেকে আপনি এগুলি পর্যালোচনা, কোনো পরিবর্তন না করে কাজের ফলাফল পরীক্ষা, কোয়ারেন্টাইন, পুনরুদ্ধার, কার্যকলাপের ইতিহাস দেখা বা স্থায়ীভাবে মুছে ফেলতে পারেন।",
@@ -31,7 +33,8 @@
     "Delete": "মুছুন",
     "Quarantine": "আলাদা করে রাখুন",
     "Restore": "পুনরুদ্ধার করুন",
-    "Purge": "স্থায়ীভাবে মুছুন"
+    "Purge": "স্থায়ীভাবে মুছুন",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} পরিস্কার সময়সূচী সংরক্ষণ করা যায়নি. বিদ্যমান টাইমার এখনও সক্রিয় থাকতে পারে।"
   },
   "bs_BA": {
     "Runtime locks": "Zaključavanja tokom rada",
@@ -72,7 +75,8 @@
     "Template refs": "Reference predložaka",
     "Test fixtures": "Testni podaci",
     "ignored hidden": "ignorirani skriveni",
-    "Locations scanned: {paths}.": "Skenirane lokacije: {paths}."
+    "Locations scanned: {paths}.": "Skenirane lokacije: {paths}.",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Rasporedi čišćenja se ne mogu sačuvati. Postojeći tajmeri mogu još uvijek biti aktivni."
   },
   "ca_CA": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus cerca carpetes Docker appdata sense ús i candidats de conjunts de dades ZFS amb coincidència exacta. El tauler de neteja permet revisar elements, simular accions sense fer canvis, posar-los en quarantena, restaurar-los, consultar l'historial o suprimir-los definitivament.",
@@ -83,7 +87,8 @@
     "Delete": "Suprimeix",
     "Quarantine": "Quarantena",
     "Restore": "Restaura",
-    "Purge": "Suprimeix definitivament"
+    "Purge": "Suprimeix definitivament",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Els programes de purga no s'han pogut desar. És possible que els temporitzadors existents encara estiguin actius."
   },
   "cs_CZ": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus vyhledává nepoužívané složky Docker appdata a přesně odpovídající datové sady ZFS vhodné k posouzení. Panel čištění umožňuje položky zkontrolovat, simulovat akce bez změn, přesunout je do karantény, obnovit je, zobrazit historii nebo je trvale odstranit.",
@@ -94,7 +99,8 @@
     "Delete": "Smazat",
     "Quarantine": "Karanténa",
     "Restore": "Obnovit",
-    "Purge": "Trvale smazat"
+    "Purge": "Trvale smazat",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Plány čištění se nepodařilo uložit. Stávající časovače mohou být stále aktivní."
   },
   "da_DA": {
     "Browser version": "Browserversion",
@@ -110,7 +116,8 @@
     "Quarantine": "Karantæne",
     "Restore": "Gendan",
     "Purge": "Slet permanent",
-    "Destroy mode": "Sletningstilstand"
+    "Destroy mode": "Sletningstilstand",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Tømningsplaner kunne ikke gemmes. Eksisterende timere kan stadig være aktive."
   },
   "de_DE": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus findet ungenutzte Docker appdata-Ordner und exakt zugeordnete ZFS-Datensätze als Bereinigungskandidaten. Im Bereinigungs-Dashboard können Sie diese prüfen, Aktionen ohne Änderungen simulieren, Ordner in Quarantäne verschieben, wiederherstellen, den Verlauf einsehen oder dauerhaft löschen.",
@@ -121,7 +128,8 @@
     "Delete": "Löschen",
     "Quarantine": "Quarantäne",
     "Restore": "Wiederherstellen",
-    "Purge": "Endgültig löschen"
+    "Purge": "Endgültig löschen",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Bereinigungspläne konnten nicht gespeichert werden. Vorhandene Timer können noch aktiv sein."
   },
   "el_GR": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Το Appdata Cleanup Plus εντοπίζει αχρησιμοποίητους φακέλους Docker appdata και υποψήφια σύνολα δεδομένων ZFS με ακριβή αντιστοίχιση. Από τον πίνακα καθαρισμού μπορείτε να τα εξετάσετε, να προσομοιώσετε ενέργειες χωρίς αλλαγές, να τα θέσετε σε καραντίνα, να τα επαναφέρετε, να δείτε το ιστορικό ή να τα διαγράψετε οριστικά.",
@@ -132,7 +140,8 @@
     "Delete": "Διαγραφή",
     "Quarantine": "Καραντίνα",
     "Restore": "Επαναφορά",
-    "Purge": "Οριστική διαγραφή"
+    "Purge": "Οριστική διαγραφή",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Δεν ήταν δυνατή η αποθήκευση των προγραμμάτων εκκαθάρισης. Τα υπάρχοντα χρονόμετρα ενδέχεται να είναι ακόμα ενεργά."
   },
   "es_ES": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus busca carpetas Docker appdata sin uso y conjuntos de datos ZFS candidatos con coincidencia exacta. Desde el panel de limpieza puede revisarlos, simular acciones sin hacer cambios, ponerlos en cuarentena, restaurarlos, consultar el historial o eliminarlos permanentemente.",
@@ -143,7 +152,8 @@
     "Delete": "Eliminar",
     "Quarantine": "Cuarentena",
     "Restore": "Restaurar",
-    "Purge": "Eliminar definitivamente"
+    "Purge": "Eliminar definitivamente",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} No se pudieron guardar los programas de depuración. Es posible que los temporizadores existentes aún estén activos."
   },
   "et_EE": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus leiab kasutamata Docker appdata kaustad ja täpselt vastavad ZFS andmekogumid puhastamise kandidaatideks. Puhastuspaneelil saab neid üle vaadata, toiminguid muudatusteta proovida, karantiini panna, taastada, toimingute ajalugu vaadata või jäädavalt kustutada.",
@@ -154,7 +164,8 @@
     "Delete": "Kustuta",
     "Quarantine": "Karantiin",
     "Restore": "Taasta",
-    "Purge": "Kustuta jäädavalt"
+    "Purge": "Kustuta jäädavalt",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Puhastusgraafikuid ei saanud salvestada. Olemasolevad taimerid võivad endiselt aktiivsed olla."
   },
   "fa_FA": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus پوشه‌های بلااستفادهٔ Docker appdata و نامزدهای مجموعه‌دادهٔ ZFS با تطبیق دقیق را پیدا می‌کند. در داشبورد پاکسازی می‌توانید موارد را بررسی کنید، عملیات را بدون ایجاد تغییر شبیه‌سازی کنید، آن‌ها را قرنطینه یا بازیابی کنید، سابقهٔ عملیات را ببینید یا آن‌ها را برای همیشه حذف کنید.",
@@ -166,7 +177,8 @@
     "Quarantine": "قرنطینه",
     "Restore": "بازیابی",
     "Purge": "حذف دائمی",
-    "DRY RUN": "آزمایش بدون تغییر"
+    "DRY RUN": "آزمایش بدون تغییر",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} برنامه های پاکسازی ذخیره نشد. ممکن است تایمرهای موجود همچنان فعال باشند."
   },
   "fi_FI": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus etsii käyttämättömiä Docker appdata-kansioita ja täsmällisesti vastaavia ZFS-tietojoukkoja puhdistusehdokkaiksi. Puhdistusnäkymässä voit tarkistaa ne, simuloida toimintoja ilman muutoksia, siirtää ne karanteeniin, palauttaa ne, tarkastella historiaa tai poistaa ne pysyvästi.",
@@ -177,7 +189,8 @@
     "Delete": "Poista",
     "Quarantine": "Karanteeni",
     "Restore": "Palauta",
-    "Purge": "Poista pysyvästi"
+    "Purge": "Poista pysyvästi",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Puhdistusaikatauluja ei voitu tallentaa. Olemassa olevat ajastimet voivat edelleen olla aktiivisia."
   },
   "fr_FR": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus recherche les dossiers Docker appdata inutilisés et les jeux de données ZFS candidats avec une correspondance exacte. Le tableau de nettoyage permet de les examiner, de simuler les actions sans modification, de les mettre en quarantaine, de les restaurer, de consulter l'historique ou de les supprimer définitivement.",
@@ -188,7 +201,8 @@
     "Delete": "Supprimer",
     "Quarantine": "Quarantaine",
     "Restore": "Restaurer",
-    "Purge": "Supprimer définitivement"
+    "Purge": "Supprimer définitivement",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Les planifications de purge n'ont pas pu être enregistrées. Les minuteries existantes peuvent toujours être actives."
   },
   "ga_IE": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Aimsíonn Appdata Cleanup Plus fillteáin Docker appdata nach bhfuil in úsáid agus tacair sonraí ZFS a mheaitseálann go beacht mar iarrthóirí glantacháin. Ón deais is féidir iad a athbhreithniú, gníomhartha a insamhladh gan athruithe, iad a chur i gcoraintín, iad a athchóiriú, an stair a fheiceáil nó iad a scriosadh go buan.",
@@ -199,7 +213,8 @@
     "Delete": "Scrios",
     "Quarantine": "Coraintín",
     "Restore": "Athchóirigh",
-    "Purge": "Scrios go buan"
+    "Purge": "Scrios go buan",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Níorbh fhéidir sceidil glantacháin a shábháil. Seans go mbeidh amadóirí reatha fós gníomhach."
   },
   "he_IL": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus מאתר תיקיות Docker appdata שאינן בשימוש ומועמדים של מערכי נתונים ZFS עם התאמה מדויקת. מלוח הניקוי אפשר לבדוק אותם, לדמות פעולות ללא שינויים, להעביר להסגר, לשחזר, לעיין בהיסטוריית הפעולות או למחוק לצמיתות.",
@@ -210,7 +225,8 @@
     "Delete": "מחיקה",
     "Quarantine": "בידוד",
     "Restore": "שחזור",
-    "Purge": "מחיקה לצמיתות"
+    "Purge": "מחיקה לצמיתות",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} לא ניתן היה לשמור את לוחות הזמנים של הטיהור. ייתכן שהטיימרים הקיימים עדיין פעילים."
   },
   "hi_IN": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus अप्रयुक्त Docker appdata फ़ोल्डर और सटीक मिलान वाले संभावित ZFS डेटासेट खोजता है। क्लीनअप डैशबोर्ड से आप इन्हें जाँच सकते हैं, बिना बदलाव किए कार्रवाइयों का पूर्वाभ्यास कर सकते हैं, अलग रख सकते हैं, पुनर्स्थापित कर सकते हैं, गतिविधियों का इतिहास देख सकते हैं या स्थायी रूप से हटा सकते हैं।",
@@ -221,7 +237,8 @@
     "Delete": "हटाएँ",
     "Quarantine": "अलग रखें",
     "Restore": "पुनर्स्थापित करें",
-    "Purge": "स्थायी रूप से हटाएँ"
+    "Purge": "स्थायी रूप से हटाएँ",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} पर्ज शेड्यूल सहेजा नहीं जा सका. मौजूदा टाइमर अभी भी सक्रिय हो सकते हैं."
   },
   "hr_HR": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus pronalazi nekorištene Docker appdata mape i točno podudarne ZFS skupove podataka koji su kandidati za čišćenje. Na nadzornoj ploči možete ih pregledati, simulirati radnje bez izmjena, staviti ih u karantenu, vratiti ih, pregledati povijest radnji ili ih trajno izbrisati.",
@@ -232,7 +249,8 @@
     "Delete": "Izbriši",
     "Quarantine": "Karantena",
     "Restore": "Vrati",
-    "Purge": "Trajno izbriši"
+    "Purge": "Trajno izbriši",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Rasporedi čišćenja nisu mogli biti spremljeni. Postojeći mjerači vremena možda su još uvijek aktivni."
   },
   "hu_HU": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Az Appdata Cleanup Plus megkeresi a nem használt Docker appdata-mappákat és a pontosan megfeleltetett ZFS-adatkészleteket mint tisztítási jelölteket. A tisztítási felületen áttekintheti őket, változtatások nélkül szimulálhatja a műveleteket, karanténba helyezheti vagy visszaállíthatja őket, megtekintheti az előzményeket, vagy véglegesen törölheti őket.",
@@ -250,7 +268,8 @@
     "Clear": "Törlés",
     "Conflict": "Ütközés",
     "Created": "Létrehozva",
-    "Dataset": "Adatkészlet"
+    "Dataset": "Adatkészlet",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Az ürítési ütemezések nem menthetők. A meglévő időzítők továbbra is aktívak lehetnek."
   },
   "id_ID": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus mencari folder Docker appdata yang tidak digunakan dan kandidat kumpulan data ZFS dengan kecocokan tepat. Dari dasbor pembersihan, Anda dapat meninjaunya, menyimulasikan tindakan tanpa perubahan, mengarantina, memulihkan, melihat riwayat tindakan, atau menghapusnya secara permanen.",
@@ -261,7 +280,8 @@
     "Delete": "Hapus",
     "Quarantine": "Karantina",
     "Restore": "Pulihkan",
-    "Purge": "Hapus permanen"
+    "Purge": "Hapus permanen",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Jadwal pembersihan tidak dapat disimpan. Timer yang ada mungkin masih aktif."
   },
   "it_IT": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus cerca cartelle Docker appdata inutilizzate e set di dati ZFS candidati con corrispondenza esatta. Dal pannello di pulizia è possibile esaminarli, simulare le azioni senza modifiche, metterli in quarantena, ripristinarli, consultare la cronologia o eliminarli definitivamente.",
@@ -272,7 +292,8 @@
     "Delete": "Elimina",
     "Quarantine": "Quarantena",
     "Restore": "Ripristina",
-    "Purge": "Elimina definitivamente"
+    "Purge": "Elimina definitivamente",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Impossibile salvare le pianificazioni di eliminazione. I timer esistenti potrebbero essere ancora attivi."
   },
   "ja_JA": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus は、未使用の Docker appdata フォルダーと、完全一致する ZFS データセットの候補を検出します。クリーンアップ画面で内容を確認し、変更を加えずに操作を試行したり、隔離、復元、操作履歴の確認、完全削除を行ったりできます。",
@@ -283,7 +304,8 @@
     "Delete": "削除",
     "Quarantine": "隔離",
     "Restore": "復元",
-    "Purge": "完全に削除"
+    "Purge": "完全に削除",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} パージ スケジュールを保存できませんでした。既存のタイマーはまだアクティブである可能性があります。"
   },
   "ko_KO": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus는 사용하지 않는 Docker appdata 폴더와 정확히 일치하는 ZFS 데이터 세트 후보를 찾습니다. 정리 대시보드에서 항목을 검토하고, 변경 없이 작업을 시뮬레이션하고, 격리하거나 복원하고, 작업 기록을 확인하거나 영구 삭제할 수 있습니다.",
@@ -294,7 +316,8 @@
     "Delete": "삭제",
     "Quarantine": "격리",
     "Restore": "복원",
-    "Purge": "영구 삭제"
+    "Purge": "영구 삭제",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} 삭제 일정을 저장할 수 없습니다. 기존 타이머가 계속 활성 상태일 수 있습니다."
   },
   "lv_LV": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus atrod neizmantotas Docker appdata mapes un precīzi atbilstošas ZFS datu kopas kā tīrīšanas kandidātus. Tīrīšanas panelī varat tās pārskatīt, simulēt darbības bez izmaiņām, ievietot karantīnā, atjaunot, apskatīt darbību vēsturi vai neatgriezeniski dzēst.",
@@ -306,7 +329,8 @@
     "Quarantine": "Karantīna",
     "Restore": "Atjaunot",
     "Purge": "Neatgriezeniski dzēst",
-    "DRY RUN": "IZMĒĢINĀJUMS BEZ IZMAIŅĀM"
+    "DRY RUN": "IZMĒĢINĀJUMS BEZ IZMAIŅĀM",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Tīrīšanas grafikus nevarēja saglabāt. Esošie taimeri joprojām var būt aktīvi."
   },
   "nl_NL": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus zoekt ongebruikte Docker appdata-mappen en exact overeenkomende ZFS-datasets als kandidaten voor opschoning. Via het opschoningsdashboard kunt u ze beoordelen, acties zonder wijzigingen simuleren, in quarantaine plaatsen, herstellen, de actiegeschiedenis bekijken of permanent verwijderen.",
@@ -319,7 +343,8 @@
     "Restore": "Herstellen",
     "Purge": "Definitief verwijderen",
     "ZFS dataset mount root": "Hoofdkoppelpunt van de ZFS-dataset",
-    "ZFS details": "ZFS-gegevens"
+    "ZFS details": "ZFS-gegevens",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Opschoonschema's kunnen niet worden opgeslagen. Bestaande timers kunnen nog steeds actief zijn."
   },
   "no_NO": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus finner ubrukte Docker appdata-mapper og nøyaktig samsvarende ZFS-datasett som kandidater for opprydding. Fra oppryddingspanelet kan du gjennomgå dem, simulere handlinger uten endringer, sette dem i karantene, gjenopprette dem, se historikken eller slette dem permanent.",
@@ -330,7 +355,8 @@
     "Delete": "Slett",
     "Quarantine": "Karantene",
     "Restore": "Gjenopprett",
-    "Purge": "Slett permanent"
+    "Purge": "Slett permanent",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Tømmeplaner kunne ikke lagres. Eksisterende tidtakere kan fortsatt være aktive."
   },
   "pl_PL": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus wyszukuje nieużywane foldery Docker appdata i dokładnie dopasowane zbiory danych ZFS jako kandydatów do czyszczenia. Panel czyszczenia umożliwia ich przeglądanie, symulowanie działań bez zmian, przenoszenie do kwarantanny, przywracanie, sprawdzanie historii lub trwałe usuwanie.",
@@ -342,7 +368,8 @@
     "Quarantine": "Kwarantanna",
     "Restore": "Przywróć",
     "Purge": "Usuń trwale",
-    "folder": "folder"
+    "folder": "folder",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Nie można zapisać harmonogramów usuwania. Istniejące timery mogą być nadal aktywne."
   },
   "pt_BR": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus encontra pastas Docker appdata sem uso e conjuntos de dados ZFS candidatos com correspondência exata. No painel de limpeza, você pode revisá-los, simular ações sem fazer alterações, colocá-los em quarentena, restaurá-los, consultar o histórico ou excluí-los permanentemente.",
@@ -353,7 +380,8 @@
     "Delete": "Excluir",
     "Quarantine": "Quarentena",
     "Restore": "Restaurar",
-    "Purge": "Excluir permanentemente"
+    "Purge": "Excluir permanentemente",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Não foi possível salvar as programações de limpeza. Os temporizadores existentes ainda podem estar ativos."
   },
   "pt_PT": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus encontra pastas Docker appdata sem utilização e conjuntos de dados ZFS candidatos com correspondência exata. No painel de limpeza, pode revê-los, simular ações sem efetuar alterações, colocá-los em quarentena, restaurá-los, consultar o histórico ou eliminá-los permanentemente.",
@@ -364,7 +392,8 @@
     "Delete": "Eliminar",
     "Quarantine": "Quarentena",
     "Restore": "Restaurar",
-    "Purge": "Eliminar permanentemente"
+    "Purge": "Eliminar permanentemente",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Não foi possível guardar as programações de limpeza. Os temporizadores existentes podem ainda estar ativos."
   },
   "ro_RO": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus găsește dosare Docker appdata neutilizate și seturi de date ZFS candidate cu potrivire exactă. Din panoul de curățare le puteți verifica, simula acțiuni fără modificări, pune în carantină, restaura, consulta istoricul sau șterge definitiv.",
@@ -375,7 +404,8 @@
     "Delete": "Șterge",
     "Quarantine": "Carantină",
     "Restore": "Restaurează",
-    "Purge": "Șterge definitiv"
+    "Purge": "Șterge definitiv",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Programele de curățare nu au putut fi salvate. Temporizatoarele existente pot fi încă active."
   },
   "ru_RU": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus находит неиспользуемые папки Docker appdata и точно сопоставленные наборы данных ZFS как кандидатов на очистку. На панели очистки можно проверить их, смоделировать действия без изменений, поместить в карантин, восстановить, посмотреть историю действий или удалить навсегда.",
@@ -386,7 +416,8 @@
     "Delete": "Удалить",
     "Quarantine": "Карантин",
     "Restore": "Восстановить",
-    "Purge": "Удалить навсегда"
+    "Purge": "Удалить навсегда",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Не удалось сохранить графики очистки. Существующие таймеры могут оставаться активными."
   },
   "sk_SK": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus vyhľadáva nepoužívané priečinky Docker appdata a presne zodpovedajúce množiny údajov ZFS ako kandidátov na čistenie. Na paneli čistenia ich môžete skontrolovať, simulovať akcie bez zmien, presunúť do karantény, obnoviť, zobraziť históriu alebo natrvalo odstrániť.",
@@ -397,7 +428,8 @@
     "Delete": "Vymazať",
     "Quarantine": "Karanténa",
     "Restore": "Obnoviť",
-    "Purge": "Natrvalo vymazať"
+    "Purge": "Natrvalo vymazať",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Plány čistenia sa nepodarilo uložiť. Existujúce časovače môžu byť stále aktívne."
   },
   "sl_SI": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus poišče neuporabljene mape Docker appdata in natančno ujemajoče se podatkovne zbirke ZFS kot kandidate za čiščenje. Na nadzorni plošči jih lahko pregledate, simulirate dejanja brez sprememb, postavite v karanteno, obnovite, pregledate zgodovino ali trajno izbrišete.",
@@ -409,7 +441,8 @@
     "Quarantine": "Karantena",
     "Restore": "Obnovi",
     "Purge": "Trajno izbriši",
-    "DRY RUN": "PREIZKUS BREZ SPREMEMB"
+    "DRY RUN": "PREIZKUS BREZ SPREMEMB",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Razporedov čiščenja ni bilo mogoče shraniti. Obstoječi časovniki so morda še vedno aktivni."
   },
   "sr_RS": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus проналази некоришћене фасцикле Docker appdata и тачно подударне скупове података ZFS као кандидате за чишћење. На контролној табли можете их прегледати, симулирати радње без измена, ставити у карантин, вратити их, прегледати историју радњи или их трајно избрисати.",
@@ -420,7 +453,8 @@
     "Delete": "Обриши",
     "Quarantine": "Карантин",
     "Restore": "Врати",
-    "Purge": "Трајно обриши"
+    "Purge": "Трајно обриши",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Распоред чишћења није могао да се сачува. Постојећи тајмери ​​могу и даље бити активни."
   },
   "sv_SE": {
     "Runtime information": "Information om körmiljön",
@@ -433,7 +467,8 @@
     "Quarantine": "Karantän",
     "Restore": "Återställ",
     "Purge": "Ta bort permanent",
-    "Action gate": "Åtgärdens tillgänglighet"
+    "Action gate": "Åtgärdens tillgänglighet",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Rensningsscheman kunde inte sparas. Befintliga timer kan fortfarande vara aktiva."
   },
   "th_TH": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus ค้นหาโฟลเดอร์ Docker appdata ที่ไม่ได้ใช้งานและชุดข้อมูล ZFS ที่ตรงกันอย่างแม่นยำซึ่งเป็นรายการที่อาจทำความสะอาดได้ จากแดชบอร์ด คุณสามารถตรวจสอบรายการ จำลองการทำงานโดยไม่เปลี่ยนแปลงข้อมูล กักกัน กู้คืน ดูประวัติการทำงาน หรือลบอย่างถาวรได้",
@@ -446,7 +481,8 @@
     "Restore": "กู้คืน",
     "Purge": "ลบอย่างถาวร",
     "Action": "การดำเนินการ",
-    "Action gate": "ความพร้อมในการดำเนินการ"
+    "Action gate": "ความพร้อมในการดำเนินการ",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} ไม่สามารถบันทึกกำหนดการล้างข้อมูลได้ ตัวจับเวลาที่มีอยู่อาจยังคงทำงานอยู่"
   },
   "tr_TR": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus, kullanılmayan Docker appdata klasörlerini ve tam eşleşen ZFS veri kümesi adaylarını bulur. Temizleme panelinden bunları inceleyebilir, değişiklik yapmadan işlemleri simüle edebilir, karantinaya alabilir, geri yükleyebilir, işlem geçmişini görüntüleyebilir veya kalıcı olarak silebilirsiniz.",
@@ -457,7 +493,9 @@
     "Delete": "Sil",
     "Quarantine": "Karantina",
     "Restore": "Geri yükle",
-    "Purge": "Kalıcı olarak sil"
+    "Purge": "Kalıcı olarak sil",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Temizleme programları kaydedilemedi. Mevcut zamanlayıcılar hâlâ etkin olabilir.",
+    "tracked container paths": "izlenen kapsayıcı yolları"
   },
   "uk_UA": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus знаходить невикористовувані папки Docker appdata і точно зіставлені набори даних ZFS як кандидати на очищення. На панелі очищення можна їх переглянути, змоделювати дії без змін, помістити в карантин, відновити, переглянути історію дій або видалити назавжди.",
@@ -468,7 +506,8 @@
     "Delete": "Видалити",
     "Quarantine": "Карантин",
     "Restore": "Відновити",
-    "Purge": "Видалити назавжди"
+    "Purge": "Видалити назавжди",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Не вдалося зберегти графіки очищення. Існуючі таймери можуть бути ще активними."
   },
   "vi_VN": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus tìm các thư mục Docker appdata không sử dụng và các tập dữ liệu ZFS ứng viên khớp chính xác. Từ bảng điều khiển dọn dẹp, bạn có thể xem xét, mô phỏng thao tác mà không thay đổi dữ liệu, cách ly, khôi phục, xem lịch sử thao tác hoặc xóa vĩnh viễn.",
@@ -479,7 +518,8 @@
     "Delete": "Xóa",
     "Quarantine": "Cách ly",
     "Restore": "Khôi phục",
-    "Purge": "Xóa vĩnh viễn"
+    "Purge": "Xóa vĩnh viễn",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Không thể lưu lịch thanh lọc. Bộ hẹn giờ hiện tại có thể vẫn hoạt động."
   },
   "zh_CN": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus 查找未使用的 Docker appdata 文件夹和精确匹配的 ZFS 数据集候选项。您可以在清理面板中查看这些项目、模拟操作而不更改数据、隔离、恢复、查看操作历史或永久删除。",
@@ -1081,7 +1121,9 @@
     "The configured appdata source scan found this folder, but Docker is offline, so active container mappings could not be verified.": "配置的 appdata 源扫描找到了此文件夹，但 Docker 处于离线状态，因此无法验证已安装容器的映射。",
     "ZFS details": "ZFS 详情",
     "{message} found this folder, but Docker is offline, so active container mappings could not be verified.": "{message} 找到了此文件夹，但 Docker 处于离线状态，因此无法验证已安装容器的映射。",
-    "{message} still reference this folder at {paths}. Docker is offline, so active container mappings could not be verified.": "{message} 仍然在 {paths} 引用此文件夹。 Docker 处于离线状态，因此无法验证已安装容器的映射。"
+    "{message} still reference this folder at {paths}. Docker is offline, so active container mappings could not be verified.": "{message} 仍然在 {paths} 引用此文件夹。 Docker 处于离线状态，因此无法验证已安装容器的映射。",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} 未能保存定时删除计划，原有计划可能仍然有效。",
+    "tracked container paths": "已记录的容器路径"
   },
   "zh_TW": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus 尋找未使用的 Docker appdata 資料夾和精確比對的 ZFS 資料集候選項。您可以在清理面板中檢視這些項目、模擬操作而不變更資料、隔離、還原、檢視操作歷程或永久刪除。",
@@ -1092,6 +1134,7 @@
     "Delete": "刪除",
     "Quarantine": "隔離",
     "Restore": "還原",
-    "Purge": "永久刪除"
+    "Purge": "永久刪除",
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} 無法儲存清除計劃。現有計時器可能仍處於活動狀態。"
   }
 }

@@ -5,6 +5,18 @@ $root = dirname(__DIR__) . '/source/appdata.cleanup.plus/usr/local/emhttp/plugin
 require_once $root . '/include/helpers.php';
 require_once $root . '/include/dashboard.php';
 require_once $root . '/include/quarantine.php';
+if (($argv[1] ?? '') === '--history') {
+  // Deliberately do not load the producer fixture or register any messages.
+  $saved = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+  $history = array();
+  foreach (acpLocales() as $locale => $definition) {
+    $_SESSION['locale'] = $locale;
+    $history[$locale] = acpLocalizeResponse($saved[$locale]);
+  }
+  echo json_encode($history, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+  exit;
+}
+require_once __DIR__ . '/i18n_scheduled_purge_fixture.php';
 $counts = array_merge(range(0, 250), array(1000, 1001, 1002, 10000, 1000000, 2000000, 1000001, 1234567890));
 $result = array();
 foreach (acpLocales() as $locale => $definition) {
@@ -33,12 +45,21 @@ foreach (acpLocales() as $locale => $definition) {
   unset($GLOBALS['acpMessageTemplates'][$payload['candidate']['reason']]);
   $localized = acpLocalizeResponse($payload);
   if ($before !== serialize($payload)) throw new RuntimeException('Localization mutated input');
+  $scheduled = \I18nScheduledPurgeFixture\run();
+  $scheduledBefore = serialize($scheduled);
+  $scheduled['immediate'] = acpLocalizeResponse($scheduled['execution']);
+  $scheduledRaw = $scheduled; unset($scheduledRaw['immediate']);
+  if ($scheduledBefore !== serialize($scheduledRaw)) throw new RuntimeException('Scheduled purge localization mutated audit input');
+  $scheduled['pauseSaved'] = \I18nScheduledPurgeFixture\run(true);
+  $legacy = array('targetPaths'=>array(), 'targetSummary'=>'tracked container paths');
+  $literalTarget = array('targetPaths'=>array('tracked container paths'), 'targetSummary'=>'tracked container paths');
   // Simulate a later request reading English impact text saved in audit history.
   $impact = 'Recursive destroy will also remove 2 child datasets. Recursive destroy will also remove 21 snapshots.';
   unset($GLOBALS['acpMessageParts'][$impact], $GLOBALS['acpMessageTemplates'][$impact]);
   $categories = array();
   foreach ($counts as $count) $categories[] = acpPluralCategory($count);
   $result[$locale] = array('counts'=>$counts, 'categories'=>$categories, 'payload'=>$localized, 'original'=>$payload,
+    'scheduled'=>$scheduled, 'legacyTarget'=>acpLocalizeResponse($legacy), 'literalTarget'=>acpLocalizeResponse($literalTarget),
     'formattedCounts'=>array_map('acpFormatCount', $counts),
     'countMessages'=>array_map(function($n) { return acpLocalizeText(acpCountMessage('{count} items were submitted.', $n)); }, $counts),
     'legacyImpact'=>acpLocalizeText($impact), 'oldImpact'=>acpLocalizeText('Recursive destroy will also remove 2 child datasets and 21 snapshots.'),
