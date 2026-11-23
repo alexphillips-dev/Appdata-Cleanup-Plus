@@ -563,6 +563,7 @@
   "Quarantine registry": "Registri karantina",
   "Quarantine registry checks found no failed purge state.": "Pemeriksaan registri karantina tidak menemukan status pembersihan yang gagal.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Pemeriksaan pendaftaran karantina tidak lengkap atau tidak tersedia; meninjau kode alasannya.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Karantina memerlukan tujuan terverifikasi dalam sistem file terpasang yang sama. Folder sumber dibiarkan di tempatnya.",
   "Quarantine selected": "Karantina dipilih",
   "Quarantine selected folders?": "Karantina folder yang dipilih?",
   "Quarantined": "Dikarantina",

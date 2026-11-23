@@ -563,6 +563,7 @@
   "Quarantine registry": "รีจิสทรีกักกัน",
   "Quarantine registry checks found no failed purge state.": "การตรวจสอบรีจิสทรีกักกันพบว่าไม่มีสถานะการล้างข้อมูลล้มเหลว",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "การตรวจสอบรีจิสทรีการกักกันไม่สมบูรณ์หรือไม่พร้อมใช้งาน ตรวจสอบรหัสเหตุผลของมัน",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "การกักกันต้องมีปลายทางที่ได้รับการยืนยันภายในระบบไฟล์ที่เมาท์เดียวกัน โฟลเดอร์ต้นทางถูกทิ้งไว้ที่เดิม",
   "Quarantine selected": "เลือกเขตกักบริเวณแล้ว",
   "Quarantine selected folders?": "กักเก็บโฟลเดอร์ที่เลือกใช่ไหม",
   "Quarantined": "ถูกกักกัน",

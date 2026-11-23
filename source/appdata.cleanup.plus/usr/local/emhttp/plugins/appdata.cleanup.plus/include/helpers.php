@@ -752,6 +752,14 @@ function classifyAppdataCandidate($path, $settings=null) {
     return $classification;
   }
 
+  if (in_array(".appdata-cleanup-plus-quarantine", $segments, true)) {
+    $classification["risk"] = "blocked";
+    $classification["riskLabel"] = "Locked";
+    $classification["riskReason"] = "Quarantine folders cannot be acted on here.";
+    $classification["canDelete"] = false;
+    return $classification;
+  }
+
   if ( $insideConfiguredSource ) {
     if ( appdataCleanupPlusPathsEquivalent($matchedSourceRoot, $normalizedPath) ) {
       $classification["risk"] = "blocked";

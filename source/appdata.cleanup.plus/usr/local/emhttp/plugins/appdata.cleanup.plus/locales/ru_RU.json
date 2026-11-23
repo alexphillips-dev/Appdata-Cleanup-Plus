@@ -563,6 +563,7 @@
   "Quarantine registry": "Карантинный реестр",
   "Quarantine registry checks found no failed purge state.": "Карантинные проверки реестра не выявили неудачных состояний очистки.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Карантинная проверка реестра была неполной или недоступной; просмотрите код причины.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Для карантина требуется проверенное место назначения в той же смонтированной файловой системе. Исходная папка осталась на месте.",
   "Quarantine selected": "Карантин выбран",
   "Quarantine selected folders?": "Поместить выбранные папки в карантин?",
   "Quarantined": "На карантине",

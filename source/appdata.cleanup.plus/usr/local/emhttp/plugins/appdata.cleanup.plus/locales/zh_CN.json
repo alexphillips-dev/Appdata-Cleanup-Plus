@@ -563,6 +563,7 @@
   "Quarantine registry": "隔离记录表",
   "Quarantine registry checks found no failed purge state.": "隔离记录表检查未发现永久删除失败的状态。",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "隔离记录表检查未完成或未能执行，请查看原因代码。",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "隔离需要同一已安装文件系统内的经过验证的目标。源文件夹保留在原处。",
   "Quarantine selected": "隔离所选项",
   "Quarantine selected folders?": "要隔离所选文件夹吗？",
   "Quarantined": "已隔离",

@@ -563,6 +563,7 @@
   "Quarantine registry": "Registre de quarantena",
   "Quarantine registry checks found no failed purge state.": "Les comprovacions del registre de quarantena no han trobat cap estat de purga fallida.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "La inspecció del registre de quarantena estava incompleta o no estava disponible; revisa el seu codi de raó.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "La quarantena requereix una destinació verificada dins del mateix sistema de fitxers muntat. La carpeta d'origen s'ha deixat al seu lloc.",
   "Quarantine selected": "S'ha seleccionat la quarantena",
   "Quarantine selected folders?": "Posar en quarantena les carpetes seleccionades?",
   "Quarantined": "En quarantena",

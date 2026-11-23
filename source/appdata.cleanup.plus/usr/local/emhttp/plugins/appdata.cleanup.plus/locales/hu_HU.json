@@ -563,6 +563,7 @@
   "Quarantine registry": "Karantén nyilvántartás",
   "Quarantine registry checks found no failed purge state.": "A karantén rendszerleíró adatbázis ellenőrzései nem találtak sikertelen tisztítási állapotot.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "A karantén-nyilvántartási ellenőrzés hiányos vagy nem volt elérhető; tekintse át annak okkódját.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "A karanténhoz ugyanazon a csatolt fájlrendszeren belüli ellenőrzött cél szükséges. A forrásmappa a helyén maradt.",
   "Quarantine selected": "Karantén kiválasztva",
   "Quarantine selected folders?": "Karanténba helyezi a kiválasztott mappákat?",
   "Quarantined": "Karanténba",

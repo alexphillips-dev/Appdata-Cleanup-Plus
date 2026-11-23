@@ -563,6 +563,7 @@
   "Quarantine registry": "Rejestr kwarantanny",
   "Quarantine registry checks found no failed purge state.": "Sprawdzanie rejestru w ramach kwarantanny nie wykazało stanu zakończonego niepowodzeniem.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Kontrola rejestru kwarantanny była niekompletna lub niedostępna; sprawdź kod przyczyny.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Kwarantanna wymaga zweryfikowanego miejsca docelowego w tym samym zamontowanym systemie plików. Folder źródłowy pozostawiono na miejscu.",
   "Quarantine selected": "Wybrano kwarantannę",
   "Quarantine selected folders?": "Poddawać wybrane foldery kwarantannie?",
   "Quarantined": "Poddano kwarantannie",

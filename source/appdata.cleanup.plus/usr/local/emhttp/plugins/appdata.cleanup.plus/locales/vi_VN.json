@@ -563,6 +563,7 @@
   "Quarantine registry": "Sổ đăng ký kiểm dịch",
   "Quarantine registry checks found no failed purge state.": "Kiểm tra sổ đăng ký cách ly không tìm thấy trạng thái thanh lọc không thành công.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Việc kiểm tra đăng ký kiểm dịch chưa đầy đủ hoặc không có sẵn; xem lại mã lý do của nó.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Việc cách ly yêu cầu một đích đến được xác minh trong cùng một hệ thống tệp được gắn kết. Thư mục nguồn đã được giữ nguyên.",
   "Quarantine selected": "Đã chọn vùng cách ly",
   "Quarantine selected folders?": "Cách ly các thư mục đã chọn?",
   "Quarantined": "Cách ly",

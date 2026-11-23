@@ -563,6 +563,7 @@
   "Quarantine registry": "Karantæneregister",
   "Quarantine registry checks found no failed purge state.": "Kontrol af karantæneregistret fandt ingen mislykket udrensningstilstand.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Inspektion af karantæneregisteret var ufuldstændig eller ikke tilgængelig; gennemgå dens årsagskode.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Karantæne kræver en bekræftet destination inden for det samme monterede filsystem. Kildemappen blev efterladt på plads.",
   "Quarantine selected": "Karantæne valgt",
   "Quarantine selected folders?": "Sætte valgte mapper i karantæne?",
   "Quarantined": "I karantæne",

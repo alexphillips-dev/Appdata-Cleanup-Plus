@@ -1774,6 +1774,65 @@ behaviorSmokeAssertTrue(is_dir($legacyRecoveredDestination), "Unverified legacy 
 $legacyRecoveredRestoreResult = restoreTrackedQuarantineEntry($legacyRecoveredEntry);
 behaviorSmokeAssertSame("restored", $legacyRecoveredRestoreResult["status"], "Unmarked legacy data should remain restorable to its safe original path.");
 
+// The pool and user share are aliases for ownership, but have distinct mount
+// IDs for rename even when they have the same device number.
+$poolQuarantineSource = $manualAliasSourceRoot . "/pool-quarantine";
+$poolQuarantineRoot = $manualAliasSourceRoot . "/.appdata-cleanup-plus-quarantine";
+$shareQuarantineRoot = $appdataShareRoot . "/.appdata-cleanup-plus-quarantine";
+behaviorSmokeAssertTrue(mkdir($poolQuarantineSource), "Direct-pool quarantine source should exist.");
+file_put_contents($poolQuarantineSource . "/keep.txt", "pool-owned data");
+$poolCandidate = array("name" => "pool-quarantine", "path" => $poolQuarantineSource, "realPath" => realpath($poolQuarantineSource));
+$baseSettings = getAppdataCleanupPlusSafetySettings();
+$poolSettings = array_merge($baseSettings, array("manualAppdataSources" => array($manualAliasSourceRoot)));
+behaviorSmokeAssertSame(array($appdataShareRoot), getAppdataCleanupPlusConfiguredSourceRoots($poolSettings), "Manual alias remains deduplicated for discovery and ownership.");
+$sharePath = str_replace(" ", '\040', appdataCleanupPlusCanonicalizePath(realpath($appdataShareRoot)));
+$GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNTINFO"] =
+  "36 25 0:32 / / rw - ext4 /dev/root rw\n" .
+  "37 36 0:32 / " . $sharePath . " rw - ext4 /dev/root rw\n" .
+  "38 36 0:32 / /mnt/fcache rw - ext4 /dev/root rw\n";
+$shareDirectoriesBefore = scandir($shareQuarantineRoot);
+$registryBefore = getAppdataCleanupPlusQuarantineRegistry();
+$crossPreview = executeCandidateOperation(array($poolCandidate), $baseSettings, "preview_quarantine")["results"][0];
+$crossMove = executeCandidateOperation(array($poolCandidate), $baseSettings, "quarantine")["results"][0];
+behaviorSmokeAssertSame("error", $crossPreview["status"], "Cross-mount preview must fail before preparing a destination.");
+behaviorSmokeAssertSame("error", $crossMove["status"], "Cross-mount execution must reject the same plan.");
+behaviorSmokeAssertSame($crossPreview["message"], $crossMove["message"], "Preview and execution should explain the same-mount requirement.");
+behaviorSmokeAssertContains("same mounted filesystem", $crossMove["message"], "A mount mismatch should receive an actionable explanation.");
+behaviorSmokeAssertSame($shareDirectoriesBefore, scandir($shareQuarantineRoot), "Cross-mount rejection must create no destination directories.");
+behaviorSmokeAssertSame($registryBefore, getAppdataCleanupPlusQuarantineRegistry(), "Cross-mount rejection must leave the registry intact.");
+behaviorSmokeAssertSame("pool-owned data", file_get_contents($poolQuarantineSource . "/keep.txt"), "Rejected quarantine must preserve source bytes.");
+
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings($poolSettings), "Direct pool root should persist for recovery.");
+behaviorSmokeAssertTrue(symlink($stateRoot, $poolQuarantineRoot), "Place a symlink at the planned quarantine root.");
+$unsafeMove = executeCandidateOperation(array($poolCandidate), $poolSettings, "quarantine")["results"][0];
+behaviorSmokeAssertSame("error", $unsafeMove["status"], "A quarantine-root symlink must block the move.");
+behaviorSmokeAssertSame("pool-owned data", file_get_contents($poolQuarantineSource . "/keep.txt"), "A destination symlink must leave the source intact.");
+unlink($poolQuarantineRoot);
+$poolPreview = executeCandidateOperation(array($poolCandidate), $poolSettings, "preview_quarantine")["results"][0];
+behaviorSmokeAssertSame("ready", $poolPreview["status"], "A direct-pool destination can be previewed on its exact mount.");
+behaviorSmokeAssertTrue(startsWith($poolPreview["destination"], $poolQuarantineRoot . "/"), "Preview uses the saved pool root omitted from effective sources.");
+behaviorSmokeAssertSame(false, is_dir($poolQuarantineRoot), "A successful preview must not create the quarantine root.");
+$poolMove = executeCandidateOperation(array($poolCandidate), $poolSettings, "quarantine")["results"][0];
+behaviorSmokeAssertSame("quarantined", $poolMove["status"], "Quarantine should rename the directory on the same mount.");
+behaviorSmokeAssertTrue($poolMove["metadataSaved"], "Quarantine must write the registry and recovery marker.");
+behaviorSmokeAssertSame("pool-owned data", file_get_contents($poolMove["destination"] . "/keep.txt"), "Same-mount rename preserves the file bytes.");
+behaviorSmokeAssertSame(false, is_dir($poolQuarantineSource), "Successful quarantine moves the original directory.");
+behaviorSmokeAssertSame(false, classifyAppdataCandidate($poolMove["destination"], $poolSettings)["canDelete"], "Quarantine paths remain protected from candidate cleanup.");
+
+// A reload with only the marker must rediscover the physical path.
+unlink(appdataCleanupPlusQuarantineRegistryFile());
+$poolEntries = buildQuarantineManagerPayload(true)["entries"];
+behaviorSmokeAssertSame(1, count($poolEntries), "Marker recovery finds the pool entry exactly once.");
+behaviorSmokeAssertSame($poolQuarantineSource, $poolEntries[0]["sourcePath"], "Marker recovery preserves the original pool path.");
+behaviorSmokeAssertSame($poolMove["destination"], $poolEntries[0]["destination"], "Marker recovery preserves the exact quarantine location.");
+behaviorSmokeAssertSame("marker", $poolEntries[0]["recoveryOrigin"], "Recovered entries retain marker provenance.");
+behaviorSmokeAssertSame("", $poolEntries[0]["purgeAt"], "Marker recovery does not rearm a purge.");
+behaviorSmokeAssertSame("restored", restoreTrackedQuarantineEntry($poolEntries[0])["status"], "A reloaded pool entry must restore to the original mount.");
+behaviorSmokeAssertSame("pool-owned data", file_get_contents($poolQuarantineSource . "/keep.txt"), "Restore preserves the original bytes.");
+behaviorSmokeAssertSame($shareDirectoriesBefore, scandir($shareQuarantineRoot), "Pool quarantine and restore never write to the user-share quarantine tree.");
+unset($GLOBALS["APPDATA_CLEANUP_PLUS_TEST_MOUNTINFO"]);
+behaviorSmokeAssertTrue(setAppdataCleanupPlusSafetySettings($baseSettings), "Restore the previous test settings.");
+
 if ( $appdataShareUsesSymlink ) {
   behaviorSmokeAssertSame("", buildPathSecurityLockReason($templatedOrphanPath), "Configured appdata share root symlinks should not lock inside-share candidates.");
   behaviorSmokeAssertSame(false, ! empty($filesystemRow["policyLocked"]), "Configured appdata share root symlinks should leave inside-share discovery rows actionable.");

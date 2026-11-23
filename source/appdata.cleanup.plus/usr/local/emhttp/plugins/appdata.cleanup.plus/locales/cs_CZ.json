@@ -563,6 +563,7 @@
   "Quarantine registry": "Karanténní registr",
   "Quarantine registry checks found no failed purge state.": "Kontroly karanténního registru nenalezly žádný neúspěšný stav čištění.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Kontrola karanténního registru byla neúplná nebo nedostupná; zkontrolovat jeho kód příčiny.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Karanténa vyžaduje ověřený cíl v rámci stejného připojeného souborového systému. Zdrojová složka byla ponechána na místě.",
   "Quarantine selected": "Vybrána karanténa",
   "Quarantine selected folders?": "Chcete vybrané složky uložit do karantény?",
   "Quarantined": "V karanténě",

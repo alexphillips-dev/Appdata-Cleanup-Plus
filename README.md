@@ -118,6 +118,8 @@ Default quarantine root:
 /mnt/user/appdata/.appdata-cleanup-plus-quarantine
 ```
 
+For a folder reached through a configured pool path, quarantine stays under that pool's appdata source. Dry run checks whether the destination is on the same mounted filesystem before any folders are moved.
+
 Quarantine manager tools:
 
 - Restore selected folders to their original path.

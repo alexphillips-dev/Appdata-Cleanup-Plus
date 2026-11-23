@@ -563,6 +563,7 @@
   "Quarantine registry": "Quarantaine register",
   "Quarantine registry checks found no failed purge state.": "Controles van het quarantaineregister hebben geen mislukte opschoonstatus gevonden.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Inspectie van het quarantaineregister was onvolledig of niet beschikbaar; controleer de redencode.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Quarantaine vereist een geverifieerde bestemming binnen hetzelfde aangekoppelde bestandssysteem. De bronmap bleef op zijn plaats.",
   "Quarantine selected": "Quarantaine geselecteerd",
   "Quarantine selected folders?": "Geselecteerde mappen in quarantaine plaatsen?",
   "Quarantined": "In quarantaine geplaatst",

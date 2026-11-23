@@ -563,6 +563,7 @@
   "Quarantine registry": "검역등록부",
   "Quarantine registry checks found no failed purge state.": "격리 레지스트리 검사에서 실패한 제거 상태가 발견되지 않았습니다.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "검역소 등록 검사가 불완전하거나 불가능했습니다. 이유 코드를 검토하세요.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "격리에는 동일한 마운트된 파일 시스템 내에서 확인된 대상이 필요합니다. 원본 폴더는 그대로 유지되었습니다.",
   "Quarantine selected": "검역소가 선택됨",
   "Quarantine selected folders?": "선택한 폴더를 격리하시겠습니까?",
   "Quarantined": "격리됨",

@@ -563,6 +563,7 @@
   "Quarantine registry": "Karantiini register",
   "Quarantine registry checks found no failed purge state.": "Karantiini registrikontrollid ei leidnud ühtegi ebaõnnestunud puhastusolekut.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Karantiiniregistri kontroll oli puudulik või ei olnud saadaval; vaadake üle selle põhjuskood.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Karantiini jaoks on vaja kinnitatud sihtkohta samas ühendatud failisüsteemis. Lähtekaust jäeti oma kohale.",
   "Quarantine selected": "Karantiin valitud",
   "Quarantine selected folders?": "Valitud kaustad karantiini?",
   "Quarantined": "Karantiinis",
