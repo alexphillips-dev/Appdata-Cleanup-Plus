@@ -1677,7 +1677,9 @@ function sweepExpiredAppdataCleanupPlusQuarantineEntries() {
     });
     if (!$paused) {
       foreach ($execution["results"] as &$result) {
-        if (in_array($result["status"], array("error", "blocked"), true)) $result["message"] .= " " . acpMessage("Purge schedules could not be saved. Existing timers may still be active.");
+        // A complete template also localizes persisted audit text in a later
+        // request, after the in-memory message registrations are gone.
+        if (in_array($result["status"], array("error", "blocked"), true)) $result["message"] = acpMessage("{message} Purge schedules could not be saved. Existing timers may still be active.", array("message" => $result["message"]));
       }
       unset($result);
       $execution["summary"]["errors"]++;

@@ -7,6 +7,9 @@ const {execFileSync} = require('node:child_process');
 const root = path.resolve(__dirname, '../source/appdata.cleanup.plus/usr/local/emhttp/plugins/appdata.cleanup.plus');
 const locales = JSON.parse(fs.readFileSync(path.join(root, 'locales/locales.json'), 'utf8'));
 const cases = JSON.parse(execFileSync('php', [path.join(__dirname, 'i18n_cases.php')], {encoding:'utf8', maxBuffer:10e6}));
+const storedAudits = Object.fromEntries(Object.entries(cases).map(([locale, fixture]) => [locale, fixture.scheduled.audit]));
+const histories = JSON.parse(execFileSync('php', [path.join(__dirname, 'i18n_cases.php'), '--history'], {input:JSON.stringify(storedAudits), encoding:'utf8', maxBuffer:10e6}));
+const recordedTargetLabels = {lv_LV:'reģistrētie konteineru ceļi', sl_SI:'zabeležene poti vsebnikov'};
 const source = name => fs.readFileSync(path.join(root, 'scripts', name), 'utf8');
 const main = source('appdata.cleanup.plus.js');
 assert.equal(main.split('$(init);').length, 2, 'Test harness must intercept only page initialization');
@@ -24,6 +27,42 @@ for (const [locale, definition] of Object.entries(locales)) {
   vm.runInContext(source('appdata.cleanup.plus.panels.js'), context);
   vm.runInContext(main.replace('$(init);', hook), context);
   const ACP = window.AppdataCleanupPlus, flow = window.flow;
+  const scheduled = fixture.scheduled;
+  const warning = 'Purge schedules could not be saved. Existing timers may still be active.';
+  const compound = '{message} ' + warning;
+  for (const [index, original] of scheduled.before.entries()) {
+    const failed = ['blocked', 'error'].includes(original.status);
+    const english = original.message + (failed ? ' ' + warning : '');
+    assert.equal(scheduled.execution.results[index].message, english, `${locale}: stable English action result`);
+    assert.equal(scheduled.audit.results[index].message, english, `${locale}: stable English stored audit`);
+    const base = index === 0 ? ACP.tr(original.message) : index === 1 ? ACP.tr('Delete failed: {error}').replace('{error}', '/mnt/user/Delete/<b>literal</b>\nraw error') : index === 2 ? original.message : ACP.tr('Path: {path}').replace('{path}', '/mnt/user/Delete');
+    const expected = failed ? (catalog[compound] || compound).replace('{message}', base) : base;
+    assert.equal(scheduled.immediate.results[index].message, expected, `${locale}: immediate scheduled-purge warning`);
+    assert.equal(histories[locale].results[index].message, expected, `${locale}: fresh-request audit warning`);
+    for (const field of ['id','status','path','name']) {
+      assert.equal(scheduled.immediate.results[index][field], original[field], `${locale}: immediate literal ${field}`);
+      assert.equal(histories[locale].results[index][field], original[field], `${locale}: history literal ${field}`);
+    }
+    assert.deepEqual(scheduled.pauseSaved.execution.results[index], original, 'Successful schedule save adds no warning');
+    assert.equal(scheduled.registry[original.id].purgeAt, '2000-01-01T00:00:00Z', 'Failed save leaves timer unchanged');
+    assert.equal(scheduled.pauseSaved.registry[original.id].purgeAt, failed ? '' : '2000-01-01T00:00:00Z');
+  }
+  assert.equal(scheduled.execution.summary.errors, scheduled.pauseSaved.execution.summary.errors + 1, 'Failed pause retains its extra error count');
+  const scheduledHtml = ACP.buildAuditHistoryModalHtml({strings:{},state:{auditHistory:[histories[locale]]}});
+  for (const result of histories[locale].results) assert.ok(scheduledHtml.includes(ACP.escapeHtml(result.message)), `${locale}: history displays escaped localized results`);
+  assert.ok(!scheduledHtml.includes('<b>literal</b>'), 'Raw error markup must not become HTML');
+  assert.equal(fixture.literalTarget.targetSummary, 'tracked container paths', 'User-supplied target names stay literal');
+  if (Object.hasOwn(recordedTargetLabels, locale)) assert.equal(fixture.legacyTarget.targetSummary, recordedTargetLabels[locale], `${locale}: tracked means recorded paths, not vehicle treads`);
+  if (locale !== 'en_US') {
+    assert.notEqual(fixture.legacyTarget.targetSummary, 'tracked container paths', `${locale}: legacy target summary translated`);
+    assert.ok(!scheduled.immediate.results[0].message.includes('Purge schedules could not be saved'), `${locale}: immediate warning translated`);
+    assert.ok(!histories[locale].results[0].message.includes('Purge schedules could not be saved'), `${locale}: stored warning translated`);
+  }
+  if (locale === 'zh_CN') {
+    assert.equal(scheduled.immediate.results[0].message, '无法核实隔离来源。该文件夹留在原处。 未能保存定时删除计划，原有计划可能仍然有效。');
+    assert.equal(histories[locale].results[0].message, scheduled.immediate.results[0].message);
+    assert.equal(fixture.legacyTarget.targetSummary, '已记录的容器路径');
+  }
   flow.state.settings = {enablePermanentDelete:true,enableZfsDatasetDelete:true};
   flow.state.dockerRunning = true;
   flow.state.rows = [{id:'unverified',risk:'deletable',scanVerificationLocked:true,policyReason:'verification failure',status:'unverified',canDelete:false}];

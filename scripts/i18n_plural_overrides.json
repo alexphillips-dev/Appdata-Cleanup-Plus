@@ -28,5 +28,76 @@
   },
   "he_IL": {
     "Destroy will also remove {count} snapshots.": {"one":"המחיקה תסיר גם תמונת מצב אחת."}
+  },
+  "zh_CN": {
+    "{count} template backups were removed.": {
+      "other": "已删除 {count} 个模板备份。"
+    },
+    "{count} items ready": {
+      "other": "{count} 项已就绪"
+    },
+    "{count} items blocked": {
+      "other": "{count} 项被阻止"
+    },
+    "{count} items ignored": {
+      "other": "{count} 项已忽略"
+    },
+    "Showing {shown} of {count} history entries.": {
+      "other": "共 {count} 条历史记录，当前显示 {shown} 条。"
+    },
+    "{count} quarantined folders tracked": {
+      "other": "已记录 {count} 个隔离文件夹"
+    },
+    "Delete {count} folders": {
+      "other": "永久删除 {count} 个文件夹"
+    },
+    "Delete {count} items": {
+      "other": "永久删除 {count} 项"
+    },
+    "Destroy {count} datasets": {
+      "other": "销毁 {count} 个数据集"
+    },
+    "{count} selected folders can still restore normally.": {
+      "other": "所选文件夹中有 {count} 个仍可正常恢复。"
+    },
+    "Saved {count} ZFS mappings and rescanning.": {
+      "other": "已保存 {count} 条 ZFS 映射，正在重新扫描。"
+    },
+    "{count} months ago": {
+      "other": "{count} 个月前"
+    },
+    "{count} years ago": {
+      "other": "{count} 年前"
+    },
+    "Scheduled to purge in {count} days.": {
+      "other": "计划在 {count} 天后永久删除。"
+    },
+    "Purges in {count} days": {
+      "other": "将在 {count} 天后永久删除"
+    },
+    "Purges in {count} hours": {
+      "other": "将在 {count} 小时后永久删除"
+    },
+    "Purges in {count} minutes": {
+      "other": "将在 {count} 分钟后永久删除"
+    },
+    "{count} snapshots": {
+      "other": "{count} 个快照"
+    },
+    "{count} conflicts": {
+      "other": "{count} 处冲突"
+    },
+    "{count} folders were deleted.": {
+      "other": "已删除 {count} 个文件夹。"
+    },
+    "{count} folders were permanently purged.": {
+      "other": "已永久删除 {count} 个隔离文件夹。"
+    },
+    "{count} items were already missing.": {
+      "other": "{count} 项原已不存在。"
+    },
+    "{count} items were blocked.": {
+      "other": "{count} 项被阻止。"
+    }
   }
 }
