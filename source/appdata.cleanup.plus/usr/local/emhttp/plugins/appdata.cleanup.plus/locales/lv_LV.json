@@ -1073,7 +1073,7 @@
   "template file: could not be written": "veidnes fails: nevarēja uzrakstīt",
   "template file: fixture folder is unavailable": "veidnes fails: fiksācijas mape nav pieejama",
   "template file: template directory could not be created": "veidnes fails: nevarēja izveidot veidnes direktoriju",
-  "tracked container paths": "kāpurķēžu konteineru ceļi",
+  "tracked container paths": "reģistrētie konteineru ceļi",
   "unknown time": "nezināms laiks",
   "upstream timed out": "augštecē iestājās taimauts",
   "visible": "redzams",

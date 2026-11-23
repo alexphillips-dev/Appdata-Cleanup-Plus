@@ -9,6 +9,7 @@ const locales = JSON.parse(fs.readFileSync(path.join(root, 'locales/locales.json
 const cases = JSON.parse(execFileSync('php', [path.join(__dirname, 'i18n_cases.php')], {encoding:'utf8', maxBuffer:10e6}));
 const storedAudits = Object.fromEntries(Object.entries(cases).map(([locale, fixture]) => [locale, fixture.scheduled.audit]));
 const histories = JSON.parse(execFileSync('php', [path.join(__dirname, 'i18n_cases.php'), '--history'], {input:JSON.stringify(storedAudits), encoding:'utf8', maxBuffer:10e6}));
+const recordedTargetLabels = {lv_LV:'reģistrētie konteineru ceļi', sl_SI:'zabeležene poti vsebnikov'};
 const source = name => fs.readFileSync(path.join(root, 'scripts', name), 'utf8');
 const main = source('appdata.cleanup.plus.js');
 assert.equal(main.split('$(init);').length, 2, 'Test harness must intercept only page initialization');
@@ -51,6 +52,7 @@ for (const [locale, definition] of Object.entries(locales)) {
   for (const result of histories[locale].results) assert.ok(scheduledHtml.includes(ACP.escapeHtml(result.message)), `${locale}: history displays escaped localized results`);
   assert.ok(!scheduledHtml.includes('<b>literal</b>'), 'Raw error markup must not become HTML');
   assert.equal(fixture.literalTarget.targetSummary, 'tracked container paths', 'User-supplied target names stay literal');
+  if (Object.hasOwn(recordedTargetLabels, locale)) assert.equal(fixture.legacyTarget.targetSummary, recordedTargetLabels[locale], `${locale}: tracked means recorded paths, not vehicle treads`);
   if (locale !== 'en_US') {
     assert.notEqual(fixture.legacyTarget.targetSummary, 'tracked container paths', `${locale}: legacy target summary translated`);
     assert.ok(!scheduled.immediate.results[0].message.includes('Purge schedules could not be saved'), `${locale}: immediate warning translated`);

@@ -330,7 +330,8 @@
     "Restore": "Atjaunot",
     "Purge": "Neatgriezeniski dzēst",
     "DRY RUN": "IZMĒĢINĀJUMS BEZ IZMAIŅĀM",
-    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Tīrīšanas grafikus nevarēja saglabāt. Esošie taimeri joprojām var būt aktīvi."
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Tīrīšanas grafikus nevarēja saglabāt. Esošie taimeri joprojām var būt aktīvi.",
+    "tracked container paths": "reģistrētie konteineru ceļi"
   },
   "nl_NL": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus zoekt ongebruikte Docker appdata-mappen en exact overeenkomende ZFS-datasets als kandidaten voor opschoning. Via het opschoningsdashboard kunt u ze beoordelen, acties zonder wijzigingen simuleren, in quarantaine plaatsen, herstellen, de actiegeschiedenis bekijken of permanent verwijderen.",
@@ -442,7 +443,8 @@
     "Restore": "Obnovi",
     "Purge": "Trajno izbriši",
     "DRY RUN": "PREIZKUS BREZ SPREMEMB",
-    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Razporedov čiščenja ni bilo mogoče shraniti. Obstoječi časovniki so morda še vedno aktivni."
+    "{message} Purge schedules could not be saved. Existing timers may still be active.": "{message} Razporedov čiščenja ni bilo mogoče shraniti. Obstoječi časovniki so morda še vedno aktivni.",
+    "tracked container paths": "zabeležene poti vsebnikov"
   },
   "sr_RS": {
     "Appdata Cleanup Plus scans for unused Docker appdata folders and exact ZFS dataset candidates, then lets you review, dry run, quarantine, restore, audit, or permanently delete them from a guided cleanup dashboard.": "Appdata Cleanup Plus проналази некоришћене фасцикле Docker appdata и тачно подударне скупове података ZFS као кандидате за чишћење. На контролној табли можете их прегледати, симулирати радње без измена, ставити у карантин, вратити их, прегледати историју радњи или их трајно избрисати.",

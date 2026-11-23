@@ -1073,7 +1073,7 @@
   "template file: could not be written": "datoteka predloge: ni bilo mogoče zapisati",
   "template file: fixture folder is unavailable": "datoteka predloge: mapa napeljave ni na voljo",
   "template file: template directory could not be created": "datoteka predloge: imenika predlog ni bilo mogoče ustvariti",
-  "tracked container paths": "gosenične kontejnerske poti",
+  "tracked container paths": "zabeležene poti vsebnikov",
   "unknown time": "neznan čas",
   "upstream timed out": "navzgor potekel čas",
   "visible": "viden",
