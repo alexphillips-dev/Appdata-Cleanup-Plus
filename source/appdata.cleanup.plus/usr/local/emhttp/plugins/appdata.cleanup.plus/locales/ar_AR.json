@@ -563,6 +563,7 @@
   "Quarantine registry": "تسجيل الحجر الصحي",
   "Quarantine registry checks found no failed purge state.": "لم تجد عمليات فحص تسجيل العزل أي حالة تطهير فاشلة.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "كان فحص سجل الحجر الصحي غير مكتمل أو غير متاح؛ مراجعة رمز السبب الخاص به.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "يتطلب العزل وجهة تم التحقق منها داخل نظام الملفات المثبت نفسه. تم ترك المجلد المصدر في مكانه.",
   "Quarantine selected": "تم اختيار العزل",
   "Quarantine selected folders?": "عزل المجلدات المحددة؟",
   "Quarantined": "معزول",

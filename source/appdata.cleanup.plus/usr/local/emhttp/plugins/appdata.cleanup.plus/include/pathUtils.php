@@ -47,15 +47,45 @@ function appdataCleanupPlusReadMountInfoPaths(&$reasonCode=null) {
   foreach ( preg_split('/\r\n|\r|\n/', $contents) as $line ) {
     $fields = preg_split('/\s+/', trim((string)$line));
     if ( trim((string)$line) === "" ) continue;
-    if ( ! is_array($fields) || count($fields) < 10 || ! in_array("-", $fields, true) ) return null;
+    if ( ! is_array($fields) || count($fields) < 10 || ! ctype_digit($fields[0]) || ! in_array("-", $fields, true) ) return null;
 
     $mountPath = appdataCleanupPlusCanonicalizePath(appdataCleanupPlusDecodeMountInfoPath($fields[4]));
     if ( $mountPath === "" ) return null;
-    $mountPaths[$mountPath] = true;
+    // A stacked mount cannot be identified from its path alone.
+    $mountPaths[$mountPath] = isset($mountPaths[$mountPath]) ? false : $fields[0];
   }
 
   $reasonCode = "verified";
   return $mountPaths;
+}
+
+function appdataCleanupPlusMountIdForPath($path, $mountPaths) {
+  $mountId = null;
+  while (true) {
+    if (isset($mountPaths[$path])) {
+      if ($mountPaths[$path] === false) return null;
+      if ($mountId === null) $mountId = $mountPaths[$path];
+    }
+    $parent = dirname($path);
+    if ($parent === $path) return $mountId;
+    $path = $parent;
+  }
+}
+
+function appdataCleanupPlusPathsShareMount($source, $destinationDirectory) {
+  clearstatcache(true);
+  $sourcePath = @realpath($source);
+  $destinationPath = @realpath($destinationDirectory);
+  if (!$sourcePath || !$destinationPath || !is_dir($sourcePath) || !is_dir($destinationPath)) return false;
+
+  $sourceStat = @stat($sourcePath);
+  $destinationStat = @stat($destinationPath);
+  if (!isset($sourceStat["dev"], $destinationStat["dev"]) || $sourceStat["dev"] !== $destinationStat["dev"]) return false;
+
+  $mountPaths = appdataCleanupPlusReadMountInfoPaths();
+  if ($mountPaths === null) return false;
+  $sourceMount = appdataCleanupPlusMountIdForPath($sourcePath, $mountPaths);
+  return $sourceMount !== null && $sourceMount === appdataCleanupPlusMountIdForPath($destinationPath, $mountPaths);
 }
 
 function appdataCleanupPlusSanitizeMountInspection($value) {

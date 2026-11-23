@@ -563,6 +563,7 @@
   "Quarantine registry": "Quarantine registry",
   "Quarantine registry checks found no failed purge state.": "Quarantine registry checks found no failed purge state.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Quarantine registry inspection was incomplete or unavailable; review its reason code.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.",
   "Quarantine selected": "Quarantine selected",
   "Quarantine selected folders?": "Quarantine selected folders?",
   "Quarantined": "Quarantined",

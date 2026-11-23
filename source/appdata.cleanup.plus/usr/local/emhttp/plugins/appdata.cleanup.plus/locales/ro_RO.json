@@ -563,6 +563,7 @@
   "Quarantine registry": "Registrul de carantină",
   "Quarantine registry checks found no failed purge state.": "Verificările din registrul de carantină nu au găsit nicio stare de curățare eșuată.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Inspecția registrului de carantină a fost incompletă sau indisponibilă; revizuiți codul motiv.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Carantina necesită o destinație verificată în același sistem de fișiere montat. Dosarul sursă a fost lăsat pe loc.",
   "Quarantine selected": "Carantină selectată",
   "Quarantine selected folders?": "Pune în carantină dosarele selectate?",
   "Quarantined": "În carantină",

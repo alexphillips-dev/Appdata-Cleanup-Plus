@@ -10,22 +10,49 @@ function buildCandidateQuarantineRoot($path, $settings) {
   return isset($settings["quarantineRoot"]) ? rtrim((string)$settings["quarantineRoot"], "/") : getDefaultAppdataCleanupPlusQuarantineRoot();
 }
 
-function buildQuarantineDestination($sourcePath, $settings) {
-  $rootPath = rtrim(buildCandidateQuarantineRoot($sourcePath, $settings), "/");
-  $relativePath = trim(appdataCleanupPlusCanonicalizePath($sourcePath), "/");
+function appdataCleanupPlusQuarantineSourceRoots($settings) {
+  return array_unique(array_merge(
+    getAppdataCleanupPlusConfiguredSourceRoots($settings),
+    appdataCleanupPlusNormalizeManualAppdataSources($settings["manualAppdataSources"] ?? array())
+  ));
+}
 
-  if ( ! $rootPath || ! $relativePath ) {
-    return "";
+function buildQuarantinePlan($sourcePath, $settings) {
+  $sourcePath = appdataCleanupPlusCanonicalizePath($sourcePath);
+  $matchedRoot = "";
+  foreach (appdataCleanupPlusQuarantineSourceRoots($settings) as $root) {
+    if (strlen($root) > strlen($matchedRoot) && startsWith($sourcePath, rtrim($root, "/") . "/")) $matchedRoot = $root;
+  }
+  $rootPath = appdataCleanupPlusCanonicalizePath($matchedRoot !== ""
+    ? rtrim($matchedRoot, "/") . "/.appdata-cleanup-plus-quarantine"
+    : buildCandidateQuarantineRoot($sourcePath, $settings));
+  $relativePath = trim(preg_replace('/[^A-Za-z0-9._\/-]+/', '-', $sourcePath), "/");
+  if (!startsWith($sourcePath, "/") || !startsWith($rootPath, "/") || count(appdataPathSegments($rootPath)) < 3 ||
+      preg_match('/[\x00-\x1f\x7f]/', $sourcePath . $rootPath) || !$relativePath ||
+      $sourcePath === $rootPath || startsWith($rootPath, $sourcePath . "/") || startsWith($sourcePath, $rootPath . "/")) {
+    return array("root" => "", "destination" => "", "message" => "Quarantine destination could not be prepared.");
+  }
+  $destination = $rootPath . "/" . date("Ymd-His") . "/" . $relativePath;
+  return array("root" => $rootPath, "destination" => $destination, "message" => appdataCleanupPlusQuarantineDestinationReason($sourcePath, $destination));
+}
+
+function appdataCleanupPlusQuarantineDestinationReason($sourcePath, $destination) {
+  clearstatcache(true);
+  if (is_link($sourcePath) || pathHasSymlinkSegment($sourcePath) ||
+      file_exists($destination) || is_link($destination) || pathHasSymlinkSegment($destination) ||
+      appdataCleanupPlusBuildManagedSystemLockReason($destination) !== "") {
+    return "Quarantine destination could not be prepared.";
   }
 
-  $safeRelativePath = preg_replace('/[^A-Za-z0-9._\/-]+/', '-', $relativePath);
-  $safeRelativePath = trim($safeRelativePath, "/");
-
-  if ( ! $safeRelativePath ) {
-    return "";
+  $parent = dirname($destination);
+  while (!is_dir($parent)) {
+    if (file_exists($parent) || is_link($parent) || dirname($parent) === $parent) {
+      return "Quarantine destination could not be prepared.";
+    }
+    $parent = dirname($parent);
   }
-
-  return $rootPath . "/" . date("Ymd-His") . "/" . $safeRelativePath;
+  return appdataCleanupPlusPathsShareMount($sourcePath, $parent) ? "" :
+    "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.";
 }
 
 function normalizeAppdataCleanupPlusQuarantinePurgeAt($purgeAt) {
@@ -268,7 +295,7 @@ function deleteAppdataCleanupPlusQuarantineEntryMarker($destination) {
 }
 
 function appdataCleanupPlusDiscoverShareStyleQuarantineRoots($baseRoot) {
-  $normalizedBaseRoot = rtrim(normalizeUserPath($baseRoot), "/");
+  $normalizedBaseRoot = appdataCleanupPlusCanonicalizePath($baseRoot);
   $roots = array();
 
   if ( ! $normalizedBaseRoot || ! is_dir($normalizedBaseRoot) ) {
@@ -279,7 +306,7 @@ function appdataCleanupPlusDiscoverShareStyleQuarantineRoots($baseRoot) {
     $candidateRoot = $normalizedBaseRoot . "/" . trim((string)$shareName, "/") . "/.appdata-cleanup-plus-quarantine";
 
     if ( is_dir($candidateRoot) ) {
-      $roots[normalizeUserPath($candidateRoot)] = $candidateRoot;
+      $roots[] = $candidateRoot;
     }
   }
 
@@ -296,7 +323,7 @@ function getKnownAppdataCleanupPlusQuarantineRoots($registry=array()) {
     isset($settings["quarantineRoot"]) ? $settings["quarantineRoot"] : "",
     getDefaultAppdataCleanupPlusQuarantineRoot()
   );
-  foreach ( getAppdataCleanupPlusConfiguredSourceRoots($settings) as $sourceRoot ) {
+  foreach ( appdataCleanupPlusQuarantineSourceRoots($settings) as $sourceRoot ) {
     $candidateRoots[] = rtrim($sourceRoot, "/") . "/.appdata-cleanup-plus-quarantine";
   }
 
@@ -307,7 +334,7 @@ function getKnownAppdataCleanupPlusQuarantineRoots($registry=array()) {
   }
 
   foreach ( $candidateRoots as $candidateRoot ) {
-    $normalizedRoot = rtrim(normalizeUserPath($candidateRoot), "/");
+    $normalizedRoot = appdataCleanupPlusCanonicalizePath($candidateRoot);
 
     if ( $normalizedRoot && count(appdataPathSegments($normalizedRoot)) >= 3 && !preg_match('/[\x00-\x1f\x7f]/', $normalizedRoot) && is_dir($normalizedRoot) ) {
       $roots[$normalizedRoot] = $normalizedRoot;
@@ -317,8 +344,7 @@ function getKnownAppdataCleanupPlusQuarantineRoots($registry=array()) {
   if ( $configuredStateRoot ) {
     if ( $shareName ) {
       foreach ( array("/mnt/user", "/mnt/cache") as $shareBaseRoot ) {
-        $candidateRoot = rtrim(normalizeUserPath($shareBaseRoot), "/") . "/" . $shareName . "/.appdata-cleanup-plus-quarantine";
-        $normalizedRoot = rtrim(normalizeUserPath($candidateRoot), "/");
+        $normalizedRoot = $shareBaseRoot . "/" . $shareName . "/.appdata-cleanup-plus-quarantine";
 
         if ( $normalizedRoot && is_dir($normalizedRoot) ) {
           $roots[$normalizedRoot] = $normalizedRoot;
@@ -328,7 +354,7 @@ function getKnownAppdataCleanupPlusQuarantineRoots($registry=array()) {
   } else {
     foreach ( array("/mnt/user", "/mnt/cache") as $shareBaseRoot ) {
       foreach ( appdataCleanupPlusDiscoverShareStyleQuarantineRoots($shareBaseRoot) as $discoveredRoot ) {
-        $normalizedRoot = rtrim(normalizeUserPath($discoveredRoot), "/");
+        $normalizedRoot = appdataCleanupPlusCanonicalizePath($discoveredRoot);
 
         if ( $normalizedRoot ) {
           $roots[$normalizedRoot] = $normalizedRoot;
@@ -356,9 +382,9 @@ function appdataCleanupPlusRecoverQuarantineTimestampToIso($timestampKey, $fallb
 }
 
 function appdataCleanupPlusBuildRecoveredQuarantineRecord($sourcePath, $destination, $quarantineRoot, $quarantinedAt, $marker=array()) {
-  $sourcePath = normalizeUserPath($sourcePath);
-  $destination = normalizeUserPath($destination);
-  $quarantineRoot = rtrim(normalizeUserPath($quarantineRoot), "/");
+  $sourcePath = appdataCleanupPlusCanonicalizePath($sourcePath);
+  $destination = appdataCleanupPlusCanonicalizePath($destination);
+  $quarantineRoot = appdataCleanupPlusCanonicalizePath($quarantineRoot);
   $markerRecord = is_array($marker) ? $marker : array();
   $record = array(
     "id" => md5("recovered:" . $destination),
@@ -398,7 +424,7 @@ function appdataCleanupPlusBuildRecoveredQuarantineRecord($sourcePath, $destinat
 }
 
 function appdataCleanupPlusRecoverQuarantineRecordsFromRoot($quarantineRoot, $knownDestinations=array()) {
-  $normalizedRoot = rtrim(normalizeUserPath($quarantineRoot), "/");
+  $normalizedRoot = appdataCleanupPlusCanonicalizePath($quarantineRoot);
   $recovered = array();
   $markerManagedDestinations = array();
 
@@ -427,7 +453,7 @@ function appdataCleanupPlusRecoverQuarantineRecordsFromRoot($quarantineRoot, $kn
         continue;
       }
 
-      $destination = normalizeUserPath(dirname($markerEntry->getPathname()));
+      $destination = appdataCleanupPlusCanonicalizePath(dirname($markerEntry->getPathname()));
       $destinationKey = normalizeUserPath($destination);
 
       if ( isset($knownDestinations[$destinationKey]) || ! is_dir($destination) ) {
@@ -435,9 +461,17 @@ function appdataCleanupPlusRecoverQuarantineRecordsFromRoot($quarantineRoot, $kn
       }
 
       $markerRecord = readAppdataCleanupPlusQuarantineEntryMarker($destination);
-      $sourcePath = isset($markerRecord["sourcePath"]) ? normalizeUserPath($markerRecord["sourcePath"]) : "";
+      $sourcePath = appdataCleanupPlusCanonicalizePath($markerRecord["sourcePath"] ?? "");
 
       if ( ! $sourcePath ) {
+        continue;
+      }
+
+      // Prefer the recorded mount when the marker is also visible via a user-share alias.
+      $markerDestination = appdataCleanupPlusCanonicalizePath($markerRecord["destination"] ?? "");
+      if ($markerDestination !== $destination && is_dir($markerDestination) &&
+          appdataCleanupPlusPathComparisonKey($markerDestination) === appdataCleanupPlusPathComparisonKey($destination)) {
+        $markerManagedDestinations[$destinationKey] = true;
         continue;
       }
 
@@ -466,10 +500,10 @@ function appdataCleanupPlusRecoverQuarantineRecordsFromRoot($quarantineRoot, $kn
     }
 
     foreach ( $legacyIterator as $legacyEntry ) {
-      $destination = normalizeUserPath($legacyEntry->getPathname());
+      $destination = appdataCleanupPlusCanonicalizePath($legacyEntry->getPathname());
       $destinationKey = normalizeUserPath($destination);
-      $relativePath = ltrim(substr($destinationKey, strlen(rtrim(normalizeUserPath($timestampRoot), "/"))), "/");
-      $sourcePath = normalizeUserPath("/" . $relativePath);
+      $relativePath = ltrim(substr($destination, strlen($timestampRoot)), "/");
+      $sourcePath = appdataCleanupPlusCanonicalizePath("/" . $relativePath);
       $pathSegments = array_values(array_filter(explode("/", trim($sourcePath, "/")), "strlen"));
       $parentSourcePath = dirname($sourcePath);
 
@@ -954,10 +988,10 @@ function resolveTrackedQuarantineEntries($entryIds) {
 }
 
 function cleanupEmptyQuarantineParents($path, $quarantineRoot) {
-  $rootPath = rtrim(normalizeUserPath($quarantineRoot), "/");
-  $currentPath = dirname(rtrim((string)$path, "/"));
+  $rootPath = appdataCleanupPlusCanonicalizePath($quarantineRoot);
+  $currentPath = dirname(appdataCleanupPlusCanonicalizePath($path));
 
-  while ( $rootPath && $currentPath && $currentPath !== $rootPath && startsWith(normalizeUserPath($currentPath) . "/", $rootPath . "/") ) {
+  while ( $rootPath && startsWith($currentPath, $rootPath . "/") ) {
     $contents = @scandir($currentPath);
 
     if ( ! is_array($contents) || count(array_diff($contents, array(".", ".."))) > 0 ) {
@@ -1876,17 +1910,18 @@ function resolveCandidateForAction($candidate, $settings, $baseOperation) {
 }
 
 function quarantineCandidatePath($candidate, $displayPath, $settings) {
-  $destination = buildQuarantineDestination($displayPath, $settings);
-  $quarantineRoot = buildCandidateQuarantineRoot($displayPath, $settings);
+  $plan = buildQuarantinePlan($displayPath, $settings);
+  $destination = $plan["destination"];
+  $quarantineRoot = $plan["root"];
   $quarantinedAt = date("c");
   $defaultPurgeAt = buildAppdataCleanupPlusDefaultPurgeAtForTimestamp($settings, strtotime($quarantinedAt));
   $renameError = "";
 
-  if ( ! $destination ) {
+  if ( $plan["message"] !== "" ) {
     return array(
       "ok" => false,
-      "message" => "Quarantine destination could not be prepared.",
-      "destination" => ""
+      "message" => $plan["message"],
+      "destination" => $destination
     );
   }
 
@@ -1897,6 +1932,9 @@ function quarantineCandidatePath($candidate, $displayPath, $settings) {
       "destination" => $destination
     );
   }
+
+  $destinationReason = appdataCleanupPlusQuarantineDestinationReason($displayPath, $destination);
+  if ($destinationReason !== "") return array("ok" => false, "message" => $destinationReason, "destination" => $destination);
 
   error_clear_last();
   if ( @rename($displayPath, $destination) ) {
@@ -1993,7 +2031,12 @@ function executeCandidateOperation($candidates, $settings, $operation, $options=
       );
 
       if ( $baseOperation === "quarantine" ) {
-        $previewResult["destination"] = buildQuarantineDestination($resolved["displayPath"], $settings);
+        $plan = buildQuarantinePlan($resolved["displayPath"], $settings);
+        $previewResult["destination"] = $plan["destination"];
+        if ($plan["message"] !== "") {
+          $previewResult["status"] = "error";
+          $previewResult["message"] = $plan["message"];
+        }
       } elseif ( ! empty($resolved["storage"]["kind"]) && $resolved["storage"]["kind"] === "zfs" ) {
         $previewResult["datasetName"] = (string)$resolved["storage"]["datasetName"];
         $previewResult["datasetMountpoint"] = (string)$resolved["storage"]["datasetMountpoint"];

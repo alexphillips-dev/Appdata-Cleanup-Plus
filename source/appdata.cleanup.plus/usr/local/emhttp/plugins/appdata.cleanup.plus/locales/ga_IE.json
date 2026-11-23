@@ -563,6 +563,7 @@
   "Quarantine registry": "Clárlann coraintín",
   "Quarantine registry checks found no failed purge state.": "Níor aimsíodh aon stát glantacháin ar theip ar sheiceálacha coraintín.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Bhí iniúchadh clárlainne coraintín neamhiomlán nó ní raibh sé ar fáil; athbhreithniú a dhéanamh ar a cód cúiseanna.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Teastaíonn ceann scríbe fíoraithe ó Choraintín laistigh den chóras comhaid gléasta céanna. Fágadh an fillteán foinse i bhfeidhm.",
   "Quarantine selected": "Coraintín roghnaithe",
   "Quarantine selected folders?": "Fillteáin roghnaithe coraintín?",
   "Quarantined": "Coraintín",

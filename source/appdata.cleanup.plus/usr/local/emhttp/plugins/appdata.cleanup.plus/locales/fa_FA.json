@@ -563,6 +563,7 @@
   "Quarantine registry": "ثبت قرنطینه",
   "Quarantine registry checks found no failed purge state.": "بررسی‌های رجیستری قرنطینه هیچ وضعیت پاکسازی ناموفقی پیدا نکرد.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "بازرسی رجیستری قرنطینه ناقص یا در دسترس نبود. کد دلیل آن را مرور کنید.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "قرنطینه به یک مقصد تأیید شده در همان سیستم فایل نصب شده نیاز دارد. پوشه منبع در جای خود باقی مانده است.",
   "Quarantine selected": "قرنطینه انتخاب شد",
   "Quarantine selected folders?": "پوشه های انتخاب شده را قرنطینه کنیم؟",
   "Quarantined": "قرنطینه شده",

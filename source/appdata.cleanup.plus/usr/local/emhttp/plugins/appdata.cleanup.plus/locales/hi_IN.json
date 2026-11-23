@@ -563,6 +563,7 @@
   "Quarantine registry": "संगरोध रजिस्ट्री",
   "Quarantine registry checks found no failed purge state.": "संगरोध रजिस्ट्री जांच में कोई विफल शुद्ध स्थिति नहीं पाई गई।",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "संगरोध रजिस्ट्री निरीक्षण अधूरा या अनुपलब्ध था; इसके कारण कोड की समीक्षा करें.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "संगरोध के लिए समान माउंटेड फ़ाइल सिस्टम के भीतर एक सत्यापित गंतव्य की आवश्यकता होती है। स्रोत फ़ोल्डर यथास्थान छोड़ दिया गया था.",
   "Quarantine selected": "संगरोध चयनित",
   "Quarantine selected folders?": "चयनित फ़ोल्डरों को संगरोधित करें?",
   "Quarantined": "क्वारंटाइन किया गया",

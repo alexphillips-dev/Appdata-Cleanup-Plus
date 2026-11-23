@@ -563,6 +563,7 @@
   "Quarantine registry": "Μητρώο καραντίνας",
   "Quarantine registry checks found no failed purge state.": "Οι έλεγχοι μητρώου καραντίνας δεν βρήκαν αποτυχημένη κατάσταση εκκαθάρισης.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Η επιθεώρηση μητρώου καραντίνας ήταν ελλιπής ή μη διαθέσιμη. ελέγξτε τον κωδικό αιτιολογίας του.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Η καραντίνα απαιτεί έναν επαληθευμένο προορισμό εντός του ίδιου μονταρισμένου συστήματος αρχείων. Ο φάκελος προέλευσης έμεινε στη θέση του.",
   "Quarantine selected": "Επιλέχθηκε η καραντίνα",
   "Quarantine selected folders?": "Θέλετε σε καραντίνα επιλεγμένους φακέλους;",
   "Quarantined": "Σε καραντίνα",

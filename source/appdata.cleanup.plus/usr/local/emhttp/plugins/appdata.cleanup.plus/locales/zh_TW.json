@@ -563,6 +563,7 @@
   "Quarantine registry": "隔離登記處",
   "Quarantine registry checks found no failed purge state.": "隔離註冊表檢查未發現失敗的清除狀態。",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "隔離登記檢查不完整或無法進行；檢查其原因代碼。",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "隔離需要同一已安裝檔案系統內的經過驗證的目標。來源資料夾保留在原處。",
   "Quarantine selected": "已選擇隔離區",
   "Quarantine selected folders?": "隔離選定的資料夾？",
   "Quarantined": "已隔離",

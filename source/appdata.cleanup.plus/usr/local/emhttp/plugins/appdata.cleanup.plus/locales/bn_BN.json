@@ -563,6 +563,7 @@
   "Quarantine registry": "কোয়ারেন্টাইন রেজিস্ট্রি",
   "Quarantine registry checks found no failed purge state.": "কোয়ারেন্টাইন রেজিস্ট্রি চেক কোন ব্যর্থ শুদ্ধ অবস্থা পাওয়া গেছে.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "কোয়ারেন্টাইন রেজিস্ট্রি পরিদর্শন অসম্পূর্ণ বা অনুপলব্ধ ছিল; এর কারণ কোড পর্যালোচনা করুন।",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "কোয়ারেন্টাইনের জন্য একই মাউন্ট করা ফাইল সিস্টেমের মধ্যে একটি যাচাইকৃত গন্তব্য প্রয়োজন। উত্স ফোল্ডারটি জায়গায় রেখে দেওয়া হয়েছিল।",
   "Quarantine selected": "কোয়ারেন্টাইন বেছে নেওয়া হয়েছে",
   "Quarantine selected folders?": "কোয়ারেন্টাইন নির্বাচিত ফোল্ডার?",
   "Quarantined": "কোয়ারেন্টাইন",

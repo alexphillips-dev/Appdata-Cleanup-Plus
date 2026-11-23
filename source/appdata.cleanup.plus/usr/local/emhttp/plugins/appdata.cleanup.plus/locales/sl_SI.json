@@ -563,6 +563,7 @@
   "Quarantine registry": "Karantenski register",
   "Quarantine registry checks found no failed purge state.": "Preverjanja karantenskega registra niso odkrila neuspešnega stanja čiščenja.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Pregled karantenskega registra je bil nepopoln ali nedosegljiv; preglejte njegovo kodo vzroka.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Karantena zahteva preverjen cilj znotraj istega nameščenega datotečnega sistema. Izvorna mapa je ostala na mestu.",
   "Quarantine selected": "Izbrana karantena",
   "Quarantine selected folders?": "Izbrane mape v karanteno?",
   "Quarantined": "V karanteni",

@@ -563,6 +563,7 @@
   "Quarantine registry": "רישום הסגר",
   "Quarantine registry checks found no failed purge state.": "בדיקות הרישום בהסגר לא מצאו מצב טיהור כושל.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "בדיקת רישום ההסגר לא הייתה שלמה או לא הייתה זמינה; סקור את קוד הסיבה שלו.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "הסגר דורש יעד מאומת בתוך אותה מערכת קבצים מותקנת. תיקיית המקור נותרה במקומה.",
   "Quarantine selected": "הסגר נבחר",
   "Quarantine selected folders?": "להסגר את התיקיות שנבחרו?",
   "Quarantined": "בהסגר",

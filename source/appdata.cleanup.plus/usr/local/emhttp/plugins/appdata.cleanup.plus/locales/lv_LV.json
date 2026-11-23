@@ -563,6 +563,7 @@
   "Quarantine registry": "Karantīnas reģistrs",
   "Quarantine registry checks found no failed purge state.": "Karantīnas reģistra pārbaudēs netika konstatēts neveiksmīgs tīrīšanas stāvoklis.",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "Karantīnas reģistra pārbaude bija nepilnīga vai nebija pieejama; pārskatiet tā iemesla kodu.",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "Karantīnai ir nepieciešams pārbaudīts galamērķis tajā pašā pievienotajā failu sistēmā. Avota mape tika atstāta vietā.",
   "Quarantine selected": "Karantīna izvēlēta",
   "Quarantine selected folders?": "Vai atlasītās mapes karantīnā?",
   "Quarantined": "Karantīnā",

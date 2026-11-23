@@ -563,6 +563,7 @@
   "Quarantine registry": "隔離レジストリ",
   "Quarantine registry checks found no failed purge state.": "隔離レジストリ チェックでは、失敗したパージ状態が見つかりませんでした。",
   "Quarantine registry inspection was incomplete or unavailable; review its reason code.": "隔離レジストリの検査が不完全であるか、利用できませんでした。理由コードを確認してください。",
+  "Quarantine requires a verified destination within the same mounted filesystem. The source folder was left in place.": "隔離には、同じマウントされたファイルシステム内に検証済みの宛先が必要です。ソースフォルダーはそのまま残されました。",
   "Quarantine selected": "隔離が選択されました",
   "Quarantine selected folders?": "選択したフォルダーを隔離しますか?",
   "Quarantined": "隔離された",
